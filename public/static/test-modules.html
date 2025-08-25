@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Module Test Page</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl mb-6">Module Loading Test</h1>
+        <div id="test-results" class="space-y-4"></div>
+        <div id="module-content" class="mt-8 p-4 bg-gray-800 rounded"></div>
+    </div>
+
+    <!-- Load module system -->
+    <script src="/static/modules/module-loader.js"></script>
+    
+    <script>
+        async function testAllModules() {
+            const results = document.getElementById('test-results');
+            const moduleContent = document.getElementById('module-content');
+            
+            if (!window.ModuleLoader) {
+                results.innerHTML = '<div class="text-red-400">❌ ModuleLoader not found!</div>';
+                return;
+            }
+
+            const loader = new window.ModuleLoader();
+            const modules = ['dashboard', 'trading', 'portfolio', 'artemis', 'watchlist', 'analytics', 'news', 'alerts', 'settings'];
+            
+            for (const moduleName of modules) {
+                try {
+                    console.log(`Testing ${moduleName}...`);
+                    const module = await loader.loadModule(moduleName);
+                    
+                    if (module) {
+                        results.innerHTML += `<div class="text-green-400">✅ ${moduleName} loaded successfully</div>`;
+                        
+                        // Test getContent method
+                        if (typeof module.getContent === 'function') {
+                            const content = await module.getContent();
+                            if (content && content.trim()) {
+                                results.innerHTML += `<div class="text-blue-400">📄 ${moduleName} has content (${content.length} chars)</div>`;
+                            } else {
+                                results.innerHTML += `<div class="text-yellow-400">⚠️ ${moduleName} getContent returned empty</div>`;
+                            }
+                        } else {
+                            results.innerHTML += `<div class="text-yellow-400">⚠️ ${moduleName} missing getContent method</div>`;
+                        }
+                        
+                        // Test initialize method
+                        if (typeof module.initialize === 'function') {
+                            await module.initialize();
+                            results.innerHTML += `<div class="text-blue-400">🔧 ${moduleName} initialized</div>`;
+                        }
+                        
+                    } else {
+                        results.innerHTML += `<div class="text-red-400">❌ ${moduleName} loaded but returned null</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="text-red-400">❌ ${moduleName} failed: ${error.message}</div>`;
+                }
+            }
+            
+            results.innerHTML += '<div class="text-green-400 text-xl mt-4">🎉 Testing completed!</div>';
+        }
+
+        // Auto-run test when page loads
+        window.addEventListener('load', () => {
+            setTimeout(testAllModules, 1000);
+        });
+    </script>
+</body>
+</html>
