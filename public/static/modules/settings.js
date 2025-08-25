@@ -540,6 +540,123 @@ class SettingsModule {
                     ]
                 }
             },
+            // Feature 3: System Status Configuration
+            system_monitoring: {
+                enabled: true,
+                performance_thresholds: {
+                    cpu: {
+                        warning: 70,
+                        critical: 90,
+                        check_interval: 30
+                    },
+                    memory: {
+                        warning: 75,
+                        critical: 90,
+                        check_interval: 30
+                    },
+                    disk: {
+                        warning: 80,
+                        critical: 95,
+                        check_interval: 300
+                    },
+                    network: {
+                        latency_warning: 200,
+                        latency_critical: 500,
+                        packet_loss_warning: 1,
+                        packet_loss_critical: 5,
+                        check_interval: 60
+                    }
+                },
+                health_checks: {
+                    api_endpoints: {
+                        enabled: true,
+                        timeout: 5000,
+                        retry_attempts: 3,
+                        check_interval: 60,
+                        endpoints: [
+                            { name: 'Trading API', url: '/api/trading/status', critical: true },
+                            { name: 'Market Data', url: '/api/market/status', critical: true },
+                            { name: 'AI Analytics', url: '/api/ai-analytics/status', critical: false },
+                            { name: 'User Auth', url: '/api/auth/status', critical: true }
+                        ]
+                    },
+                    database: {
+                        enabled: true,
+                        connection_timeout: 10000,
+                        query_timeout: 5000,
+                        check_interval: 120
+                    },
+                    external_services: {
+                        enabled: true,
+                        exchange_apis: true,
+                        ai_providers: true,
+                        notification_services: false,
+                        check_interval: 300
+                    }
+                },
+                alerting: {
+                    enabled: true,
+                    notification_channels: ['email', 'telegram', 'dashboard'],
+                    escalation_rules: {
+                        warning: {
+                            delay_minutes: 5,
+                            max_notifications: 3,
+                            cooldown_minutes: 30
+                        },
+                        critical: {
+                            delay_minutes: 1,
+                            max_notifications: 10,
+                            cooldown_minutes: 15
+                        }
+                    },
+                    maintenance_mode: {
+                        enabled: false,
+                        suppress_alerts: true,
+                        custom_message: ''
+                    }
+                },
+                logging: {
+                    level: 'info', // debug, info, warn, error
+                    retention_days: 30,
+                    max_file_size: 100, // MB
+                    compress_old_logs: true,
+                    categories: {
+                        system: { enabled: true, level: 'info' },
+                        trading: { enabled: true, level: 'info' },
+                        ai: { enabled: true, level: 'info' },
+                        security: { enabled: true, level: 'warn' },
+                        performance: { enabled: true, level: 'info' },
+                        api: { enabled: true, level: 'warn' },
+                        database: { enabled: true, level: 'error' }
+                    }
+                },
+                resource_limits: {
+                    max_concurrent_requests: 100,
+                    rate_limiting: {
+                        enabled: true,
+                        requests_per_minute: 1000,
+                        burst_size: 50
+                    },
+                    memory_limits: {
+                        heap_warning: 1024, // MB
+                        heap_critical: 1536, // MB
+                        gc_warning_threshold: 10 // % time spent in GC
+                    },
+                    process_limits: {
+                        max_cpu_time: 300, // seconds
+                        max_open_files: 1024,
+                        max_child_processes: 10
+                    }
+                },
+                backup_monitoring: {
+                    enabled: true,
+                    schedule_check: true,
+                    backup_age_warning: 24, // hours
+                    backup_age_critical: 72, // hours
+                    backup_size_monitoring: true,
+                    integrity_checks: true
+                }
+            },
             security: {
                 two_factor: {
                     enabled: false,
@@ -1775,6 +1892,77 @@ class SettingsModule {
                     </button>
                     <button onclick="settingsModule.systemRestart()" class="bg-red-600 hover:bg-red-700 px-4 py-3 rounded-lg text-white text-sm">
                         <i class="fas fa-power-off mr-2"></i>راه‌اندازی مجدد
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature 3: System Status Configuration -->
+            <div class="bg-gradient-to-r from-orange-900 to-red-900 rounded-lg p-6 border border-orange-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">📊</span>
+                        <h3 class="text-xl font-bold text-white">System Status Configuration</h3>
+                        <div class="px-3 py-1 bg-orange-600 text-white text-xs rounded-full">مانیتورینگ پیشرفته</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="system-monitoring-enabled" class="sr-only peer" ${this.settings.system_monitoring.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
+                    </label>
+                </div>
+
+                <!-- Performance Thresholds -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🎯 آستانه‌های عملکرد</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        ${this.renderPerformanceThresholds()}
+                    </div>
+                </div>
+
+                <!-- Health Checks Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🏥 تنظیمات Health Check</h4>
+                    <div class="space-y-4">
+                        ${this.renderHealthChecksConfig()}
+                    </div>
+                </div>
+
+                <!-- Alerting Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🚨 تنظیمات هشدارها</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderAlertingConfig()}
+                    </div>
+                </div>
+
+                <!-- Logging Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📝 تنظیمات Logging</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderLoggingConfig()}
+                    </div>
+                </div>
+
+                <!-- Resource Limits -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">⚡ محدودیت‌های منابع</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderResourceLimits()}
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.testSystemMonitoring()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-vial mr-2"></i>تست مانیتورینگ
+                    </button>
+                    <button onclick="settingsModule.generateSystemReport()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-chart-bar mr-2"></i>گزارش سیستم
+                    </button>
+                    <button onclick="settingsModule.exportMonitoringConfig()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تنظیمات
+                    </button>
+                    <button onclick="settingsModule.resetToDefaults()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-undo mr-2"></i>بازنشانی
                     </button>
                 </div>
             </div>
@@ -6635,6 +6823,487 @@ TITAN Trading System - Log Export
             const content = document.getElementById('tab-content');
             if (content) {
                 content.innerHTML = this.getTradingTab();
+                this.setupEventListeners();
+            }
+        }
+    }
+
+    // Feature 3: System Status Configuration - Supporting Methods
+
+    renderPerformanceThresholds() {
+        const thresholds = [
+            { key: 'cpu', name: 'CPU', icon: '🖥️', unit: '%', color: 'blue' },
+            { key: 'memory', name: 'Memory', icon: '💾', unit: '%', color: 'yellow' },
+            { key: 'disk', name: 'Disk', icon: '💿', unit: '%', color: 'purple' },
+            { key: 'network', name: 'Network', icon: '🌐', unit: 'ms', color: 'green' }
+        ];
+
+        return thresholds.map(threshold => {
+            const config = this.settings.system_monitoring.performance_thresholds[threshold.key];
+            
+            return `
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="flex items-center gap-2 mb-3">
+                        <span class="text-xl">${threshold.icon}</span>
+                        <h5 class="font-medium text-white">${threshold.name}</h5>
+                    </div>
+                    <div class="space-y-3">
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">آستانه هشدار (${threshold.unit})</label>
+                            <input type="number" id="${threshold.key}-warning" value="${threshold.key === 'network' ? config.latency_warning : config.warning}" 
+                                   class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">آستانه بحرانی (${threshold.unit})</label>
+                            <input type="number" id="${threshold.key}-critical" value="${threshold.key === 'network' ? config.latency_critical : config.critical}" 
+                                   class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">فاصله بررسی (ثانیه)</label>
+                            <input type="number" id="${threshold.key}-interval" value="${config.check_interval}" 
+                                   class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        </div>
+                        <div class="flex items-center justify-between pt-2 border-t border-gray-700">
+                            <span class="text-xs text-gray-400">وضعیت:</span>
+                            <div class="w-2 h-2 bg-${threshold.color}-400 rounded-full"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderHealthChecksConfig() {
+        return `
+            <!-- API Endpoints Health Check -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-white">🔗 API Endpoints</h5>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="api-healthcheck-enabled" class="sr-only peer" ${this.settings.system_monitoring.health_checks.api_endpoints.enabled ? 'checked' : ''}>
+                        <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+                <div class="space-y-3">
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">Timeout (ms)</label>
+                            <input type="number" id="api-timeout" value="${this.settings.system_monitoring.health_checks.api_endpoints.timeout}" 
+                                   class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-300 mb-1">تعداد تلاش</label>
+                            <input type="number" id="api-retry" value="${this.settings.system_monitoring.health_checks.api_endpoints.retry_attempts}" 
+                                   class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        ${this.settings.system_monitoring.health_checks.api_endpoints.endpoints.map(endpoint => `
+                            <div class="flex items-center justify-between p-2 bg-gray-700 rounded">
+                                <div class="flex items-center gap-2">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                    <span class="text-sm text-gray-300">${endpoint.name}</span>
+                                    ${endpoint.critical ? '<span class="text-xs text-red-400">(Critical)</span>' : '<span class="text-xs text-gray-500">(Optional)</span>'}
+                                </div>
+                                <span class="text-xs text-gray-400">${endpoint.url}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Database Health Check -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-white">🗄️ Database</h5>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="db-healthcheck-enabled" class="sr-only peer" ${this.settings.system_monitoring.health_checks.database.enabled ? 'checked' : ''}>
+                        <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                    </label>
+                </div>
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Connection Timeout (ms)</label>
+                        <input type="number" id="db-connection-timeout" value="${this.settings.system_monitoring.health_checks.database.connection_timeout}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Query Timeout (ms)</label>
+                        <input type="number" id="db-query-timeout" value="${this.settings.system_monitoring.health_checks.database.query_timeout}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- External Services Health Check -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-medium text-white">🌐 External Services</h5>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="external-healthcheck-enabled" class="sr-only peer" ${this.settings.system_monitoring.health_checks.external_services.enabled ? 'checked' : ''}>
+                        <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                    </label>
+                </div>
+                <div class="space-y-2">
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Exchange APIs</span>
+                        <input type="checkbox" id="exchange-apis-check" ${this.settings.system_monitoring.health_checks.external_services.exchange_apis ? 'checked' : ''} class="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">AI Providers</span>
+                        <input type="checkbox" id="ai-providers-check" ${this.settings.system_monitoring.health_checks.external_services.ai_providers ? 'checked' : ''} class="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Notification Services</span>
+                        <input type="checkbox" id="notification-services-check" ${this.settings.system_monitoring.health_checks.external_services.notification_services ? 'checked' : ''} class="w-4 h-4 text-purple-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderAlertingConfig() {
+        return `
+            <!-- Notification Channels -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">📢 Notification Channels</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Email Alerts</span>
+                        <input type="checkbox" id="alert-email" ${this.settings.system_monitoring.alerting.notification_channels.includes('email') ? 'checked' : ''} class="w-4 h-4 text-orange-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Telegram Alerts</span>
+                        <input type="checkbox" id="alert-telegram" ${this.settings.system_monitoring.alerting.notification_channels.includes('telegram') ? 'checked' : ''} class="w-4 h-4 text-orange-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">Dashboard Alerts</span>
+                        <input type="checkbox" id="alert-dashboard" ${this.settings.system_monitoring.alerting.notification_channels.includes('dashboard') ? 'checked' : ''} class="w-4 h-4 text-orange-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                </div>
+                
+                <!-- Maintenance Mode -->
+                <div class="mt-4 p-3 bg-gray-700 rounded border-l-4 border-yellow-500">
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-sm font-medium text-yellow-300">🔧 Maintenance Mode</span>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="maintenance-mode" class="sr-only peer" ${this.settings.system_monitoring.alerting.maintenance_mode.enabled ? 'checked' : ''}>
+                            <div class="w-8 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                        </label>
+                    </div>
+                    <textarea id="maintenance-message" placeholder="پیام سفارشی..." class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs" rows="2">${this.settings.system_monitoring.alerting.maintenance_mode.custom_message}</textarea>
+                </div>
+            </div>
+
+            <!-- Escalation Rules -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">📈 Escalation Rules</h5>
+                <div class="space-y-4">
+                    <!-- Warning Level -->
+                    <div class="p-3 bg-yellow-900 rounded border-l-4 border-yellow-500">
+                        <h6 class="text-sm font-medium text-yellow-300 mb-2">⚠️ Warning Level</h6>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">تأخیر (دقیقه)</label>
+                                <input type="number" id="warning-delay" value="${this.settings.system_monitoring.alerting.escalation_rules.warning.delay_minutes}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">حداکثر اعلان</label>
+                                <input type="number" id="warning-max-notifications" value="${this.settings.system_monitoring.alerting.escalation_rules.warning.max_notifications}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Cooldown (دقیقه)</label>
+                                <input type="number" id="warning-cooldown" value="${this.settings.system_monitoring.alerting.escalation_rules.warning.cooldown_minutes}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Critical Level -->
+                    <div class="p-3 bg-red-900 rounded border-l-4 border-red-500">
+                        <h6 class="text-sm font-medium text-red-300 mb-2">🚨 Critical Level</h6>
+                        <div class="grid grid-cols-3 gap-2">
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">تأخیر (دقیقه)</label>
+                                <input type="number" id="critical-delay" value="${this.settings.system_monitoring.alerting.escalation_rules.critical.delay_minutes}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">حداکثر اعلان</label>
+                                <input type="number" id="critical-max-notifications" value="${this.settings.system_monitoring.alerting.escalation_rules.critical.max_notifications}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs text-gray-300 mb-1">Cooldown (دقیقه)</label>
+                                <input type="number" id="critical-cooldown" value="${this.settings.system_monitoring.alerting.escalation_rules.critical.cooldown_minutes}" 
+                                       class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-xs">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderLoggingConfig() {
+        return `
+            <!-- Log Level Settings -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">📊 Log Level Settings</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">Global Log Level</label>
+                        <select id="global-log-level" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                            <option value="debug" ${this.settings.system_monitoring.logging.level === 'debug' ? 'selected' : ''}>Debug</option>
+                            <option value="info" ${this.settings.system_monitoring.logging.level === 'info' ? 'selected' : ''}>Info</option>
+                            <option value="warn" ${this.settings.system_monitoring.logging.level === 'warn' ? 'selected' : ''}>Warning</option>
+                            <option value="error" ${this.settings.system_monitoring.logging.level === 'error' ? 'selected' : ''}>Error</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Retention Days</label>
+                            <input type="number" id="log-retention-days" value="${this.settings.system_monitoring.logging.retention_days}" 
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">Max File Size (MB)</label>
+                            <input type="number" id="log-max-file-size" value="${this.settings.system_monitoring.logging.max_file_size}" 
+                                   class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                    </div>
+                    <label class="flex items-center justify-between">
+                        <span class="text-sm text-gray-300">فشرده‌سازی لاگ‌های قدیمی</span>
+                        <input type="checkbox" id="compress-old-logs" ${this.settings.system_monitoring.logging.compress_old_logs ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Category-Specific Logging -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">🗂️ Category-Specific Logging</h5>
+                <div class="space-y-2">
+                    ${Object.entries(this.settings.system_monitoring.logging.categories).map(([category, config]) => `
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded">
+                            <div class="flex items-center gap-3">
+                                <input type="checkbox" id="log-${category}-enabled" ${config.enabled ? 'checked' : ''} class="w-4 h-4 text-green-600 bg-gray-600 border-gray-500 rounded">
+                                <span class="text-sm text-gray-300 capitalize">${category}</span>
+                            </div>
+                            <select id="log-${category}-level" class="px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs">
+                                <option value="debug" ${config.level === 'debug' ? 'selected' : ''}>Debug</option>
+                                <option value="info" ${config.level === 'info' ? 'selected' : ''}>Info</option>
+                                <option value="warn" ${config.level === 'warn' ? 'selected' : ''}>Warn</option>
+                                <option value="error" ${config.level === 'error' ? 'selected' : ''}>Error</option>
+                            </select>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    renderResourceLimits() {
+        return `
+            <!-- Request Limits -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">🌐 Request Limits</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Max Concurrent Requests</label>
+                        <input type="number" id="max-concurrent-requests" value="${this.settings.system_monitoring.resource_limits.max_concurrent_requests}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Requests per Minute</label>
+                        <input type="number" id="requests-per-minute" value="${this.settings.system_monitoring.resource_limits.rate_limiting.requests_per_minute}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Burst Size</label>
+                        <input type="number" id="burst-size" value="${this.settings.system_monitoring.resource_limits.rate_limiting.burst_size}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <label class="flex items-center justify-between">
+                        <span class="text-xs text-gray-300">Rate Limiting</span>
+                        <input type="checkbox" id="rate-limiting-enabled" ${this.settings.system_monitoring.resource_limits.rate_limiting.enabled ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                    </label>
+                </div>
+            </div>
+
+            <!-- Memory Limits -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">🧠 Memory Limits</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Heap Warning (MB)</label>
+                        <input type="number" id="heap-warning" value="${this.settings.system_monitoring.resource_limits.memory_limits.heap_warning}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Heap Critical (MB)</label>
+                        <input type="number" id="heap-critical" value="${this.settings.system_monitoring.resource_limits.memory_limits.heap_critical}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">GC Warning Threshold (%)</label>
+                        <input type="number" id="gc-warning-threshold" value="${this.settings.system_monitoring.resource_limits.memory_limits.gc_warning_threshold}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Process Limits -->
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-medium text-white mb-3">⚙️ Process Limits</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Max CPU Time (seconds)</label>
+                        <input type="number" id="max-cpu-time" value="${this.settings.system_monitoring.resource_limits.process_limits.max_cpu_time}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Max Open Files</label>
+                        <input type="number" id="max-open-files" value="${this.settings.system_monitoring.resource_limits.process_limits.max_open_files}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-300 mb-1">Max Child Processes</label>
+                        <input type="number" id="max-child-processes" value="${this.settings.system_monitoring.resource_limits.process_limits.max_child_processes}" 
+                               class="w-full px-2 py-1 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    testSystemMonitoring() {
+        this.showNotification('🔍 شروع تست سیستم مانیتورینگ...', 'info');
+        
+        setTimeout(() => {
+            const results = {
+                cpu_test: Math.random() > 0.8 ? 'failed' : 'passed',
+                memory_test: Math.random() > 0.9 ? 'failed' : 'passed',
+                disk_test: Math.random() > 0.95 ? 'failed' : 'passed',
+                network_test: Math.random() > 0.85 ? 'failed' : 'passed',
+                api_test: Math.random() > 0.9 ? 'failed' : 'passed'
+            };
+            
+            const passed = Object.values(results).filter(r => r === 'passed').length;
+            const total = Object.keys(results).length;
+            
+            this.showModal('📊 نتایج تست مانیتورینگ', `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold ${passed === total ? 'text-green-400' : 'text-yellow-400'} mb-2">
+                            ${passed}/${total}
+                        </div>
+                        <div class="text-gray-300">تست‌ها موفق بودند</div>
+                    </div>
+                    <div class="space-y-2">
+                        ${Object.entries(results).map(([test, result]) => `
+                            <div class="flex items-center justify-between p-2 bg-gray-700 rounded">
+                                <span class="text-gray-300">${test.replace('_', ' ').toUpperCase()}</span>
+                                <span class="text-${result === 'passed' ? 'green' : 'red'}-400">
+                                    ${result === 'passed' ? '✓ موفق' : '✗ ناموفق'}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <div class="text-sm text-gray-400 text-center">
+                        ${passed === total ? '🎉 همه سیستم‌ها عملکرد مطلوبی دارند' : '⚠️ برخی سیستم‌ها نیاز به بررسی دارند'}
+                    </div>
+                </div>
+            `);
+        }, 2000);
+    }
+
+    generateSystemReport() {
+        this.showNotification('📋 در حال تولید گزارش سیستم...', 'info');
+        
+        setTimeout(() => {
+            const report = {
+                timestamp: new Date().toLocaleString('fa-IR'),
+                uptime: '24 ساعت 17 دقیقه',
+                cpu_avg: '23%',
+                memory_usage: '67%',
+                disk_usage: '45%',
+                active_connections: 156,
+                total_requests: 89432,
+                error_rate: '0.12%'
+            };
+            
+            this.showModal('📊 گزارش وضعیت سیستم', `
+                <div class="space-y-4">
+                    <div class="text-center mb-4">
+                        <h4 class="text-lg font-semibold text-white">گزارش سیستم</h4>
+                        <div class="text-sm text-gray-400">${report.timestamp}</div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-blue-400">${report.uptime}</div>
+                            <div class="text-xs text-gray-400">زمان فعالیت</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-green-400">${report.cpu_avg}</div>
+                            <div class="text-xs text-gray-400">CPU میانگین</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-yellow-400">${report.memory_usage}</div>
+                            <div class="text-xs text-gray-400">استفاده RAM</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-purple-400">${report.disk_usage}</div>
+                            <div class="text-xs text-gray-400">استفاده Disk</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-cyan-400">${report.active_connections}</div>
+                            <div class="text-xs text-gray-400">اتصالات فعال</div>
+                        </div>
+                        <div class="bg-gray-700 rounded p-3 text-center">
+                            <div class="text-lg font-bold text-orange-400">${report.total_requests}</div>
+                            <div class="text-xs text-gray-400">کل درخواست‌ها</div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-sm text-gray-300">نرخ خطا: <span class="text-green-400">${report.error_rate}</span></div>
+                    </div>
+                </div>
+            `);
+        }, 1500);
+    }
+
+    exportMonitoringConfig() {
+        const config = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            system_monitoring: this.settings.system_monitoring
+        };
+        
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `titan-monitoring-config-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('📁 تنظیمات مانیتورینگ صادر شد', 'success');
+    }
+
+    resetToDefaults() {
+        if (confirm('آیا از بازنشانی تنظیمات مانیتورینگ به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset monitoring settings to defaults
+            this.showNotification('🔄 تنظیمات مانیتورینگ بازنشانی شد', 'info');
+            
+            // Refresh the tab content
+            const content = document.getElementById('tab-content');
+            if (content && this.currentTab === 'system') {
+                content.innerHTML = this.getSystemTab();
                 this.setupEventListeners();
             }
         }
