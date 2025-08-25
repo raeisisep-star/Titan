@@ -9456,8 +9456,12 @@ TITAN Trading System - Log Export
                 },
                 personal_views: {
                     current_view: 'default'
+                },
+                display_settings: {
+                    animation_speed: 'normal',
+                    font_size: 'medium'
                 }
-                // ... other default values would be reset here
+                // Other default values would be reset here
             };
             
             this.saveSettings();
