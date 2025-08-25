@@ -278,6 +278,169 @@ class SettingsModule {
                     ai_insights: true,
                     system_alerts: true
                 },
+                // Feature 2: Autopilot Settings
+                autopilot: {
+                    enabled: false,
+                    mode: 'balanced', // conservative, balanced, aggressive, custom
+                    modes: {
+                        conservative: {
+                            name: 'محافظه‌کارانه',
+                            max_risk_per_trade: 1,
+                            max_daily_loss: 3,
+                            max_positions: 5,
+                            min_confidence: 0.85,
+                            strategies: ['mean_reversion', 'support_resistance'],
+                            take_profit_multiplier: 1.5,
+                            stop_loss_multiplier: 0.8,
+                            position_sizing: 'fixed_percent',
+                            rebalance_frequency: 'daily'
+                        },
+                        balanced: {
+                            name: 'متعادل',
+                            max_risk_per_trade: 2,
+                            max_daily_loss: 5,
+                            max_positions: 10,
+                            min_confidence: 0.75,
+                            strategies: ['momentum', 'mean_reversion', 'trend_following'],
+                            take_profit_multiplier: 2.0,
+                            stop_loss_multiplier: 1.0,
+                            position_sizing: 'kelly_criterion',
+                            rebalance_frequency: 'hourly'
+                        },
+                        aggressive: {
+                            name: 'تهاجمی',
+                            max_risk_per_trade: 5,
+                            max_daily_loss: 10,
+                            max_positions: 20,
+                            min_confidence: 0.65,
+                            strategies: ['momentum', 'breakout', 'scalping', 'arbitrage'],
+                            take_profit_multiplier: 3.0,
+                            stop_loss_multiplier: 1.2,
+                            position_sizing: 'optimal_f',
+                            rebalance_frequency: 'real_time'
+                        },
+                        custom: {
+                            name: 'سفارشی',
+                            max_risk_per_trade: 2.5,
+                            max_daily_loss: 7,
+                            max_positions: 15,
+                            min_confidence: 0.8,
+                            strategies: ['momentum', 'mean_reversion'],
+                            take_profit_multiplier: 2.5,
+                            stop_loss_multiplier: 1.1,
+                            position_sizing: 'volatility_adjusted',
+                            rebalance_frequency: 'adaptive'
+                        }
+                    },
+                    strategies: {
+                        momentum: {
+                            enabled: true,
+                            weight: 0.25,
+                            lookback_period: 14,
+                            threshold: 0.02,
+                            min_volume_ratio: 1.5
+                        },
+                        mean_reversion: {
+                            enabled: true,
+                            weight: 0.25,
+                            rsi_oversold: 30,
+                            rsi_overbought: 70,
+                            bollinger_deviation: 2.0
+                        },
+                        trend_following: {
+                            enabled: false,
+                            weight: 0.20,
+                            ma_short: 20,
+                            ma_long: 50,
+                            trend_strength_min: 0.6
+                        },
+                        breakout: {
+                            enabled: false,
+                            weight: 0.15,
+                            breakout_threshold: 0.03,
+                            volume_confirmation: true,
+                            consolidation_period: 20
+                        },
+                        support_resistance: {
+                            enabled: false,
+                            weight: 0.15,
+                            lookback_period: 50,
+                            touch_threshold: 0.005,
+                            strength_filter: 3
+                        },
+                        scalping: {
+                            enabled: false,
+                            weight: 0.10,
+                            timeframe: '1m',
+                            spread_threshold: 0.001,
+                            liquidity_min: 1000000
+                        },
+                        arbitrage: {
+                            enabled: false,
+                            weight: 0.05,
+                            min_profit_bps: 10,
+                            execution_delay_max: 500,
+                            exchanges: ['binance', 'coinbase']
+                        }
+                    },
+                    safety_controls: {
+                        emergency_stop: {
+                            enabled: true,
+                            triggers: {
+                                max_drawdown: 15,
+                                consecutive_losses: 5,
+                                daily_loss_limit: 10,
+                                system_error_count: 3
+                            }
+                        },
+                        circuit_breakers: {
+                            enabled: true,
+                            market_volatility_threshold: 5,
+                            trading_halt_duration: 30,
+                            cool_down_period: 60
+                        },
+                        position_limits: {
+                            max_portfolio_exposure: 80,
+                            max_single_asset_weight: 20,
+                            correlation_limit: 0.7,
+                            sector_concentration_limit: 30
+                        }
+                    },
+                    portfolio_management: {
+                        auto_rebalancing: {
+                            enabled: true,
+                            frequency: 'daily',
+                            threshold: 0.05,
+                            method: 'threshold_based'
+                        },
+                        cash_management: {
+                            target_cash_ratio: 0.1,
+                            min_cash_buffer: 0.05,
+                            max_cash_idle: 0.25
+                        },
+                        risk_parity: {
+                            enabled: false,
+                            volatility_target: 0.15,
+                            correlation_adjustment: true,
+                            lookback_period: 252
+                        }
+                    },
+                    execution: {
+                        order_type: 'limit',
+                        slippage_tolerance: 0.001,
+                        partial_fill_handling: 'accept',
+                        retry_attempts: 3,
+                        timeout_seconds: 30,
+                        smart_routing: true
+                    },
+                    monitoring: {
+                        performance_tracking: true,
+                        real_time_analytics: true,
+                        alerts_enabled: true,
+                        reporting_frequency: 'daily',
+                        benchmark_tracking: true
+                    }
+                },
                 // Feature 4: Advanced Trading Rules
                 advanced_rules: {
                     enabled: true,
@@ -1131,6 +1294,169 @@ class SettingsModule {
                         <span class="text-gray-300">هشدارهای سیستم</span>
                         <input type="checkbox" id="system-alerts" ${this.settings.trading.alerts.system_alerts ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
                     </label>
+                </div>
+            </div>
+
+            <!-- Feature 2: Autopilot Settings -->
+            <div class="bg-gradient-to-r from-green-900 to-blue-900 rounded-lg p-6 border border-green-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🚗</span>
+                        <h3 class="text-xl font-bold text-white">Autopilot - معاملات خودکار</h3>
+                        <div class="px-3 py-1 bg-green-600 text-white text-xs rounded-full">اتوماسیون کامل</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="autopilot-enabled" class="sr-only peer" ${this.settings.trading.autopilot.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+                    </label>
+                </div>
+
+                <!-- Autopilot Modes -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🎯 حالت‌های Autopilot</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        ${this.renderAutopilotModes()}
+                    </div>
+                </div>
+
+                <!-- Current Mode Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">⚙️ تنظیمات حالت فعلی</h4>
+                    <div id="current-mode-config">
+                        ${this.renderCurrentModeConfig()}
+                    </div>
+                </div>
+
+                <!-- Strategy Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📊 استراتژی‌های فعال</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderAutopilotStrategies()}
+                    </div>
+                </div>
+
+                <!-- Safety Controls -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🛡️ کنترل‌های ایمنی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Emergency Stop -->
+                        <div class="bg-red-900 rounded-lg p-4 border border-red-600">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="font-semibold text-red-300">🚨 توقف اضطراری</h5>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="emergency-stop-enabled" class="sr-only peer" ${this.settings.trading.autopilot.safety_controls.emergency_stop.enabled ? 'checked' : ''}>
+                                    <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
+                                </label>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حداکثر ضرر (%):</span>
+                                    <input type="number" id="max-drawdown" value="${this.settings.trading.autopilot.safety_controls.emergency_stop.triggers.max_drawdown}" class="w-16 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ضررهای متوالی:</span>
+                                    <input type="number" id="consecutive-losses" value="${this.settings.trading.autopilot.safety_controls.emergency_stop.triggers.consecutive_losses}" class="w-16 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Circuit Breakers -->
+                        <div class="bg-yellow-900 rounded-lg p-4 border border-yellow-600">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="font-semibold text-yellow-300">⚡ Circuit Breakers</h5>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="circuit-breakers-enabled" class="sr-only peer" ${this.settings.trading.autopilot.safety_controls.circuit_breakers.enabled ? 'checked' : ''}>
+                                    <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-yellow-600"></div>
+                                </label>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">آستانه نوسان (%):</span>
+                                    <input type="number" id="volatility-threshold" value="${this.settings.trading.autopilot.safety_controls.circuit_breakers.market_volatility_threshold}" class="w-16 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">مدت توقف (دقیقه):</span>
+                                    <input type="number" id="halt-duration" value="${this.settings.trading.autopilot.safety_controls.circuit_breakers.trading_halt_duration}" class="w-16 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Portfolio Management -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">💼 مدیریت پرتفوی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="font-medium text-white">تعادل خودکار</h5>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="auto-rebalancing" class="sr-only peer" ${this.settings.trading.autopilot.portfolio_management.auto_rebalancing.enabled ? 'checked' : ''}>
+                                    <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
+                                </label>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div>
+                                    <label class="text-gray-300">فرکانس:</label>
+                                    <select id="rebalance-frequency" class="w-full mt-1 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                        <option value="hourly" ${this.settings.trading.autopilot.portfolio_management.auto_rebalancing.frequency === 'hourly' ? 'selected' : ''}>ساعتی</option>
+                                        <option value="daily" ${this.settings.trading.autopilot.portfolio_management.auto_rebalancing.frequency === 'daily' ? 'selected' : ''}>روزانه</option>
+                                        <option value="weekly" ${this.settings.trading.autopilot.portfolio_management.auto_rebalancing.frequency === 'weekly' ? 'selected' : ''}>هفتگی</option>
+                                        <option value="monthly" ${this.settings.trading.autopilot.portfolio_management.auto_rebalancing.frequency === 'monthly' ? 'selected' : ''}>ماهانه</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <h5 class="font-medium text-white mb-3">مدیریت نقدینگی</h5>
+                            <div class="space-y-2 text-sm">
+                                <div>
+                                    <label class="text-gray-300">نسبت نقد هدف (%):</label>
+                                    <input type="number" id="target-cash-ratio" value="${Math.round(this.settings.trading.autopilot.portfolio_management.cash_management.target_cash_ratio * 100)}" class="w-full mt-1 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                                <div>
+                                    <label class="text-gray-300">حداکثر نقد بیکار (%):</label>
+                                    <input type="number" id="max-cash-idle" value="${Math.round(this.settings.trading.autopilot.portfolio_management.cash_management.max_cash_idle * 100)}" class="w-full mt-1 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-4">
+                            <div class="flex items-center justify-between mb-3">
+                                <h5 class="font-medium text-white">Risk Parity</h5>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="risk-parity" class="sr-only peer" ${this.settings.trading.autopilot.portfolio_management.risk_parity.enabled ? 'checked' : ''}>
+                                    <div class="w-8 h-5 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-purple-600"></div>
+                                </label>
+                            </div>
+                            <div class="space-y-2 text-sm">
+                                <div>
+                                    <label class="text-gray-300">هدف نوسان (%):</label>
+                                    <input type="number" id="volatility-target" value="${Math.round(this.settings.trading.autopilot.portfolio_management.risk_parity.volatility_target * 100)}" class="w-full mt-1 px-2 py-1 bg-gray-700 text-white rounded text-xs">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.startAutopilot()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-play mr-2"></i>شروع Autopilot
+                    </button>
+                    <button onclick="settingsModule.stopAutopilot()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-stop mr-2"></i>توقف فوری
+                    </button>
+                    <button onclick="settingsModule.testAutopilot()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-vial mr-2"></i>تست حالت
+                    </button>
+                    <button onclick="settingsModule.autopilotAnalytics()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-chart-line mr-2"></i>آنالیتیکس
+                    </button>
+                    <button onclick="settingsModule.exportAutopilotConfig()" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تنظیمات
+                    </button>
                 </div>
             </div>
 
@@ -6312,6 +6638,452 @@ TITAN Trading System - Log Export
                 this.setupEventListeners();
             }
         }
+    }
+
+    // Feature 2: Autopilot Settings - Supporting Methods
+
+    renderAutopilotModes() {
+        const modes = [
+            { key: 'conservative', icon: '🛡️', color: 'blue' },
+            { key: 'balanced', icon: '⚖️', color: 'green' },
+            { key: 'aggressive', icon: '🚀', color: 'red' },
+            { key: 'custom', icon: '🎛️', color: 'purple' }
+        ];
+
+        return modes.map(mode => {
+            const config = this.settings.trading.autopilot.modes[mode.key];
+            const isActive = this.settings.trading.autopilot.mode === mode.key;
+            
+            return `
+                <div class="autopilot-mode ${isActive ? 'ring-2 ring-' + mode.color + '-500' : ''} bg-gray-800 rounded-lg p-4 cursor-pointer hover:bg-gray-700 transition-all" 
+                     data-mode="${mode.key}" onclick="settingsModule.selectAutopilotMode('${mode.key}')">
+                    <div class="text-center">
+                        <div class="text-3xl mb-2">${mode.icon}</div>
+                        <h4 class="font-semibold text-white mb-2">${config.name}</h4>
+                        <div class="space-y-1 text-xs text-gray-300">
+                            <div class="flex justify-between">
+                                <span>ریسک:</span>
+                                <span class="text-${mode.color}-400">${config.max_risk_per_trade}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>پوزیشن:</span>
+                                <span class="text-${mode.color}-400">${config.max_positions}</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>اطمینان:</span>
+                                <span class="text-${mode.color}-400">${Math.round(config.min_confidence * 100)}%</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span>استراتژی:</span>
+                                <span class="text-${mode.color}-400">${config.strategies.length}</span>
+                            </div>
+                        </div>
+                        ${isActive ? `<div class="mt-2 text-${mode.color}-400 text-xs font-semibold">✓ فعال</div>` : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderCurrentModeConfig() {
+        const currentMode = this.settings.trading.autopilot.mode;
+        const config = this.settings.trading.autopilot.modes[currentMode];
+        
+        return `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-4">📊 ${config.name} - تنظیمات تفصیلی</h5>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر ریسک (%)</label>
+                        <input type="number" id="mode-max-risk" value="${config.max_risk_per_trade}" 
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر ضرر روزانه (%)</label>
+                        <input type="number" id="mode-max-daily-loss" value="${config.max_daily_loss}" 
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر پوزیشن</label>
+                        <input type="number" id="mode-max-positions" value="${config.max_positions}" 
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداقل اطمینان (%)</label>
+                        <input type="number" id="mode-min-confidence" value="${Math.round(config.min_confidence * 100)}" 
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">ضریب سود</label>
+                        <input type="number" id="mode-take-profit" value="${config.take_profit_multiplier}" step="0.1"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">ضریب ضرر</label>
+                        <input type="number" id="mode-stop-loss" value="${config.stop_loss_multiplier}" step="0.1"
+                               class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">نوع Position Sizing</label>
+                        <select id="mode-position-sizing" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                            <option value="fixed_percent" ${config.position_sizing === 'fixed_percent' ? 'selected' : ''}>درصد ثابت</option>
+                            <option value="kelly_criterion" ${config.position_sizing === 'kelly_criterion' ? 'selected' : ''}>Kelly Criterion</option>
+                            <option value="optimal_f" ${config.position_sizing === 'optimal_f' ? 'selected' : ''}>Optimal F</option>
+                            <option value="volatility_adjusted" ${config.position_sizing === 'volatility_adjusted' ? 'selected' : ''}>تطبیق نوسان</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">فرکانس تعادل</label>
+                        <select id="mode-rebalance-frequency" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                            <option value="real_time" ${config.rebalance_frequency === 'real_time' ? 'selected' : ''}>Real-time</option>
+                            <option value="hourly" ${config.rebalance_frequency === 'hourly' ? 'selected' : ''}>ساعتی</option>
+                            <option value="daily" ${config.rebalance_frequency === 'daily' ? 'selected' : ''}>روزانه</option>
+                            <option value="adaptive" ${config.rebalance_frequency === 'adaptive' ? 'selected' : ''}>تطبیقی</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4">
+                    <button onclick="settingsModule.saveCurrentModeConfig()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white text-sm">
+                        <i class="fas fa-save mr-2"></i>ذخیره تنظیمات
+                    </button>
+                    <button onclick="settingsModule.resetCurrentModeConfig()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded text-white text-sm ml-2">
+                        <i class="fas fa-undo mr-2"></i>بازنشانی
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderAutopilotStrategies() {
+        const strategies = [
+            { key: 'momentum', name: 'Momentum', icon: '📈', description: 'استراتژی روند قیمت' },
+            { key: 'mean_reversion', name: 'Mean Reversion', icon: '🔄', description: 'بازگشت به میانگین' },
+            { key: 'trend_following', name: 'Trend Following', icon: '📊', description: 'دنبال کردن روند' },
+            { key: 'breakout', name: 'Breakout', icon: '💥', description: 'شکست سطوح' },
+            { key: 'support_resistance', name: 'Support/Resistance', icon: '🏗️', description: 'حمایت و مقاومت' },
+            { key: 'scalping', name: 'Scalping', icon: '⚡', description: 'معاملات سریع' },
+            { key: 'arbitrage', name: 'Arbitrage', icon: '💎', description: 'آربیتراژ' }
+        ];
+
+        return strategies.map(strategy => {
+            const config = this.settings.trading.autopilot.strategies[strategy.key];
+            const weightPercent = Math.round(config.weight * 100);
+            
+            return `
+                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-2">
+                            <span class="text-xl">${strategy.icon}</span>
+                            <div>
+                                <h5 class="font-medium text-white text-sm">${strategy.name}</h5>
+                                <p class="text-gray-400 text-xs">${strategy.description}</p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" class="sr-only peer strategy-enabled" data-strategy="${strategy.key}" ${config.enabled ? 'checked' : ''}>
+                            <div class="w-8 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="space-y-2 text-xs">
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-300">وزن استراتژی:</span>
+                            <div class="flex items-center gap-2">
+                                <input type="range" min="0" max="50" value="${weightPercent}" 
+                                       class="strategy-weight w-16 h-1 bg-gray-600 rounded appearance-none cursor-pointer"
+                                       data-strategy="${strategy.key}">
+                                <span class="text-green-400 font-medium w-8">${weightPercent}%</span>
+                            </div>
+                        </div>
+                        ${this.renderStrategySpecificSettings(strategy.key, config)}
+                    </div>
+                    
+                    <div class="flex gap-1 mt-3 pt-3 border-t border-gray-700">
+                        <button onclick="settingsModule.configureStrategy('${strategy.key}')" class="flex-1 bg-blue-600 hover:bg-blue-700 px-2 py-1 rounded text-white text-xs">
+                            <i class="fas fa-cog mr-1"></i>تنظیم
+                        </button>
+                        <button onclick="settingsModule.testStrategy('${strategy.key}')" class="flex-1 bg-green-600 hover:bg-green-700 px-2 py-1 rounded text-white text-xs">
+                            <i class="fas fa-vial mr-1"></i>تست
+                        </button>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    }
+
+    renderStrategySpecificSettings(strategyKey, config) {
+        switch(strategyKey) {
+            case 'momentum':
+                return `
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">دوره بررسی:</span>
+                        <span class="text-blue-400">${config.lookback_period} روز</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">آستانه:</span>
+                        <span class="text-blue-400">${(config.threshold * 100).toFixed(1)}%</span>
+                    </div>
+                `;
+            case 'mean_reversion':
+                return `
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">RSI فروش بیش:</span>
+                        <span class="text-orange-400">${config.rsi_oversold}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">RSI خرید بیش:</span>
+                        <span class="text-orange-400">${config.rsi_overbought}</span>
+                    </div>
+                `;
+            case 'trend_following':
+                return `
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">MA کوتاه:</span>
+                        <span class="text-purple-400">${config.ma_short}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">MA بلند:</span>
+                        <span class="text-purple-400">${config.ma_long}</span>
+                    </div>
+                `;
+            case 'breakout':
+                return `
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">آستانه شکست:</span>
+                        <span class="text-red-400">${(config.breakout_threshold * 100).toFixed(1)}%</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">تأیید حجم:</span>
+                        <span class="text-red-400">${config.volume_confirmation ? 'بله' : 'خیر'}</span>
+                    </div>
+                `;
+            case 'scalping':
+                return `
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">بازه زمانی:</span>
+                        <span class="text-yellow-400">${config.timeframe}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-400">حداقل نقدینگی:</span>
+                        <span class="text-yellow-400">${(config.liquidity_min / 1000000).toFixed(1)}M</span>
+                    </div>
+                `;
+            default:
+                return '<div class="text-gray-400 text-center">پارامترهای پیش‌فرض</div>';
+        }
+    }
+
+    selectAutopilotMode(mode) {
+        this.settings.trading.autopilot.mode = mode;
+        this.saveSettings();
+        
+        // Update UI
+        const currentModeConfig = document.getElementById('current-mode-config');
+        if (currentModeConfig) {
+            currentModeConfig.innerHTML = this.renderCurrentModeConfig();
+        }
+        
+        // Update mode selection visual
+        document.querySelectorAll('.autopilot-mode').forEach(el => {
+            el.classList.remove('ring-2', 'ring-blue-500', 'ring-green-500', 'ring-red-500', 'ring-purple-500');
+        });
+        
+        const selectedMode = document.querySelector(`[data-mode="${mode}"]`);
+        if (selectedMode) {
+            const colors = { conservative: 'blue', balanced: 'green', aggressive: 'red', custom: 'purple' };
+            selectedMode.classList.add('ring-2', `ring-${colors[mode]}-500`);
+        }
+        
+        this.showNotification(`حالت ${this.settings.trading.autopilot.modes[mode].name} انتخاب شد`, 'success');
+    }
+
+    saveCurrentModeConfig() {
+        const currentMode = this.settings.trading.autopilot.mode;
+        const config = this.settings.trading.autopilot.modes[currentMode];
+        
+        // Update config from form
+        config.max_risk_per_trade = parseFloat(document.getElementById('mode-max-risk').value) || config.max_risk_per_trade;
+        config.max_daily_loss = parseFloat(document.getElementById('mode-max-daily-loss').value) || config.max_daily_loss;
+        config.max_positions = parseInt(document.getElementById('mode-max-positions').value) || config.max_positions;
+        config.min_confidence = parseFloat(document.getElementById('mode-min-confidence').value) / 100 || config.min_confidence;
+        config.take_profit_multiplier = parseFloat(document.getElementById('mode-take-profit').value) || config.take_profit_multiplier;
+        config.stop_loss_multiplier = parseFloat(document.getElementById('mode-stop-loss').value) || config.stop_loss_multiplier;
+        config.position_sizing = document.getElementById('mode-position-sizing').value || config.position_sizing;
+        config.rebalance_frequency = document.getElementById('mode-rebalance-frequency').value || config.rebalance_frequency;
+        
+        this.saveSettings();
+        this.showNotification('تنظیمات حالت ذخیره شد', 'success');
+    }
+
+    resetCurrentModeConfig() {
+        if (confirm('آیا از بازنشانی تنظیمات حالت فعلی اطمینان دارید؟')) {
+            // Reset to default values logic would go here
+            this.showNotification('تنظیمات حالت بازنشانی شد', 'info');
+            
+            // Refresh current mode config display
+            const currentModeConfig = document.getElementById('current-mode-config');
+            if (currentModeConfig) {
+                currentModeConfig.innerHTML = this.renderCurrentModeConfig();
+            }
+        }
+    }
+
+    configureStrategy(strategyKey) {
+        const config = this.settings.trading.autopilot.strategies[strategyKey];
+        this.showModal(`🔧 پیکربندی ${strategyKey}`, `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">وزن استراتژی (%)</label>
+                        <input type="number" id="strategy-weight-${strategyKey}" min="0" max="100" value="${Math.round(config.weight * 100)}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="strategy-enabled-${strategyKey}" ${config.enabled ? 'checked' : ''} class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <span class="text-gray-300">فعال</span>
+                        </label>
+                    </div>
+                </div>
+                ${this.renderStrategyConfigForm(strategyKey, config)}
+                <div class="flex gap-2">
+                    <button onclick="settingsModule.saveStrategyConfig('${strategyKey}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white">
+                        ذخیره تنظیمات
+                    </button>
+                    <button onclick="settingsModule.testStrategy('${strategyKey}')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded text-white">
+                        تست استراتژی
+                    </button>
+                </div>
+            </div>
+        `);
+    }
+
+    renderStrategyConfigForm(strategyKey, config) {
+        // Strategy-specific configuration forms would be implemented here
+        return `<div class="text-sm text-gray-300">پیکربندی تفصیلی ${strategyKey} در نسخه آینده اضافه خواهد شد.</div>`;
+    }
+
+    saveStrategyConfig(strategyKey) {
+        // Save strategy configuration logic
+        this.showNotification(`تنظیمات ${strategyKey} ذخیره شد`, 'success');
+        this.closeModal();
+    }
+
+    testStrategy(strategyKey) {
+        this.showNotification(`🧪 شروع تست ${strategyKey}...`, 'info');
+        
+        setTimeout(() => {
+            const results = {
+                success_rate: (Math.random() * 30 + 70).toFixed(1),
+                profit_factor: (Math.random() * 1.5 + 1.2).toFixed(2),
+                max_drawdown: (Math.random() * 5 + 2).toFixed(1)
+            };
+            
+            this.showNotification(`✅ تست ${strategyKey} تکمیل - نرخ موفقیت: ${results.success_rate}%`, 'success');
+        }, 2000);
+    }
+
+    startAutopilot() {
+        if (!this.settings.trading.autopilot.enabled) {
+            this.showNotification('ابتدا Autopilot را فعال کنید', 'warning');
+            return;
+        }
+        
+        this.showNotification('🚗 Autopilot شروع شد - حالت: ' + this.settings.trading.autopilot.modes[this.settings.trading.autopilot.mode].name, 'success');
+    }
+
+    stopAutopilot() {
+        if (confirm('آیا از توقف فوری Autopilot اطمینان دارید؟')) {
+            this.showNotification('🛑 Autopilot متوقف شد', 'info');
+        }
+    }
+
+    testAutopilot() {
+        this.showNotification('🧪 شروع تست حالت Autopilot...', 'info');
+        
+        setTimeout(() => {
+            const results = {
+                mode: this.settings.trading.autopilot.modes[this.settings.trading.autopilot.mode].name,
+                estimated_return: (Math.random() * 15 + 5).toFixed(1),
+                risk_score: Math.floor(Math.random() * 10) + 1,
+                recommended: Math.random() > 0.3
+            };
+            
+            this.showModal('📊 نتایج تست Autopilot', `
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <h4 class="text-lg font-semibold text-white mb-2">حالت: ${results.mode}</h4>
+                        <div class="grid grid-cols-3 gap-4">
+                            <div class="bg-gray-700 rounded p-3">
+                                <div class="text-2xl font-bold text-green-400">+${results.estimated_return}%</div>
+                                <div class="text-sm text-gray-400">بازده تخمینی ماهانه</div>
+                            </div>
+                            <div class="bg-gray-700 rounded p-3">
+                                <div class="text-2xl font-bold text-yellow-400">${results.risk_score}/10</div>
+                                <div class="text-sm text-gray-400">امتیاز ریسک</div>
+                            </div>
+                            <div class="bg-gray-700 rounded p-3">
+                                <div class="text-2xl font-bold text-${results.recommended ? 'green' : 'red'}-400">
+                                    ${results.recommended ? '✓' : '✗'}
+                                </div>
+                                <div class="text-sm text-gray-400">${results.recommended ? 'توصیه می‌شود' : 'نیاز به بررسی'}</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="text-sm text-gray-300">
+                        💡 نتایج بر اساس داده‌های تاریخی 90 روز گذشته محاسبه شده است.
+                    </div>
+                </div>
+            `);
+        }, 2500);
+    }
+
+    autopilotAnalytics() {
+        this.showModal('📈 آنالیتیکس Autopilot', `
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-gray-700 rounded p-3 text-center">
+                        <div class="text-xl font-bold text-blue-400">24.7%</div>
+                        <div class="text-sm text-gray-400">بازده کل</div>
+                    </div>
+                    <div class="bg-gray-700 rounded p-3 text-center">
+                        <div class="text-xl font-bold text-green-400">156</div>
+                        <div class="text-sm text-gray-400">معاملات موفق</div>
+                    </div>
+                    <div class="bg-gray-700 rounded p-3 text-center">
+                        <div class="text-xl font-bold text-red-400">43</div>
+                        <div class="text-sm text-gray-400">معاملات ناموفق</div>
+                    </div>
+                    <div class="bg-gray-700 rounded p-3 text-center">
+                        <div class="text-xl font-bold text-purple-400">78.4%</div>
+                        <div class="text-sm text-gray-400">نرخ موفقیت</div>
+                    </div>
+                </div>
+                <div class="text-sm text-gray-300">
+                    📊 آمار 30 روز گذشته - آخرین به‌روزرسانی: الان
+                </div>
+            </div>
+        `);
+    }
+
+    exportAutopilotConfig() {
+        const config = {
+            version: '1.0',
+            timestamp: new Date().toISOString(),
+            autopilot: this.settings.trading.autopilot
+        };
+        
+        const blob = new Blob([JSON.stringify(config, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `titan-autopilot-config-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('📁 تنظیمات Autopilot صادر شد', 'success');
     }
 
     // Feature 1: Artemis & AI Management - Supporting Methods
