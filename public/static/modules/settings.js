@@ -8620,8 +8620,12 @@ TITAN Trading System - Log Export
                     leverage_limit: 5,
                     var_limit: 5,
                     expected_shortfall_limit: 7
+                },
+                // Other default values would be reset here
+                position_sizing: {
+                    method: 'kelly_optimized',
+                    base_position_size: 5
                 }
-                // ... other default values would be reset here
             };
             
             this.showNotification('🔄 قوانین معاملاتی به حالت پیش‌فرض بازنشانی شدند', 'info');
