@@ -861,17 +861,17 @@
             }
 
             const modalContent = `
-                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50" onclick="this.remove()">
-                    <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto" onclick="event.stopPropagation()">
+                <div class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4" onclick="this.remove()">
+                    <div class="bg-gray-800 rounded-lg p-3 sm:p-4 lg:p-6 w-full max-w-xs sm:max-w-lg lg:max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto shadow-2xl" onclick="event.stopPropagation()">
                         <!-- Header -->
-                        <div class="flex items-center justify-between mb-6">
+                        <div class="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                             <div class="flex items-center">
-                                <div class="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-4">
-                                    <span class="text-white font-bold text-xl">${agent.id.split('_')[1]}</span>
+                                <div class="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center mr-3 sm:mr-4">
+                                    <span class="text-white font-bold text-lg sm:text-xl">${agent.id.split('_')[1]}</span>
                                 </div>
                                 <div>
-                                    <h3 class="text-2xl font-bold text-white">${agent.name}</h3>
-                                    <p class="text-gray-400">${agent.specialization}</p>
+                                    <h3 class="text-xl sm:text-2xl font-bold text-white">${agent.name}</h3>
+                                    <p class="text-gray-400 text-sm sm:text-base">${agent.specialization}</p>
                                     <div class="flex items-center mt-2">
                                         <div class="w-3 h-3 bg-${agent.status === 'active' ? 'green' : agent.status === 'training' ? 'yellow' : 'red'}-400 rounded-full mr-2"></div>
                                         <span class="text-${agent.status === 'active' ? 'green' : agent.status === 'training' ? 'yellow' : 'red'}-400 text-sm font-medium">
@@ -880,15 +880,15 @@
                                     </div>
                                 </div>
                             </div>
-                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white self-start sm:self-center">
                                 <i class="fas fa-times text-xl"></i>
                             </button>
                         </div>
 
                         <!-- Performance Details -->
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-                            <div class="space-y-4">
-                                <h4 class="text-lg font-semibold text-white mb-3">📊 عملکرد</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-3 sm:gap-4 lg:gap-6 mb-4 sm:mb-6">
+                            <div class="space-y-3 sm:space-y-4">
+                                <h4 class="text-base sm:text-lg font-semibold text-white mb-3">📊 عملکرد</h4>
                                 
                                 <div class="bg-gray-700 rounded-lg p-4">
                                     <div class="flex justify-between items-center mb-2">
@@ -921,10 +921,10 @@
                                 </div>
                             </div>
 
-                            <div class="space-y-4">
-                                <h4 class="text-lg font-semibold text-white mb-3">📈 آمار</h4>
+                            <div class="space-y-3 sm:space-y-4">
+                                <h4 class="text-base sm:text-lg font-semibold text-white mb-3">📈 آمار</h4>
                                 
-                                <div class="grid grid-cols-2 gap-3">
+                                <div class="grid grid-cols-2 gap-2 sm:gap-3">
                                     <div class="bg-gray-700 rounded-lg p-3 text-center">
                                         <div class="text-lg font-bold text-white">${agent.performance.totalDecisions.toLocaleString()}</div>
                                         <div class="text-xs text-gray-400">تصمیمات</div>
@@ -950,11 +950,11 @@
                         </div>
 
                         <!-- Capabilities -->
-                        <div class="mb-6">
-                            <h4 class="text-lg font-semibold text-white mb-3">🛠️ قابلیت‌ها</h4>
-                            <div class="flex flex-wrap gap-2">
+                        <div class="mb-4 sm:mb-6">
+                            <h4 class="text-base sm:text-lg font-semibold text-white mb-3">🛠️ قابلیت‌ها</h4>
+                            <div class="flex flex-wrap gap-1 sm:gap-2">
                                 ${agent.capabilities.map(capability => `
-                                    <span class="px-3 py-1 bg-blue-900 text-blue-300 text-sm rounded-full">
+                                    <span class="px-2 sm:px-3 py-1 bg-blue-900 text-blue-300 text-xs sm:text-sm rounded-full">
                                         ${capability}
                                     </span>
                                 `).join('')}
@@ -962,31 +962,31 @@
                         </div>
 
                         <!-- Learning History -->
-                        <div class="mb-6">
-                            <h4 class="text-lg font-semibold text-white mb-3">📚 تاریخچه یادگیری</h4>
-                            <div class="bg-gray-700 rounded-lg p-4">
-                                <div class="text-sm text-gray-300">
-                                    <div class="mb-2"><strong>تاریخ ایجاد:</strong> ${new Date(agent.performance.createdAt).toLocaleDateString('fa-IR')}</div>
-                                    <div class="mb-2"><strong>آخرین آموزش:</strong> ${new Date(agent.performance.lastTraining).toLocaleDateString('fa-IR')}</div>
-                                    <div class="mb-2"><strong>آخرین به‌روزرسانی:</strong> ${new Date(agent.performance.lastUpdate).toLocaleString('fa-IR')}</div>
+                        <div class="mb-4 sm:mb-6">
+                            <h4 class="text-base sm:text-lg font-semibold text-white mb-3">📚 تاریخچه یادگیری</h4>
+                            <div class="bg-gray-700 rounded-lg p-3 sm:p-4">
+                                <div class="text-xs sm:text-sm text-gray-300 space-y-2">
+                                    <div><strong>تاریخ ایجاد:</strong> ${new Date(agent.performance.createdAt).toLocaleDateString('fa-IR')}</div>
+                                    <div><strong>آخرین آموزش:</strong> ${new Date(agent.performance.lastTraining).toLocaleDateString('fa-IR')}</div>
+                                    <div><strong>آخرین به‌روزرسانی:</strong> ${new Date(agent.performance.lastUpdate).toLocaleString('fa-IR')}</div>
                                 </div>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="flex space-x-3 space-x-reverse justify-end">
+                        <div class="flex flex-col sm:flex-row gap-2 sm:gap-3 sm:justify-end">
                             <button onclick="TitanModules.AIManagement.startAgentTraining('${agent.id}'); this.closest('.fixed').remove();" 
-                                    class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                    class="px-4 sm:px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors text-sm sm:text-base">
                                 <i class="fas fa-graduation-cap mr-2"></i>
                                 شروع آموزش
                             </button>
                             <button onclick="TitanModules.AIManagement.toggleAgentStatus('${agent.id}'); this.closest('.fixed').remove();" 
-                                    class="px-6 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg transition-colors">
+                                    class="px-4 sm:px-6 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg transition-colors text-sm sm:text-base">
                                 <i class="fas fa-power-off mr-2"></i>
                                 ${agent.status === 'active' ? 'غیرفعال کردن' : 'فعال کردن'}
                             </button>
                             <button onclick="this.closest('.fixed').remove()" 
-                                    class="px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                                    class="px-4 sm:px-6 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors text-sm sm:text-base">
                                 بستن
                             </button>
                         </div>
