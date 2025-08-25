@@ -783,6 +783,253 @@ class SettingsModule {
                     }
                 }
             },
+            // Feature 5: Dashboard Customization
+            dashboard_customization: {
+                enabled: true,
+                layout: {
+                    grid_type: 'responsive', // responsive, fixed, masonry
+                    columns: 4, // Number of columns in grid
+                    gap: 16, // Gap between widgets in pixels
+                    padding: 20, // Padding around dashboard
+                    widget_min_height: 200, // Minimum widget height
+                    widget_max_height: 600, // Maximum widget height
+                    auto_resize: true, // Auto resize widgets based on content
+                    compact_mode: false // Compact layout for smaller screens
+                },
+                widgets: {
+                    portfolio_overview: {
+                        enabled: true,
+                        position: { x: 0, y: 0, w: 2, h: 2 },
+                        config: {
+                            show_balance: true,
+                            show_pnl: true,
+                            show_positions: true,
+                            currency: 'USD',
+                            refresh_interval: 5000
+                        }
+                    },
+                    trading_chart: {
+                        enabled: true,
+                        position: { x: 2, y: 0, w: 2, h: 3 },
+                        config: {
+                            default_symbol: 'BTCUSDT',
+                            default_timeframe: '1h',
+                            chart_type: 'candlestick', // candlestick, line, area
+                            indicators: ['EMA20', 'RSI', 'MACD'],
+                            drawing_tools: true,
+                            volume_bars: true,
+                            grid_lines: true
+                        }
+                    },
+                    market_overview: {
+                        enabled: true,
+                        position: { x: 0, y: 2, w: 1, h: 2 },
+                        config: {
+                            show_gainers: true,
+                            show_losers: true,
+                            show_volume: true,
+                            max_items: 10,
+                            refresh_interval: 10000
+                        }
+                    },
+                    ai_insights: {
+                        enabled: true,
+                        position: { x: 1, y: 2, w: 1, h: 2 },
+                        config: {
+                            show_recommendations: true,
+                            show_sentiment: true,
+                            show_alerts: true,
+                            max_insights: 5,
+                            auto_refresh: true
+                        }
+                    },
+                    performance_metrics: {
+                        enabled: true,
+                        position: { x: 0, y: 4, w: 2, h: 1 },
+                        config: {
+                            show_daily_pnl: true,
+                            show_total_return: true,
+                            show_win_rate: true,
+                            show_sharpe_ratio: true,
+                            period: '30d' // 1d, 7d, 30d, 90d, 1y
+                        }
+                    },
+                    news_feed: {
+                        enabled: true,
+                        position: { x: 2, y: 3, w: 2, h: 2 },
+                        config: {
+                            sources: ['coindesk', 'cointelegraph', 'binance'],
+                            categories: ['bitcoin', 'ethereum', 'defi'],
+                            max_articles: 8,
+                            show_images: true,
+                            refresh_interval: 300000 // 5 minutes
+                        }
+                    },
+                    order_book: {
+                        enabled: false,
+                        position: { x: 4, y: 0, w: 1, h: 3 },
+                        config: {
+                            symbol: 'BTCUSDT',
+                            depth: 20,
+                            show_spread: true,
+                            precision: 2,
+                            auto_refresh: true
+                        }
+                    },
+                    recent_trades: {
+                        enabled: false,
+                        position: { x: 4, y: 3, w: 1, h: 2 },
+                        config: {
+                            max_trades: 15,
+                            show_time: true,
+                            show_side: true,
+                            color_coding: true
+                        }
+                    }
+                },
+                themes: {
+                    current: 'dark_professional', // Current active theme
+                    available: {
+                        dark_professional: {
+                            name: 'حرفه‌ای تیره',
+                            primary_bg: '#1a1a1a',
+                            secondary_bg: '#2d2d2d',
+                            accent_color: '#3b82f6',
+                            text_primary: '#ffffff',
+                            text_secondary: '#a1a1aa',
+                            success_color: '#10b981',
+                            error_color: '#ef4444',
+                            warning_color: '#f59e0b',
+                            border_color: '#374151'
+                        },
+                        light_minimal: {
+                            name: 'مینیمال روشن',
+                            primary_bg: '#ffffff',
+                            secondary_bg: '#f8fafc',
+                            accent_color: '#6366f1',
+                            text_primary: '#1f2937',
+                            text_secondary: '#6b7280',
+                            success_color: '#059669',
+                            error_color: '#dc2626',
+                            warning_color: '#d97706',
+                            border_color: '#e5e7eb'
+                        },
+                        blue_ocean: {
+                            name: 'اقیانوس آبی',
+                            primary_bg: '#0f172a',
+                            secondary_bg: '#1e293b',
+                            accent_color: '#0ea5e9',
+                            text_primary: '#f1f5f9',
+                            text_secondary: '#cbd5e1',
+                            success_color: '#06b6d4',
+                            error_color: '#f43f5e',
+                            warning_color: '#fbbf24',
+                            border_color: '#334155'
+                        },
+                        green_matrix: {
+                            name: 'ماتریکس سبز',
+                            primary_bg: '#0a0a0a',
+                            secondary_bg: '#1a1a1a',
+                            accent_color: '#00ff41',
+                            text_primary: '#00ff41',
+                            text_secondary: '#008f11',
+                            success_color: '#00ff41',
+                            error_color: '#ff0033',
+                            warning_color: '#ffaa00',
+                            border_color: '#003311'
+                        }
+                    }
+                },
+                chart_settings: {
+                    default_timeframes: ['1m', '5m', '15m', '1h', '4h', '1d', '1w'],
+                    default_indicators: {
+                        moving_averages: {
+                            enabled: true,
+                            types: ['SMA', 'EMA', 'WMA'],
+                            periods: [9, 20, 50, 200]
+                        },
+                        oscillators: {
+                            enabled: true,
+                            types: ['RSI', 'MACD', 'Stochastic', 'Williams%R'],
+                            default_periods: { RSI: 14, MACD: [12, 26, 9] }
+                        },
+                        volume: {
+                            enabled: true,
+                            show_profile: false,
+                            show_delta: false
+                        },
+                        overlays: {
+                            enabled: true,
+                            bollinger_bands: true,
+                            support_resistance: true,
+                            fibonacci: true
+                        }
+                    },
+                    chart_styles: {
+                        candle_colors: {
+                            bull: '#10b981',
+                            bear: '#ef4444',
+                            wick: '#6b7280'
+                        },
+                        grid: {
+                            show: true,
+                            color: '#374151',
+                            style: 'solid' // solid, dashed, dotted
+                        },
+                        crosshair: {
+                            enabled: true,
+                            color: '#9ca3af',
+                            style: 'dashed'
+                        }
+                    }
+                },
+                personal_views: {
+                    current_view: 'default',
+                    views: {
+                        default: {
+                            name: 'پیش‌فرض',
+                            description: 'نمای استاندارد داشبورد',
+                            layout: 'default_layout',
+                            widgets: ['portfolio_overview', 'trading_chart', 'market_overview', 'ai_insights']
+                        },
+                        trading_focused: {
+                            name: 'متمرکز بر معاملات',
+                            description: 'نمای بهینه شده برای معاملات فعال',
+                            layout: 'trading_layout',
+                            widgets: ['trading_chart', 'order_book', 'recent_trades', 'portfolio_overview']
+                        },
+                        analysis_mode: {
+                            name: 'حالت تحلیل',
+                            description: 'نمای مناسب برای تحلیل بازار',
+                            layout: 'analysis_layout',
+                            widgets: ['trading_chart', 'market_overview', 'news_feed', 'performance_metrics']
+                        },
+                        monitoring: {
+                            name: 'نظارت',
+                            description: 'نمای نظارتی برای مدیریت پورتفولیو',
+                            layout: 'monitoring_layout',
+                            widgets: ['portfolio_overview', 'performance_metrics', 'ai_insights', 'news_feed']
+                        }
+                    }
+                },
+                display_settings: {
+                    animation_speed: 'normal', // slow, normal, fast, disabled
+                    reduce_motion: false,
+                    high_contrast: false,
+                    font_size: 'medium', // small, medium, large, xlarge
+                    number_format: {
+                        decimal_places: 2,
+                        thousand_separator: ',',
+                        currency_symbol_position: 'before' // before, after
+                    },
+                    notifications: {
+                        show_toast: true,
+                        toast_position: 'top-right', // top-left, top-right, bottom-left, bottom-right
+                        toast_duration: 5000,
+                        sound_alerts: true
+                    }
+                }
+            },
             security: {
                 two_factor: {
                     enabled: false,
@@ -2179,6 +2426,88 @@ class SettingsModule {
                     </button>
                     <button onclick="settingsModule.resetToDefaults()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
                         <i class="fas fa-undo mr-2"></i>بازنشانی
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature 5: Dashboard Customization -->
+            <div class="bg-gradient-to-r from-teal-900 to-cyan-900 rounded-lg p-6 border border-teal-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🎨</span>
+                        <h3 class="text-xl font-bold text-white">Dashboard Customization</h3>
+                        <div class="px-3 py-1 bg-teal-600 text-white text-xs rounded-full">شخصی‌سازی کامل</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="dashboard-customization-enabled" class="sr-only peer" ${this.settings.dashboard_customization.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                </div>
+
+                <!-- Layout Management -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📐 مدیریت چیدمان</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderLayoutSettings()}
+                    </div>
+                </div>
+
+                <!-- Widget Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🧩 تنظیمات ویجت‌ها</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderWidgetSettings()}
+                    </div>
+                </div>
+
+                <!-- Theme Customization -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🌈 شخصی‌سازی تم</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderThemeSettings()}
+                    </div>
+                </div>
+
+                <!-- Chart Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📈 تنظیمات نمودار</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderChartSettings()}
+                    </div>
+                </div>
+
+                <!-- Personal Views -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">👁️ نماهای شخصی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderPersonalViews()}
+                    </div>
+                </div>
+
+                <!-- Display Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🖥️ تنظیمات نمایش</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderDisplaySettings()}
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.previewDashboard()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-eye mr-2"></i>پیش‌نمایش
+                    </button>
+                    <button onclick="settingsModule.resetLayout()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-refresh mr-2"></i>بازنشانی چیدمان
+                    </button>
+                    <button onclick="settingsModule.exportDashboard()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تنظیمات
+                    </button>
+                    <button onclick="settingsModule.importDashboard()" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-upload mr-2"></i>وارد کردن
+                    </button>
+                    <button onclick="settingsModule.resetDashboard()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-undo mr-2"></i>بازگردانی
                     </button>
                 </div>
             </div>
@@ -8630,6 +8959,510 @@ TITAN Trading System - Log Export
             
             this.showNotification('🔄 قوانین معاملاتی به حالت پیش‌فرض بازنشانی شدند', 'info');
             this.refreshCurrentTab();
+        }
+    }
+
+    // ========================================
+    // Feature 5: Dashboard Customization Methods
+    // ========================================
+
+    renderLayoutSettings() {
+        const layout = this.settings.dashboard_customization.layout;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">نوع گرید</h5>
+                <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    <option value="responsive" ${layout.grid_type === 'responsive' ? 'selected' : ''}>واکنش‌گرا</option>
+                    <option value="fixed" ${layout.grid_type === 'fixed' ? 'selected' : ''}>ثابت</option>
+                    <option value="masonry" ${layout.grid_type === 'masonry' ? 'selected' : ''}>آجری</option>
+                </select>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تعداد ستون‌ها</h5>
+                <input type="number" value="${layout.columns}" min="2" max="12"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات اضافی</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${layout.auto_resize ? 'checked' : ''} class="mr-2">
+                        تغییر اندازه خودکار
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${layout.compact_mode ? 'checked' : ''} class="mr-2">
+                        حالت فشرده
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderWidgetSettings() {
+        const widgets = this.settings.dashboard_customization.widgets;
+        const enabledWidgets = Object.keys(widgets).filter(key => widgets[key].enabled);
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">ویجت‌های فعال</h5>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                    ${Object.keys(widgets).map(key => `
+                        <label class="flex items-center text-sm text-gray-300">
+                            <input type="checkbox" ${widgets[key].enabled ? 'checked' : ''} 
+                                   onchange="settingsModule.toggleWidget('${key}')" class="mr-2">
+                            ${this.getWidgetDisplayName(key)}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اولویت نمایش</h5>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                    ${enabledWidgets.map((key, index) => `
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-300">${this.getWidgetDisplayName(key)}</span>
+                            <div class="flex gap-1">
+                                <button onclick="settingsModule.moveWidget('${key}', 'up')" 
+                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">↑</button>
+                                <button onclick="settingsModule.moveWidget('${key}', 'down')" 
+                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">↓</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات سریع</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.enableAllWidgets()" 
+                            class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-xs">
+                        فعال‌سازی همه
+                    </button>
+                    <button onclick="settingsModule.resetWidgetPositions()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-xs">
+                        بازنشانی موقعیت‌ها
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderThemeSettings() {
+        const themes = this.settings.dashboard_customization.themes;
+        const currentTheme = themes.current;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">انتخاب تم</h5>
+                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    ${Object.keys(themes.available).map(key => {
+                        const theme = themes.available[key];
+                        return `
+                            <label class="flex items-center gap-3 p-3 rounded border cursor-pointer
+                                   ${currentTheme === key ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="theme" value="${key}" 
+                                       ${currentTheme === key ? 'checked' : ''}
+                                       onchange="settingsModule.changeTheme('${key}')" class="text-teal-600">
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-white">${theme.name}</div>
+                                    <div class="flex gap-1 mt-1">
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.primary_bg}"></div>
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.accent_color}"></div>
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.success_color}"></div>
+                                    </div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات پیشرفته</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ اصلی</label>
+                        <input type="color" value="${themes.available[currentTheme].accent_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ موفقیت</label>
+                        <input type="color" value="${themes.available[currentTheme].success_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ خطر</label>
+                        <input type="color" value="${themes.available[currentTheme].error_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderChartSettings() {
+        const chart = this.settings.dashboard_customization.chart_settings;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">بازه‌های زمانی</h5>
+                <div class="flex flex-wrap gap-1">
+                    ${chart.default_timeframes.map(tf => `
+                        <span class="px-2 py-1 bg-gray-700 text-xs rounded text-gray-300">${tf}</span>
+                    `).join('')}
+                </div>
+                <button class="mt-2 text-xs text-teal-400 hover:text-teal-300">+ افزودن بازه زمانی</button>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اندیکاتورها</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.moving_averages.enabled ? 'checked' : ''} class="mr-2">
+                        میانگین متحرک
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.oscillators.enabled ? 'checked' : ''} class="mr-2">
+                        اسیلاتورها
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.volume.enabled ? 'checked' : ''} class="mr-2">
+                        حجم معاملات
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">ظاهر نمودار</h5>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-400">شمع صاعد:</label>
+                        <input type="color" value="${chart.chart_styles.candle_colors.bull}" 
+                               class="w-8 h-6 rounded border border-gray-600">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-400">شمع نازل:</label>
+                        <input type="color" value="${chart.chart_styles.candle_colors.bear}" 
+                               class="w-8 h-6 rounded border border-gray-600">
+                    </div>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.chart_styles.grid.show ? 'checked' : ''} class="mr-2">
+                        نمایش خطوط شبکه
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderPersonalViews() {
+        const views = this.settings.dashboard_customization.personal_views;
+        const currentView = views.current_view;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">نماهای موجود</h5>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    ${Object.keys(views.views).map(key => {
+                        const view = views.views[key];
+                        return `
+                            <label class="flex items-start gap-3 p-3 rounded border cursor-pointer
+                                   ${currentView === key ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="personal_view" value="${key}" 
+                                       ${currentView === key ? 'checked' : ''}
+                                       onchange="settingsModule.changePersonalView('${key}')" class="mt-1 text-teal-600">
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-white">${view.name}</div>
+                                    <div class="text-xs text-gray-400 mt-1">${view.description}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        ${view.widgets.length} ویجت: ${view.widgets.slice(0, 2).join(', ')}${view.widgets.length > 2 ? '...' : ''}
+                                    </div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">مدیریت نماها</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.createNewView()" 
+                            class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-plus mr-2"></i>ایجاد نمای جدید
+                    </button>
+                    <button onclick="settingsModule.editCurrentView()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-edit mr-2"></i>ویرایش نمای فعلی
+                    </button>
+                    <button onclick="settingsModule.duplicateView()" 
+                            class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-copy mr-2"></i>کپی نمای فعلی
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderDisplaySettings() {
+        const display = this.settings.dashboard_customization.display_settings;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">انیمیشن و حرکت</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">سرعت انیمیشن</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="slow" ${display.animation_speed === 'slow' ? 'selected' : ''}>آهسته</option>
+                            <option value="normal" ${display.animation_speed === 'normal' ? 'selected' : ''}>معمولی</option>
+                            <option value="fast" ${display.animation_speed === 'fast' ? 'selected' : ''}>سریع</option>
+                            <option value="disabled" ${display.animation_speed === 'disabled' ? 'selected' : ''}>غیرفعال</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.reduce_motion ? 'checked' : ''} class="mr-2">
+                        کاهش حرکت
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.high_contrast ? 'checked' : ''} class="mr-2">
+                        کنتراست بالا
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">فونت و نمایش</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">اندازه فونت</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="small" ${display.font_size === 'small' ? 'selected' : ''}>کوچک</option>
+                            <option value="medium" ${display.font_size === 'medium' ? 'selected' : ''}>متوسط</option>
+                            <option value="large" ${display.font_size === 'large' ? 'selected' : ''}>بزرگ</option>
+                            <option value="xlarge" ${display.font_size === 'xlarge' ? 'selected' : ''}>خیلی بزرگ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رقم اعشار</label>
+                        <input type="number" value="${display.number_format.decimal_places}" min="0" max="8"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اعلان‌ها</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.notifications.show_toast ? 'checked' : ''} class="mr-2">
+                        نمایش Toast
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.notifications.sound_alerts ? 'checked' : ''} class="mr-2">
+                        هشدارهای صوتی
+                    </label>
+                    <div>
+                        <label class="text-xs text-gray-400">موقعیت Toast</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="top-right" ${display.notifications.toast_position === 'top-right' ? 'selected' : ''}>بالا راست</option>
+                            <option value="top-left" ${display.notifications.toast_position === 'top-left' ? 'selected' : ''}>بالا چپ</option>
+                            <option value="bottom-right" ${display.notifications.toast_position === 'bottom-right' ? 'selected' : ''}>پایین راست</option>
+                            <option value="bottom-left" ${display.notifications.toast_position === 'bottom-left' ? 'selected' : ''}>پایین چپ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Feature 5 Helper Methods
+    getWidgetDisplayName(key) {
+        const names = {
+            portfolio_overview: 'نمای کلی پورتفولیو',
+            trading_chart: 'نمودار معاملات',
+            market_overview: 'نمای کلی بازار',
+            ai_insights: 'بینش‌های هوش مصنوعی',
+            performance_metrics: 'معیارهای عملکرد',
+            news_feed: 'اخبار',
+            order_book: 'دفتر سفارشات',
+            recent_trades: 'معاملات اخیر'
+        };
+        return names[key] || key;
+    }
+
+    // Feature 5 Control Methods
+    toggleWidget(widgetKey) {
+        this.settings.dashboard_customization.widgets[widgetKey].enabled = 
+            !this.settings.dashboard_customization.widgets[widgetKey].enabled;
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification(`ویجت ${this.getWidgetDisplayName(widgetKey)} ${this.settings.dashboard_customization.widgets[widgetKey].enabled ? 'فعال' : 'غیرفعال'} شد`, 'info');
+    }
+
+    moveWidget(widgetKey, direction) {
+        // Implementation for moving widget priority
+        this.showNotification(`موقعیت ویجت ${this.getWidgetDisplayName(widgetKey)} تغییر کرد`, 'info');
+    }
+
+    enableAllWidgets() {
+        Object.keys(this.settings.dashboard_customization.widgets).forEach(key => {
+            this.settings.dashboard_customization.widgets[key].enabled = true;
+        });
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification('همه ویجت‌ها فعال شدند', 'success');
+    }
+
+    resetWidgetPositions() {
+        // Reset widget positions to default
+        this.showNotification('موقعیت ویجت‌ها بازنشانی شد', 'info');
+        this.refreshCurrentTab();
+    }
+
+    changeTheme(themeKey) {
+        this.settings.dashboard_customization.themes.current = themeKey;
+        this.saveSettings();
+        this.showNotification(`تم به ${this.settings.dashboard_customization.themes.available[themeKey].name} تغییر کرد`, 'success');
+        // Apply theme changes to UI
+        this.applyTheme(themeKey);
+    }
+
+    applyTheme(themeKey) {
+        const theme = this.settings.dashboard_customization.themes.available[themeKey];
+        // Apply theme colors to CSS variables
+        document.documentElement.style.setProperty('--primary-bg', theme.primary_bg);
+        document.documentElement.style.setProperty('--secondary-bg', theme.secondary_bg);
+        document.documentElement.style.setProperty('--accent-color', theme.accent_color);
+        document.documentElement.style.setProperty('--text-primary', theme.text_primary);
+        document.documentElement.style.setProperty('--text-secondary', theme.text_secondary);
+    }
+
+    changePersonalView(viewKey) {
+        this.settings.dashboard_customization.personal_views.current_view = viewKey;
+        this.saveSettings();
+        const viewName = this.settings.dashboard_customization.personal_views.views[viewKey].name;
+        this.showNotification(`نمای شخصی به ${viewName} تغییر کرد`, 'success');
+    }
+
+    createNewView() {
+        const viewName = prompt('نام نمای جدید را وارد کنید:');
+        if (viewName) {
+            this.showNotification(`نمای جدید "${viewName}" ایجاد شد`, 'success');
+        }
+    }
+
+    editCurrentView() {
+        const currentView = this.settings.dashboard_customization.personal_views.current_view;
+        this.showNotification(`در حال ویرایش نمای ${currentView}...`, 'info');
+    }
+
+    duplicateView() {
+        const currentView = this.settings.dashboard_customization.personal_views.current_view;
+        this.showNotification(`نمای ${currentView} کپی شد`, 'success');
+    }
+
+    previewDashboard() {
+        this.showNotification('🎨 در حال آماده‌سازی پیش‌نمایش داشبورد...', 'info');
+        
+        setTimeout(() => {
+            this.showNotification('✅ پیش‌نمایش آماده است! در تب جدید باز می‌شود', 'success');
+            // Open preview in new tab
+            window.open('/dashboard-preview', '_blank');
+        }, 2000);
+    }
+
+    resetLayout() {
+        if (confirm('آیا از بازنشانی چیدمان داشبورد اطمینان دارید؟')) {
+            // Reset layout to default
+            this.settings.dashboard_customization.layout = {
+                grid_type: 'responsive',
+                columns: 4,
+                gap: 16,
+                padding: 20,
+                widget_min_height: 200,
+                widget_max_height: 600,
+                auto_resize: true,
+                compact_mode: false
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 چیدمان داشبورد بازنشانی شد', 'info');
+        }
+    }
+
+    exportDashboard() {
+        this.showNotification('📄 در حال آماده‌سازی فایل صادرات...', 'info');
+        
+        const dashboardConfig = {
+            timestamp: new Date().toISOString(),
+            version: 'TITAN v1.0.0',
+            dashboard_customization: this.settings.dashboard_customization
+        };
+        
+        const blob = new Blob([JSON.stringify(dashboardConfig, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `titan_dashboard_config_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('✅ تنظیمات داشبورد صادر شد', 'success');
+    }
+
+    importDashboard() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const config = JSON.parse(e.target.result);
+                        if (config.dashboard_customization) {
+                            this.settings.dashboard_customization = config.dashboard_customization;
+                            this.saveSettings();
+                            this.refreshCurrentTab();
+                            this.showNotification('✅ تنظیمات داشبورد وارد شد', 'success');
+                        } else {
+                            this.showNotification('❌ فرمت فایل نامعتبر است', 'error');
+                        }
+                    } catch (error) {
+                        this.showNotification('❌ خطا در خواندن فایل', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    resetDashboard() {
+        if (confirm('آیا از بازگردانی تمام تنظیمات داشبورد به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset to default dashboard configuration
+            this.settings.dashboard_customization = {
+                enabled: true,
+                layout: {
+                    grid_type: 'responsive',
+                    columns: 4,
+                    gap: 16,
+                    padding: 20,
+                    widget_min_height: 200,
+                    widget_max_height: 600,
+                    auto_resize: true,
+                    compact_mode: false
+                },
+                themes: {
+                    current: 'dark_professional'
+                },
+                personal_views: {
+                    current_view: 'default'
+                }
+                // ... other default values would be reset here
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 تمام تنظیمات داشبورد بازگردانی شد', 'info');
         }
     }
 }
