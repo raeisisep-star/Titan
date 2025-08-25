@@ -1030,6 +1030,430 @@ class SettingsModule {
                     }
                 }
             },
+            // Feature 6: Alert Rules Management
+            alert_rules_management: {
+                enabled: true,
+                global_settings: {
+                    max_alerts_per_minute: 10, // Rate limiting
+                    alert_retention_days: 30, // How long to keep alert history
+                    default_timezone: 'Asia/Tehran',
+                    quiet_hours: {
+                        enabled: true,
+                        start_time: '23:00',
+                        end_time: '07:00'
+                    },
+                    emergency_override: true // Override quiet hours for critical alerts
+                },
+                notification_channels: {
+                    email: {
+                        enabled: true,
+                        priority_threshold: 'medium', // low, medium, high, critical
+                        template_id: 'default_email',
+                        batch_notifications: true,
+                        batch_interval: 300, // seconds
+                        max_batch_size: 10
+                    },
+                    telegram: {
+                        enabled: true,
+                        priority_threshold: 'high',
+                        template_id: 'default_telegram',
+                        parse_mode: 'HTML',
+                        disable_preview: false
+                    },
+                    whatsapp: {
+                        enabled: false,
+                        priority_threshold: 'high',
+                        template_id: 'default_whatsapp'
+                    },
+                    sms: {
+                        enabled: false,
+                        priority_threshold: 'critical',
+                        template_id: 'default_sms'
+                    },
+                    discord: {
+                        enabled: true,
+                        priority_threshold: 'medium',
+                        template_id: 'default_discord',
+                        mention_roles: ['@traders', '@analysts']
+                    },
+                    push_notification: {
+                        enabled: true,
+                        priority_threshold: 'low',
+                        template_id: 'default_push',
+                        badge_count: true,
+                        sound: true
+                    },
+                    webhook: {
+                        enabled: false,
+                        priority_threshold: 'medium',
+                        urls: [],
+                        authentication: {
+                            type: 'bearer', // bearer, basic, custom
+                            token: '',
+                            headers: {}
+                        }
+                    }
+                },
+                alert_rules: {
+                    price_alerts: {
+                        rule_id: 'price_001',
+                        name: 'هشدار قیمت',
+                        enabled: true,
+                        priority: 'medium',
+                        conditions: {
+                            type: 'price_threshold',
+                            symbol: 'BTCUSDT',
+                            condition: 'crosses_above', // crosses_above, crosses_below, equals, percentage_change
+                            threshold: 50000,
+                            percentage_change: null,
+                            timeframe: '1m'
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'push_notification'],
+                            template: 'price_alert_template',
+                            cooldown_period: 300, // seconds between same alerts
+                            max_triggers_per_day: 5
+                        },
+                        escalation: {
+                            enabled: false,
+                            levels: [
+                                {
+                                    delay_minutes: 5,
+                                    channels: ['sms'],
+                                    condition: 'not_acknowledged'
+                                },
+                                {
+                                    delay_minutes: 15,
+                                    channels: ['telegram', 'discord'],
+                                    condition: 'still_active'
+                                }
+                            ]
+                        }
+                    },
+                    volume_alerts: {
+                        rule_id: 'volume_001',
+                        name: 'هشدار حجم معاملات',
+                        enabled: true,
+                        priority: 'low',
+                        conditions: {
+                            type: 'volume_spike',
+                            symbol: 'BTCUSDT',
+                            condition: 'above_average',
+                            multiplier: 3.0, // 3x above average
+                            timeframe: '5m',
+                            lookback_period: 24 // hours
+                        },
+                        actions: {
+                            channels: ['discord', 'push_notification'],
+                            template: 'volume_alert_template',
+                            cooldown_period: 600,
+                            max_triggers_per_day: 10
+                        },
+                        escalation: {
+                            enabled: false
+                        }
+                    },
+                    portfolio_alerts: {
+                        rule_id: 'portfolio_001',
+                        name: 'هشدار پورتفولیو',
+                        enabled: true,
+                        priority: 'high',
+                        conditions: {
+                            type: 'portfolio_pnl',
+                            condition: 'loss_exceeds',
+                            threshold: -5, // -5% loss
+                            timeframe: 'daily'
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'sms'],
+                            template: 'portfolio_alert_template',
+                            cooldown_period: 1800,
+                            max_triggers_per_day: 3
+                        },
+                        escalation: {
+                            enabled: true,
+                            levels: [
+                                {
+                                    delay_minutes: 10,
+                                    channels: ['telegram'],
+                                    condition: 'loss_continues'
+                                }
+                            ]
+                        }
+                    },
+                    ai_alerts: {
+                        rule_id: 'ai_001',
+                        name: 'هشدارهای هوش مصنوعی',
+                        enabled: true,
+                        priority: 'medium',
+                        conditions: {
+                            type: 'ai_signal',
+                            signal_type: 'strong_buy', // strong_buy, strong_sell, high_confidence
+                            confidence_threshold: 0.85,
+                            models: ['artemis', 'technical_analysis', 'sentiment']
+                        },
+                        actions: {
+                            channels: ['telegram', 'discord', 'push_notification'],
+                            template: 'ai_alert_template',
+                            cooldown_period: 900,
+                            max_triggers_per_day: 8
+                        },
+                        escalation: {
+                            enabled: false
+                        }
+                    },
+                    system_alerts: {
+                        rule_id: 'system_001',
+                        name: 'هشدارهای سیستم',
+                        enabled: true,
+                        priority: 'critical',
+                        conditions: {
+                            type: 'system_health',
+                            condition: 'error_rate_high',
+                            threshold: 10, // errors per minute
+                            duration: 5 // minutes
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'sms', 'discord'],
+                            template: 'system_alert_template',
+                            cooldown_period: 60,
+                            max_triggers_per_day: 20
+                        },
+                        escalation: {
+                            enabled: true,
+                            levels: [
+                                {
+                                    delay_minutes: 2,
+                                    channels: ['sms'],
+                                    condition: 'not_resolved'
+                                },
+                                {
+                                    delay_minutes: 5,
+                                    channels: ['webhook'],
+                                    condition: 'still_critical'
+                                }
+                            ]
+                        }
+                    }
+                },
+                alert_templates: {
+                    price_alert_template: {
+                        name: 'قالب هشدار قیمت',
+                        channels: {
+                            email: {
+                                subject: '🚨 هشدار قیمت - {{symbol}}',
+                                body: `
+                                    <h2>هشدار قیمت {{symbol}}</h2>
+                                    <p>قیمت {{symbol}} به {{price}} رسیده است.</p>
+                                    <p>شرایط: {{condition}}</p>
+                                    <p>زمان: {{timestamp}}</p>
+                                    <p>مشاهده داشبورد: <a href="{{dashboard_url}}">کلیک کنید</a></p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+🚨 *هشدار قیمت*
+📈 نماد: {{symbol}}
+💰 قیمت: {{price}}
+📊 شرایط: {{condition}}
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            },
+                            discord: {
+                                message: `
+🚨 **هشدار قیمت**
+**نماد:** {{symbol}}
+**قیمت:** {{price}}
+**شرایط:** {{condition}}
+**زمان:** {{timestamp}}
+                                `,
+                                embed: true,
+                                color: '#ff6b6b'
+                            },
+                            push_notification: {
+                                title: 'هشدار قیمت {{symbol}}',
+                                body: 'قیمت به {{price}} رسید',
+                                icon: 'price-alert',
+                                url: '{{dashboard_url}}'
+                            }
+                        }
+                    },
+                    volume_alert_template: {
+                        name: 'قالب هشدار حجم',
+                        channels: {
+                            telegram: {
+                                message: `
+📊 *هشدار حجم معاملات*
+📈 نماد: {{symbol}}
+📊 حجم: {{volume}}
+🔥 برابر میانگین: {{multiplier}}x
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            },
+                            discord: {
+                                message: `
+📊 **هشدار حجم معاملات**
+**نماد:** {{symbol}}
+**حجم:** {{volume}}
+**برابر میانگین:** {{multiplier}}x
+**زمان:** {{timestamp}}
+                                `,
+                                embed: true,
+                                color: '#4ecdc4'
+                            }
+                        }
+                    },
+                    portfolio_alert_template: {
+                        name: 'قالب هشدار پورتفولیو',
+                        channels: {
+                            email: {
+                                subject: '⚠️ هشدار پورتفولیو - ضرر {{loss_percentage}}%',
+                                body: `
+                                    <h2>هشدار پورتفولیو</h2>
+                                    <p><strong>ضرر:</strong> {{loss_percentage}}%</p>
+                                    <p><strong>مبلغ:</strong> {{loss_amount}} {{currency}}</p>
+                                    <p><strong>بازه زمانی:</strong> {{timeframe}}</p>
+                                    <p><strong>زمان:</strong> {{timestamp}}</p>
+                                    <p>لطفاً وضعیت پورتفولیو خود را بررسی کنید.</p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+⚠️ *هشدار پورتفولیو*
+📉 ضرر: {{loss_percentage}}%
+💸 مبلغ: {{loss_amount}} {{currency}}
+📅 بازه: {{timeframe}}
+🕐 زمان: {{timestamp}}
+
+لطفاً فوراً بررسی کنید!
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    ai_alert_template: {
+                        name: 'قالب هشدار هوش مصنوعی',
+                        channels: {
+                            telegram: {
+                                message: `
+🤖 *سیگنال هوش مصنوعی*
+📈 نماد: {{symbol}}
+🎯 سیگنال: {{signal_type}}
+🔥 اطمینان: {{confidence}}%
+🧠 مدل‌ها: {{models}}
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    system_alert_template: {
+                        name: 'قالب هشدار سیستم',
+                        channels: {
+                            email: {
+                                subject: '🚨 هشدار سیستم - {{alert_type}}',
+                                body: `
+                                    <h2 style="color: #e74c3c;">هشدار سیستم</h2>
+                                    <p><strong>نوع هشدار:</strong> {{alert_type}}</p>
+                                    <p><strong>توضیحات:</strong> {{description}}</p>
+                                    <p><strong>سطح:</strong> {{severity}}</p>
+                                    <p><strong>زمان:</strong> {{timestamp}}</p>
+                                    <p style="color: #e74c3c;">لطفاً فوراً اقدام کنید!</p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+🚨 *هشدار سیستم*
+⚠️ نوع: {{alert_type}}
+📝 توضیحات: {{description}}
+🔴 سطح: {{severity}}
+🕐 زمان: {{timestamp}}
+
+🔧 لطفاً فوراً اقدام کنید!
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    custom_template: {
+                        name: 'قالب سفارشی',
+                        channels: {
+                            telegram: {
+                                message: '{{custom_message}}',
+                                parse_mode: 'Markdown'
+                            },
+                            email: {
+                                subject: '{{custom_subject}}',
+                                body: '{{custom_body}}',
+                                format: 'html'
+                            }
+                        }
+                    }
+                },
+                escalation_policies: {
+                    standard_escalation: {
+                        name: 'تصعید استاندارد',
+                        levels: [
+                            {
+                                level: 1,
+                                delay_minutes: 5,
+                                channels: ['telegram'],
+                                condition: 'not_acknowledged',
+                                message: 'هشدار هنوز تأیید نشده است'
+                            },
+                            {
+                                level: 2,
+                                delay_minutes: 15,
+                                channels: ['email', 'sms'],
+                                condition: 'still_active',
+                                message: 'هشدار هنوز فعال است'
+                            },
+                            {
+                                level: 3,
+                                delay_minutes: 30,
+                                channels: ['webhook'],
+                                condition: 'not_resolved',
+                                message: 'هشدار حل نشده است - تماس با پشتیبانی'
+                            }
+                        ]
+                    },
+                    critical_escalation: {
+                        name: 'تصعید بحرانی',
+                        levels: [
+                            {
+                                level: 1,
+                                delay_minutes: 1,
+                                channels: ['sms', 'telegram'],
+                                condition: 'immediate',
+                                message: 'هشدار بحرانی - اقدام فوری'
+                            },
+                            {
+                                level: 2,
+                                delay_minutes: 3,
+                                channels: ['email', 'discord', 'webhook'],
+                                condition: 'not_acknowledged',
+                                message: 'هشدار بحرانی تأیید نشده'
+                            }
+                        ]
+                    }
+                },
+                alert_history: {
+                    enabled: true,
+                    max_records: 10000,
+                    auto_cleanup: true,
+                    cleanup_after_days: 90,
+                    export_formats: ['json', 'csv', 'excel'],
+                    analytics: {
+                        enabled: true,
+                        metrics: ['trigger_frequency', 'response_time', 'false_positive_rate', 'channel_effectiveness']
+                    }
+                }
+            },
             security: {
                 two_factor: {
                     enabled: false,
@@ -2508,6 +2932,88 @@ class SettingsModule {
                     </button>
                     <button onclick="settingsModule.resetDashboard()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
                         <i class="fas fa-undo mr-2"></i>بازگردانی
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature 6: Alert Rules Management -->
+            <div class="bg-gradient-to-r from-amber-900 to-orange-900 rounded-lg p-6 border border-amber-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🚨</span>
+                        <h3 class="text-xl font-bold text-white">Alert Rules Management</h3>
+                        <div class="px-3 py-1 bg-amber-600 text-white text-xs rounded-full">هشدارهای هوشمند</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="alert-rules-enabled" class="sr-only peer" ${this.settings.alert_rules_management.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+
+                <!-- Global Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">⚙️ تنظیمات کلی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderGlobalAlertSettings()}
+                    </div>
+                </div>
+
+                <!-- Notification Channels -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📢 کانال‌های اطلاع‌رسانی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderNotificationChannels()}
+                    </div>
+                </div>
+
+                <!-- Alert Rules -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📋 قوانین هشدار</h4>
+                    <div class="space-y-4">
+                        ${this.renderAlertRules()}
+                    </div>
+                </div>
+
+                <!-- Alert Templates -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📝 قالب‌های هشدار</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderAlertTemplates()}
+                    </div>
+                </div>
+
+                <!-- Escalation Policies -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📈 سیاست‌های تصعید</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderEscalationPolicies()}
+                    </div>
+                </div>
+
+                <!-- Alert History & Analytics -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📊 تاریخچه و تحلیل</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderAlertHistory()}
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.testAlertRule()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-vial mr-2"></i>تست هشدار
+                    </button>
+                    <button onclick="settingsModule.createAlertRule()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-plus mr-2"></i>ایجاد قانون
+                    </button>
+                    <button onclick="settingsModule.importAlertRules()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-upload mr-2"></i>وارد کردن
+                    </button>
+                    <button onclick="settingsModule.exportAlertRules()" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات
+                    </button>
+                    <button onclick="settingsModule.resetAlertRules()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-undo mr-2"></i>بازنشانی
                     </button>
                 </div>
             </div>
@@ -9467,6 +9973,468 @@ TITAN Trading System - Log Export
             this.saveSettings();
             this.refreshCurrentTab();
             this.showNotification('🔄 تمام تنظیمات داشبورد بازگردانی شد', 'info');
+        }
+    }
+
+    // Feature 6: Alert Rules Management - Render Methods
+    renderGlobalAlertSettings() {
+        const settings = this.settings.alert_rules_management.global_settings;
+        return `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">محدودیت نرخ</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر هشدار در ساعت</label>
+                        <input type="number" id="max-alerts-per-hour" min="1" max="100" value="${settings.rate_limiting.max_alerts_per_hour}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر هشدار در روز</label>
+                        <input type="number" id="max-alerts-per-day" min="1" max="1000" value="${settings.rate_limiting.max_alerts_per_day}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">ساعات سکوت</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="quiet-hours-enabled" ${settings.quiet_hours.enabled ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">فعال‌سازی ساعات سکوت</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">شروع</label>
+                            <input type="time" id="quiet-start" value="${settings.quiet_hours.start_time}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">پایان</label>
+                            <input type="time" id="quiet-end" value="${settings.quiet_hours.end_time}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">تنظیمات عمومی</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="deduplicate-alerts" ${settings.deduplicate_alerts ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">حذف هشدارهای تکراری</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="group-alerts" ${settings.group_similar_alerts ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">گروه‌بندی هشدارهای مشابه</span>
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderNotificationChannels() {
+        const channels = this.settings.alert_rules_management.notification_channels;
+        let content = '';
+        
+        Object.entries(channels).forEach(([key, config]) => {
+            const icons = {
+                email: '📧', telegram: '✈️', whatsapp: '💬', sms: '📱',
+                discord: '🎮', push: '🔔', webhook: '🔗'
+            };
+            const names = {
+                email: 'ایمیل', telegram: 'تلگرام', whatsapp: 'واتساپ', sms: 'پیامک',
+                discord: 'دیسکورد', push: 'اعلان', webhook: 'وب‌هوک'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${icons[key]}</span>
+                        <h5 class="font-semibold text-white">${names[key]}</h5>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="${key}-channel-enabled" ${config.enabled ? 'checked' : ''} class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+                <div class="space-y-2">
+                    ${key === 'email' ? `
+                        <input type="email" id="${key}-address" placeholder="آدرس ایمیل" value="${config.address || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : key === 'telegram' ? `
+                        <input type="text" id="${key}-bot-token" placeholder="توکن ربات" value="${config.bot_token || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        <input type="text" id="${key}-chat-id" placeholder="شناسه چت" value="${config.chat_id || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : key === 'webhook' ? `
+                        <input type="url" id="${key}-url" placeholder="URL وب‌هوک" value="${config.url || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : `
+                        <input type="text" id="${key}-config" placeholder="پیکربندی ${names[key]}" value="${config.config || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    `}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertRules() {
+        const rules = this.settings.alert_rules_management.alert_rules;
+        let content = '';
+        
+        Object.entries(rules).forEach(([type, ruleList]) => {
+            const icons = {
+                price_alerts: '💰', volume_alerts: '📊', portfolio_alerts: '📈',
+                ai_signal_alerts: '🤖', system_alerts: '⚙️'
+            };
+            const names = {
+                price_alerts: 'هشدارهای قیمت', volume_alerts: 'هشدارهای حجم',
+                portfolio_alerts: 'هشدارهای پورتفولیو', ai_signal_alerts: 'هشدارهای سیگنال هوش مصنوعی',
+                system_alerts: 'هشدارهای سیستم'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${icons[type]}</span>
+                        <h5 class="font-semibold text-white">${names[type]}</h5>
+                        <span class="bg-amber-600 text-white text-xs px-2 py-1 rounded">${ruleList.length} قانون</span>
+                    </div>
+                    <button onclick="settingsModule.addAlertRule('${type}')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white text-xs">
+                        <i class="fas fa-plus mr-1"></i>افزودن
+                    </button>
+                </div>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                    ${ruleList.map((rule, index) => `
+                        <div class="flex items-center justify-between bg-gray-700 p-3 rounded">
+                            <div class="flex-1">
+                                <div class="text-white text-sm font-medium">${rule.name}</div>
+                                <div class="text-gray-400 text-xs">${rule.description}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-1 rounded ${rule.priority === 'high' ? 'bg-red-600' : rule.priority === 'medium' ? 'bg-yellow-600' : 'bg-green-600'} text-white">
+                                    ${rule.priority === 'high' ? 'بالا' : rule.priority === 'medium' ? 'متوسط' : 'پایین'}
+                                </span>
+                                <button onclick="settingsModule.editAlertRule('${type}', ${index})" class="text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="settingsModule.deleteAlertRule('${type}', ${index})" class="text-red-400 hover:text-red-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertTemplates() {
+        const templates = this.settings.alert_rules_management.alert_templates;
+        let content = '';
+        
+        Object.entries(templates).forEach(([channel, channelTemplates]) => {
+            const channelNames = {
+                email: 'ایمیل', telegram: 'تلگرام', sms: 'پیامک', discord: 'دیسکورد'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">قالب‌های ${channelNames[channel]}</h5>
+                <div class="space-y-3">
+                    ${Object.entries(channelTemplates).map(([type, template]) => `
+                        <div class="bg-gray-700 p-3 rounded">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white text-sm font-medium">${type}</span>
+                                <button onclick="settingsModule.editTemplate('${channel}', '${type}')" class="text-blue-400 hover:text-blue-300 text-xs">
+                                    <i class="fas fa-edit mr-1"></i>ویرایش
+                                </button>
+                            </div>
+                            <textarea id="template-${channel}-${type}" rows="2" class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs" placeholder="قالب پیام...">${template}</textarea>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderEscalationPolicies() {
+        const policies = this.settings.alert_rules_management.escalation_policies;
+        let content = '';
+        
+        Object.entries(policies).forEach(([name, policy]) => {
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-semibold text-white">${name}</h5>
+                    <div class="flex items-center gap-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="policy-${name}-enabled" ${policy.enabled ? 'checked' : ''} class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                        <button onclick="settingsModule.editEscalationPolicy('${name}')" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    ${policy.levels.map((level, index) => `
+                        <div class="flex items-center justify-between bg-gray-700 p-2 rounded">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-amber-600 text-white text-xs px-2 py-1 rounded">${index + 1}</span>
+                                <span class="text-white text-sm">${level.delay_minutes} دقیقه</span>
+                                <span class="text-gray-400 text-xs">${level.channels.join(', ')}</span>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded ${level.priority === 'critical' ? 'bg-red-600' : level.priority === 'high' ? 'bg-orange-600' : 'bg-yellow-600'} text-white">
+                                ${level.priority === 'critical' ? 'بحرانی' : level.priority === 'high' ? 'بالا' : 'متوسط'}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertHistory() {
+        const history = this.settings.alert_rules_management.alert_history;
+        return `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">آمار امروز</h5>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">کل هشدارها:</span>
+                        <span class="text-white font-medium">${history.total_alerts_today || 0}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">ارسال شده:</span>
+                        <span class="text-green-400 font-medium">${history.sent_alerts_today || 0}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">ناموفق:</span>
+                        <span class="text-red-400 font-medium">${history.failed_alerts_today || 0}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">تنظیمات تاریخچه</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">مدت نگهداری (روز)</label>
+                        <input type="number" id="retention-days" min="1" max="365" value="${history.retention_days}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="detailed-logs" ${history.detailed_logging ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">لاگ‌گذاری دقیق</span>
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">عملیات</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.viewAlertHistory()" class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-history mr-2"></i>مشاهده تاریخچه
+                    </button>
+                    <button onclick="settingsModule.exportAlertHistory()" class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تاریخچه
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Feature 6: Alert Rules Management - Control Methods
+    testAlertRule() {
+        // Test alert functionality
+        const testAlert = {
+            type: 'system_test',
+            message: 'این یک پیام تست هشدار است',
+            priority: 'medium',
+            timestamp: new Date().toISOString()
+        };
+        
+        this.showNotification('🧪 تست هشدار ارسال شد', 'success');
+        console.log('Test Alert:', testAlert);
+    }
+
+    createAlertRule() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-xl font-bold text-white mb-4">ایجاد قانون هشدار جدید</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام قانون</label>
+                        <input type="text" id="rule-name" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="نام قانون را وارد کنید">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نوع هشدار</label>
+                        <select id="rule-type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="price_alerts">هشدار قیمت</option>
+                            <option value="volume_alerts">هشدار حجم</option>
+                            <option value="portfolio_alerts">هشدار پورتفولیو</option>
+                            <option value="ai_signal_alerts">هشدار سیگنال AI</option>
+                            <option value="system_alerts">هشدار سیستم</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">اولویت</label>
+                        <select id="rule-priority" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="low">پایین</option>
+                            <option value="medium">متوسط</option>
+                            <option value="high">بالا</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="settingsModule.saveAlertRule()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white flex-1">
+                        <i class="fas fa-save mr-2"></i>ذخیره
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white">
+                        لغو
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    saveAlertRule() {
+        const name = document.getElementById('rule-name').value;
+        const type = document.getElementById('rule-type').value;
+        const priority = document.getElementById('rule-priority').value;
+        
+        if (!name.trim()) {
+            this.showNotification('⚠️ نام قانون را وارد کنید', 'warning');
+            return;
+        }
+        
+        const newRule = {
+            name: name.trim(),
+            description: `قانون ${name.trim()}`,
+            priority: priority,
+            enabled: true,
+            conditions: {},
+            actions: [],
+            created_at: new Date().toISOString()
+        };
+        
+        if (!this.settings.alert_rules_management.alert_rules[type]) {
+            this.settings.alert_rules_management.alert_rules[type] = [];
+        }
+        
+        this.settings.alert_rules_management.alert_rules[type].push(newRule);
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification(`✅ قانون "${name}" با موفقیت ایجاد شد`, 'success');
+        
+        // Close modal
+        document.querySelector('.fixed.inset-0').remove();
+    }
+
+    addAlertRule(type) {
+        // Create specific rule for the type
+        this.createAlertRule();
+        // Pre-select the type
+        setTimeout(() => {
+            const typeSelect = document.getElementById('rule-type');
+            if (typeSelect) typeSelect.value = type;
+        }, 100);
+    }
+
+    editAlertRule(type, index) {
+        const rule = this.settings.alert_rules_management.alert_rules[type][index];
+        this.showNotification(`✏️ ویرایش قانون "${rule.name}" - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    deleteAlertRule(type, index) {
+        const rule = this.settings.alert_rules_management.alert_rules[type][index];
+        if (confirm(`آیا از حذف قانون "${rule.name}" اطمینان دارید؟`)) {
+            this.settings.alert_rules_management.alert_rules[type].splice(index, 1);
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification(`🗑️ قانون "${rule.name}" حذف شد`, 'success');
+        }
+    }
+
+    editTemplate(channel, type) {
+        this.showNotification(`✏️ ویرایش قالب ${type} برای ${channel} - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    editEscalationPolicy(name) {
+        this.showNotification(`✏️ ویرایش سیاست تصعید "${name}" - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    importAlertRules() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const rules = JSON.parse(e.target.result);
+                        this.settings.alert_rules_management.alert_rules = { ...this.settings.alert_rules_management.alert_rules, ...rules };
+                        this.saveSettings();
+                        this.refreshCurrentTab();
+                        this.showNotification('📥 قوانین هشدار با موفقیت وارد شد', 'success');
+                    } catch (error) {
+                        this.showNotification('❌ خطا در وارد کردن فایل', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    exportAlertRules() {
+        const rules = this.settings.alert_rules_management.alert_rules;
+        const dataStr = JSON.stringify(rules, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `titan-alert-rules-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.showNotification('📤 قوانین هشدار صادر شد', 'success');
+    }
+
+    viewAlertHistory() {
+        this.showNotification('📊 مشاهده تاریخچه هشدارها - این قابلیت به زودی اضافه خواهد شد', 'info');
+    }
+
+    exportAlertHistory() {
+        const history = this.settings.alert_rules_management.alert_history;
+        const dataStr = JSON.stringify(history, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `titan-alert-history-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.showNotification('📤 تاریخچه هشدارها صادر شد', 'success');
+    }
+
+    resetAlertRules() {
+        if (confirm('آیا از بازنشانی تمام قوانین هشدار به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset to default alert rules configuration
+            this.settings.alert_rules_management.alert_rules = {
+                price_alerts: [],
+                volume_alerts: [],
+                portfolio_alerts: [],
+                ai_signal_alerts: [],
+                system_alerts: []
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 تمام قوانین هشدار بازنشانی شد', 'info');
         }
     }
 }
