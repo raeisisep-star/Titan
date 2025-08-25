@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Portfolio Module Debug</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Portfolio Module Debug</h1>
+    <div id="output"></div>
+    
+    <script>
+        async function testPortfolioModule() {
+            const output = document.getElementById('output');
+            
+            try {
+                output.innerHTML += '<p>Loading module loader...</p>';
+                
+                // Load module loader first
+                const moduleLoaderScript = document.createElement('script');
+                moduleLoaderScript.src = '/static/modules/module-loader.js';
+                document.head.appendChild(moduleLoaderScript);
+                
+                await new Promise(resolve => {
+                    moduleLoaderScript.onload = resolve;
+                });
+                
+                output.innerHTML += '<p>Module loader loaded</p>';
+                
+                // Test portfolio module loading
+                output.innerHTML += '<p>Loading portfolio module...</p>';
+                
+                const portfolioModule = await window.moduleLoader.loadModule('portfolio');
+                
+                if (portfolioModule) {
+                    output.innerHTML += '<p style="color: green">✅ Portfolio module loaded successfully!</p>';
+                    output.innerHTML += '<p>Module name: ' + portfolioModule.name + '</p>';
+                    output.innerHTML += '<p>Module version: ' + portfolioModule.version + '</p>';
+                } else {
+                    output.innerHTML += '<p style="color: red">❌ Portfolio module failed to load</p>';
+                }
+                
+                // Check TitanModules namespace
+                output.innerHTML += '<p>TitanModules keys: ' + Object.keys(window.TitanModules || {}).join(', ') + '</p>';
+                
+            } catch (error) {
+                output.innerHTML += '<p style="color: red">Error: ' + error.message + '</p>';
+                console.error('Debug error:', error);
+            }
+        }
+        
+        // Run test when page loads
+        window.addEventListener('load', testPortfolioModule);
+    </script>
+</body>
+</html>

@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Login Flow</title>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body>
+    <h1>Test Login Flow</h1>
+    <button id="loginBtn">Login as Admin</button>
+    <button id="checkChatbotBtn">Check Chatbot Status</button>
+    <div id="status"></div>
+    
+    <script>
+        // Navigate to main app first
+        window.location.href = 'https://3000-iamgmbkoq4p98bf87r889-6532622b.e2b.dev';
+        
+        // Test login programmatically
+        document.getElementById('loginBtn').onclick = async () => {
+            try {
+                const response = await axios.post('https://3000-iamgmbkoq4p98bf87r889-6532622b.e2b.dev/api/auth/login', {
+                    username: 'admin@titan.com',
+                    password: 'admin123'
+                });
+                
+                if (response.data.success) {
+                    // Store token
+                    localStorage.setItem('titan_auth_token', response.data.token);
+                    document.getElementById('status').innerHTML = '✅ Login successful! Token stored.';
+                    
+                    // Simulate app behavior
+                    setTimeout(() => {
+                        // Hide login screen, show main app
+                        const loginScreen = document.getElementById('loginScreen');
+                        const mainApp = document.getElementById('mainApp');
+                        if (loginScreen) loginScreen.classList.add('hidden');
+                        if (mainApp) mainApp.classList.remove('hidden');
+                        
+                        // Try to initialize chatbot
+                        if (typeof window.initializeChatbotIfNeeded === 'function') {
+                            window.initializeChatbotIfNeeded();
+                        }
+                    }, 1000);
+                }
+            } catch (error) {
+                document.getElementById('status').innerHTML = '❌ Login failed: ' + error.message;
+            }
+        };
+        
+        document.getElementById('checkChatbotBtn').onclick = () => {
+            const artemisBtn = document.querySelector('.artemis-chatbot-button');
+            const statusBtn = document.querySelector('.system-status-button');
+            document.getElementById('status').innerHTML = 
+                `Chatbot Button: ${artemisBtn ? '✅ Found' : '❌ Not Found'}<br>` +
+                `Status Button: ${statusBtn ? '✅ Found' : '❌ Not Found'}<br>` +
+                `ArtemisAI Object: ${window.artemisAI ? '✅ Exists' : '❌ Not Found'}`;
+        };
+    </script>
+</body>
+</html>
+</html>

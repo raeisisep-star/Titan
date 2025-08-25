@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پاکسازی حافظه نهان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto text-center">
+        <h1 class="text-4xl font-bold mb-8">🧹 پاکسازی حافظه نهان</h1>
+        
+        <div class="bg-gray-800 p-8 rounded-lg mb-8">
+            <p class="text-xl mb-6">برای مشاهده تغییرات جدید در سیستم TITAN، لطفاً حافظه نهان مرورگر را پاک کنید.</p>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                <div class="bg-gray-700 p-4 rounded">
+                    <h3 class="text-lg font-bold mb-2">🖥️ کامپیوتر</h3>
+                    <p class="text-sm">Ctrl + Shift + R (Windows/Linux)<br>Cmd + Shift + R (Mac)</p>
+                </div>
+                <div class="bg-gray-700 p-4 rounded">
+                    <h3 class="text-lg font-bold mb-2">📱 موبایل</h3>
+                    <p class="text-sm">تنظیمات مرورگر > حذف داده‌ها</p>
+                </div>
+            </div>
+            
+            <button onclick="clearCacheAndReload()" class="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-xl font-bold">
+                <i class="fas fa-sync mr-2"></i>پاک کردن و بازگشت به TITAN
+            </button>
+        </div>
+
+        <div class="bg-green-900 border border-green-600 p-6 rounded-lg">
+            <h2 class="text-2xl font-bold mb-4">✨ ویژگی جدید: سیستم AI پیشرفته</h2>
+            <p class="text-lg mb-4">تب "AI پیشرفته" با قابلیت‌های زیر اضافه شده است:</p>
+            <ul class="text-right list-disc list-inside space-y-2">
+                <li>🤖 اتصال به ChatGPT، Gemini و Claude</li>
+                <li>🎭 تحلیل احساسات پیشرفته فارسی</li>
+                <li>🧠 یادگیری ماشین برای بهبود پاسخ‌ها</li>
+                <li>📊 آنالیتیکس و مدیریت کامل AI</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function clearCacheAndReload() {
+            // Try to clear various caches
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    for(let registration of registrations) {
+                        registration.unregister();
+                    }
+                });
+            }
+
+            // Clear local storage
+            localStorage.clear();
+            sessionStorage.clear();
+
+            // Add cache busting parameter and redirect to main page
+            const timestamp = new Date().getTime();
+            window.location.href = `/?v=${timestamp}#settings`;
+        }
+
+        // Auto clear cache after 3 seconds if user doesn't click
+        setTimeout(() => {
+            document.querySelector('button').click();
+        }, 10000);
+    </script>
+</body>
+</html>

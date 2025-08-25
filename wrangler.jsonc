@@ -1,0 +1,22 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "artemis-portfolio",
+  "compatibility_date": "2024-01-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "pages_build_output_dir": "./dist",
+
+  // KV Storage for caching and real-time data
+  "kv_namespaces": [
+    {
+      "binding": "KV",
+      "id": "cb433725a91f4087a730ff37d13077df",
+      "preview_id": "161760e6513c446d992bf61c5bd32276"
+    }
+  ],
+
+  // Environment variables for production
+  "vars": {
+    "ENVIRONMENT": "production",
+    "DEBUG_MODE": "false"
+  }
+}

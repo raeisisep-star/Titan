@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Clear Cache - TITAN</title>
+    <meta charset="UTF-8">
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #1a1a1a; 
+            color: white; 
+            padding: 20px; 
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        button {
+            background: #3b82f6;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+        }
+        button:hover {
+            background: #2563eb;
+        }
+        .success {
+            color: #10b981;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 TITAN Cache Manager</h1>
+        <p>برای مشاهده آخرین تغییرات، کش مرورگر را پاک کنید</p>
+        
+        <div>
+            <button onclick="clearAllCache()">🗑️ پاک کردن کامل کش</button>
+            <button onclick="hardRefresh()">🔄 Refresh سخت</button>
+            <button onclick="reloadModules()">📦 بارگذاری مجدد ماژول‌ها</button>
+        </div>
+        
+        <div id="status"></div>
+        
+        <div style="margin-top: 30px;">
+            <a href="/" style="text-decoration: none;">
+                <button>🏠 بازگشت به صفحه اصلی</button>
+            </a>
+        </div>
+        
+        <div style="margin-top: 20px; font-size: 12px; color: #888;">
+            <p>نکات:</p>
+            <ul style="text-align: right; display: inline-block;">
+                <li>Ctrl+F5 (Windows) یا Cmd+Shift+R (Mac) برای Hard Refresh</li>
+                <li>F12 > Network > Disable Cache</li>
+                <li>تب Private/Incognito برای تست بدون کش</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, isSuccess = true) {
+            const status = document.getElementById('status');
+            status.innerHTML = `<div class="${isSuccess ? 'success' : 'error'}">${message}</div>`;
+            setTimeout(() => status.innerHTML = '', 3000);
+        }
+
+        async function clearAllCache() {
+            try {
+                // Clear browser cache
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    await Promise.all(
+                        cacheNames.map(name => caches.delete(name))
+                    );
+                }
+                
+                // Clear localStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                showStatus('✅ کش با موفقیت پاک شد!');
+                
+                // Auto redirect after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 2000);
+                
+            } catch (error) {
+                showStatus('❌ خطا در پاک کردن کش: ' + error.message, false);
+            }
+        }
+
+        function hardRefresh() {
+            showStatus('🔄 در حال انجام Hard Refresh...');
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 1000);
+        }
+
+        async function reloadModules() {
+            showStatus('📦 در حال بارگذاری مجدد ماژول‌ها...');
+            
+            // Add timestamp to force reload
+            const timestamp = Date.now();
+            const moduleFiles = [
+                '/static/modules/module-loader.js',
+                '/static/modules/alerts.js',
+                '/static/modules/settings.js',
+                '/static/app.js'
+            ];
+            
+            // Preload modules with new timestamp
+            for (const file of moduleFiles) {
+                const script = document.createElement('script');
+                script.src = file + '?v=' + timestamp;
+                script.onload = () => console.log('Reloaded:', file);
+                document.head.appendChild(script);
+            }
+            
+            setTimeout(() => {
+                showStatus('✅ ماژول‌ها بارگذاری مجدد شدند!');
+                setTimeout(() => window.location.href = '/', 2000);
+            }, 1500);
+        }
+
+        // Auto clear cache on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('Cache manager loaded at:', new Date().toISOString());
+        });
+    </script>
+</body>
+</html>
