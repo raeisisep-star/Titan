@@ -1,0 +1,56 @@
+name: Deploy Frontend (Cloudflare Workers)
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Find wrangler project
+        id: find
+        run: |
+          set -e
+          FILE=$(git ls-files | grep -E 'wrangler\.toml$' | head -n1 || true)
+          if [ -z "$FILE" ]; then
+            echo "No wrangler.toml found; skipping." > /tmp/skip
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            DIR=$(dirname "$FILE")
+            echo "dir=$DIR" >> $GITHUB_OUTPUT
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup Node
+        if: steps.find.outputs.skip == 'false'
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install deps
+        if: steps.find.outputs.skip == 'false'
+        working-directory: ${{ steps.find.outputs.dir }}
+        run: npm ci --legacy-peer-deps
+
+      - name: Build
+        if: steps.find.outputs.skip == 'false'
+        working-directory: ${{ steps.find.outputs.dir }}
+        run: |
+          if npm run | grep -q "build"; then
+            npm run build
+          else
+            echo "No build script; proceeding."
+          fi
+
+      - name: Publish with Wrangler
+        if: steps.find.outputs.skip == 'false'
+        working-directory: ${{ steps.find.outputs.dir }}
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CF_API_TOKEN }}
+          CF_ACCOUNT_ID: ${{ secrets.CF_ACCOUNT_ID }}
+        run: npx wrangler deploy
