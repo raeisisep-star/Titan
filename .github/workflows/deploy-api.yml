@@ -1,0 +1,25 @@
+name: Deploy API to Server
+
+on:
+  push:
+    branches: [ "main" ]   # اگر برنچ دیگری است تغییر بده
+  workflow_dispatch:       # دستی هم بشه زد
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout (for reading repo only)
+        uses: actions/checkout@v4
+
+      - name: SSH to server & deploy
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: 188.40.209.82
+          username: root
+          key: ${{ secrets.ACTIONS_SSH_KEY }}
+          script: |
+            BRANCH="${{ github.ref_name }}"
+            API_SUBDIR=""   # اگر backend داخل زیرپوشه است اینجا بزن مثلاً: api
+            export BRANCH API_SUBDIR
+            bash /opt/titan-api/bin/deploy.sh
