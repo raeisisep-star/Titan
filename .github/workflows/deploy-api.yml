@@ -2,24 +2,37 @@ name: Deploy API to Server
 
 on:
   push:
-    branches: [ "main" ]   # اگر برنچ دیگری است تغییر بده
-  workflow_dispatch:       # دستی هم بشه زد
+    branches: [ "main" ]
+
+env:
+  BRANCH: main
+  API_SUBDIR: .              # اگر پوشه‌ی بک‌اند api است، بگذار api
+  HOST: 188.40.209.82
+  USER: root
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout (for reading repo only)
+      - name: Checkout (read-only)
         uses: actions/checkout@v4
+
+      - name: Add SSH key
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: |
+            ${{ secrets.DEPLOY_KEY }}
+
+      - name: Known hosts
+        run: ssh-keyscan -H $HOST >> ~/.ssh/known_hosts
 
       - name: SSH to server & deploy
         uses: appleboy/ssh-action@v1.0.3
         with:
-          host: 188.40.209.82
-          username: root
-          key: ${{ secrets.ACTIONS_SSH_KEY }}
+          host: ${{ env.HOST }}
+          username: ${{ env.USER }}
           script: |
-            BRANCH="${{ github.ref_name }}"
-            API_SUBDIR=""   # اگر backend داخل زیرپوشه است اینجا بزن مثلاً: api
-            export BRANCH API_SUBDIR
+            export BRANCH="${{ env.BRANCH }}"
+            export API_SUBDIR="${{ env.API_SUBDIR }}"
+            export REPO_URL="git@github.com:raeisisep-star/Titan.git"
             bash /opt/titan-api/bin/deploy.sh
