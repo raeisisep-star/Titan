@@ -447,6 +447,9 @@ app.get('/ai-test', (c) => {
                                 // Create instance of SettingsModule
                                 const settingsInstance = new window.TitanModules.SettingsModule();
                                 
+                                // Set global instance for onclick handlers
+                                window.settingsModule = settingsInstance;
+                                
                                 log('✅ در حال دریافت محتوای تنظیمات...', 'info');
                                 
                                 // Get the settings content (async method)
