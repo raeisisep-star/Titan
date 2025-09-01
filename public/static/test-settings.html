@@ -35,11 +35,11 @@
             
             try {
                 // Load settings module
-                const response = await fetch('/static/modules/settings.js');
+                const response = await fetch('/static/modules/settings-final.js');
                 const settingsCode = await response.text();
                 
                 statusDiv.innerHTML = `
-                    <div class="text-green-400 mb-2">✅ فایل settings.js بارگذاری شد (${settingsCode.length} کاراکتر)</div>
+                    <div class="text-green-400 mb-2">✅ فایل settings-final.js بارگذاری شد (${settingsCode.length} کاراکتر)</div>
                 `;
                 
                 // Execute settings code
