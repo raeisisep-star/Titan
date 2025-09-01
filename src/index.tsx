@@ -434,7 +434,7 @@ app.get('/ai-test', (c) => {
             
             try {
                 const script = document.createElement('script');
-                script.src = '/static/modules/settings.js?v=' + Date.now();
+                script.src = '/static/modules/settings-simple.js?v=' + Date.now();
                 
                 script.onload = function() {
                     log('✅ ماژول تنظیمات بارگذاری شد', 'success');
