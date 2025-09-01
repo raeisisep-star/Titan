@@ -2379,7 +2379,7 @@ class SettingsModule {
                 <div class="flex items-center justify-between mb-4">
                     <h4 class="text-lg font-semibold text-white">📋 قوانین پیشرفته معاملاتی</h4>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="advanced-rules-enabled" class="sr-only peer" ${this.settings.trading.advanced_rules.enabled ? 'checked' : ''}>
+                        <input type="checkbox" id="advanced-rules-enabled" class="sr-only peer" ${this.settings.advanced_trading_rules.enabled ? 'checked' : ''}>
                         <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                 </div>
@@ -2390,24 +2390,24 @@ class SettingsModule {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر اهرم</label>
-                            <input type="number" id="max-leverage" min="1" max="100" value="${this.settings.trading.advanced_rules.global_rules.max_leverage}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="max-leverage" min="1" max="100" value="${this.settings.advanced_trading_rules.risk_management.leverage_limit}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">حداقل حجم 24 ساعته (USDT)</label>
-                            <input type="number" id="min-volume-24h" min="100000" max="100000000" value="${this.settings.trading.advanced_rules.global_rules.min_volume_24h}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="min-volume-24h" min="100000" max="100000000" value="${this.settings.advanced_trading_rules.global_rules.min_volume_24h}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">آستانه نوسان (%)</label>
-                            <input type="number" id="volatility-threshold" min="1" max="50" value="${this.settings.trading.advanced_rules.global_rules.market_conditions.volatility_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="volatility-threshold" min="1" max="50" value="${this.settings.advanced_trading_rules.global_rules.market_conditions.volatility_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">آستانه افزایش حجم (%)</label>
-                            <input type="number" id="volume-spike-threshold" min="50" max="1000" value="${this.settings.trading.advanced_rules.global_rules.market_conditions.volume_spike_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="volume-spike-threshold" min="50" max="1000" value="${this.settings.advanced_trading_rules.global_rules.market_conditions.volume_spike_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                     </div>
                     <div class="mt-4">
                         <label class="flex items-center gap-2 mb-2">
-                            <input type="checkbox" id="bear-market-mode" ${this.settings.trading.advanced_rules.global_rules.market_conditions.bear_market_mode ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <input type="checkbox" id="bear-market-mode" ${this.settings.advanced_trading_rules.global_rules.market_conditions.bear_market_mode ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
                             <span class="text-gray-300">حالت بازار نزولی (محافظه‌کارانه)</span>
                         </label>
                     </div>
@@ -7424,7 +7424,7 @@ TITAN Trading System - Log Export
     // Feature 4: Advanced Trading Rules - Supporting Methods
 
     renderEntryRules() {
-        return this.settings.trading.advanced_rules.entry_rules.map(rule => `
+        return this.settings.advanced_trading_rules.entry_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -7471,7 +7471,7 @@ TITAN Trading System - Log Export
     }
 
     renderExitRules() {
-        return this.settings.trading.advanced_rules.exit_rules.map(rule => `
+        return this.settings.advanced_trading_rules.exit_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -7518,7 +7518,7 @@ TITAN Trading System - Log Export
     }
 
     renderScheduleRules() {
-        return this.settings.trading.advanced_rules.schedule_rules.map(rule => `
+        return this.settings.advanced_trading_rules.schedule_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -7556,7 +7556,7 @@ TITAN Trading System - Log Export
             id: 'rule_' + Date.now(),
             name: 'قانون ورود جدید',
             enabled: true,
-            priority: this.settings.trading.advanced_rules.entry_rules.length + 1,
+            priority: this.settings.advanced_trading_rules.entry_rules.length + 1,
             conditions: {
                 ai_confidence: { min: 70, max: 100 },
                 rsi: { min: 30, max: 70 },
@@ -7571,7 +7571,7 @@ TITAN Trading System - Log Export
             }
         };
         
-        this.settings.trading.advanced_rules.entry_rules.push(newRule);
+        this.settings.advanced_trading_rules.entry_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('قانون ورود جدید اضافه شد', 'success');
@@ -7582,7 +7582,7 @@ TITAN Trading System - Log Export
             id: 'exit_' + Date.now(),
             name: 'قانون خروج جدید',
             enabled: true,
-            priority: this.settings.trading.advanced_rules.exit_rules.length + 1,
+            priority: this.settings.advanced_trading_rules.exit_rules.length + 1,
             conditions: {
                 profit_percentage: { min: 3, max: null },
                 time_in_position: { min: 1, max: null }
@@ -7593,7 +7593,7 @@ TITAN Trading System - Log Export
             }
         };
         
-        this.settings.trading.advanced_rules.exit_rules.push(newRule);
+        this.settings.advanced_trading_rules.exit_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('قانون خروج جدید اضافه شد', 'success');
@@ -7611,7 +7611,7 @@ TITAN Trading System - Log Export
             blocked_periods: []
         };
         
-        this.settings.trading.advanced_rules.schedule_rules.push(newRule);
+        this.settings.advanced_trading_rules.schedule_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('برنامه زمانی جدید اضافه شد', 'success');
@@ -7623,7 +7623,7 @@ TITAN Trading System - Log Export
     }
 
     duplicateRule(ruleId, ruleType) {
-        const rules = this.settings.trading.advanced_rules[`${ruleType}_rules`];
+        const rules = this.settings.advanced_trading_rules[`${ruleType}_rules`];
         const originalRule = rules.find(r => r.id === ruleId);
         
         if (originalRule) {
@@ -7641,7 +7641,7 @@ TITAN Trading System - Log Export
 
     deleteRule(ruleId, ruleType) {
         if (confirm('آیا از حذف این قانون اطمینان دارید؟')) {
-            const rules = this.settings.trading.advanced_rules[`${ruleType}_rules`];
+            const rules = this.settings.advanced_trading_rules[`${ruleType}_rules`];
             const index = rules.findIndex(r => r.id === ruleId);
             
             if (index !== -1) {
@@ -7654,7 +7654,7 @@ TITAN Trading System - Log Export
     }
 
     validateTradingRules() {
-        const rules = this.settings.trading.advanced_rules;
+        const rules = this.settings.advanced_trading_rules;
         const issues = [];
         
         // Validate entry rules
@@ -7691,8 +7691,8 @@ TITAN Trading System - Log Export
         // Simulate testing
         setTimeout(() => {
             const testResults = {
-                total_rules: this.settings.trading.advanced_rules.entry_rules.length + 
-                           this.settings.trading.advanced_rules.exit_rules.length,
+                total_rules: this.settings.advanced_trading_rules.entry_rules.length + 
+                           this.settings.advanced_trading_rules.exit_rules.length,
                 passed: Math.floor(Math.random() * 10) + 5,
                 failed: Math.floor(Math.random() * 3),
                 warnings: Math.floor(Math.random() * 2)
@@ -7727,7 +7727,7 @@ TITAN Trading System - Log Export
     }
 
     exportTradingRules() {
-        const rules = this.settings.trading.advanced_rules;
+        const rules = this.settings.advanced_trading_rules;
         const exportData = {
             version: '1.0',
             timestamp: new Date().toISOString(),
@@ -7763,7 +7763,7 @@ TITAN Trading System - Log Export
                         
                         if (importData.rules && importData.version) {
                             if (confirm('آیا می‌خواهید قوانین فعلی را جایگزین کنید؟')) {
-                                this.settings.trading.advanced_rules = importData.rules;
+                                this.settings.advanced_trading_rules = importData.rules;
                                 this.saveSettings();
                                 this.refreshTradingTab();
                                 this.showNotification('✅ قوانین با موفقیت وارد شد', 'success');
