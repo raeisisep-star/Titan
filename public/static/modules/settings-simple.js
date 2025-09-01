@@ -15,6 +15,11 @@ class SimpleSettingsModule {
     }
 
     async getContent() {
+        const generalActive = this.currentTab === 'general' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white';
+        const aiActive = this.currentTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white';
+        const tradingActive = this.currentTab === 'trading' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white';
+        const systemActive = this.currentTab === 'system' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white';
+
         return `
         <div class="space-y-6">
             <!-- Header -->
@@ -30,19 +35,19 @@ class SimpleSettingsModule {
                 <!-- Tab Navigation -->
                 <div class="flex border-b border-gray-700 overflow-x-auto">
                     <button onclick="settingsModule.switchTab('general')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'general' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
+                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${generalActive}">
                         <i class="fas fa-cog"></i>عمومی
                     </button>
                     <button onclick="settingsModule.switchTab('ai')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
+                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${aiActive}">
                         <i class="fas fa-robot"></i>هوش مصنوعی
                     </button>
                     <button onclick="settingsModule.switchTab('trading')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'trading' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
+                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${tradingActive}">
                         <i class="fas fa-chart-line"></i>معاملات
                     </button>
                     <button onclick="settingsModule.switchTab('system')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'system' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
+                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${systemActive}">
                         <i class="fas fa-cogs"></i>سیستم
                     </button>
                 </div>
