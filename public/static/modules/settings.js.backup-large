@@ -781,14 +781,6 @@ class SettingsModule {
                         pause_duration: 30, // Minutes to pause trading
                         escalation_levels: 3
                     }
-                },
-                global_rules: {
-                    min_volume_24h: 1000000, // Minimum 24h trading volume in USDT
-                    market_conditions: {
-                        volatility_threshold: 15, // Maximum volatility percentage
-                        volume_spike_threshold: 200, // Volume spike threshold percentage
-                        bear_market_mode: false // Conservative mode for bear markets
-                    }
                 }
             },
             // Feature 5: Dashboard Customization
@@ -1042,12 +1034,7 @@ class SettingsModule {
             alert_rules_management: {
                 enabled: true,
                 global_settings: {
-                    rate_limiting: {
-                        max_alerts_per_minute: 10,
-                        max_alerts_per_hour: 100,
-                        max_alerts_per_day: 500,
-                        cooldown_period: 60 // seconds between duplicate alerts
-                    },
+                    max_alerts_per_minute: 10, // Rate limiting
                     alert_retention_days: 30, // How long to keep alert history
                     default_timezone: 'Asia/Tehran',
                     quiet_hours: {
