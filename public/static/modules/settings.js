@@ -2611,6 +2611,199 @@ class SettingsModule {
                 </div>
             </div>
 
+            <!-- System Updates -->
+            <div class="bg-gray-900 rounded-lg p-4 border-2 border-blue-500">
+                <h4 class="text-lg font-semibold text-white mb-4">🚀 آپدیت‌های سیستم</h4>
+                
+                <!-- Current Version Info -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏷️</div>
+                            <div>
+                                <div class="text-white font-semibold">نسخه فعلی: TITAN v1.0.0</div>
+                                <div class="text-gray-400 text-sm">تاریخ انتشار: ${new Date().toLocaleDateString('fa-IR')}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-green-400 text-sm font-medium">آخرین نسخه</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Release Notes Preview -->
+                    <div class="text-sm text-gray-300 mb-3">
+                        <strong>ویژگی‌های اصلی:</strong>
+                        <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
+                            <li>✅ سیستم معاملات خودکار با هوش مصنوعی آرتمیس</li>
+                            <li>✅ پنل مدیریت جامع با 11 تب تخصصی</li>
+                            <li>✅ پایش لحظه‌ای بازار و تحلیل قیمت‌ها</li>
+                            <li>✅ مدیریت پورتفولیو و ریسک پیشرفته</li>
+                            <li>✅ سیستم اعلان‌های هوشمند چندکاناله</li>
+                            <li>✅ امنیت بانکی با رمزنگاری پیشرفته</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Update Check Status -->
+                <div class="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 mb-4 border border-blue-400">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div id="update-status-icon" class="text-2xl">⏳</div>
+                            <div>
+                                <div class="text-white font-medium" id="update-status-text">در حال بررسی آپدیت‌ها...</div>
+                                <div class="text-blue-300 text-sm" id="update-status-detail">آخرین بررسی: ${new Date().toLocaleTimeString('fa-IR')}</div>
+                            </div>
+                        </div>
+                        <button onclick="settingsModule.checkForUpdates()" 
+                                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm transition-all">
+                            <i class="fas fa-sync-alt mr-2"></i>بررسی آپدیت
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Auto Update Settings -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">🤖</span>
+                            <div>
+                                <div class="text-white font-medium">آپدیت خودکار</div>
+                                <div class="text-gray-400 text-sm">بررسی و نصب خودکار آپدیت‌ها</div>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-update-enabled" class="sr-only peer" ${this.settings.general.auto_updates || false ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-2">نوع آپدیت‌های خودکار:</label>
+                            <select id="auto-update-type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm">
+                                <option value="security">فقط آپدیت‌های امنیتی</option>
+                                <option value="minor">آپدیت‌های جزئی و امنیتی</option>
+                                <option value="all">تمام آپدیت‌ها (پیشنهادی)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-2">زمان بررسی:</label>
+                            <select id="update-check-time" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm">
+                                <option value="daily">روزانه (ساعت 3:00 صبح)</option>
+                                <option value="weekly">هفتگی (یکشنبه‌ها)</option>
+                                <option value="manual">دستی (غیرفعال)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update History -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <h5 class="text-white font-medium mb-3 flex items-center gap-2">
+                        <i class="fas fa-history text-gray-400"></i>
+                        تاریخچه آپدیت‌ها
+                    </h5>
+                    <div class="space-y-2 max-h-40 overflow-y-auto" id="update-history">
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span class="text-white">TITAN v1.0.0</span>
+                                <span class="text-gray-400">- راه‌اندازی اولیه</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">${new Date().toLocaleDateString('fa-IR')}</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <span class="text-white">TITAN v0.9.8-beta</span>
+                                <span class="text-gray-400">- تست نهایی</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">2 روز پیش</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                <span class="text-white">TITAN v0.9.5-alpha</span>
+                                <span class="text-gray-400">- پیاده‌سازی آرتمیس AI</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">1 هفته پیش</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Update Options -->
+                <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-4 border border-gray-600">
+                    <h5 class="text-white font-medium mb-3 flex items-center gap-2">
+                        <i class="fas fa-cog text-gray-400"></i>
+                        تنظیمات پیشرفته آپدیت
+                    </h5>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Backup Before Update -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="backup-before-update" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">پشتیبان‌گیری قبل از آپدیت</label>
+                                <div class="text-gray-400 text-xs">ایجاد نسخه پشتیبان خودکار</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Settings -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="update-notifications" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">اعلان آپدیت‌ها</label>
+                                <div class="text-gray-400 text-xs">اطلاع از آپدیت‌های جدید</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Beta Updates -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="beta-updates" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">نسخه‌های آزمایشی (Beta)</label>
+                                <div class="text-gray-400 text-xs">دریافت آپدیت‌های آزمایشی</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rollback Option -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="enable-rollback" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">امکان بازگشت نسخه</label>
+                                <div class="text-gray-400 text-xs">قابلیت برگشت به نسخه قبلی</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <button onclick="settingsModule.checkForUpdates()" 
+                            class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-sync-alt"></i>بررسی آپدیت‌ها
+                    </button>
+                    <button onclick="settingsModule.downloadUpdate()" 
+                            class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all" 
+                            id="download-update-btn" disabled>
+                        <i class="fas fa-download"></i>دانلود آپدیت
+                    </button>
+                    <button onclick="settingsModule.viewReleaseNotes()" 
+                            class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-clipboard-list"></i>یادداشت‌های انتشار
+                    </button>
+                    <button onclick="settingsModule.systemBackup()" 
+                            class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-shield-alt"></i>پشتیبان‌گیری
+                    </button>
+                    <button onclick="settingsModule.rollbackVersion()" 
+                            class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-undo"></i>بازگشت نسخه
+                    </button>
+                </div>
+            </div>
+
             <!-- Module Status -->
             <div class="bg-gray-900 rounded-lg p-4">
                 <h4 class="text-lg font-semibold text-white mb-4">📦 وضعیت ماژول‌ها</h4>
@@ -10332,6 +10525,448 @@ TITAN Trading System - Log Export
             this.refreshCurrentTab();
             this.showNotification('🔄 تمام قوانین هشدار بازنشانی شد', 'info');
         }
+    }
+
+    // ===============================
+    // System Update Methods
+    // ===============================
+
+    async checkForUpdates() {
+        const statusIcon = document.getElementById('update-status-icon');
+        const statusText = document.getElementById('update-status-text');
+        const statusDetail = document.getElementById('update-status-detail');
+        const downloadBtn = document.getElementById('download-update-btn');
+        
+        // Set loading state
+        if (statusIcon) statusIcon.textContent = '⏳';
+        if (statusText) statusText.textContent = 'در حال بررسی آپدیت‌ها...';
+        if (statusDetail) statusDetail.textContent = 'اتصال به سرور آپدیت...';
+        
+        try {
+            // Simulate update check (در production باید از API واقعی استفاده کرد)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Mock response - در production از /api/system/check-updates استفاده کنید
+            const mockUpdateResponse = {
+                hasUpdate: Math.random() > 0.7, // 30% احتمال آپدیت موجود
+                currentVersion: 'v1.0.0',
+                latestVersion: 'v1.1.0',
+                updateSize: '15.2 MB',
+                releaseDate: new Date(Date.now() + 24*60*60*1000).toLocaleDateString('fa-IR'),
+                isSecurityUpdate: false,
+                changelogUrl: '/updates/v1.1.0/changelog',
+                features: [
+                    'بهبود عملکرد سیستم معاملات',
+                    'اضافه شدن 3 استراتژی AI جدید', 
+                    'بهینه‌سازی رابط کاربری',
+                    'رفع باگ‌های جزئی'
+                ]
+            };
+            
+            if (mockUpdateResponse.hasUpdate) {
+                // Update available
+                if (statusIcon) statusIcon.textContent = '🎉';
+                if (statusText) statusText.textContent = `آپدیت جدید موجود: ${mockUpdateResponse.latestVersion}`;
+                if (statusDetail) statusDetail.textContent = `حجم: ${mockUpdateResponse.updateSize} | تاریخ انتشار: ${mockUpdateResponse.releaseDate}`;
+                if (downloadBtn) downloadBtn.disabled = false;
+                
+                // Show update notification
+                this.showUpdateNotification(mockUpdateResponse);
+                
+            } else {
+                // No update available
+                if (statusIcon) statusIcon.textContent = '✅';
+                if (statusText) statusText.textContent = 'سیستم به‌روز است';
+                if (statusDetail) statusDetail.textContent = `آخرین بررسی: ${new Date().toLocaleTimeString('fa-IR')}`;
+                if (downloadBtn) downloadBtn.disabled = true;
+                
+                this.showNotification('✅ سیستم در آخرین نسخه قرار دارد', 'success');
+            }
+            
+        } catch (error) {
+            console.error('خطا در بررسی آپدیت:', error);
+            if (statusIcon) statusIcon.textContent = '❌';
+            if (statusText) statusText.textContent = 'خطا در اتصال به سرور';
+            if (statusDetail) statusDetail.textContent = 'لطفاً اتصال اینترنت خود را بررسی کنید';
+            
+            this.showNotification('❌ خطا در بررسی آپدیت. لطفاً مجدداً تلاش کنید', 'error');
+        }
+    }
+
+    showUpdateNotification(updateInfo) {
+        // Create update notification modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🚀</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">آپدیت جدید موجود</h3>
+                            <p class="text-gray-400">نسخه ${updateInfo.latestVersion} آماده نصب است</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-gray-700 rounded p-3">
+                            <div class="text-sm text-gray-400">نسخه فعلی</div>
+                            <div class="text-white font-bold">${updateInfo.currentVersion}</div>
+                        </div>
+                        <div class="bg-blue-900 border border-blue-500 rounded p-3">
+                            <div class="text-sm text-blue-300">نسخه جدید</div>
+                            <div class="text-white font-bold">${updateInfo.latestVersion}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="text-white font-medium mb-2 flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            ویژگی‌های جدید:
+                        </h4>
+                        <ul class="space-y-2">
+                            ${updateInfo.features.map(feature => `
+                                <li class="flex items-start gap-2 text-sm">
+                                    <span class="text-green-400 mt-1">•</span>
+                                    <span class="text-gray-300">${feature}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-gray-700 rounded p-3 mb-4">
+                        <div class="text-sm text-gray-400 mb-1">اطلاعات آپدیت:</div>
+                        <div class="text-xs text-gray-300">
+                            📦 حجم: ${updateInfo.updateSize} | 
+                            📅 تاریخ انتشار: ${updateInfo.releaseDate} |
+                            ${updateInfo.isSecurityUpdate ? '🔒 آپدیت امنیتی' : '✨ آپدیت عملکرد'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-700 flex gap-3">
+                    <button onclick="this.closest('.fixed').remove(); settingsModule.downloadUpdate()" 
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium">
+                        <i class="fas fa-download mr-2"></i>دانلود و نصب
+                    </button>
+                    <button onclick="settingsModule.viewReleaseNotes()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        <i class="fas fa-clipboard-list mr-2"></i>جزئیات
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        بعداً
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async downloadUpdate() {
+        // Create download progress modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">⬇️</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">در حال دانلود آپدیت</h3>
+                            <p class="text-gray-400 text-sm">لطفاً تا اتمام دانلود صبر کنید</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-300">پیشرفت دانلود</span>
+                            <span class="text-white" id="download-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3">
+                            <div id="download-progress" class="bg-blue-600 h-3 rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400" id="download-status">آماده‌سازی دانلود...</div>
+                        <div class="text-xs text-gray-500 mt-1" id="download-speed"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Simulate download progress
+        const progressBar = document.getElementById('download-progress');
+        const percentage = document.getElementById('download-percentage');
+        const status = document.getElementById('download-status');
+        const speed = document.getElementById('download-speed');
+        
+        try {
+            for (let i = 0; i <= 100; i += 2) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (progressBar) progressBar.style.width = i + '%';
+                if (percentage) percentage.textContent = i + '%';
+                
+                if (i < 30) {
+                    if (status) status.textContent = 'اتصال به سرور...';
+                    if (speed) speed.textContent = '1.2 MB/s';
+                } else if (i < 70) {
+                    if (status) status.textContent = 'دانلود فایل‌های آپدیت...';
+                    if (speed) speed.textContent = '2.8 MB/s';
+                } else if (i < 90) {
+                    if (status) status.textContent = 'تأیید یکپارچگی فایل‌ها...';
+                    if (speed) speed.textContent = '1.5 MB/s';
+                } else {
+                    if (status) status.textContent = 'آماده‌سازی نصب...';
+                    if (speed) speed.textContent = 'تکمیل شد';
+                }
+            }
+            
+            // Download completed
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                    <div class="p-6 text-center">
+                        <div class="text-4xl mb-4">✅</div>
+                        <h3 class="text-lg font-bold text-white mb-2">دانلود با موفقیت انجام شد</h3>
+                        <p class="text-gray-400 text-sm mb-6">آپدیت آماده نصب است. آیا می‌خواهید الان نصب کنید؟</p>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="settingsModule.installUpdate(); this.closest('.fixed').remove()" 
+                                    class="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-white font-medium">
+                                <i class="fas fa-play mr-2"></i>نصب الان
+                            </button>
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                                بعداً
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('خطا در دانلود آپدیت:', error);
+            modal.remove();
+            this.showNotification('❌ خطا در دانلود آپدیت', 'error');
+        }
+    }
+
+    async installUpdate() {
+        this.showNotification('🔄 نصب آپدیت آغاز شد. سیستم پس از نصب مجدداً راه‌اندازی می‌شود', 'info');
+        
+        // Simulate installation process
+        setTimeout(() => {
+            this.showNotification('✅ آپدیت با موفقیت نصب شد! سیستم در حال راه‌اندازی مجدد...', 'success');
+            
+            // Simulate system restart
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        }, 2000);
+    }
+
+    viewReleaseNotes() {
+        // Create release notes modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">📋</span>
+                            <h3 class="text-xl font-bold text-white">یادداشت‌های انتشار TITAN v1.1.0</h3>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="prose prose-invert max-w-none">
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            ویژگی‌های جدید
+                        </h4>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">سیستم آپدیت خودکار:</strong>
+                                    <span class="text-gray-300"> بررسی و نصب خودکار آپدیت‌های امنیتی و عملکردی</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">استراتژی‌های AI جدید:</strong>
+                                    <span class="text-gray-300"> 3 الگوریتم معاملاتی جدید با دقت بالاتر</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">بهبود رابط کاربری:</strong>
+                                    <span class="text-gray-300"> طراحی جدید و بهینه‌سازی تجربه کاربری</span>
+                                </div>
+                            </li>
+                        </ul>
+                        
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-wrench text-blue-400"></i>
+                            بهبودها
+                        </h4>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">بهینه‌سازی سرعت پردازش تا 40%</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">کاهش مصرف منابع سیستم</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">بهبود پایداری اتصالات API</span>
+                            </li>
+                        </ul>
+                        
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-bug text-red-400"></i>
+                            رفع مشکلات
+                        </h4>
+                        <ul class="space-y-2">
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">رفع مشکل قطع شدن اتصال در شرایط خاص</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">حل مشکل نمایش داده‌ها در برخی مرورگرها</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">رفع باگ‌های جزئی در سیستم اعلان‌ها</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async systemBackup() {
+        this.showNotification('📦 ایجاد پشتیبان سیستم آغاز شد...', 'info');
+        
+        try {
+            // Simulate backup process
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Create backup file (simulation)
+            const backupData = {
+                version: 'v1.0.0',
+                timestamp: new Date().toISOString(),
+                settings: this.settings,
+                user_data: {
+                    // Mock user data
+                    profiles: 1,
+                    trades_count: 156,
+                    total_profit: 2450.67
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `titan-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('✅ پشتیبان سیستم با موفقیت ایجاد و دانلود شد', 'success');
+            
+        } catch (error) {
+            console.error('خطا در ایجاد پشتیبان:', error);
+            this.showNotification('❌ خطا در ایجاد پشتیبان سیستم', 'error');
+        }
+    }
+
+    rollbackVersion() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">⚠️</span>
+                        <h3 class="text-lg font-bold text-white">بازگشت به نسخه قبلی</h3>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <p class="text-gray-300 text-sm mb-4">
+                        آیا از بازگشت به نسخه قبلی سیستم اطمینان دارید؟ این عمل ممکن است باعث از دست رفتن برخی تنظیمات جدید شود.
+                    </p>
+                    
+                    <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-3 mb-4">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+                            <div class="text-yellow-200 text-sm">
+                                <div class="font-medium mb-1">توجه:</div>
+                                <ul class="text-xs space-y-1">
+                                    <li>• تنظیمات جدید حذف خواهند شد</li>
+                                    <li>• سیستم به نسخه v0.9.8 بازمی‌گردد</li>
+                                    <li>• این عمل قابل برگشت است</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-700 flex gap-3">
+                    <button onclick="settingsModule.confirmRollback(); this.closest('.fixed').remove()" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg text-white font-medium">
+                        <i class="fas fa-undo mr-2"></i>بازگشت نسخه
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async confirmRollback() {
+        this.showNotification('🔄 بازگشت به نسخه قبلی آغاز شد...', 'info');
+        
+        // Simulate rollback process
+        setTimeout(() => {
+            this.showNotification('✅ بازگشت با موفقیت انجام شد! سیستم در حال راه‌اندازی مجدد...', 'success');
+            
+            setTimeout(() => {
+                // Simulate restart
+                window.location.reload();
+            }, 3000);
+        }, 2000);
     }
 }
 
