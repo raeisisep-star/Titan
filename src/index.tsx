@@ -434,7 +434,7 @@ app.get('/ai-test', (c) => {
             
             try {
                 const script = document.createElement('script');
-                script.src = '/static/modules/settings.js?v=' + Date.now();
+                script.src = '/static/modules/settings-optimized.js?v=' + Date.now();
                 
                 script.onload = function() {
                     log('✅ ماژول تنظیمات بارگذاری شد', 'success');
@@ -489,7 +489,7 @@ app.get('/ai-test', (c) => {
                 };
                 
                 script.onerror = function() {
-                    log('❌ خطا در بارگذاری فایل settings.js', 'error');
+                    log('❌ خطا در بارگذاری فایل settings-optimized.js', 'error');
                     container.innerHTML = \`
                         <div class="bg-red-900 rounded-lg p-6 text-center">
                             <p class="text-red-400 mb-4">خطا در بارگذاری فایل تنظیمات</p>
@@ -683,7 +683,7 @@ app.get('/clear-cache', (c) => {
         async function reloadModules() {
             showStatus('📦 در حال بارگذاری مجدد ماژول‌ها...');
             const timestamp = Date.now();
-            const moduleFiles = ['/static/modules/module-loader.js', '/static/modules/alerts.js', '/static/modules/multi-exchange.js', '/static/modules/rbac.js', '/static/modules/backup-automation.js', '/static/modules/advanced-security.js', '/static/modules/settings-final.js', '/static/app.js'];
+            const moduleFiles = ['/static/modules/module-loader.js', '/static/modules/alerts.js', '/static/modules/multi-exchange.js', '/static/modules/rbac.js', '/static/modules/backup-automation.js', '/static/modules/advanced-security.js', '/static/modules/settings-optimized.js', '/static/app.js'];
             
             for (const file of moduleFiles) {
                 const script = document.createElement('script');
