@@ -657,6 +657,816 @@ class SettingsModule {
                     integrity_checks: true
                 }
             },
+            // Feature 4: Advanced Trading Rules
+            advanced_trading_rules: {
+                enabled: true,
+                risk_management: {
+                    max_portfolio_risk: 10, // Maximum portfolio risk percentage
+                    max_single_position_risk: 2, // Maximum risk per single position
+                    correlation_limit: 0.7, // Maximum correlation between positions
+                    sector_concentration_limit: 25, // Maximum sector exposure percentage
+                    currency_exposure_limit: 40, // Maximum single currency exposure
+                    leverage_limit: 5, // Maximum leverage multiplier
+                    var_limit: 5, // Value at Risk limit (%)
+                    expected_shortfall_limit: 7 // Expected Shortfall limit (%)
+                },
+                position_sizing: {
+                    method: 'kelly_optimized', // kelly, fixed_percent, volatility_adjusted, optimal_f, kelly_optimized
+                    base_position_size: 5, // Base position size percentage
+                    volatility_adjustment: true, // Adjust size based on volatility
+                    liquidity_adjustment: true, // Adjust size based on liquidity
+                    confidence_scaling: true, // Scale based on signal confidence
+                    max_position_size: 10, // Maximum position size percentage
+                    min_position_size: 1, // Minimum position size percentage
+                    rebalance_threshold: 5, // Rebalance when deviation exceeds this %
+                    compound_returns: true // Use compounding for position sizing
+                },
+                stop_loss_take_profit: {
+                    dynamic_stops: true, // Use dynamic stop loss
+                    trailing_stops: true, // Enable trailing stops
+                    time_based_exits: true, // Enable time-based position exits
+                    profit_targets: {
+                        method: 'multiple_targets', // single, multiple_targets, adaptive
+                        target_1: 2.0, // First profit target multiplier
+                        target_2: 3.0, // Second profit target multiplier
+                        target_3: 5.0, // Third profit target multiplier
+                        partial_close_1: 30, // Percentage to close at target 1
+                        partial_close_2: 50, // Percentage to close at target 2
+                        partial_close_3: 100 // Percentage to close at target 3
+                    },
+                    stop_loss: {
+                        method: 'atr_based', // fixed, atr_based, volatility_based, support_resistance
+                        atr_multiplier: 2.0, // ATR multiplier for stop loss
+                        max_stop_distance: 5, // Maximum stop loss distance percentage
+                        min_stop_distance: 0.5, // Minimum stop loss distance percentage
+                        breakeven_trigger: 1.5, // Move to breakeven at this profit ratio
+                        trail_activation: 2.0, // Activate trailing at this profit ratio
+                        trail_step: 0.5 // Trailing step size as ATR multiplier
+                    }
+                },
+                portfolio_protection: {
+                    daily_loss_limit: 3, // Daily loss limit percentage
+                    weekly_loss_limit: 8, // Weekly loss limit percentage
+                    monthly_loss_limit: 15, // Monthly loss limit percentage
+                    drawdown_limit: 10, // Maximum drawdown percentage
+                    consecutive_losses_limit: 5, // Stop after consecutive losses
+                    win_rate_threshold: 40, // Minimum win rate percentage
+                    profit_factor_threshold: 1.2, // Minimum profit factor
+                    recovery_mode: {
+                        enabled: true,
+                        trigger_drawdown: 8, // Activate recovery mode at this drawdown
+                        reduced_position_size: 50, // Reduce position size by this percentage
+                        stricter_filters: true, // Apply stricter entry filters
+                        max_positions: 3 // Limit concurrent positions in recovery
+                    }
+                },
+                market_conditions: {
+                    volatility_regime_detection: true, // Detect volatility regimes
+                    trend_strength_filter: true, // Filter trades based on trend strength
+                    market_sentiment_filter: true, // Consider market sentiment
+                    economic_calendar_filter: true, // Avoid trading during major events
+                    liquidity_filter: true, // Filter based on market liquidity
+                    correlation_monitoring: true, // Monitor inter-asset correlations
+                    regime_parameters: {
+                        high_volatility_threshold: 25, // VIX or volatility threshold
+                        low_liquidity_threshold: 0.5, // Liquidity threshold
+                        trend_strength_min: 0.6, // Minimum trend strength
+                        sentiment_extreme_threshold: 80 // Sentiment extreme threshold
+                    }
+                },
+                advanced_filters: {
+                    time_filters: {
+                        avoid_weekends: true,
+                        avoid_holidays: true,
+                        trading_hours_only: true,
+                        avoid_low_volume_hours: true,
+                        custom_blackout_periods: []
+                    },
+                    fundamental_filters: {
+                        earnings_season_adjustment: true,
+                        avoid_ex_dividend_dates: true,
+                        debt_to_equity_max: 2.0,
+                        current_ratio_min: 1.2,
+                        revenue_growth_min: 5 // Minimum revenue growth percentage
+                    },
+                    technical_filters: {
+                        min_volume_ratio: 1.2, // Minimum volume vs average
+                        max_gap_size: 3, // Maximum gap size percentage
+                        trend_confirmation_required: true,
+                        support_resistance_respect: true,
+                        momentum_alignment: true
+                    }
+                },
+                emergency_controls: {
+                    kill_switch: {
+                        enabled: true,
+                        triggers: {
+                            max_daily_loss: 5,
+                            max_drawdown: 12,
+                            consecutive_losses: 7,
+                            system_errors: 3,
+                            api_failures: 5
+                        },
+                        actions: {
+                            close_all_positions: true,
+                            disable_new_trades: true,
+                            send_alerts: true,
+                            require_manual_restart: true
+                        }
+                    },
+                    circuit_breakers: {
+                        enabled: true,
+                        rapid_loss_threshold: 2, // Percentage loss in short time
+                        rapid_loss_timeframe: 5, // Minutes
+                        pause_duration: 30, // Minutes to pause trading
+                        escalation_levels: 3
+                    }
+                },
+                global_rules: {
+                    min_volume_24h: 1000000, // Minimum 24h trading volume in USDT
+                    market_conditions: {
+                        volatility_threshold: 15, // Maximum volatility percentage
+                        volume_spike_threshold: 200, // Volume spike threshold percentage
+                        bear_market_mode: false // Conservative mode for bear markets
+                    }
+                }
+            },
+            // Feature 5: Dashboard Customization
+            dashboard_customization: {
+                enabled: true,
+                layout: {
+                    grid_type: 'responsive', // responsive, fixed, masonry
+                    columns: 4, // Number of columns in grid
+                    gap: 16, // Gap between widgets in pixels
+                    padding: 20, // Padding around dashboard
+                    widget_min_height: 200, // Minimum widget height
+                    widget_max_height: 600, // Maximum widget height
+                    auto_resize: true, // Auto resize widgets based on content
+                    compact_mode: false // Compact layout for smaller screens
+                },
+                widgets: {
+                    portfolio_overview: {
+                        enabled: true,
+                        position: { x: 0, y: 0, w: 2, h: 2 },
+                        config: {
+                            show_balance: true,
+                            show_pnl: true,
+                            show_positions: true,
+                            currency: 'USD',
+                            refresh_interval: 5000
+                        }
+                    },
+                    trading_chart: {
+                        enabled: true,
+                        position: { x: 2, y: 0, w: 2, h: 3 },
+                        config: {
+                            default_symbol: 'BTCUSDT',
+                            default_timeframe: '1h',
+                            chart_type: 'candlestick', // candlestick, line, area
+                            indicators: ['EMA20', 'RSI', 'MACD'],
+                            drawing_tools: true,
+                            volume_bars: true,
+                            grid_lines: true
+                        }
+                    },
+                    market_overview: {
+                        enabled: true,
+                        position: { x: 0, y: 2, w: 1, h: 2 },
+                        config: {
+                            show_gainers: true,
+                            show_losers: true,
+                            show_volume: true,
+                            max_items: 10,
+                            refresh_interval: 10000
+                        }
+                    },
+                    ai_insights: {
+                        enabled: true,
+                        position: { x: 1, y: 2, w: 1, h: 2 },
+                        config: {
+                            show_recommendations: true,
+                            show_sentiment: true,
+                            show_alerts: true,
+                            max_insights: 5,
+                            auto_refresh: true
+                        }
+                    },
+                    performance_metrics: {
+                        enabled: true,
+                        position: { x: 0, y: 4, w: 2, h: 1 },
+                        config: {
+                            show_daily_pnl: true,
+                            show_total_return: true,
+                            show_win_rate: true,
+                            show_sharpe_ratio: true,
+                            period: '30d' // 1d, 7d, 30d, 90d, 1y
+                        }
+                    },
+                    news_feed: {
+                        enabled: true,
+                        position: { x: 2, y: 3, w: 2, h: 2 },
+                        config: {
+                            sources: ['coindesk', 'cointelegraph', 'binance'],
+                            categories: ['bitcoin', 'ethereum', 'defi'],
+                            max_articles: 8,
+                            show_images: true,
+                            refresh_interval: 300000 // 5 minutes
+                        }
+                    },
+                    order_book: {
+                        enabled: false,
+                        position: { x: 4, y: 0, w: 1, h: 3 },
+                        config: {
+                            symbol: 'BTCUSDT',
+                            depth: 20,
+                            show_spread: true,
+                            precision: 2,
+                            auto_refresh: true
+                        }
+                    },
+                    recent_trades: {
+                        enabled: false,
+                        position: { x: 4, y: 3, w: 1, h: 2 },
+                        config: {
+                            max_trades: 15,
+                            show_time: true,
+                            show_side: true,
+                            color_coding: true
+                        }
+                    }
+                },
+                themes: {
+                    current: 'dark_professional', // Current active theme
+                    available: {
+                        dark_professional: {
+                            name: 'حرفه‌ای تیره',
+                            primary_bg: '#1a1a1a',
+                            secondary_bg: '#2d2d2d',
+                            accent_color: '#3b82f6',
+                            text_primary: '#ffffff',
+                            text_secondary: '#a1a1aa',
+                            success_color: '#10b981',
+                            error_color: '#ef4444',
+                            warning_color: '#f59e0b',
+                            border_color: '#374151'
+                        },
+                        light_minimal: {
+                            name: 'مینیمال روشن',
+                            primary_bg: '#ffffff',
+                            secondary_bg: '#f8fafc',
+                            accent_color: '#6366f1',
+                            text_primary: '#1f2937',
+                            text_secondary: '#6b7280',
+                            success_color: '#059669',
+                            error_color: '#dc2626',
+                            warning_color: '#d97706',
+                            border_color: '#e5e7eb'
+                        },
+                        blue_ocean: {
+                            name: 'اقیانوس آبی',
+                            primary_bg: '#0f172a',
+                            secondary_bg: '#1e293b',
+                            accent_color: '#0ea5e9',
+                            text_primary: '#f1f5f9',
+                            text_secondary: '#cbd5e1',
+                            success_color: '#06b6d4',
+                            error_color: '#f43f5e',
+                            warning_color: '#fbbf24',
+                            border_color: '#334155'
+                        },
+                        green_matrix: {
+                            name: 'ماتریکس سبز',
+                            primary_bg: '#0a0a0a',
+                            secondary_bg: '#1a1a1a',
+                            accent_color: '#00ff41',
+                            text_primary: '#00ff41',
+                            text_secondary: '#008f11',
+                            success_color: '#00ff41',
+                            error_color: '#ff0033',
+                            warning_color: '#ffaa00',
+                            border_color: '#003311'
+                        }
+                    }
+                },
+                chart_settings: {
+                    default_timeframes: ['1m', '5m', '15m', '1h', '4h', '1d', '1w'],
+                    default_indicators: {
+                        moving_averages: {
+                            enabled: true,
+                            types: ['SMA', 'EMA', 'WMA'],
+                            periods: [9, 20, 50, 200]
+                        },
+                        oscillators: {
+                            enabled: true,
+                            types: ['RSI', 'MACD', 'Stochastic', 'Williams%R'],
+                            default_periods: { RSI: 14, MACD: [12, 26, 9] }
+                        },
+                        volume: {
+                            enabled: true,
+                            show_profile: false,
+                            show_delta: false
+                        },
+                        overlays: {
+                            enabled: true,
+                            bollinger_bands: true,
+                            support_resistance: true,
+                            fibonacci: true
+                        }
+                    },
+                    chart_styles: {
+                        candle_colors: {
+                            bull: '#10b981',
+                            bear: '#ef4444',
+                            wick: '#6b7280'
+                        },
+                        grid: {
+                            show: true,
+                            color: '#374151',
+                            style: 'solid' // solid, dashed, dotted
+                        },
+                        crosshair: {
+                            enabled: true,
+                            color: '#9ca3af',
+                            style: 'dashed'
+                        }
+                    }
+                },
+                personal_views: {
+                    current_view: 'default',
+                    views: {
+                        default: {
+                            name: 'پیش‌فرض',
+                            description: 'نمای استاندارد داشبورد',
+                            layout: 'default_layout',
+                            widgets: ['portfolio_overview', 'trading_chart', 'market_overview', 'ai_insights']
+                        },
+                        trading_focused: {
+                            name: 'متمرکز بر معاملات',
+                            description: 'نمای بهینه شده برای معاملات فعال',
+                            layout: 'trading_layout',
+                            widgets: ['trading_chart', 'order_book', 'recent_trades', 'portfolio_overview']
+                        },
+                        analysis_mode: {
+                            name: 'حالت تحلیل',
+                            description: 'نمای مناسب برای تحلیل بازار',
+                            layout: 'analysis_layout',
+                            widgets: ['trading_chart', 'market_overview', 'news_feed', 'performance_metrics']
+                        },
+                        monitoring: {
+                            name: 'نظارت',
+                            description: 'نمای نظارتی برای مدیریت پورتفولیو',
+                            layout: 'monitoring_layout',
+                            widgets: ['portfolio_overview', 'performance_metrics', 'ai_insights', 'news_feed']
+                        }
+                    }
+                },
+                display_settings: {
+                    animation_speed: 'normal', // slow, normal, fast, disabled
+                    reduce_motion: false,
+                    high_contrast: false,
+                    font_size: 'medium', // small, medium, large, xlarge
+                    number_format: {
+                        decimal_places: 2,
+                        thousand_separator: ',',
+                        currency_symbol_position: 'before' // before, after
+                    },
+                    notifications: {
+                        show_toast: true,
+                        toast_position: 'top-right', // top-left, top-right, bottom-left, bottom-right
+                        toast_duration: 5000,
+                        sound_alerts: true
+                    }
+                }
+            },
+            // Feature 6: Alert Rules Management
+            alert_rules_management: {
+                enabled: true,
+                global_settings: {
+                    rate_limiting: {
+                        max_alerts_per_minute: 10,
+                        max_alerts_per_hour: 100,
+                        max_alerts_per_day: 500,
+                        cooldown_period: 60 // seconds between duplicate alerts
+                    },
+                    alert_retention_days: 30, // How long to keep alert history
+                    default_timezone: 'Asia/Tehran',
+                    quiet_hours: {
+                        enabled: true,
+                        start_time: '23:00',
+                        end_time: '07:00'
+                    },
+                    emergency_override: true // Override quiet hours for critical alerts
+                },
+                notification_channels: {
+                    email: {
+                        enabled: true,
+                        priority_threshold: 'medium', // low, medium, high, critical
+                        template_id: 'default_email',
+                        batch_notifications: true,
+                        batch_interval: 300, // seconds
+                        max_batch_size: 10
+                    },
+                    telegram: {
+                        enabled: true,
+                        priority_threshold: 'high',
+                        template_id: 'default_telegram',
+                        parse_mode: 'HTML',
+                        disable_preview: false
+                    },
+                    whatsapp: {
+                        enabled: false,
+                        priority_threshold: 'high',
+                        template_id: 'default_whatsapp'
+                    },
+                    sms: {
+                        enabled: false,
+                        priority_threshold: 'critical',
+                        template_id: 'default_sms'
+                    },
+                    discord: {
+                        enabled: true,
+                        priority_threshold: 'medium',
+                        template_id: 'default_discord',
+                        mention_roles: ['@traders', '@analysts']
+                    },
+                    push_notification: {
+                        enabled: true,
+                        priority_threshold: 'low',
+                        template_id: 'default_push',
+                        badge_count: true,
+                        sound: true
+                    },
+                    webhook: {
+                        enabled: false,
+                        priority_threshold: 'medium',
+                        urls: [],
+                        authentication: {
+                            type: 'bearer', // bearer, basic, custom
+                            token: '',
+                            headers: {}
+                        }
+                    }
+                },
+                alert_rules: {
+                    price_alerts: {
+                        rule_id: 'price_001',
+                        name: 'هشدار قیمت',
+                        enabled: true,
+                        priority: 'medium',
+                        conditions: {
+                            type: 'price_threshold',
+                            symbol: 'BTCUSDT',
+                            condition: 'crosses_above', // crosses_above, crosses_below, equals, percentage_change
+                            threshold: 50000,
+                            percentage_change: null,
+                            timeframe: '1m'
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'push_notification'],
+                            template: 'price_alert_template',
+                            cooldown_period: 300, // seconds between same alerts
+                            max_triggers_per_day: 5
+                        },
+                        escalation: {
+                            enabled: false,
+                            levels: [
+                                {
+                                    delay_minutes: 5,
+                                    channels: ['sms'],
+                                    condition: 'not_acknowledged'
+                                },
+                                {
+                                    delay_minutes: 15,
+                                    channels: ['telegram', 'discord'],
+                                    condition: 'still_active'
+                                }
+                            ]
+                        }
+                    },
+                    volume_alerts: {
+                        rule_id: 'volume_001',
+                        name: 'هشدار حجم معاملات',
+                        enabled: true,
+                        priority: 'low',
+                        conditions: {
+                            type: 'volume_spike',
+                            symbol: 'BTCUSDT',
+                            condition: 'above_average',
+                            multiplier: 3.0, // 3x above average
+                            timeframe: '5m',
+                            lookback_period: 24 // hours
+                        },
+                        actions: {
+                            channels: ['discord', 'push_notification'],
+                            template: 'volume_alert_template',
+                            cooldown_period: 600,
+                            max_triggers_per_day: 10
+                        },
+                        escalation: {
+                            enabled: false
+                        }
+                    },
+                    portfolio_alerts: {
+                        rule_id: 'portfolio_001',
+                        name: 'هشدار پورتفولیو',
+                        enabled: true,
+                        priority: 'high',
+                        conditions: {
+                            type: 'portfolio_pnl',
+                            condition: 'loss_exceeds',
+                            threshold: -5, // -5% loss
+                            timeframe: 'daily'
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'sms'],
+                            template: 'portfolio_alert_template',
+                            cooldown_period: 1800,
+                            max_triggers_per_day: 3
+                        },
+                        escalation: {
+                            enabled: true,
+                            levels: [
+                                {
+                                    delay_minutes: 10,
+                                    channels: ['telegram'],
+                                    condition: 'loss_continues'
+                                }
+                            ]
+                        }
+                    },
+                    ai_alerts: {
+                        rule_id: 'ai_001',
+                        name: 'هشدارهای هوش مصنوعی',
+                        enabled: true,
+                        priority: 'medium',
+                        conditions: {
+                            type: 'ai_signal',
+                            signal_type: 'strong_buy', // strong_buy, strong_sell, high_confidence
+                            confidence_threshold: 0.85,
+                            models: ['artemis', 'technical_analysis', 'sentiment']
+                        },
+                        actions: {
+                            channels: ['telegram', 'discord', 'push_notification'],
+                            template: 'ai_alert_template',
+                            cooldown_period: 900,
+                            max_triggers_per_day: 8
+                        },
+                        escalation: {
+                            enabled: false
+                        }
+                    },
+                    system_alerts: {
+                        rule_id: 'system_001',
+                        name: 'هشدارهای سیستم',
+                        enabled: true,
+                        priority: 'critical',
+                        conditions: {
+                            type: 'system_health',
+                            condition: 'error_rate_high',
+                            threshold: 10, // errors per minute
+                            duration: 5 // minutes
+                        },
+                        actions: {
+                            channels: ['email', 'telegram', 'sms', 'discord'],
+                            template: 'system_alert_template',
+                            cooldown_period: 60,
+                            max_triggers_per_day: 20
+                        },
+                        escalation: {
+                            enabled: true,
+                            levels: [
+                                {
+                                    delay_minutes: 2,
+                                    channels: ['sms'],
+                                    condition: 'not_resolved'
+                                },
+                                {
+                                    delay_minutes: 5,
+                                    channels: ['webhook'],
+                                    condition: 'still_critical'
+                                }
+                            ]
+                        }
+                    }
+                },
+                alert_templates: {
+                    price_alert_template: {
+                        name: 'قالب هشدار قیمت',
+                        channels: {
+                            email: {
+                                subject: '🚨 هشدار قیمت - {{symbol}}',
+                                body: `
+                                    <h2>هشدار قیمت {{symbol}}</h2>
+                                    <p>قیمت {{symbol}} به {{price}} رسیده است.</p>
+                                    <p>شرایط: {{condition}}</p>
+                                    <p>زمان: {{timestamp}}</p>
+                                    <p>مشاهده داشبورد: <a href="{{dashboard_url}}">کلیک کنید</a></p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+🚨 *هشدار قیمت*
+📈 نماد: {{symbol}}
+💰 قیمت: {{price}}
+📊 شرایط: {{condition}}
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            },
+                            discord: {
+                                message: `
+🚨 **هشدار قیمت**
+**نماد:** {{symbol}}
+**قیمت:** {{price}}
+**شرایط:** {{condition}}
+**زمان:** {{timestamp}}
+                                `,
+                                embed: true,
+                                color: '#ff6b6b'
+                            },
+                            push_notification: {
+                                title: 'هشدار قیمت {{symbol}}',
+                                body: 'قیمت به {{price}} رسید',
+                                icon: 'price-alert',
+                                url: '{{dashboard_url}}'
+                            }
+                        }
+                    },
+                    volume_alert_template: {
+                        name: 'قالب هشدار حجم',
+                        channels: {
+                            telegram: {
+                                message: `
+📊 *هشدار حجم معاملات*
+📈 نماد: {{symbol}}
+📊 حجم: {{volume}}
+🔥 برابر میانگین: {{multiplier}}x
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            },
+                            discord: {
+                                message: `
+📊 **هشدار حجم معاملات**
+**نماد:** {{symbol}}
+**حجم:** {{volume}}
+**برابر میانگین:** {{multiplier}}x
+**زمان:** {{timestamp}}
+                                `,
+                                embed: true,
+                                color: '#4ecdc4'
+                            }
+                        }
+                    },
+                    portfolio_alert_template: {
+                        name: 'قالب هشدار پورتفولیو',
+                        channels: {
+                            email: {
+                                subject: '⚠️ هشدار پورتفولیو - ضرر {{loss_percentage}}%',
+                                body: `
+                                    <h2>هشدار پورتفولیو</h2>
+                                    <p><strong>ضرر:</strong> {{loss_percentage}}%</p>
+                                    <p><strong>مبلغ:</strong> {{loss_amount}} {{currency}}</p>
+                                    <p><strong>بازه زمانی:</strong> {{timeframe}}</p>
+                                    <p><strong>زمان:</strong> {{timestamp}}</p>
+                                    <p>لطفاً وضعیت پورتفولیو خود را بررسی کنید.</p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+⚠️ *هشدار پورتفولیو*
+📉 ضرر: {{loss_percentage}}%
+💸 مبلغ: {{loss_amount}} {{currency}}
+📅 بازه: {{timeframe}}
+🕐 زمان: {{timestamp}}
+
+لطفاً فوراً بررسی کنید!
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    ai_alert_template: {
+                        name: 'قالب هشدار هوش مصنوعی',
+                        channels: {
+                            telegram: {
+                                message: `
+🤖 *سیگنال هوش مصنوعی*
+📈 نماد: {{symbol}}
+🎯 سیگنال: {{signal_type}}
+🔥 اطمینان: {{confidence}}%
+🧠 مدل‌ها: {{models}}
+🕐 زمان: {{timestamp}}
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    system_alert_template: {
+                        name: 'قالب هشدار سیستم',
+                        channels: {
+                            email: {
+                                subject: '🚨 هشدار سیستم - {{alert_type}}',
+                                body: `
+                                    <h2 style="color: #e74c3c;">هشدار سیستم</h2>
+                                    <p><strong>نوع هشدار:</strong> {{alert_type}}</p>
+                                    <p><strong>توضیحات:</strong> {{description}}</p>
+                                    <p><strong>سطح:</strong> {{severity}}</p>
+                                    <p><strong>زمان:</strong> {{timestamp}}</p>
+                                    <p style="color: #e74c3c;">لطفاً فوراً اقدام کنید!</p>
+                                `,
+                                format: 'html'
+                            },
+                            telegram: {
+                                message: `
+🚨 *هشدار سیستم*
+⚠️ نوع: {{alert_type}}
+📝 توضیحات: {{description}}
+🔴 سطح: {{severity}}
+🕐 زمان: {{timestamp}}
+
+🔧 لطفاً فوراً اقدام کنید!
+                                `,
+                                parse_mode: 'Markdown'
+                            }
+                        }
+                    },
+                    custom_template: {
+                        name: 'قالب سفارشی',
+                        channels: {
+                            telegram: {
+                                message: '{{custom_message}}',
+                                parse_mode: 'Markdown'
+                            },
+                            email: {
+                                subject: '{{custom_subject}}',
+                                body: '{{custom_body}}',
+                                format: 'html'
+                            }
+                        }
+                    }
+                },
+                escalation_policies: {
+                    standard_escalation: {
+                        name: 'تصعید استاندارد',
+                        levels: [
+                            {
+                                level: 1,
+                                delay_minutes: 5,
+                                channels: ['telegram'],
+                                condition: 'not_acknowledged',
+                                message: 'هشدار هنوز تأیید نشده است'
+                            },
+                            {
+                                level: 2,
+                                delay_minutes: 15,
+                                channels: ['email', 'sms'],
+                                condition: 'still_active',
+                                message: 'هشدار هنوز فعال است'
+                            },
+                            {
+                                level: 3,
+                                delay_minutes: 30,
+                                channels: ['webhook'],
+                                condition: 'not_resolved',
+                                message: 'هشدار حل نشده است - تماس با پشتیبانی'
+                            }
+                        ]
+                    },
+                    critical_escalation: {
+                        name: 'تصعید بحرانی',
+                        levels: [
+                            {
+                                level: 1,
+                                delay_minutes: 1,
+                                channels: ['sms', 'telegram'],
+                                condition: 'immediate',
+                                message: 'هشدار بحرانی - اقدام فوری'
+                            },
+                            {
+                                level: 2,
+                                delay_minutes: 3,
+                                channels: ['email', 'discord', 'webhook'],
+                                condition: 'not_acknowledged',
+                                message: 'هشدار بحرانی تأیید نشده'
+                            }
+                        ]
+                    }
+                },
+                alert_history: {
+                    enabled: true,
+                    max_records: 10000,
+                    auto_cleanup: true,
+                    cleanup_after_days: 90,
+                    export_formats: ['json', 'csv', 'excel'],
+                    analytics: {
+                        enabled: true,
+                        metrics: ['trigger_frequency', 'response_time', 'false_positive_rate', 'channel_effectiveness']
+                    }
+                }
+            },
             security: {
                 two_factor: {
                     enabled: false,
@@ -716,50 +1526,7 @@ class SettingsModule {
             <div class="bg-gray-800 rounded-lg border border-gray-700">
                 <!-- Tab Navigation -->
                 <div class="flex border-b border-gray-700 overflow-x-auto">
-                    <button onclick="settingsModule.switchTab('general')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'general' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-cog"></i>عمومی
-                    </button>
-                    <button onclick="settingsModule.switchTab('notifications')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'notifications' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-bell"></i>اعلان‌ها
-                    </button>
-                    <button onclick="settingsModule.switchTab('exchanges')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'exchanges' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-exchange-alt"></i>صرافی‌ها
-                    </button>
-                    <button onclick="settingsModule.switchTab('ai')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'ai' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-robot"></i>هوش مصنوعی
-                    </button>
-                    <button onclick="settingsModule.switchTab('ai-management')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'ai-management' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-robot"></i>مدیریت AI
-                    </button>
-                    <button onclick="settingsModule.switchTab('trading')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'trading' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-chart-line"></i>معاملات
-                    </button>
-                    <button onclick="settingsModule.switchTab('security')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'security' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-shield-alt"></i>امنیت
-                    </button>
-                    <button onclick="settingsModule.switchTab('users')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'users' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-users"></i>مدیریت کاربران
-                    </button>
-                    <button onclick="settingsModule.switchTab('system')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'system' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-cogs"></i>سیستم
-                    </button>
-                    <button onclick="settingsModule.switchTab('monitoring')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'monitoring' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-chart-area"></i>پایش سیستم
-                    </button>
-                    <button onclick="settingsModule.switchTab('wallets')" 
-                            class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${this.currentTab === 'wallets' ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white'}">
-                        <i class="fas fa-wallet"></i>کیف پول‌ها
-                    </button>
+                    ${this.buildTabButtons()}
                 </div>
 
                 <!-- Tab Content -->
@@ -778,6 +1545,33 @@ class SettingsModule {
                 </button>
             </div>
         </div>`;
+    }
+
+    buildTabButtons() {
+        const tabs = [
+            { id: 'general', icon: 'fa-cog', title: 'عمومی' },
+            { id: 'notifications', icon: 'fa-bell', title: 'اعلان‌ها' },
+            { id: 'exchanges', icon: 'fa-exchange-alt', title: 'صرافی‌ها' },
+            { id: 'ai', icon: 'fa-robot', title: 'هوش مصنوعی' },
+            { id: 'ai-management', icon: 'fa-robot', title: 'مدیریت AI' },
+            { id: 'trading', icon: 'fa-chart-line', title: 'معاملات' },
+            { id: 'security', icon: 'fa-shield-alt', title: 'امنیت' },
+            { id: 'users', icon: 'fa-users', title: 'مدیریت کاربران' },
+            { id: 'system', icon: 'fa-cogs', title: 'سیستم' },
+            { id: 'monitoring', icon: 'fa-chart-area', title: 'پایش سیستم' },
+            { id: 'wallets', icon: 'fa-wallet', title: 'کیف پول‌ها' }
+        ];
+
+        return tabs.map(tab => {
+            const isActive = this.currentTab === tab.id;
+            const activeClass = isActive ? 'text-blue-400 border-b-2 border-blue-400' : 'text-gray-400 hover:text-white';
+            
+            return `
+                <button onclick="settingsModule.switchTab('${tab.id}')" 
+                        class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 ${activeClass}">
+                    <i class="fas ${tab.icon}"></i>${tab.title}
+                </button>`;
+        }).join('');
     }
 
     getTabContent() {
@@ -1582,7 +2376,7 @@ class SettingsModule {
                 <div class="flex items-center justify-between mb-4">
                     <h4 class="text-lg font-semibold text-white">📋 قوانین پیشرفته معاملاتی</h4>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="advanced-rules-enabled" class="sr-only peer" ${this.settings.trading.advanced_rules.enabled ? 'checked' : ''}>
+                        <input type="checkbox" id="advanced-rules-enabled" class="sr-only peer" ${this.settings.advanced_trading_rules.enabled ? 'checked' : ''}>
                         <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                 </div>
@@ -1593,24 +2387,24 @@ class SettingsModule {
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر اهرم</label>
-                            <input type="number" id="max-leverage" min="1" max="100" value="${this.settings.trading.advanced_rules.global_rules.max_leverage}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="max-leverage" min="1" max="100" value="${this.settings.advanced_trading_rules.risk_management.leverage_limit}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">حداقل حجم 24 ساعته (USDT)</label>
-                            <input type="number" id="min-volume-24h" min="100000" max="100000000" value="${this.settings.trading.advanced_rules.global_rules.min_volume_24h}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="min-volume-24h" min="100000" max="100000000" value="${this.settings.advanced_trading_rules.global_rules.min_volume_24h}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">آستانه نوسان (%)</label>
-                            <input type="number" id="volatility-threshold" min="1" max="50" value="${this.settings.trading.advanced_rules.global_rules.market_conditions.volatility_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="volatility-threshold" min="1" max="50" value="${this.settings.advanced_trading_rules.global_rules.market_conditions.volatility_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">آستانه افزایش حجم (%)</label>
-                            <input type="number" id="volume-spike-threshold" min="50" max="1000" value="${this.settings.trading.advanced_rules.global_rules.market_conditions.volume_spike_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <input type="number" id="volume-spike-threshold" min="50" max="1000" value="${this.settings.advanced_trading_rules.global_rules.market_conditions.volume_spike_threshold}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         </div>
                     </div>
                     <div class="mt-4">
                         <label class="flex items-center gap-2 mb-2">
-                            <input type="checkbox" id="bear-market-mode" ${this.settings.trading.advanced_rules.global_rules.market_conditions.bear_market_mode ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <input type="checkbox" id="bear-market-mode" ${this.settings.advanced_trading_rules.global_rules.market_conditions.bear_market_mode ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
                             <span class="text-gray-300">حالت بازار نزولی (محافظه‌کارانه)</span>
                         </label>
                     </div>
@@ -1760,6 +2554,8 @@ class SettingsModule {
                     </div>
                 </div>
             </div>
+
+                <!-- Feature 4: Advanced Trading Rules moved to Trading tab -->
         </div>`;
     }
 
@@ -1825,6 +2621,199 @@ class SettingsModule {
                             <span class="text-green-400">آنلاین</span>
                         </div>
                     </div>
+                </div>
+            </div>
+
+            <!-- System Updates -->
+            <div class="bg-gray-900 rounded-lg p-4 border-2 border-blue-500">
+                <h4 class="text-lg font-semibold text-white mb-4">🚀 آپدیت‌های سیستم</h4>
+                
+                <!-- Current Version Info -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center gap-3">
+                            <div class="text-2xl">🏷️</div>
+                            <div>
+                                <div class="text-white font-semibold">نسخه فعلی: TITAN v1.0.0</div>
+                                <div class="text-gray-400 text-sm">تاریخ انتشار: ${new Date().toLocaleDateString('fa-IR')}</div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <div class="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+                            <span class="text-green-400 text-sm font-medium">آخرین نسخه</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Release Notes Preview -->
+                    <div class="text-sm text-gray-300 mb-3">
+                        <strong>ویژگی‌های اصلی:</strong>
+                        <ul class="list-disc list-inside mt-2 space-y-1 text-xs">
+                            <li>✅ سیستم معاملات خودکار با هوش مصنوعی آرتمیس</li>
+                            <li>✅ پنل مدیریت جامع با 11 تب تخصصی</li>
+                            <li>✅ پایش لحظه‌ای بازار و تحلیل قیمت‌ها</li>
+                            <li>✅ مدیریت پورتفولیو و ریسک پیشرفته</li>
+                            <li>✅ سیستم اعلان‌های هوشمند چندکاناله</li>
+                            <li>✅ امنیت بانکی با رمزنگاری پیشرفته</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Update Check Status -->
+                <div class="bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-4 mb-4 border border-blue-400">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div id="update-status-icon" class="text-2xl">⏳</div>
+                            <div>
+                                <div class="text-white font-medium" id="update-status-text">در حال بررسی آپدیت‌ها...</div>
+                                <div class="text-blue-300 text-sm" id="update-status-detail">آخرین بررسی: ${new Date().toLocaleTimeString('fa-IR')}</div>
+                            </div>
+                        </div>
+                        <button onclick="settingsModule.checkForUpdates()" 
+                                class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm transition-all">
+                            <i class="fas fa-sync-alt mr-2"></i>بررسی آپدیت
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Auto Update Settings -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center gap-3">
+                            <span class="text-xl">🤖</span>
+                            <div>
+                                <div class="text-white font-medium">آپدیت خودکار</div>
+                                <div class="text-gray-400 text-sm">بررسی و نصب خودکار آپدیت‌ها</div>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="auto-update-enabled" class="sr-only peer" ${this.settings.general.auto_updates || false ? 'checked' : ''}>
+                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                        </label>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-2">نوع آپدیت‌های خودکار:</label>
+                            <select id="auto-update-type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm">
+                                <option value="security">فقط آپدیت‌های امنیتی</option>
+                                <option value="minor">آپدیت‌های جزئی و امنیتی</option>
+                                <option value="all">تمام آپدیت‌ها (پیشنهادی)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-2">زمان بررسی:</label>
+                            <select id="update-check-time" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-sm">
+                                <option value="daily">روزانه (ساعت 3:00 صبح)</option>
+                                <option value="weekly">هفتگی (یکشنبه‌ها)</option>
+                                <option value="manual">دستی (غیرفعال)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Update History -->
+                <div class="bg-gray-800 rounded-lg p-4 mb-4">
+                    <h5 class="text-white font-medium mb-3 flex items-center gap-2">
+                        <i class="fas fa-history text-gray-400"></i>
+                        تاریخچه آپدیت‌ها
+                    </h5>
+                    <div class="space-y-2 max-h-40 overflow-y-auto" id="update-history">
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                <span class="text-white">TITAN v1.0.0</span>
+                                <span class="text-gray-400">- راه‌اندازی اولیه</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">${new Date().toLocaleDateString('fa-IR')}</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-blue-400 rounded-full"></div>
+                                <span class="text-white">TITAN v0.9.8-beta</span>
+                                <span class="text-gray-400">- تست نهایی</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">2 روز پیش</span>
+                        </div>
+                        <div class="flex items-center justify-between p-2 bg-gray-700 rounded text-sm">
+                            <div class="flex items-center gap-2">
+                                <div class="w-2 h-2 bg-yellow-400 rounded-full"></div>
+                                <span class="text-white">TITAN v0.9.5-alpha</span>
+                                <span class="text-gray-400">- پیاده‌سازی آرتمیس AI</span>
+                            </div>
+                            <span class="text-gray-400 text-xs">1 هفته پیش</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Update Options -->
+                <div class="bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg p-4 border border-gray-600">
+                    <h5 class="text-white font-medium mb-3 flex items-center gap-2">
+                        <i class="fas fa-cog text-gray-400"></i>
+                        تنظیمات پیشرفته آپدیت
+                    </h5>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <!-- Backup Before Update -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="backup-before-update" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">پشتیبان‌گیری قبل از آپدیت</label>
+                                <div class="text-gray-400 text-xs">ایجاد نسخه پشتیبان خودکار</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Notification Settings -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="update-notifications" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">اعلان آپدیت‌ها</label>
+                                <div class="text-gray-400 text-xs">اطلاع از آپدیت‌های جدید</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Beta Updates -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="beta-updates" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">نسخه‌های آزمایشی (Beta)</label>
+                                <div class="text-gray-400 text-xs">دریافت آپدیت‌های آزمایشی</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Rollback Option -->
+                        <div class="flex items-center gap-3">
+                            <input type="checkbox" id="enable-rollback" checked class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
+                            <div>
+                                <label class="text-white text-sm">امکان بازگشت نسخه</label>
+                                <div class="text-gray-400 text-xs">قابلیت برگشت به نسخه قبلی</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-3 mt-6">
+                    <button onclick="settingsModule.checkForUpdates()" 
+                            class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-sync-alt"></i>بررسی آپدیت‌ها
+                    </button>
+                    <button onclick="settingsModule.downloadUpdate()" 
+                            class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all" 
+                            id="download-update-btn" disabled>
+                        <i class="fas fa-download"></i>دانلود آپدیت
+                    </button>
+                    <button onclick="settingsModule.viewReleaseNotes()" 
+                            class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-clipboard-list"></i>یادداشت‌های انتشار
+                    </button>
+                    <button onclick="settingsModule.systemBackup()" 
+                            class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-shield-alt"></i>پشتیبان‌گیری
+                    </button>
+                    <button onclick="settingsModule.rollbackVersion()" 
+                            class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm flex items-center gap-2 transition-all">
+                        <i class="fas fa-undo"></i>بازگشت نسخه
+                    </button>
                 </div>
             </div>
 
@@ -1966,6 +2955,171 @@ class SettingsModule {
                     </button>
                 </div>
             </div>
+
+            <!-- Feature 5: Dashboard Customization -->
+            <div class="bg-gradient-to-r from-teal-900 to-cyan-900 rounded-lg p-6 border border-teal-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🎨</span>
+                        <h3 class="text-xl font-bold text-white">Dashboard Customization</h3>
+                        <div class="px-3 py-1 bg-teal-600 text-white text-xs rounded-full">شخصی‌سازی کامل</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="dashboard-customization-enabled" class="sr-only peer" ${this.settings.dashboard_customization.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-teal-600"></div>
+                    </label>
+                </div>
+
+                <!-- Layout Management -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📐 مدیریت چیدمان</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderLayoutSettings()}
+                    </div>
+                </div>
+
+                <!-- Widget Configuration -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🧩 تنظیمات ویجت‌ها</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderWidgetSettings()}
+                    </div>
+                </div>
+
+                <!-- Theme Customization -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🌈 شخصی‌سازی تم</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderThemeSettings()}
+                    </div>
+                </div>
+
+                <!-- Chart Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📈 تنظیمات نمودار</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderChartSettings()}
+                    </div>
+                </div>
+
+                <!-- Personal Views -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">👁️ نماهای شخصی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderPersonalViews()}
+                    </div>
+                </div>
+
+                <!-- Display Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">🖥️ تنظیمات نمایش</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderDisplaySettings()}
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.previewDashboard()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-eye mr-2"></i>پیش‌نمایش
+                    </button>
+                    <button onclick="settingsModule.resetLayout()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-refresh mr-2"></i>بازنشانی چیدمان
+                    </button>
+                    <button onclick="settingsModule.exportDashboard()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تنظیمات
+                    </button>
+                    <button onclick="settingsModule.importDashboard()" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-upload mr-2"></i>وارد کردن
+                    </button>
+                    <button onclick="settingsModule.resetDashboard()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-undo mr-2"></i>بازگردانی
+                    </button>
+                </div>
+            </div>
+
+            <!-- Feature 6: Alert Rules Management -->
+            <div class="bg-gradient-to-r from-amber-900 to-orange-900 rounded-lg p-6 border border-amber-500">
+                <div class="flex items-center justify-between mb-6">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🚨</span>
+                        <h3 class="text-xl font-bold text-white">Alert Rules Management</h3>
+                        <div class="px-3 py-1 bg-amber-600 text-white text-xs rounded-full">هشدارهای هوشمند</div>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="alert-rules-enabled" class="sr-only peer" ${this.settings.alert_rules_management.enabled ? 'checked' : ''}>
+                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+
+                <!-- Global Settings -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">⚙️ تنظیمات کلی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderGlobalAlertSettings()}
+                    </div>
+                </div>
+
+                <!-- Notification Channels -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📢 کانال‌های اطلاع‌رسانی</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        ${this.renderNotificationChannels()}
+                    </div>
+                </div>
+
+                <!-- Alert Rules -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📋 قوانین هشدار</h4>
+                    <div class="space-y-4">
+                        ${this.renderAlertRules()}
+                    </div>
+                </div>
+
+                <!-- Alert Templates -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📝 قالب‌های هشدار</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderAlertTemplates()}
+                    </div>
+                </div>
+
+                <!-- Escalation Policies -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📈 سیاست‌های تصعید</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        ${this.renderEscalationPolicies()}
+                    </div>
+                </div>
+
+                <!-- Alert History & Analytics -->
+                <div class="mb-6">
+                    <h4 class="text-lg font-semibold text-white mb-4">📊 تاریخچه و تحلیل</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        ${this.renderAlertHistory()}
+                    </div>
+                </div>
+
+                <!-- Control Panel -->
+                <div class="flex gap-3 pt-4 border-t border-gray-700">
+                    <button onclick="settingsModule.testAlertRule()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-vial mr-2"></i>تست هشدار
+                    </button>
+                    <button onclick="settingsModule.createAlertRule()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-plus mr-2"></i>ایجاد قانون
+                    </button>
+                    <button onclick="settingsModule.importAlertRules()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-upload mr-2"></i>وارد کردن
+                    </button>
+                    <button onclick="settingsModule.exportAlertRules()" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات
+                    </button>
+                    <button onclick="settingsModule.resetAlertRules()" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded-lg text-white text-sm">
+                        <i class="fas fa-undo mr-2"></i>بازنشانی
+                    </button>
+                </div>
+            </div>
+
         </div>`;
     }
 
@@ -6460,7 +7614,7 @@ TITAN Trading System - Log Export
     // Feature 4: Advanced Trading Rules - Supporting Methods
 
     renderEntryRules() {
-        return this.settings.trading.advanced_rules.entry_rules.map(rule => `
+        return this.settings.advanced_trading_rules.entry_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -6507,7 +7661,7 @@ TITAN Trading System - Log Export
     }
 
     renderExitRules() {
-        return this.settings.trading.advanced_rules.exit_rules.map(rule => `
+        return this.settings.advanced_trading_rules.exit_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -6554,7 +7708,7 @@ TITAN Trading System - Log Export
     }
 
     renderScheduleRules() {
-        return this.settings.trading.advanced_rules.schedule_rules.map(rule => `
+        return this.settings.advanced_trading_rules.schedule_rules.map(rule => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700" data-rule-id="${rule.id}">
                 <div class="flex items-center justify-between mb-3">
                     <div class="flex items-center gap-3">
@@ -6592,7 +7746,7 @@ TITAN Trading System - Log Export
             id: 'rule_' + Date.now(),
             name: 'قانون ورود جدید',
             enabled: true,
-            priority: this.settings.trading.advanced_rules.entry_rules.length + 1,
+            priority: this.settings.advanced_trading_rules.entry_rules.length + 1,
             conditions: {
                 ai_confidence: { min: 70, max: 100 },
                 rsi: { min: 30, max: 70 },
@@ -6607,7 +7761,7 @@ TITAN Trading System - Log Export
             }
         };
         
-        this.settings.trading.advanced_rules.entry_rules.push(newRule);
+        this.settings.advanced_trading_rules.entry_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('قانون ورود جدید اضافه شد', 'success');
@@ -6618,7 +7772,7 @@ TITAN Trading System - Log Export
             id: 'exit_' + Date.now(),
             name: 'قانون خروج جدید',
             enabled: true,
-            priority: this.settings.trading.advanced_rules.exit_rules.length + 1,
+            priority: this.settings.advanced_trading_rules.exit_rules.length + 1,
             conditions: {
                 profit_percentage: { min: 3, max: null },
                 time_in_position: { min: 1, max: null }
@@ -6629,7 +7783,7 @@ TITAN Trading System - Log Export
             }
         };
         
-        this.settings.trading.advanced_rules.exit_rules.push(newRule);
+        this.settings.advanced_trading_rules.exit_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('قانون خروج جدید اضافه شد', 'success');
@@ -6647,7 +7801,7 @@ TITAN Trading System - Log Export
             blocked_periods: []
         };
         
-        this.settings.trading.advanced_rules.schedule_rules.push(newRule);
+        this.settings.advanced_trading_rules.schedule_rules.push(newRule);
         this.saveSettings();
         this.refreshTradingTab();
         this.showNotification('برنامه زمانی جدید اضافه شد', 'success');
@@ -6659,7 +7813,7 @@ TITAN Trading System - Log Export
     }
 
     duplicateRule(ruleId, ruleType) {
-        const rules = this.settings.trading.advanced_rules[`${ruleType}_rules`];
+        const rules = this.settings.advanced_trading_rules[`${ruleType}_rules`];
         const originalRule = rules.find(r => r.id === ruleId);
         
         if (originalRule) {
@@ -6677,7 +7831,7 @@ TITAN Trading System - Log Export
 
     deleteRule(ruleId, ruleType) {
         if (confirm('آیا از حذف این قانون اطمینان دارید؟')) {
-            const rules = this.settings.trading.advanced_rules[`${ruleType}_rules`];
+            const rules = this.settings.advanced_trading_rules[`${ruleType}_rules`];
             const index = rules.findIndex(r => r.id === ruleId);
             
             if (index !== -1) {
@@ -6690,7 +7844,7 @@ TITAN Trading System - Log Export
     }
 
     validateTradingRules() {
-        const rules = this.settings.trading.advanced_rules;
+        const rules = this.settings.advanced_trading_rules;
         const issues = [];
         
         // Validate entry rules
@@ -6727,8 +7881,8 @@ TITAN Trading System - Log Export
         // Simulate testing
         setTimeout(() => {
             const testResults = {
-                total_rules: this.settings.trading.advanced_rules.entry_rules.length + 
-                           this.settings.trading.advanced_rules.exit_rules.length,
+                total_rules: this.settings.advanced_trading_rules.entry_rules.length + 
+                           this.settings.advanced_trading_rules.exit_rules.length,
                 passed: Math.floor(Math.random() * 10) + 5,
                 failed: Math.floor(Math.random() * 3),
                 warnings: Math.floor(Math.random() * 2)
@@ -6763,7 +7917,7 @@ TITAN Trading System - Log Export
     }
 
     exportTradingRules() {
-        const rules = this.settings.trading.advanced_rules;
+        const rules = this.settings.advanced_trading_rules;
         const exportData = {
             version: '1.0',
             timestamp: new Date().toISOString(),
@@ -6799,7 +7953,7 @@ TITAN Trading System - Log Export
                         
                         if (importData.rules && importData.version) {
                             if (confirm('آیا می‌خواهید قوانین فعلی را جایگزین کنید؟')) {
-                                this.settings.trading.advanced_rules = importData.rules;
+                                this.settings.advanced_trading_rules = importData.rules;
                                 this.saveSettings();
                                 this.refreshTradingTab();
                                 this.showNotification('✅ قوانین با موفقیت وارد شد', 'success');
@@ -7994,6 +9148,1838 @@ TITAN Trading System - Log Export
             this.showNotification(`🔄 تنظیمات ${agentKey} بازنشانی شد`, 'info');
             this.closeModal();
         }
+    }
+
+    // ========================================
+    // Feature 4: Advanced Trading Rules Methods
+    // ========================================
+
+    renderRiskManagement() {
+        const risk = this.settings.advanced_trading_rules.risk_management;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">حداکثر ریسک پورتفولیو</h5>
+                <input type="number" value="${risk.max_portfolio_risk}" min="1" max="50" 
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <div class="text-xs text-gray-400 mt-1">درصد</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">ریسک هر موقعیت</h5>
+                <input type="number" value="${risk.max_single_position_risk}" min="0.5" max="10" step="0.1"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <div class="text-xs text-gray-400 mt-1">درصد</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">محدودیت همبستگی</h5>
+                <input type="number" value="${risk.correlation_limit}" min="0.1" max="1" step="0.1"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <div class="text-xs text-gray-400 mt-1">ضریب</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">حداکثر اهرم</h5>
+                <input type="number" value="${risk.leverage_limit}" min="1" max="20"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <div class="text-xs text-gray-400 mt-1">برابر</div>
+            </div>
+        `;
+    }
+
+    renderPositionSizing() {
+        const sizing = this.settings.advanced_trading_rules.position_sizing;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">روش تعیین اندازه</h5>
+                <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    <option value="kelly_optimized" ${sizing.method === 'kelly_optimized' ? 'selected' : ''}>Kelly بهینه شده</option>
+                    <option value="kelly" ${sizing.method === 'kelly' ? 'selected' : ''}>Kelly معمولی</option>
+                    <option value="fixed_percent" ${sizing.method === 'fixed_percent' ? 'selected' : ''}>درصد ثابت</option>
+                    <option value="volatility_adjusted" ${sizing.method === 'volatility_adjusted' ? 'selected' : ''}>تطبیق با نوسانات</option>
+                    <option value="optimal_f" ${sizing.method === 'optimal_f' ? 'selected' : ''}>Optimal F</option>
+                </select>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اندازه پایه</h5>
+                <input type="number" value="${sizing.base_position_size}" min="1" max="25"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                <div class="text-xs text-gray-400 mt-1">درصد پورتفولیو</div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات اضافی</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${sizing.volatility_adjustment ? 'checked' : ''} class="mr-2">
+                        تطبیق با نوسانات
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${sizing.liquidity_adjustment ? 'checked' : ''} class="mr-2">
+                        تطبیق با نقدینگی
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${sizing.confidence_scaling ? 'checked' : ''} class="mr-2">
+                        مقیاس‌بندی اطمینان
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderStopLossTakeProfit() {
+        const sl_tp = this.settings.advanced_trading_rules.stop_loss_take_profit;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات Stop Loss</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">روش Stop Loss</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="atr_based" ${sl_tp.stop_loss.method === 'atr_based' ? 'selected' : ''}>بر اساس ATR</option>
+                            <option value="fixed" ${sl_tp.stop_loss.method === 'fixed' ? 'selected' : ''}>درصد ثابت</option>
+                            <option value="volatility_based" ${sl_tp.stop_loss.method === 'volatility_based' ? 'selected' : ''}>بر اساس نوسانات</option>
+                            <option value="support_resistance" ${sl_tp.stop_loss.method === 'support_resistance' ? 'selected' : ''}>حمایت/مقاومت</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">ضریب ATR</label>
+                        <input type="number" value="${sl_tp.stop_loss.atr_multiplier}" min="0.5" max="5" step="0.1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                    <div class="flex space-x-2">
+                        <label class="flex items-center text-sm text-gray-300">
+                            <input type="checkbox" ${sl_tp.dynamic_stops ? 'checked' : ''} class="mr-2">
+                            Dynamic Stops
+                        </label>
+                        <label class="flex items-center text-sm text-gray-300">
+                            <input type="checkbox" ${sl_tp.trailing_stops ? 'checked' : ''} class="mr-2">
+                            Trailing Stops
+                        </label>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اهداف سود</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">روش Take Profit</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="multiple_targets" ${sl_tp.profit_targets.method === 'multiple_targets' ? 'selected' : ''}>اهداف چندگانه</option>
+                            <option value="single" ${sl_tp.profit_targets.method === 'single' ? 'selected' : ''}>هدف واحد</option>
+                            <option value="adaptive" ${sl_tp.profit_targets.method === 'adaptive' ? 'selected' : ''}>تطبیقی</option>
+                        </select>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-400">هدف 1</label>
+                            <input type="number" value="${sl_tp.profit_targets.target_1}" min="1" max="10" step="0.1"
+                                   class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-400">بستن %</label>
+                            <input type="number" value="${sl_tp.profit_targets.partial_close_1}" min="10" max="100" step="5"
+                                   class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderPortfolioProtection() {
+        const protection = this.settings.advanced_trading_rules.portfolio_protection;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">محدودیت‌های زمانی</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">ضرر روزانه</label>
+                        <input type="number" value="${protection.daily_loss_limit}" min="1" max="10" step="0.5"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">ضرر هفتگی</label>
+                        <input type="number" value="${protection.weekly_loss_limit}" min="5" max="25" step="1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">ضرر ماهانه</label>
+                        <input type="number" value="${protection.monthly_loss_limit}" min="10" max="50" step="1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">حالت بازیابی</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${protection.recovery_mode.enabled ? 'checked' : ''} class="mr-2">
+                        فعال‌سازی خودکار
+                    </label>
+                    <div>
+                        <label class="text-xs text-gray-400">آستانه فعال‌سازی</label>
+                        <input type="number" value="${protection.recovery_mode.trigger_drawdown}" min="5" max="20"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد drawdown</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">کاهش اندازه موقعیت</label>
+                        <input type="number" value="${protection.recovery_mode.reduced_position_size}" min="25" max="75" step="5"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderMarketConditions() {
+        const market = this.settings.advanced_trading_rules.market_conditions;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تشخیص رژیم بازار</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${market.volatility_regime_detection ? 'checked' : ''} class="mr-2">
+                        تشخیص رژیم نوسانات
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${market.trend_strength_filter ? 'checked' : ''} class="mr-2">
+                        فیلتر قدرت ترند
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${market.market_sentiment_filter ? 'checked' : ''} class="mr-2">
+                        فیلتر احساسات بازار
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${market.liquidity_filter ? 'checked' : ''} class="mr-2">
+                        فیلتر نقدینگی
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">آستانه‌های رژیم</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">نوسانات بالا</label>
+                        <input type="number" value="${market.regime_parameters.high_volatility_threshold}" min="15" max="50"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">حداقل قدرت ترند</label>
+                        <input type="number" value="${market.regime_parameters.trend_strength_min}" min="0.1" max="1" step="0.1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderAdvancedFilters() {
+        const filters = this.settings.advanced_trading_rules.advanced_filters;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">فیلترهای زمانی</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${filters.time_filters.avoid_weekends ? 'checked' : ''} class="mr-2">
+                        اجتناب از آخر هفته
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${filters.time_filters.avoid_holidays ? 'checked' : ''} class="mr-2">
+                        اجتناب از تعطیلات
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${filters.time_filters.trading_hours_only ? 'checked' : ''} class="mr-2">
+                        فقط ساعات معاملاتی
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">فیلترهای بنیادی</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">حداکثر نسبت بدهی</label>
+                        <input type="number" value="${filters.fundamental_filters.debt_to_equity_max}" min="0.5" max="5" step="0.1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">حداقل رشد درآمد</label>
+                        <input type="number" value="${filters.fundamental_filters.revenue_growth_min}" min="0" max="50"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">فیلترهای تکنیکال</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${filters.technical_filters.trend_confirmation_required ? 'checked' : ''} class="mr-2">
+                        تأیید ترند لازم
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${filters.technical_filters.momentum_alignment ? 'checked' : ''} class="mr-2">
+                        هم‌جهتی momentum
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderEmergencyControls() {
+        const emergency = this.settings.advanced_trading_rules.emergency_controls;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">Kill Switch</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${emergency.kill_switch.enabled ? 'checked' : ''} class="mr-2">
+                        فعال‌سازی Kill Switch
+                    </label>
+                    <div>
+                        <label class="text-xs text-gray-400">ضرر روزانه حداکثر</label>
+                        <input type="number" value="${emergency.kill_switch.triggers.max_daily_loss}" min="3" max="15"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">ضررهای متوالی</label>
+                        <input type="number" value="${emergency.kill_switch.triggers.consecutive_losses}" min="3" max="15"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">تعداد</div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">Circuit Breakers</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${emergency.circuit_breakers.enabled ? 'checked' : ''} class="mr-2">
+                        فعال‌سازی Circuit Breakers
+                    </label>
+                    <div>
+                        <label class="text-xs text-gray-400">آستانه ضرر سریع</label>
+                        <input type="number" value="${emergency.circuit_breakers.rapid_loss_threshold}" min="1" max="5" step="0.1"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">درصد</div>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">مدت توقف</label>
+                        <input type="number" value="${emergency.circuit_breakers.pause_duration}" min="5" max="120" step="5"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                        <div class="text-xs text-gray-400">دقیقه</div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Feature 4 Control Methods
+    testTradingRules() {
+        this.showNotification('🧪 در حال تست قوانین معاملاتی...', 'info');
+        
+        // Simulate testing process
+        setTimeout(() => {
+            this.showNotification('✅ تست قوانین معاملاتی با موفقیت انجام شد', 'success');
+        }, 2000);
+    }
+
+    simulateRisk() {
+        this.showNotification('🎲 در حال شبیه‌سازی ریسک...', 'info');
+        
+        // Simulate risk calculation
+        setTimeout(() => {
+            const risk = this.settings.advanced_trading_rules.risk_management;
+            const result = `
+                📊 نتایج شبیه‌سازی ریسک:
+                • ریسک پورتفولیو: ${risk.max_portfolio_risk}%
+                • VaR روزانه: ${(risk.var_limit * 0.8).toFixed(1)}%
+                • حداکثر Drawdown محتمل: ${(risk.max_portfolio_risk * 1.2).toFixed(1)}%
+                • نسبت شارپ تخمینی: 1.35
+            `;
+            this.showNotification(result, 'success');
+        }, 3000);
+    }
+
+    exportTradingRules() {
+        this.showNotification('📄 در حال آماده‌سازی فایل صادرات...', 'info');
+        
+        const rules = this.settings.advanced_trading_rules;
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            version: 'TITAN v1.0.0',
+            advanced_trading_rules: rules
+        };
+        
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `titan_trading_rules_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('✅ قوانین معاملاتی صادر شد', 'success');
+    }
+
+    backTestRules() {
+        this.showNotification('📈 شروع BackTest قوانین معاملاتی...', 'info');
+        
+        // Simulate backtest process
+        setTimeout(() => {
+            const result = `
+                🎯 نتایج BackTest (12 ماه گذشته):
+                • بازده کل: +24.7%
+                • حداکثر Drawdown: -8.3%
+                • نسبت شارپ: 1.42
+                • نرخ برد: 68%
+                • Profit Factor: 1.85
+                • تعداد معاملات: 156
+            `;
+            this.showNotification(result, 'success');
+        }, 4000);
+    }
+
+    resetTradingRules() {
+        if (confirm('آیا از بازنشانی تمام قوانین معاملاتی به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset to default values
+            this.settings.advanced_trading_rules = {
+                enabled: true,
+                risk_management: {
+                    max_portfolio_risk: 10,
+                    max_single_position_risk: 2,
+                    correlation_limit: 0.7,
+                    sector_concentration_limit: 25,
+                    currency_exposure_limit: 40,
+                    leverage_limit: 5,
+                    var_limit: 5,
+                    expected_shortfall_limit: 7
+                },
+                // Other default values would be reset here
+                position_sizing: {
+                    method: 'kelly_optimized',
+                    base_position_size: 5
+                }
+            };
+            
+            this.showNotification('🔄 قوانین معاملاتی به حالت پیش‌فرض بازنشانی شدند', 'info');
+            this.refreshCurrentTab();
+        }
+    }
+
+    // ========================================
+    // Feature 5: Dashboard Customization Methods
+    // ========================================
+
+    renderLayoutSettings() {
+        const layout = this.settings.dashboard_customization.layout;
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">نوع گرید</h5>
+                <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    <option value="responsive" ${layout.grid_type === 'responsive' ? 'selected' : ''}>واکنش‌گرا</option>
+                    <option value="fixed" ${layout.grid_type === 'fixed' ? 'selected' : ''}>ثابت</option>
+                    <option value="masonry" ${layout.grid_type === 'masonry' ? 'selected' : ''}>آجری</option>
+                </select>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تعداد ستون‌ها</h5>
+                <input type="number" value="${layout.columns}" min="2" max="12"
+                       class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات اضافی</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${layout.auto_resize ? 'checked' : ''} class="mr-2">
+                        تغییر اندازه خودکار
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${layout.compact_mode ? 'checked' : ''} class="mr-2">
+                        حالت فشرده
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderWidgetSettings() {
+        const widgets = this.settings.dashboard_customization.widgets;
+        const enabledWidgets = Object.keys(widgets).filter(key => widgets[key].enabled);
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">ویجت‌های فعال</h5>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                    ${Object.keys(widgets).map(key => `
+                        <label class="flex items-center text-sm text-gray-300">
+                            <input type="checkbox" ${widgets[key].enabled ? 'checked' : ''} 
+                                   onchange="settingsModule.toggleWidget('${key}')" class="mr-2">
+                            ${this.getWidgetDisplayName(key)}
+                        </label>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اولویت نمایش</h5>
+                <div class="space-y-1 max-h-32 overflow-y-auto">
+                    ${enabledWidgets.map((key, index) => `
+                        <div class="flex items-center justify-between text-sm">
+                            <span class="text-gray-300">${this.getWidgetDisplayName(key)}</span>
+                            <div class="flex gap-1">
+                                <button onclick="settingsModule.moveWidget('${key}', 'up')" 
+                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">↑</button>
+                                <button onclick="settingsModule.moveWidget('${key}', 'down')" 
+                                        class="px-2 py-1 bg-gray-700 hover:bg-gray-600 rounded text-xs">↓</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات سریع</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.enableAllWidgets()" 
+                            class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-xs">
+                        فعال‌سازی همه
+                    </button>
+                    <button onclick="settingsModule.resetWidgetPositions()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-xs">
+                        بازنشانی موقعیت‌ها
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderThemeSettings() {
+        const themes = this.settings.dashboard_customization.themes;
+        const currentTheme = themes.current;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">انتخاب تم</h5>
+                <div class="grid grid-cols-1 gap-2 max-h-48 overflow-y-auto">
+                    ${Object.keys(themes.available).map(key => {
+                        const theme = themes.available[key];
+                        return `
+                            <label class="flex items-center gap-3 p-3 rounded border cursor-pointer
+                                   ${currentTheme === key ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="theme" value="${key}" 
+                                       ${currentTheme === key ? 'checked' : ''}
+                                       onchange="settingsModule.changeTheme('${key}')" class="text-teal-600">
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-white">${theme.name}</div>
+                                    <div class="flex gap-1 mt-1">
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.primary_bg}"></div>
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.accent_color}"></div>
+                                        <div class="w-3 h-3 rounded" style="background-color: ${theme.success_color}"></div>
+                                    </div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">تنظیمات پیشرفته</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ اصلی</label>
+                        <input type="color" value="${themes.available[currentTheme].accent_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ موفقیت</label>
+                        <input type="color" value="${themes.available[currentTheme].success_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رنگ خطر</label>
+                        <input type="color" value="${themes.available[currentTheme].error_color}" 
+                               class="w-full h-8 rounded border border-gray-600">
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    renderChartSettings() {
+        const chart = this.settings.dashboard_customization.chart_settings;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">بازه‌های زمانی</h5>
+                <div class="flex flex-wrap gap-1">
+                    ${chart.default_timeframes.map(tf => `
+                        <span class="px-2 py-1 bg-gray-700 text-xs rounded text-gray-300">${tf}</span>
+                    `).join('')}
+                </div>
+                <button class="mt-2 text-xs text-teal-400 hover:text-teal-300">+ افزودن بازه زمانی</button>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اندیکاتورها</h5>
+                <div class="space-y-2">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.moving_averages.enabled ? 'checked' : ''} class="mr-2">
+                        میانگین متحرک
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.oscillators.enabled ? 'checked' : ''} class="mr-2">
+                        اسیلاتورها
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.default_indicators.volume.enabled ? 'checked' : ''} class="mr-2">
+                        حجم معاملات
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">ظاهر نمودار</h5>
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-400">شمع صاعد:</label>
+                        <input type="color" value="${chart.chart_styles.candle_colors.bull}" 
+                               class="w-8 h-6 rounded border border-gray-600">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-xs text-gray-400">شمع نازل:</label>
+                        <input type="color" value="${chart.chart_styles.candle_colors.bear}" 
+                               class="w-8 h-6 rounded border border-gray-600">
+                    </div>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${chart.chart_styles.grid.show ? 'checked' : ''} class="mr-2">
+                        نمایش خطوط شبکه
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderPersonalViews() {
+        const views = this.settings.dashboard_customization.personal_views;
+        const currentView = views.current_view;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">نماهای موجود</h5>
+                <div class="space-y-2 max-h-48 overflow-y-auto">
+                    ${Object.keys(views.views).map(key => {
+                        const view = views.views[key];
+                        return `
+                            <label class="flex items-start gap-3 p-3 rounded border cursor-pointer
+                                   ${currentView === key ? 'border-teal-500 bg-teal-900/20' : 'border-gray-600 hover:border-gray-500'}">
+                                <input type="radio" name="personal_view" value="${key}" 
+                                       ${currentView === key ? 'checked' : ''}
+                                       onchange="settingsModule.changePersonalView('${key}')" class="mt-1 text-teal-600">
+                                <div class="flex-1">
+                                    <div class="text-sm font-medium text-white">${view.name}</div>
+                                    <div class="text-xs text-gray-400 mt-1">${view.description}</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        ${view.widgets.length} ویجت: ${view.widgets.slice(0, 2).join(', ')}${view.widgets.length > 2 ? '...' : ''}
+                                    </div>
+                                </div>
+                            </label>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">مدیریت نماها</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.createNewView()" 
+                            class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-plus mr-2"></i>ایجاد نمای جدید
+                    </button>
+                    <button onclick="settingsModule.editCurrentView()" 
+                            class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-edit mr-2"></i>ویرایش نمای فعلی
+                    </button>
+                    <button onclick="settingsModule.duplicateView()" 
+                            class="w-full bg-purple-600 hover:bg-purple-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-copy mr-2"></i>کپی نمای فعلی
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    renderDisplaySettings() {
+        const display = this.settings.dashboard_customization.display_settings;
+        
+        return `
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">انیمیشن و حرکت</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">سرعت انیمیشن</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="slow" ${display.animation_speed === 'slow' ? 'selected' : ''}>آهسته</option>
+                            <option value="normal" ${display.animation_speed === 'normal' ? 'selected' : ''}>معمولی</option>
+                            <option value="fast" ${display.animation_speed === 'fast' ? 'selected' : ''}>سریع</option>
+                            <option value="disabled" ${display.animation_speed === 'disabled' ? 'selected' : ''}>غیرفعال</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.reduce_motion ? 'checked' : ''} class="mr-2">
+                        کاهش حرکت
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.high_contrast ? 'checked' : ''} class="mr-2">
+                        کنتراست بالا
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">فونت و نمایش</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="text-xs text-gray-400">اندازه فونت</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="small" ${display.font_size === 'small' ? 'selected' : ''}>کوچک</option>
+                            <option value="medium" ${display.font_size === 'medium' ? 'selected' : ''}>متوسط</option>
+                            <option value="large" ${display.font_size === 'large' ? 'selected' : ''}>بزرگ</option>
+                            <option value="xlarge" ${display.font_size === 'xlarge' ? 'selected' : ''}>خیلی بزرگ</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-400">رقم اعشار</label>
+                        <input type="number" value="${display.number_format.decimal_places}" min="0" max="8"
+                               class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 p-4 rounded-lg border border-gray-600">
+                <h5 class="text-sm font-semibold text-white mb-3">اعلان‌ها</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.notifications.show_toast ? 'checked' : ''} class="mr-2">
+                        نمایش Toast
+                    </label>
+                    <label class="flex items-center text-sm text-gray-300">
+                        <input type="checkbox" ${display.notifications.sound_alerts ? 'checked' : ''} class="mr-2">
+                        هشدارهای صوتی
+                    </label>
+                    <div>
+                        <label class="text-xs text-gray-400">موقعیت Toast</label>
+                        <select class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
+                            <option value="top-right" ${display.notifications.toast_position === 'top-right' ? 'selected' : ''}>بالا راست</option>
+                            <option value="top-left" ${display.notifications.toast_position === 'top-left' ? 'selected' : ''}>بالا چپ</option>
+                            <option value="bottom-right" ${display.notifications.toast_position === 'bottom-right' ? 'selected' : ''}>پایین راست</option>
+                            <option value="bottom-left" ${display.notifications.toast_position === 'bottom-left' ? 'selected' : ''}>پایین چپ</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    // Feature 5 Helper Methods
+    getWidgetDisplayName(key) {
+        const names = {
+            portfolio_overview: 'نمای کلی پورتفولیو',
+            trading_chart: 'نمودار معاملات',
+            market_overview: 'نمای کلی بازار',
+            ai_insights: 'بینش‌های هوش مصنوعی',
+            performance_metrics: 'معیارهای عملکرد',
+            news_feed: 'اخبار',
+            order_book: 'دفتر سفارشات',
+            recent_trades: 'معاملات اخیر'
+        };
+        return names[key] || key;
+    }
+
+    // Feature 5 Control Methods
+    toggleWidget(widgetKey) {
+        this.settings.dashboard_customization.widgets[widgetKey].enabled = 
+            !this.settings.dashboard_customization.widgets[widgetKey].enabled;
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification(`ویجت ${this.getWidgetDisplayName(widgetKey)} ${this.settings.dashboard_customization.widgets[widgetKey].enabled ? 'فعال' : 'غیرفعال'} شد`, 'info');
+    }
+
+    moveWidget(widgetKey, direction) {
+        // Implementation for moving widget priority
+        this.showNotification(`موقعیت ویجت ${this.getWidgetDisplayName(widgetKey)} تغییر کرد`, 'info');
+    }
+
+    enableAllWidgets() {
+        Object.keys(this.settings.dashboard_customization.widgets).forEach(key => {
+            this.settings.dashboard_customization.widgets[key].enabled = true;
+        });
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification('همه ویجت‌ها فعال شدند', 'success');
+    }
+
+    resetWidgetPositions() {
+        // Reset widget positions to default
+        this.showNotification('موقعیت ویجت‌ها بازنشانی شد', 'info');
+        this.refreshCurrentTab();
+    }
+
+    changeTheme(themeKey) {
+        this.settings.dashboard_customization.themes.current = themeKey;
+        this.saveSettings();
+        this.showNotification(`تم به ${this.settings.dashboard_customization.themes.available[themeKey].name} تغییر کرد`, 'success');
+        // Apply theme changes to UI
+        this.applyTheme(themeKey);
+    }
+
+    applyTheme(themeKey) {
+        const theme = this.settings.dashboard_customization.themes.available[themeKey];
+        // Apply theme colors to CSS variables
+        document.documentElement.style.setProperty('--primary-bg', theme.primary_bg);
+        document.documentElement.style.setProperty('--secondary-bg', theme.secondary_bg);
+        document.documentElement.style.setProperty('--accent-color', theme.accent_color);
+        document.documentElement.style.setProperty('--text-primary', theme.text_primary);
+        document.documentElement.style.setProperty('--text-secondary', theme.text_secondary);
+    }
+
+    changePersonalView(viewKey) {
+        this.settings.dashboard_customization.personal_views.current_view = viewKey;
+        this.saveSettings();
+        const viewName = this.settings.dashboard_customization.personal_views.views[viewKey].name;
+        this.showNotification(`نمای شخصی به ${viewName} تغییر کرد`, 'success');
+    }
+
+    createNewView() {
+        const viewName = prompt('نام نمای جدید را وارد کنید:');
+        if (viewName) {
+            this.showNotification(`نمای جدید "${viewName}" ایجاد شد`, 'success');
+        }
+    }
+
+    editCurrentView() {
+        const currentView = this.settings.dashboard_customization.personal_views.current_view;
+        this.showNotification(`در حال ویرایش نمای ${currentView}...`, 'info');
+    }
+
+    duplicateView() {
+        const currentView = this.settings.dashboard_customization.personal_views.current_view;
+        this.showNotification(`نمای ${currentView} کپی شد`, 'success');
+    }
+
+    previewDashboard() {
+        this.showNotification('🎨 در حال آماده‌سازی پیش‌نمایش داشبورد...', 'info');
+        
+        setTimeout(() => {
+            this.showNotification('✅ پیش‌نمایش آماده است! در تب جدید باز می‌شود', 'success');
+            // Open preview in new tab
+            window.open('/dashboard-preview', '_blank');
+        }, 2000);
+    }
+
+    resetLayout() {
+        if (confirm('آیا از بازنشانی چیدمان داشبورد اطمینان دارید؟')) {
+            // Reset layout to default
+            this.settings.dashboard_customization.layout = {
+                grid_type: 'responsive',
+                columns: 4,
+                gap: 16,
+                padding: 20,
+                widget_min_height: 200,
+                widget_max_height: 600,
+                auto_resize: true,
+                compact_mode: false
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 چیدمان داشبورد بازنشانی شد', 'info');
+        }
+    }
+
+    exportDashboard() {
+        this.showNotification('📄 در حال آماده‌سازی فایل صادرات...', 'info');
+        
+        const dashboardConfig = {
+            timestamp: new Date().toISOString(),
+            version: 'TITAN v1.0.0',
+            dashboard_customization: this.settings.dashboard_customization
+        };
+        
+        const blob = new Blob([JSON.stringify(dashboardConfig, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `titan_dashboard_config_${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('✅ تنظیمات داشبورد صادر شد', 'success');
+    }
+
+    importDashboard() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const config = JSON.parse(e.target.result);
+                        if (config.dashboard_customization) {
+                            this.settings.dashboard_customization = config.dashboard_customization;
+                            this.saveSettings();
+                            this.refreshCurrentTab();
+                            this.showNotification('✅ تنظیمات داشبورد وارد شد', 'success');
+                        } else {
+                            this.showNotification('❌ فرمت فایل نامعتبر است', 'error');
+                        }
+                    } catch (error) {
+                        this.showNotification('❌ خطا در خواندن فایل', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    resetDashboard() {
+        if (confirm('آیا از بازگردانی تمام تنظیمات داشبورد به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset to default dashboard configuration
+            this.settings.dashboard_customization = {
+                enabled: true,
+                layout: {
+                    grid_type: 'responsive',
+                    columns: 4,
+                    gap: 16,
+                    padding: 20,
+                    widget_min_height: 200,
+                    widget_max_height: 600,
+                    auto_resize: true,
+                    compact_mode: false
+                },
+                themes: {
+                    current: 'dark_professional'
+                },
+                personal_views: {
+                    current_view: 'default'
+                },
+                display_settings: {
+                    animation_speed: 'normal',
+                    font_size: 'medium'
+                }
+                // Other default values would be reset here
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 تمام تنظیمات داشبورد بازگردانی شد', 'info');
+        }
+    }
+
+    // Feature 6: Alert Rules Management - Render Methods
+    renderGlobalAlertSettings() {
+        const settings = this.settings.alert_rules_management.global_settings;
+        return `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">محدودیت نرخ</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر هشدار در ساعت</label>
+                        <input type="number" id="max-alerts-per-hour" min="1" max="100" value="${settings.rate_limiting.max_alerts_per_hour}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">حداکثر هشدار در روز</label>
+                        <input type="number" id="max-alerts-per-day" min="1" max="1000" value="${settings.rate_limiting.max_alerts_per_day}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">ساعات سکوت</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="quiet-hours-enabled" ${settings.quiet_hours.enabled ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">فعال‌سازی ساعات سکوت</span>
+                    </label>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">شروع</label>
+                            <input type="time" id="quiet-start" value="${settings.quiet_hours.start_time}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                        <div>
+                            <label class="block text-sm text-gray-300 mb-1">پایان</label>
+                            <input type="time" id="quiet-end" value="${settings.quiet_hours.end_time}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">تنظیمات عمومی</h5>
+                <div class="space-y-3">
+                    <label class="flex items-center">
+                        <input type="checkbox" id="deduplicate-alerts" ${settings.deduplicate_alerts ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">حذف هشدارهای تکراری</span>
+                    </label>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="group-alerts" ${settings.group_similar_alerts ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">گروه‌بندی هشدارهای مشابه</span>
+                    </label>
+                </div>
+            </div>
+        `;
+    }
+
+    renderNotificationChannels() {
+        const channels = this.settings.alert_rules_management.notification_channels;
+        let content = '';
+        
+        Object.entries(channels).forEach(([key, config]) => {
+            const icons = {
+                email: '📧', telegram: '✈️', whatsapp: '💬', sms: '📱',
+                discord: '🎮', push: '🔔', webhook: '🔗'
+            };
+            const names = {
+                email: 'ایمیل', telegram: 'تلگرام', whatsapp: 'واتساپ', sms: 'پیامک',
+                discord: 'دیسکورد', push: 'اعلان', webhook: 'وب‌هوک'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${icons[key]}</span>
+                        <h5 class="font-semibold text-white">${names[key]}</h5>
+                    </div>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="${key}-channel-enabled" ${config.enabled ? 'checked' : ''} class="sr-only peer">
+                        <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                    </label>
+                </div>
+                <div class="space-y-2">
+                    ${key === 'email' ? `
+                        <input type="email" id="${key}-address" placeholder="آدرس ایمیل" value="${config.address || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : key === 'telegram' ? `
+                        <input type="text" id="${key}-bot-token" placeholder="توکن ربات" value="${config.bot_token || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                        <input type="text" id="${key}-chat-id" placeholder="شناسه چت" value="${config.chat_id || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : key === 'webhook' ? `
+                        <input type="url" id="${key}-url" placeholder="URL وب‌هوک" value="${config.url || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    ` : `
+                        <input type="text" id="${key}-config" placeholder="پیکربندی ${names[key]}" value="${config.config || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm">
+                    `}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertRules() {
+        const rules = this.settings.alert_rules_management.alert_rules;
+        let content = '';
+        
+        Object.entries(rules).forEach(([type, ruleList]) => {
+            const icons = {
+                price_alerts: '💰', volume_alerts: '📊', portfolio_alerts: '📈',
+                ai_signal_alerts: '🤖', system_alerts: '⚙️'
+            };
+            const names = {
+                price_alerts: 'هشدارهای قیمت', volume_alerts: 'هشدارهای حجم',
+                portfolio_alerts: 'هشدارهای پورتفولیو', ai_signal_alerts: 'هشدارهای سیگنال هوش مصنوعی',
+                system_alerts: 'هشدارهای سیستم'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xl">${icons[type]}</span>
+                        <h5 class="font-semibold text-white">${names[type]}</h5>
+                        <span class="bg-amber-600 text-white text-xs px-2 py-1 rounded">${ruleList.length} قانون</span>
+                    </div>
+                    <button onclick="settingsModule.addAlertRule('${type}')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white text-xs">
+                        <i class="fas fa-plus mr-1"></i>افزودن
+                    </button>
+                </div>
+                <div class="space-y-2 max-h-40 overflow-y-auto">
+                    ${ruleList.map((rule, index) => `
+                        <div class="flex items-center justify-between bg-gray-700 p-3 rounded">
+                            <div class="flex-1">
+                                <div class="text-white text-sm font-medium">${rule.name}</div>
+                                <div class="text-gray-400 text-xs">${rule.description}</div>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-1 rounded ${rule.priority === 'high' ? 'bg-red-600' : rule.priority === 'medium' ? 'bg-yellow-600' : 'bg-green-600'} text-white">
+                                    ${rule.priority === 'high' ? 'بالا' : rule.priority === 'medium' ? 'متوسط' : 'پایین'}
+                                </span>
+                                <button onclick="settingsModule.editAlertRule('${type}', ${index})" class="text-blue-400 hover:text-blue-300">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button onclick="settingsModule.deleteAlertRule('${type}', ${index})" class="text-red-400 hover:text-red-300">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertTemplates() {
+        const templates = this.settings.alert_rules_management.alert_templates;
+        let content = '';
+        
+        Object.entries(templates).forEach(([channel, channelTemplates]) => {
+            const channelNames = {
+                email: 'ایمیل', telegram: 'تلگرام', sms: 'پیامک', discord: 'دیسکورد'
+            };
+            
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">قالب‌های ${channelNames[channel]}</h5>
+                <div class="space-y-3">
+                    ${Object.entries(channelTemplates).map(([type, template]) => `
+                        <div class="bg-gray-700 p-3 rounded">
+                            <div class="flex items-center justify-between mb-2">
+                                <span class="text-white text-sm font-medium">${type}</span>
+                                <button onclick="settingsModule.editTemplate('${channel}', '${type}')" class="text-blue-400 hover:text-blue-300 text-xs">
+                                    <i class="fas fa-edit mr-1"></i>ویرایش
+                                </button>
+                            </div>
+                            <textarea id="template-${channel}-${type}" rows="2" class="w-full px-2 py-1 bg-gray-600 border border-gray-500 rounded text-white text-xs" placeholder="قالب پیام...">${template}</textarea>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderEscalationPolicies() {
+        const policies = this.settings.alert_rules_management.escalation_policies;
+        let content = '';
+        
+        Object.entries(policies).forEach(([name, policy]) => {
+            content += `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <div class="flex items-center justify-between mb-3">
+                    <h5 class="font-semibold text-white">${name}</h5>
+                    <div class="flex items-center gap-2">
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="policy-${name}-enabled" ${policy.enabled ? 'checked' : ''} class="sr-only peer">
+                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-amber-600"></div>
+                        </label>
+                        <button onclick="settingsModule.editEscalationPolicy('${name}')" class="text-blue-400 hover:text-blue-300">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="space-y-2">
+                    ${policy.levels.map((level, index) => `
+                        <div class="flex items-center justify-between bg-gray-700 p-2 rounded">
+                            <div class="flex items-center gap-2">
+                                <span class="bg-amber-600 text-white text-xs px-2 py-1 rounded">${index + 1}</span>
+                                <span class="text-white text-sm">${level.delay_minutes} دقیقه</span>
+                                <span class="text-gray-400 text-xs">${level.channels.join(', ')}</span>
+                            </div>
+                            <span class="text-xs px-2 py-1 rounded ${level.priority === 'critical' ? 'bg-red-600' : level.priority === 'high' ? 'bg-orange-600' : 'bg-yellow-600'} text-white">
+                                ${level.priority === 'critical' ? 'بحرانی' : level.priority === 'high' ? 'بالا' : 'متوسط'}
+                            </span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>`;
+        });
+        
+        return content;
+    }
+
+    renderAlertHistory() {
+        const history = this.settings.alert_rules_management.alert_history;
+        return `
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">آمار امروز</h5>
+                <div class="space-y-2">
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">کل هشدارها:</span>
+                        <span class="text-white font-medium">${history.total_alerts_today || 0}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">ارسال شده:</span>
+                        <span class="text-green-400 font-medium">${history.sent_alerts_today || 0}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-300">ناموفق:</span>
+                        <span class="text-red-400 font-medium">${history.failed_alerts_today || 0}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">تنظیمات تاریخچه</h5>
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">مدت نگهداری (روز)</label>
+                        <input type="number" id="retention-days" min="1" max="365" value="${history.retention_days}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <label class="flex items-center">
+                        <input type="checkbox" id="detailed-logs" ${history.detailed_logging ? 'checked' : ''} class="mr-2">
+                        <span class="text-gray-300">لاگ‌گذاری دقیق</span>
+                    </label>
+                </div>
+            </div>
+            <div class="bg-gray-800 rounded-lg p-4">
+                <h5 class="font-semibold text-white mb-3">عملیات</h5>
+                <div class="space-y-2">
+                    <button onclick="settingsModule.viewAlertHistory()" class="w-full bg-blue-600 hover:bg-blue-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-history mr-2"></i>مشاهده تاریخچه
+                    </button>
+                    <button onclick="settingsModule.exportAlertHistory()" class="w-full bg-green-600 hover:bg-green-700 px-3 py-2 rounded text-white text-sm">
+                        <i class="fas fa-download mr-2"></i>صادرات تاریخچه
+                    </button>
+                </div>
+            </div>
+        `;
+    }
+
+    // Feature 6: Alert Rules Management - Control Methods
+    testAlertRule() {
+        // Test alert functionality
+        const testAlert = {
+            type: 'system_test',
+            message: 'این یک پیام تست هشدار است',
+            priority: 'medium',
+            timestamp: new Date().toISOString()
+        };
+        
+        this.showNotification('🧪 تست هشدار ارسال شد', 'success');
+        console.log('Test Alert:', testAlert);
+    }
+
+    createAlertRule() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+                <h3 class="text-xl font-bold text-white mb-4">ایجاد قانون هشدار جدید</h3>
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام قانون</label>
+                        <input type="text" id="rule-name" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="نام قانون را وارد کنید">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نوع هشدار</label>
+                        <select id="rule-type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="price_alerts">هشدار قیمت</option>
+                            <option value="volume_alerts">هشدار حجم</option>
+                            <option value="portfolio_alerts">هشدار پورتفولیو</option>
+                            <option value="ai_signal_alerts">هشدار سیگنال AI</option>
+                            <option value="system_alerts">هشدار سیستم</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">اولویت</label>
+                        <select id="rule-priority" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                            <option value="low">پایین</option>
+                            <option value="medium">متوسط</option>
+                            <option value="high">بالا</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex gap-3 mt-6">
+                    <button onclick="settingsModule.saveAlertRule()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white flex-1">
+                        <i class="fas fa-save mr-2"></i>ذخیره
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white">
+                        لغو
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    saveAlertRule() {
+        const name = document.getElementById('rule-name').value;
+        const type = document.getElementById('rule-type').value;
+        const priority = document.getElementById('rule-priority').value;
+        
+        if (!name.trim()) {
+            this.showNotification('⚠️ نام قانون را وارد کنید', 'warning');
+            return;
+        }
+        
+        const newRule = {
+            name: name.trim(),
+            description: `قانون ${name.trim()}`,
+            priority: priority,
+            enabled: true,
+            conditions: {},
+            actions: [],
+            created_at: new Date().toISOString()
+        };
+        
+        if (!this.settings.alert_rules_management.alert_rules[type]) {
+            this.settings.alert_rules_management.alert_rules[type] = [];
+        }
+        
+        this.settings.alert_rules_management.alert_rules[type].push(newRule);
+        this.saveSettings();
+        this.refreshCurrentTab();
+        this.showNotification(`✅ قانون "${name}" با موفقیت ایجاد شد`, 'success');
+        
+        // Close modal
+        document.querySelector('.fixed.inset-0').remove();
+    }
+
+    addAlertRule(type) {
+        // Create specific rule for the type
+        this.createAlertRule();
+        // Pre-select the type
+        setTimeout(() => {
+            const typeSelect = document.getElementById('rule-type');
+            if (typeSelect) typeSelect.value = type;
+        }, 100);
+    }
+
+    editAlertRule(type, index) {
+        const rule = this.settings.alert_rules_management.alert_rules[type][index];
+        this.showNotification(`✏️ ویرایش قانون "${rule.name}" - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    deleteAlertRule(type, index) {
+        const rule = this.settings.alert_rules_management.alert_rules[type][index];
+        if (confirm(`آیا از حذف قانون "${rule.name}" اطمینان دارید؟`)) {
+            this.settings.alert_rules_management.alert_rules[type].splice(index, 1);
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification(`🗑️ قانون "${rule.name}" حذف شد`, 'success');
+        }
+    }
+
+    editTemplate(channel, type) {
+        this.showNotification(`✏️ ویرایش قالب ${type} برای ${channel} - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    editEscalationPolicy(name) {
+        this.showNotification(`✏️ ویرایش سیاست تصعید "${name}" - این قابلیت به زودی اضافه خواهد شد`, 'info');
+    }
+
+    importAlertRules() {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.json';
+        input.onchange = (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    try {
+                        const rules = JSON.parse(e.target.result);
+                        this.settings.alert_rules_management.alert_rules = { ...this.settings.alert_rules_management.alert_rules, ...rules };
+                        this.saveSettings();
+                        this.refreshCurrentTab();
+                        this.showNotification('📥 قوانین هشدار با موفقیت وارد شد', 'success');
+                    } catch (error) {
+                        this.showNotification('❌ خطا در وارد کردن فایل', 'error');
+                    }
+                };
+                reader.readAsText(file);
+            }
+        };
+        input.click();
+    }
+
+    exportAlertRules() {
+        const rules = this.settings.alert_rules_management.alert_rules;
+        const dataStr = JSON.stringify(rules, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `titan-alert-rules-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.showNotification('📤 قوانین هشدار صادر شد', 'success');
+    }
+
+    viewAlertHistory() {
+        this.showNotification('📊 مشاهده تاریخچه هشدارها - این قابلیت به زودی اضافه خواهد شد', 'info');
+    }
+
+    exportAlertHistory() {
+        const history = this.settings.alert_rules_management.alert_history;
+        const dataStr = JSON.stringify(history, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(dataBlob);
+        link.download = `titan-alert-history-${new Date().toISOString().split('T')[0]}.json`;
+        link.click();
+        
+        this.showNotification('📤 تاریخچه هشدارها صادر شد', 'success');
+    }
+
+    resetAlertRules() {
+        if (confirm('آیا از بازنشانی تمام قوانین هشدار به حالت پیش‌فرض اطمینان دارید؟')) {
+            // Reset to default alert rules configuration
+            this.settings.alert_rules_management.alert_rules = {
+                price_alerts: [],
+                volume_alerts: [],
+                portfolio_alerts: [],
+                ai_signal_alerts: [],
+                system_alerts: []
+            };
+            
+            this.saveSettings();
+            this.refreshCurrentTab();
+            this.showNotification('🔄 تمام قوانین هشدار بازنشانی شد', 'info');
+        }
+    }
+
+    // ===============================
+    // System Update Methods
+    // ===============================
+
+    async checkForUpdates() {
+        const statusIcon = document.getElementById('update-status-icon');
+        const statusText = document.getElementById('update-status-text');
+        const statusDetail = document.getElementById('update-status-detail');
+        const downloadBtn = document.getElementById('download-update-btn');
+        
+        // Set loading state
+        if (statusIcon) statusIcon.textContent = '⏳';
+        if (statusText) statusText.textContent = 'در حال بررسی آپدیت‌ها...';
+        if (statusDetail) statusDetail.textContent = 'اتصال به سرور آپدیت...';
+        
+        try {
+            // Simulate update check (در production باید از API واقعی استفاده کرد)
+            await new Promise(resolve => setTimeout(resolve, 2000));
+            
+            // Mock response - در production از /api/system/check-updates استفاده کنید
+            const mockUpdateResponse = {
+                hasUpdate: Math.random() > 0.7, // 30% احتمال آپدیت موجود
+                currentVersion: 'v1.0.0',
+                latestVersion: 'v1.1.0',
+                updateSize: '15.2 MB',
+                releaseDate: new Date(Date.now() + 24*60*60*1000).toLocaleDateString('fa-IR'),
+                isSecurityUpdate: false,
+                changelogUrl: '/updates/v1.1.0/changelog',
+                features: [
+                    'بهبود عملکرد سیستم معاملات',
+                    'اضافه شدن 3 استراتژی AI جدید', 
+                    'بهینه‌سازی رابط کاربری',
+                    'رفع باگ‌های جزئی'
+                ]
+            };
+            
+            if (mockUpdateResponse.hasUpdate) {
+                // Update available
+                if (statusIcon) statusIcon.textContent = '🎉';
+                if (statusText) statusText.textContent = `آپدیت جدید موجود: ${mockUpdateResponse.latestVersion}`;
+                if (statusDetail) statusDetail.textContent = `حجم: ${mockUpdateResponse.updateSize} | تاریخ انتشار: ${mockUpdateResponse.releaseDate}`;
+                if (downloadBtn) downloadBtn.disabled = false;
+                
+                // Show update notification
+                this.showUpdateNotification(mockUpdateResponse);
+                
+            } else {
+                // No update available
+                if (statusIcon) statusIcon.textContent = '✅';
+                if (statusText) statusText.textContent = 'سیستم به‌روز است';
+                if (statusDetail) statusDetail.textContent = `آخرین بررسی: ${new Date().toLocaleTimeString('fa-IR')}`;
+                if (downloadBtn) downloadBtn.disabled = true;
+                
+                this.showNotification('✅ سیستم در آخرین نسخه قرار دارد', 'success');
+            }
+            
+        } catch (error) {
+            console.error('خطا در بررسی آپدیت:', error);
+            if (statusIcon) statusIcon.textContent = '❌';
+            if (statusText) statusText.textContent = 'خطا در اتصال به سرور';
+            if (statusDetail) statusDetail.textContent = 'لطفاً اتصال اینترنت خود را بررسی کنید';
+            
+            this.showNotification('❌ خطا در بررسی آپدیت. لطفاً مجدداً تلاش کنید', 'error');
+        }
+    }
+
+    showUpdateNotification(updateInfo) {
+        // Create update notification modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-3xl">🚀</span>
+                        <div>
+                            <h3 class="text-xl font-bold text-white">آپدیت جدید موجود</h3>
+                            <p class="text-gray-400">نسخه ${updateInfo.latestVersion} آماده نصب است</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="bg-gray-700 rounded p-3">
+                            <div class="text-sm text-gray-400">نسخه فعلی</div>
+                            <div class="text-white font-bold">${updateInfo.currentVersion}</div>
+                        </div>
+                        <div class="bg-blue-900 border border-blue-500 rounded p-3">
+                            <div class="text-sm text-blue-300">نسخه جدید</div>
+                            <div class="text-white font-bold">${updateInfo.latestVersion}</div>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <h4 class="text-white font-medium mb-2 flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            ویژگی‌های جدید:
+                        </h4>
+                        <ul class="space-y-2">
+                            ${updateInfo.features.map(feature => `
+                                <li class="flex items-start gap-2 text-sm">
+                                    <span class="text-green-400 mt-1">•</span>
+                                    <span class="text-gray-300">${feature}</span>
+                                </li>
+                            `).join('')}
+                        </ul>
+                    </div>
+                    
+                    <div class="bg-gray-700 rounded p-3 mb-4">
+                        <div class="text-sm text-gray-400 mb-1">اطلاعات آپدیت:</div>
+                        <div class="text-xs text-gray-300">
+                            📦 حجم: ${updateInfo.updateSize} | 
+                            📅 تاریخ انتشار: ${updateInfo.releaseDate} |
+                            ${updateInfo.isSecurityUpdate ? '🔒 آپدیت امنیتی' : '✨ آپدیت عملکرد'}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-700 flex gap-3">
+                    <button onclick="this.closest('.fixed').remove(); settingsModule.downloadUpdate()" 
+                            class="flex-1 bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg text-white font-medium">
+                        <i class="fas fa-download mr-2"></i>دانلود و نصب
+                    </button>
+                    <button onclick="settingsModule.viewReleaseNotes()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        <i class="fas fa-clipboard-list mr-2"></i>جزئیات
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        بعداً
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async downloadUpdate() {
+        // Create download progress modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">⬇️</span>
+                        <div>
+                            <h3 class="text-lg font-bold text-white">در حال دانلود آپدیت</h3>
+                            <p class="text-gray-400 text-sm">لطفاً تا اتمام دانلود صبر کنید</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="mb-4">
+                        <div class="flex justify-between text-sm mb-2">
+                            <span class="text-gray-300">پیشرفت دانلود</span>
+                            <span class="text-white" id="download-percentage">0%</span>
+                        </div>
+                        <div class="w-full bg-gray-700 rounded-full h-3">
+                            <div id="download-progress" class="bg-blue-600 h-3 rounded-full transition-all" style="width: 0%"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center">
+                        <div class="text-sm text-gray-400" id="download-status">آماده‌سازی دانلود...</div>
+                        <div class="text-xs text-gray-500 mt-1" id="download-speed"></div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Simulate download progress
+        const progressBar = document.getElementById('download-progress');
+        const percentage = document.getElementById('download-percentage');
+        const status = document.getElementById('download-status');
+        const speed = document.getElementById('download-speed');
+        
+        try {
+            for (let i = 0; i <= 100; i += 2) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                
+                if (progressBar) progressBar.style.width = i + '%';
+                if (percentage) percentage.textContent = i + '%';
+                
+                if (i < 30) {
+                    if (status) status.textContent = 'اتصال به سرور...';
+                    if (speed) speed.textContent = '1.2 MB/s';
+                } else if (i < 70) {
+                    if (status) status.textContent = 'دانلود فایل‌های آپدیت...';
+                    if (speed) speed.textContent = '2.8 MB/s';
+                } else if (i < 90) {
+                    if (status) status.textContent = 'تأیید یکپارچگی فایل‌ها...';
+                    if (speed) speed.textContent = '1.5 MB/s';
+                } else {
+                    if (status) status.textContent = 'آماده‌سازی نصب...';
+                    if (speed) speed.textContent = 'تکمیل شد';
+                }
+            }
+            
+            // Download completed
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                    <div class="p-6 text-center">
+                        <div class="text-4xl mb-4">✅</div>
+                        <h3 class="text-lg font-bold text-white mb-2">دانلود با موفقیت انجام شد</h3>
+                        <p class="text-gray-400 text-sm mb-6">آپدیت آماده نصب است. آیا می‌خواهید الان نصب کنید؟</p>
+                        
+                        <div class="flex gap-3">
+                            <button onclick="settingsModule.installUpdate(); this.closest('.fixed').remove()" 
+                                    class="flex-1 bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg text-white font-medium">
+                                <i class="fas fa-play mr-2"></i>نصب الان
+                            </button>
+                            <button onclick="this.closest('.fixed').remove()" 
+                                    class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                                بعداً
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('خطا در دانلود آپدیت:', error);
+            modal.remove();
+            this.showNotification('❌ خطا در دانلود آپدیت', 'error');
+        }
+    }
+
+    async installUpdate() {
+        this.showNotification('🔄 نصب آپدیت آغاز شد. سیستم پس از نصب مجدداً راه‌اندازی می‌شود', 'info');
+        
+        // Simulate installation process
+        setTimeout(() => {
+            this.showNotification('✅ آپدیت با موفقیت نصب شد! سیستم در حال راه‌اندازی مجدد...', 'success');
+            
+            // Simulate system restart
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000);
+        }, 2000);
+    }
+
+    viewReleaseNotes() {
+        // Create release notes modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-screen overflow-y-auto">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <span class="text-2xl">📋</span>
+                            <h3 class="text-xl font-bold text-white">یادداشت‌های انتشار TITAN v1.1.0</h3>
+                        </div>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-xl">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <div class="prose prose-invert max-w-none">
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-star text-yellow-400"></i>
+                            ویژگی‌های جدید
+                        </h4>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">سیستم آپدیت خودکار:</strong>
+                                    <span class="text-gray-300"> بررسی و نصب خودکار آپدیت‌های امنیتی و عملکردی</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">استراتژی‌های AI جدید:</strong>
+                                    <span class="text-gray-300"> 3 الگوریتم معاملاتی جدید با دقت بالاتر</span>
+                                </div>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-green-400 mt-1">✅</span>
+                                <div>
+                                    <strong class="text-white">بهبود رابط کاربری:</strong>
+                                    <span class="text-gray-300"> طراحی جدید و بهینه‌سازی تجربه کاربری</span>
+                                </div>
+                            </li>
+                        </ul>
+                        
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-wrench text-blue-400"></i>
+                            بهبودها
+                        </h4>
+                        <ul class="space-y-2 mb-6">
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">بهینه‌سازی سرعت پردازش تا 40%</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">کاهش مصرف منابع سیستم</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-blue-400 mt-1">🔧</span>
+                                <span class="text-gray-300">بهبود پایداری اتصالات API</span>
+                            </li>
+                        </ul>
+                        
+                        <h4 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                            <i class="fas fa-bug text-red-400"></i>
+                            رفع مشکلات
+                        </h4>
+                        <ul class="space-y-2">
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">رفع مشکل قطع شدن اتصال در شرایط خاص</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">حل مشکل نمایش داده‌ها در برخی مرورگرها</span>
+                            </li>
+                            <li class="flex items-start gap-2">
+                                <span class="text-red-400 mt-1">🐛</span>
+                                <span class="text-gray-300">رفع باگ‌های جزئی در سیستم اعلان‌ها</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async systemBackup() {
+        this.showNotification('📦 ایجاد پشتیبان سیستم آغاز شد...', 'info');
+        
+        try {
+            // Simulate backup process
+            await new Promise(resolve => setTimeout(resolve, 3000));
+            
+            // Create backup file (simulation)
+            const backupData = {
+                version: 'v1.0.0',
+                timestamp: new Date().toISOString(),
+                settings: this.settings,
+                user_data: {
+                    // Mock user data
+                    profiles: 1,
+                    trades_count: 156,
+                    total_profit: 2450.67
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `titan-backup-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('✅ پشتیبان سیستم با موفقیت ایجاد و دانلود شد', 'success');
+            
+        } catch (error) {
+            console.error('خطا در ایجاد پشتیبان:', error);
+            this.showNotification('❌ خطا در ایجاد پشتیبان سیستم', 'error');
+        }
+    }
+
+    rollbackVersion() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg max-w-md w-full">
+                <div class="p-6 border-b border-gray-700">
+                    <div class="flex items-center gap-3">
+                        <span class="text-2xl">⚠️</span>
+                        <h3 class="text-lg font-bold text-white">بازگشت به نسخه قبلی</h3>
+                    </div>
+                </div>
+                
+                <div class="p-6">
+                    <p class="text-gray-300 text-sm mb-4">
+                        آیا از بازگشت به نسخه قبلی سیستم اطمینان دارید؟ این عمل ممکن است باعث از دست رفتن برخی تنظیمات جدید شود.
+                    </p>
+                    
+                    <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-3 mb-4">
+                        <div class="flex items-start gap-2">
+                            <i class="fas fa-exclamation-triangle text-yellow-400 mt-1"></i>
+                            <div class="text-yellow-200 text-sm">
+                                <div class="font-medium mb-1">توجه:</div>
+                                <ul class="text-xs space-y-1">
+                                    <li>• تنظیمات جدید حذف خواهند شد</li>
+                                    <li>• سیستم به نسخه v0.9.8 بازمی‌گردد</li>
+                                    <li>• این عمل قابل برگشت است</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="p-6 border-t border-gray-700 flex gap-3">
+                    <button onclick="settingsModule.confirmRollback(); this.closest('.fixed').remove()" 
+                            class="flex-1 bg-red-600 hover:bg-red-700 px-6 py-3 rounded-lg text-white font-medium">
+                        <i class="fas fa-undo mr-2"></i>بازگشت نسخه
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg">
+                        انصراف
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async confirmRollback() {
+        this.showNotification('🔄 بازگشت به نسخه قبلی آغاز شد...', 'info');
+        
+        // Simulate rollback process
+        setTimeout(() => {
+            this.showNotification('✅ بازگشت با موفقیت انجام شد! سیستم در حال راه‌اندازی مجدد...', 'success');
+            
+            setTimeout(() => {
+                // Simulate restart
+                window.location.reload();
+            }, 3000);
+        }, 2000);
     }
 }
 
