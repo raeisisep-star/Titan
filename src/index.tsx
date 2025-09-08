@@ -683,7 +683,7 @@ app.get('/clear-cache', (c) => {
         async function reloadModules() {
             showStatus('📦 در حال بارگذاری مجدد ماژول‌ها...');
             const timestamp = Date.now();
-            const moduleFiles = ['/static/modules/module-loader.js', '/static/modules/alerts.js', '/static/modules/multi-exchange.js', '/static/modules/rbac.js', '/static/modules/settings-final.js', '/static/app.js'];
+            const moduleFiles = ['/static/modules/module-loader.js', '/static/modules/alerts.js', '/static/modules/multi-exchange.js', '/static/modules/rbac.js', '/static/modules/backup-automation.js', '/static/modules/settings-final.js', '/static/app.js'];
             
             for (const file of moduleFiles) {
                 const script = document.createElement('script');
