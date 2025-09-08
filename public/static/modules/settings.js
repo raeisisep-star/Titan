@@ -1044,7 +1044,7 @@ class SettingsModule {
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
                         <h4 class="text-lg font-semibold text-white capitalize">${exchange}</h4>
-                        <div class="w-3 h-3 bg-${statusColor}-400 rounded-full"></div>
+                        <div class="w-3 h-3 rounded-full ${statusColor === 'green' ? 'bg-green-400' : statusColor === 'red' ? 'bg-red-400' : 'bg-gray-400'}"></div>
                         <span class="text-sm text-gray-400">${status}</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -1109,7 +1109,7 @@ class SettingsModule {
                     <div class="flex items-center gap-3">
                         <span class="text-2xl">${provider.icon}</span>
                         <h4 class="text-lg font-semibold text-white">${provider.name}</h4>
-                        <div class="w-3 h-3 bg-${statusColor}-400 rounded-full"></div>
+                        <div class="w-3 h-3 rounded-full ${statusColor === 'green' ? 'bg-green-400' : statusColor === 'red' ? 'bg-red-400' : 'bg-gray-400'}"></div>
                         <span class="text-sm text-gray-400">${status}</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
@@ -4784,7 +4784,7 @@ class SettingsModule {
                     container.innerHTML = activities.map(activity => `
                         <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg mb-3">
                             <div class="flex items-center gap-3">
-                                <div class="w-2 h-2 bg-${this.getSeverityColor(activity.severity)}-400 rounded-full"></div>
+                                <div class="w-2 h-2 rounded-full ${this.getSeverityColor(activity.severity) === 'green' ? 'bg-green-400' : this.getSeverityColor(activity.severity) === 'yellow' ? 'bg-yellow-400' : this.getSeverityColor(activity.severity) === 'red' ? 'bg-red-400' : 'bg-gray-400'}"></div>
                                 <div>
                                     <div class="text-sm font-medium text-white">${activity.description}</div>
                                     <div class="text-xs text-gray-400">${activity.user_email} - ${this.formatDate(activity.timestamp)}</div>
@@ -6148,8 +6148,8 @@ TITAN Trading System - Log Export
                                 ${result.responseTime ? `<div class="text-xs text-gray-400">${result.responseTime}ms</div>` : ''}
                             </div>
                             <div class="flex items-center gap-2">
-                                <div class="w-2 h-2 bg-${result.success ? 'green' : 'red'}-400 rounded-full"></div>
-                                <span class="text-sm text-${result.success ? 'green' : 'red'}-400">
+                                <div class="w-2 h-2 rounded-full ${result.success ? 'bg-green-400' : 'bg-red-400'}"></div>
+                                <span class="text-sm ${result.success ? 'text-green-400' : 'text-red-400'}">
                                     ${result.success ? 'موفق' : 'ناموفق'}
                                 </span>
                             </div>
@@ -6268,7 +6268,7 @@ TITAN Trading System - Log Export
                                 <div class="text-sm text-gray-400 mb-2">نتیجه تحلیل:</div>
                                 <div class="flex items-center justify-between">
                                     <span class="text-white">احساس کلی:</span>
-                                    <span class="text-${sentiment.overall === 'positive' ? 'green' : sentiment.overall === 'negative' ? 'red' : 'yellow'}-400 font-bold">
+                                    <span class="font-bold ${sentiment.overall === 'positive' ? 'text-green-400' : sentiment.overall === 'negative' ? 'text-red-400' : 'text-yellow-400'}">
                                         ${sentiment.overall === 'positive' ? 'مثبت' : sentiment.overall === 'negative' ? 'منفی' : 'خنثی'}
                                     </span>
                                 </div>
@@ -6865,7 +6865,7 @@ TITAN Trading System - Log Export
                         </div>
                         <div class="flex items-center justify-between pt-2 border-t border-gray-700">
                             <span class="text-xs text-gray-400">وضعیت:</span>
-                            <div class="w-2 h-2 bg-${threshold.color}-400 rounded-full"></div>
+                            <div class="w-2 h-2 rounded-full ${threshold.color === 'green' ? 'bg-green-400' : threshold.color === 'yellow' ? 'bg-yellow-400' : threshold.color === 'red' ? 'bg-red-400' : 'bg-gray-400'}"></div>
                         </div>
                     </div>
                 </div>
@@ -7205,7 +7205,7 @@ TITAN Trading System - Log Export
                         ${Object.entries(results).map(([test, result]) => `
                             <div class="flex items-center justify-between p-2 bg-gray-700 rounded">
                                 <span class="text-gray-300">${test.replace('_', ' ').toUpperCase()}</span>
-                                <span class="text-${result === 'passed' ? 'green' : 'red'}-400">
+                                <span class="${result === 'passed' ? 'text-green-400' : 'text-red-400'}">
                                     ${result === 'passed' ? '✓ موفق' : '✗ ناموفق'}
                                 </span>
                             </div>
@@ -7332,22 +7332,22 @@ TITAN Trading System - Log Export
                         <div class="space-y-1 text-xs text-gray-300">
                             <div class="flex justify-between">
                                 <span>ریسک:</span>
-                                <span class="text-${mode.color}-400">${config.max_risk_per_trade}%</span>
+                                <span class="${mode.color === 'green' ? 'text-green-400' : mode.color === 'yellow' ? 'text-yellow-400' : mode.color === 'red' ? 'text-red-400' : 'text-gray-400'}">${config.max_risk_per_trade}%</span>
                             </div>
                             <div class="flex justify-between">
                                 <span>پوزیشن:</span>
-                                <span class="text-${mode.color}-400">${config.max_positions}</span>
+                                <span class="${mode.color === 'green' ? 'text-green-400' : mode.color === 'yellow' ? 'text-yellow-400' : mode.color === 'red' ? 'text-red-400' : 'text-gray-400'}">${config.max_positions}</span>
                             </div>
                             <div class="flex justify-between">
                                 <span>اطمینان:</span>
-                                <span class="text-${mode.color}-400">${Math.round(config.min_confidence * 100)}%</span>
+                                <span class="${mode.color === 'green' ? 'text-green-400' : mode.color === 'yellow' ? 'text-yellow-400' : mode.color === 'red' ? 'text-red-400' : 'text-gray-400'}">${Math.round(config.min_confidence * 100)}%</span>
                             </div>
                             <div class="flex justify-between">
                                 <span>استراتژی:</span>
-                                <span class="text-${mode.color}-400">${config.strategies.length}</span>
+                                <span class="${mode.color === 'green' ? 'text-green-400' : mode.color === 'yellow' ? 'text-yellow-400' : mode.color === 'red' ? 'text-red-400' : 'text-gray-400'}">${config.strategies.length}</span>
                             </div>
                         </div>
-                        ${isActive ? `<div class="mt-2 text-${mode.color}-400 text-xs font-semibold">✓ فعال</div>` : ''}
+                        ${isActive ? `<div class="mt-2 text-xs font-semibold ${mode.color === 'green' ? 'text-green-400' : mode.color === 'yellow' ? 'text-yellow-400' : mode.color === 'red' ? 'text-red-400' : 'text-gray-400'}">✓ فعال</div>` : ''}
                     </div>
                 </div>
             `;
@@ -7691,7 +7691,7 @@ TITAN Trading System - Log Export
                                 <div class="text-sm text-gray-400">امتیاز ریسک</div>
                             </div>
                             <div class="bg-gray-700 rounded p-3">
-                                <div class="text-2xl font-bold text-${results.recommended ? 'green' : 'red'}-400">
+                                <div class="text-2xl font-bold ${results.recommended ? 'text-green-400' : 'text-red-400'}">
                                     ${results.recommended ? '✓' : '✗'}
                                 </div>
                                 <div class="text-sm text-gray-400">${results.recommended ? 'توصیه می‌شود' : 'نیاز به بررسی'}</div>
@@ -7808,7 +7808,7 @@ TITAN Trading System - Log Export
                             </div>
                         </div>
                         <div class="flex items-center gap-2">
-                            <div class="w-2 h-2 bg-${priorityColor}-500 rounded-full" title="اولویت ${config.priority}"></div>
+                            <div class="w-2 h-2 rounded-full ${priorityColor === 'green' ? 'bg-green-500' : priorityColor === 'yellow' ? 'bg-yellow-500' : priorityColor === 'red' ? 'bg-red-500' : 'bg-gray-500'}" title="اولویت ${config.priority}"></div>
                             <label class="relative inline-flex items-center cursor-pointer">
                                 <input type="checkbox" class="sr-only peer agent-enabled" data-agent="${agent.key}" ${config.enabled ? 'checked' : ''}>
                                 <div class="w-8 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-3 peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
