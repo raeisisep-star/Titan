@@ -246,8 +246,8 @@ class FinalSettingsModule {
         <div class="space-y-6">
             <div class="bg-gray-900 rounded-lg p-6">
                 <h4 class="text-xl font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-cogs text-orange-400 mr-3"></i>
-                    تنظیمات سیستم
+                    <i class="fas fa-shield-alt text-red-400 mr-3"></i>
+                    امنیت پیشرفته سیستم
                 </h4>
                 <div class="space-y-4">
                     <div class="bg-orange-800 p-4 rounded">
@@ -257,9 +257,26 @@ class FinalSettingsModule {
                             Status: 🔄 Ready for Implementation
                         </div>
                     </div>
+                    <div class="bg-red-800 p-4 rounded">
+                        <h5 class="text-white font-semibold mb-2">✅ Feature 10: Advanced Security</h5>
+                        <p class="text-red-200 text-sm mb-2">داشبورد امنیت، تشخیص تهدید، لاگ‌های حسابرسی و مدیریت رمزگذاری</p>
+                        <div class="bg-red-900 p-2 rounded text-xs text-red-100">
+                            Status: ✅ Implemented & Active
+                        </div>
+                    </div>
                 </div>
-                <div class="bg-red-900 p-4 rounded mt-4">
-                    <p class="text-red-200">🔧 آماده برای پیاده‌سازی Feature 6</p>
+                
+                <div class="mt-6">
+                    <div class="security-content" id="security-container">
+                        <div class="text-center bg-gray-800 rounded-lg p-6">
+                            <div class="animate-spin inline-block w-8 h-8 border-4 border-red-500 border-t-transparent rounded-full mb-4"></div>
+                            <p class="text-gray-300">در حال بارگذاری سیستم امنیت پیشرفته...</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-green-900 p-4 rounded mt-4">
+                    <p class="text-green-200">✅ Feature 10 کاملاً پیاده‌سازی شده - امنیت کامل سیستم</p>
                 </div>
             </div>
         </div>`;
@@ -323,6 +340,8 @@ class FinalSettingsModule {
                     this.loadRBACModule();
                 } else if (tabName === 'backup') {
                     this.loadBackupModule();
+                } else if (tabName === 'system') {
+                    this.loadSecurityModule();
                 }
             } else {
                 console.error('❌ settings-tab-content element not found');
@@ -460,6 +479,40 @@ class FinalSettingsModule {
                 }
             } else {
                 console.error('❌ Backup Automation Module not found');
+            }
+        }, 100);
+    }
+
+    loadSecurityModule() {
+        console.log('🔄 Loading Advanced Security Module...');
+        
+        setTimeout(() => {
+            if (window.TitanModules && window.TitanModules.AdvancedSecurityModule) {
+                try {
+                    console.log('✅ Creating Advanced Security instance...');
+                    
+                    // Create instance
+                    const securityInstance = new window.TitanModules.AdvancedSecurityModule();
+                    
+                    // Set global instance
+                    window.securityModule = securityInstance;
+                    
+                    // Initialize and get content
+                    securityInstance.initialize().then(() => {
+                        const container = document.getElementById('security-container');
+                        if (container) {
+                            container.innerHTML = securityInstance.getContent();
+                            console.log('✅ Advanced Security Module loaded successfully');
+                        }
+                    }).catch(error => {
+                        console.error('❌ Error initializing Advanced Security Module:', error);
+                    });
+                    
+                } catch (error) {
+                    console.error('❌ Error creating Advanced Security instance:', error);
+                }
+            } else {
+                console.error('❌ Advanced Security Module not found');
             }
         }, 100);
     }
