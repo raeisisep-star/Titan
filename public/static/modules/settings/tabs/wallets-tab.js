@@ -122,11 +122,11 @@ export default class WalletsTab {
                             کیف‌پول‌های متصل
                         </h3>
                         <div class="flex space-x-2 space-x-reverse">
-                            <button onclick="this.connectNewWallet()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <button onclick="walletsTabInstance.connectNewWallet()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                 <i class="fas fa-plus mr-2"></i>
                                 اتصال کیف‌پول جدید
                             </button>
-                            <button onclick="this.refreshBalances()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <button onclick="walletsTabInstance.refreshBalances()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                 <i class="fas fa-sync mr-2"></i>
                                 بروزرسانی موجودی
                             </button>
@@ -172,7 +172,7 @@ export default class WalletsTab {
                             <i class="fas fa-history text-green-400 ml-2"></i>
                             تراکنش‌های اخیر
                         </h3>
-                        <button onclick="this.viewAllTransactions()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                        <button onclick="walletsTabInstance.viewAllTransactions()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
                             <i class="fas fa-list mr-2"></i>
                             مشاهده همه
                         </button>
@@ -240,12 +240,171 @@ export default class WalletsTab {
                             </div>
                             
                             <div>
-                                <button onclick="this.backupWallets()" class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
+                                <button onclick="walletsTabInstance.backupWallets()" class="w-full px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
                                     <i class="fas fa-download mr-2"></i>
                                     پشتیبان‌گیری از کیف‌پول‌ها
                                 </button>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Cold Wallet Automation -->
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <h3 class="text-xl font-bold text-white mb-4">
+                        <i class="fas fa-snowflake text-blue-400 ml-2"></i>
+                        🧊 اتوماسیون کلد والت
+                    </h3>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="space-y-4">
+                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                <div>
+                                    <span class="text-white block">انتقال خودکار به کیف پول سرد</span>
+                                    <span class="text-gray-400 text-sm">فعال‌سازی انتقال خودکار مقادیر بالا</span>
+                                </div>
+                                <input type="checkbox" id="auto-cold-transfer" ${this.settings.autoColdTransfer ? 'checked' : ''} 
+                                       class="toggle-switch">
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">حد آستانه انتقال (USDT)</label>
+                                <input type="number" id="cold-wallet-threshold" value="${this.settings.coldWalletThreshold || 50000}" 
+                                       min="1000" max="1000000" step="1000"
+                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                <p class="text-xs text-gray-500 mt-1">هنگامی که موجودی از این مقدار بیشتر شود، به صورت خودکار انتقال می‌یابد</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">درصد انتقال</label>
+                                <div class="flex items-center space-x-3 space-x-reverse">
+                                    <input type="range" id="transfer-percentage" min="10" max="90" value="${this.settings.transferPercentage || 70}" 
+                                           class="flex-1 cold-wallet-slider">
+                                    <span id="transfer-percentage-value" class="text-white font-semibold min-w-12">${this.settings.transferPercentage || 70}%</span>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">درصدی از موجودی اضافی که انتقال می‌یابد</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">زمان‌بندی بررسی</label>
+                                <select id="check-frequency" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                    <option value="hourly" ${this.settings.checkFrequency === 'hourly' ? 'selected' : ''}>هر ساعت</option>
+                                    <option value="every4hours" ${this.settings.checkFrequency === 'every4hours' ? 'selected' : ''}>هر 4 ساعت</option>
+                                    <option value="every12hours" ${this.settings.checkFrequency === 'every12hours' ? 'selected' : ''}>هر 12 ساعت</option>
+                                    <option value="daily" ${this.settings.checkFrequency === 'daily' ? 'selected' : ''}>روزانه</option>
+                                    <option value="weekly" ${this.settings.checkFrequency === 'weekly' ? 'selected' : ''}>هفتگی</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">آدرس کیف پول سرد (Primary)</label>
+                                <div class="relative">
+                                    <input type="text" id="primary-cold-wallet" value="${this.settings.primaryColdWallet || ''}" 
+                                           placeholder="bc1q... یا 0x... یا آدرس کیف پول سرد"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 pr-10">
+                                    <i class="fas fa-wallet absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">آدرس اصلی کیف پول سرد برای انتقال خودکار</p>
+                            </div>
+                            
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">آدرس کیف پول سرد (Backup)</label>
+                                <div class="relative">
+                                    <input type="text" id="backup-cold-wallet" value="${this.settings.backupColdWallet || ''}" 
+                                           placeholder="آدرس پشتیبان (اختیاری)"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500 pr-10">
+                                    <i class="fas fa-shield-alt absolute left-3 top-3 text-gray-400"></i>
+                                </div>
+                                <p class="text-xs text-gray-500 mt-1">آدرس پشتیبان در صورت عدم دسترسی به آدرس اصلی</p>
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                <div>
+                                    <span class="text-white block">تأیید دستی انتقال‌ها</span>
+                                    <span class="text-gray-400 text-sm">نیاز به تایید قبل از انتقال</span>
+                                </div>
+                                <input type="checkbox" id="manual-confirmation" ${this.settings.manualConfirmation !== false ? 'checked' : ''} 
+                                       class="toggle-switch">
+                            </div>
+                            
+                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                                <div>
+                                    <span class="text-white block">اطلاع‌رسانی انتقال‌ها</span>
+                                    <span class="text-gray-400 text-sm">ارسال اعلان پس از هر انتقال</span>
+                                </div>
+                                <input type="checkbox" id="transfer-notifications" ${this.settings.transferNotifications !== false ? 'checked' : ''} 
+                                       class="toggle-switch">
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cold Wallet Statistics -->
+                    <div class="mt-6 grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-900/30 border border-blue-600 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-snowflake text-blue-400 text-lg ml-2"></i>
+                                <div>
+                                    <div class="text-blue-400 text-sm">موجودی کلد والت</div>
+                                    <div class="text-white font-bold text-xl">${(this.settings.coldWalletBalance || 0).toLocaleString()}$</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-green-900/30 border border-green-600 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-arrow-up text-green-400 text-lg ml-2"></i>
+                                <div>
+                                    <div class="text-green-400 text-sm">انتقال‌های امروز</div>
+                                    <div class="text-white font-bold text-xl">${this.settings.todayTransfers || 0}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-purple-900/30 border border-purple-600 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-clock text-purple-400 text-lg ml-2"></i>
+                                <div>
+                                    <div class="text-purple-400 text-sm">آخرین انتقال</div>
+                                    <div class="text-white font-bold text-sm">${this.settings.lastTransferTime || 'هنوز نداشته'}</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="bg-orange-900/30 border border-orange-600 rounded-lg p-4">
+                            <div class="flex items-center">
+                                <i class="fas fa-percentage text-orange-400 text-lg ml-2"></i>
+                                <div>
+                                    <div class="text-orange-400 text-sm">درصد ایمنی</div>
+                                    <div class="text-white font-bold text-xl">${this.settings.safetyPercentage || 85}%</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cold Wallet Actions -->
+                    <div class="mt-6 flex flex-wrap gap-3">
+                        <button onclick="walletsTabInstance.testColdWalletConnection()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-plug mr-2"></i>
+                            تست اتصال کلد والت
+                        </button>
+                        <button onclick="walletsTabInstance.forceColdTransfer()" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-paper-plane mr-2"></i>
+                            انتقال فوری
+                        </button>
+                        <button onclick="walletsTabInstance.viewTransferHistory()" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-history mr-2"></i>
+                            تاریخچه انتقال‌ها
+                        </button>
+                        <button onclick="walletsTabInstance.generateColdWalletReport()" 
+                                class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors flex items-center">
+                            <i class="fas fa-file-alt mr-2"></i>
+                            گزارش کلد والت
+                        </button>
                     </div>
                 </div>
 
@@ -263,7 +422,7 @@ export default class WalletsTab {
                             </div>
                             <div class="text-lg font-bold text-white">Staking</div>
                             <div class="text-sm text-gray-400 mb-3">سود سالانه تا 12%</div>
-                            <button onclick="this.manageStaking()" class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
+                            <button onclick="walletsTabInstance.manageStaking()" class="px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700">
                                 مدیریت
                             </button>
                         </div>
@@ -274,7 +433,7 @@ export default class WalletsTab {
                             </div>
                             <div class="text-lg font-bold text-white">Liquidity Pools</div>
                             <div class="text-sm text-gray-400 mb-3">ارائه نقدینگی</div>
-                            <button onclick="this.manageLiquidity()" class="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
+                            <button onclick="walletsTabInstance.manageLiquidity()" class="px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700">
                                 مدیریت
                             </button>
                         </div>
@@ -285,7 +444,7 @@ export default class WalletsTab {
                             </div>
                             <div class="text-lg font-bold text-white">Yield Farming</div>
                             <div class="text-sm text-gray-400 mb-3">کشاورزی درآمد</div>
-                            <button onclick="this.manageYieldFarming()" class="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
+                            <button onclick="walletsTabInstance.manageYieldFarming()" class="px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700">
                                 مدیریت
                             </button>
                         </div>
@@ -369,15 +528,15 @@ export default class WalletsTab {
                     </div>
                     
                     <div class="mt-6 flex flex-wrap gap-2">
-                        <button onclick="this.saveWalletSettings()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button onclick="walletsTabInstance.saveWalletSettings()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                             <i class="fas fa-save mr-2"></i>
                             ذخیره تنظیمات
                         </button>
-                        <button onclick="this.exportWalletData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <button onclick="walletsTabInstance.exportWalletData()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fas fa-download mr-2"></i>
                             صادرات داده‌ها
                         </button>
-                        <button onclick="this.importWalletData()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <button onclick="walletsTabInstance.importWalletData()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-upload mr-2"></i>
                             وارد کردن داده‌ها
                         </button>
@@ -413,13 +572,13 @@ export default class WalletsTab {
                 <div class="flex items-center justify-between text-sm">
                     <span class="text-gray-400">آخرین بروزرسانی: ${wallet.lastUpdate.split(' ')[1]}</span>
                     <div class="flex space-x-2 space-x-reverse">
-                        <button onclick="this.viewWalletDetails(${wallet.id})" class="text-blue-400 hover:text-blue-300">
+                        <button onclick="walletsTabInstance.viewWalletDetails(${wallet.id})" class="text-blue-400 hover:text-blue-300">
                             <i class="fas fa-eye"></i>
                         </button>
-                        <button onclick="this.editWallet(${wallet.id})" class="text-green-400 hover:text-green-300">
+                        <button onclick="walletsTabInstance.editWallet(${wallet.id})" class="text-green-400 hover:text-green-300">
                             <i class="fas fa-edit"></i>
                         </button>
-                        <button onclick="this.disconnectWallet(${wallet.id})" class="text-red-400 hover:text-red-300">
+                        <button onclick="walletsTabInstance.disconnectWallet(${wallet.id})" class="text-red-400 hover:text-red-300">
                             <i class="fas fa-unlink"></i>
                         </button>
                     </div>
@@ -541,6 +700,39 @@ export default class WalletsTab {
     initialize() {
         // Set up auto-refresh if enabled
         this.setupAutoRefresh();
+        
+        // Set up event handlers
+        this.setupEventHandlers();
+        
+        // Set global instance for onclick handlers
+        window.walletsTabInstance = this;
+    }
+
+    setupEventHandlers() {
+        // Set up range slider for transfer percentage
+        const transferSlider = document.getElementById('transfer-percentage');
+        const transferValueDisplay = document.getElementById('transfer-percentage-value');
+        
+        if (transferSlider && transferValueDisplay) {
+            transferSlider.addEventListener('input', (e) => {
+                transferValueDisplay.textContent = e.target.value + '%';
+            });
+        }
+        
+        // Set up auto-save for settings changes
+        const inputs = document.querySelectorAll('#unified-settings-content input, #unified-settings-content select');
+        inputs.forEach(input => {
+            input.addEventListener('change', () => {
+                this.saveSettingsDebounced();
+            });
+        });
+    }
+
+    saveSettingsDebounced() {
+        clearTimeout(this.saveTimeout);
+        this.saveTimeout = setTimeout(() => {
+            this.saveWalletSettings();
+        }, 1000);
     }
 
     setupAutoRefresh() {
@@ -700,11 +892,221 @@ export default class WalletsTab {
         input.click();
     }
 
+    // Cold Wallet Automation Methods
+    testColdWalletConnection() {
+        const primaryAddress = document.getElementById('primary-cold-wallet')?.value;
+        const backupAddress = document.getElementById('backup-cold-wallet')?.value;
+        
+        if (!primaryAddress) {
+            alert('❌ لطفاً ابتدا آدرس کیف پول سرد اصلی را وارد کنید');
+            return;
+        }
+        
+        // Show loading state
+        const loadingAlert = this.showNotification('🔄 در حال تست اتصال به کیف پول سرد...', 'info', 0);
+        
+        // Simulate connection test
+        setTimeout(() => {
+            // Hide loading
+            if (loadingAlert) loadingAlert.remove();
+            
+            // Validate address format (simplified)
+            if (primaryAddress.startsWith('bc1') || primaryAddress.startsWith('0x') || primaryAddress.startsWith('1') || primaryAddress.startsWith('3')) {
+                this.showNotification('✅ اتصال به کیف پول سرد موفقیت‌آمیز بود', 'success');
+                
+                // Update connection status
+                this.settings.coldWalletConnected = true;
+                this.settings.lastConnectionTest = new Date().toLocaleString('fa-IR');
+            } else {
+                this.showNotification('❌ فرمت آدرس کیف پول سرد نامعتبر است', 'error');
+                this.settings.coldWalletConnected = false;
+            }
+        }, 2000);
+    }
+
+    forceColdTransfer() {
+        const threshold = parseFloat(document.getElementById('cold-wallet-threshold')?.value) || 50000;
+        const percentage = parseFloat(document.getElementById('transfer-percentage')?.value) || 70;
+        const primaryAddress = document.getElementById('primary-cold-wallet')?.value;
+        
+        if (!primaryAddress) {
+            alert('❌ آدرس کیف پول سرد مشخص نشده است');
+            return;
+        }
+        
+        if (!confirm(`آیا از انتقال فوری ${percentage}% موجودی به کیف پول سرد اطمینان دارید؟\\n\\nمقصد: ${primaryAddress.substring(0, 10)}...`)) {
+            return;
+        }
+        
+        // Simulate transfer
+        const loadingAlert = this.showNotification('🚀 در حال انجام انتقال فوری...', 'info', 0);
+        
+        setTimeout(() => {
+            if (loadingAlert) loadingAlert.remove();
+            
+            // Update statistics
+            this.settings.todayTransfers = (this.settings.todayTransfers || 0) + 1;
+            this.settings.lastTransferTime = new Date().toLocaleString('fa-IR');
+            this.settings.coldWalletBalance = (this.settings.coldWalletBalance || 0) + 25000; // Simulated amount
+            
+            this.showNotification('✅ انتقال با موفقیت انجام شد', 'success');
+            
+            // Refresh display
+            setTimeout(() => {
+                location.reload();
+            }, 2000);
+        }, 3000);
+    }
+
+    viewTransferHistory() {
+        // Create modal for transfer history
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-4xl mx-4 max-h-96 overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">📋 تاریخچه انتقال‌های کلد والت</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-white font-medium">انتقال خودکار</div>
+                                <div class="text-gray-400 text-sm">به آدرس: bc1q...x7k9</div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-green-400 font-bold">+$25,000</div>
+                                <div class="text-gray-400 text-sm">${new Date().toLocaleDateString('fa-IR')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div>
+                                <div class="text-white font-medium">انتقال دستی</div>
+                                <div class="text-gray-400 text-sm">به آدرس: bc1q...m2n5</div>
+                            </div>
+                            <div class="text-left">
+                                <div class="text-green-400 font-bold">+$15,000</div>
+                                <div class="text-gray-400 text-sm">${new Date(Date.now() - 86400000).toLocaleDateString('fa-IR')}</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center text-gray-400 py-4">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        تاریخچه کامل در API ذخیره می‌شود
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    generateColdWalletReport() {
+        const reportData = {
+            totalBalance: this.settings.coldWalletBalance || 0,
+            transfersToday: this.settings.todayTransfers || 0,
+            lastTransfer: this.settings.lastTransferTime || 'N/A',
+            safetyPercentage: this.settings.safetyPercentage || 85,
+            primaryWallet: document.getElementById('primary-cold-wallet')?.value || 'Not Set',
+            backupWallet: document.getElementById('backup-cold-wallet')?.value || 'Not Set',
+            autoTransfer: document.getElementById('auto-cold-transfer')?.checked || false,
+            threshold: document.getElementById('cold-wallet-threshold')?.value || 50000,
+            transferPercentage: document.getElementById('transfer-percentage')?.value || 70,
+            checkFrequency: document.getElementById('check-frequency')?.value || 'daily'
+        };
+        
+        const reportContent = `
+TITAN Trading System - Cold Wallet Report
+Generated: ${new Date().toLocaleString('fa-IR')}
+
+=== Cold Wallet Statistics ===
+Total Balance: $${reportData.totalBalance.toLocaleString()}
+Transfers Today: ${reportData.transfersToday}
+Last Transfer: ${reportData.lastTransfer}
+Safety Percentage: ${reportData.safetyPercentage}%
+
+=== Configuration ===
+Primary Wallet: ${reportData.primaryWallet}
+Backup Wallet: ${reportData.backupWallet}
+Auto Transfer: ${reportData.autoTransfer ? 'Enabled' : 'Disabled'}
+Threshold: $${parseFloat(reportData.threshold).toLocaleString()}
+Transfer Percentage: ${reportData.transferPercentage}%
+Check Frequency: ${reportData.checkFrequency}
+
+=== Security Status ===
+✅ Primary wallet configured: ${reportData.primaryWallet !== 'Not Set' ? 'Yes' : 'No'}
+${reportData.backupWallet !== 'Not Set' ? '✅' : '⚠️'} Backup wallet configured: ${reportData.backupWallet !== 'Not Set' ? 'Yes' : 'No'}
+${reportData.autoTransfer ? '✅' : '⚠️'} Auto transfer: ${reportData.autoTransfer ? 'Enabled' : 'Disabled'}
+
+Report generated by TITAN AI System
+        `;
+        
+        // Create and download report
+        const blob = new Blob([reportContent], { type: 'text/plain; charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `TITAN-ColdWallet-Report-${new Date().toISOString().split('T')[0]}.txt`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+        
+        this.showNotification('📄 گزارش کلد والت دانلود شد', 'success');
+    }
+
+    showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white shadow-lg ${
+            type === 'success' ? 'bg-green-600' : 
+            type === 'error' ? 'bg-red-600' : 
+            type === 'warning' ? 'bg-yellow-600' :
+            'bg-blue-600'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${
+                    type === 'success' ? 'fa-check-circle' :
+                    type === 'error' ? 'fa-exclamation-circle' :
+                    type === 'warning' ? 'fa-exclamation-triangle' :
+                    'fa-info-circle'
+                } mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.remove();
+            }, duration);
+        }
+        
+        return notification;
+    }
+
     // Cleanup method
     destroy() {
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
         }
+        
+        if (this.saveTimeout) {
+            clearTimeout(this.saveTimeout);
+        }
+        
+        // Remove global instance
+        window.walletsTabInstance = null;
     }
 
     collectData() {

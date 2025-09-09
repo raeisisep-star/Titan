@@ -9,14 +9,14 @@
 ## 🌐 لینک‌های سرویس
 
 ### **🚀 Production URLs**
-- **🏠 برنامه اصلی**: https://8b1ba4ac.titan-trading.pages.dev ✅ **LIVE & UPDATED** (24 Aug 2025 - Phase 6.1 Security Fix)
-- **🔧 API Health Check**: https://ddfcd998.titan-trading.pages.dev/api/health ✅ **WORKING**
-- **🤖 AI Services**: https://ddfcd998.titan-trading.pages.dev/api/ai/test ✅ **INTEGRATED**
-- **🔐 Authentication**: https://ddfcd998.titan-trading.pages.dev/api/auth/login ✅ **ACTIVE**
-- **👤 User Profile**: https://ddfcd998.titan-trading.pages.dev (Click username → Profile) ✅ **NEW FEATURE**
-- **👥 User Management**: https://ddfcd998.titan-trading.pages.dev (Settings → System) ✅ **ADMIN PANEL**
-- **🆕 🧠 Advanced AI System**: https://ddfcd998.titan-trading.pages.dev (Settings → AI پیشرفته) ✅ **PHASE 6.0**
-- **🆕 🖥️ System Status Monitor**: https://ddfcd998.titan-trading.pages.dev (آیکون وضعیت سیستم) ✅ **NEW PHASE 6.1**
+- **🏠 برنامه اصلی**: https://85f9637c.titan-trading.pages.dev ✅ **LIVE & UPDATED** (9 Sep 2025 - Phase 6.4 AI Management Integration)
+- **🔧 API Health Check**: https://85f9637c.titan-trading.pages.dev/api/health ✅ **WORKING**
+- **🤖 AI Services**: https://85f9637c.titan-trading.pages.dev/api/ai/test ✅ **INTEGRATED**
+- **🔐 Authentication**: https://85f9637c.titan-trading.pages.dev/api/auth/login ✅ **ACTIVE**
+- **👤 User Profile**: https://85f9637c.titan-trading.pages.dev (Click username → Profile) ✅ **NEW FEATURE**
+- **👥 User Management**: https://85f9637c.titan-trading.pages.dev (Settings → System) ✅ **ADMIN PANEL**
+- **🆕 🧠 Complete AI Management**: https://85f9637c.titan-trading.pages.dev (Settings → 🤖 هوش مصنوعی) ✅ **PHASE 6.4 UNIFIED**
+- **🆕 🖥️ System Status Monitor**: https://85f9637c.titan-trading.pages.dev (آیکون وضعیت سیستم) ✅ **NEW PHASE 6.1**
 - **🔐 GitHub Repository**: https://github.com/raeisisep-star/Titan ✅ **LIVE & SYNCED** (Latest: 23 Aug 2025)
 
 ### **🔧 Development URLs**
@@ -36,9 +36,9 @@
 - **🆕 🖥️ Enhanced System Status**: https://3000-iamgmbkoq4p98bf87r889-6532622b.e2b.dev/api/autopilot/system/enhanced-status ✅ **NEW**
 
 ### **📦 Project Backup**
-- **🗄️ Latest Backup**: https://page.gensparksite.com/project_backups/tooluse_1ARI-oBGQCuWYkyJmxZmsg.tar.gz ✅ **FRESH** (23 Aug 2025)
-- **🗄️ Previous Backup**: https://page.gensparksite.com/project_backups/tooluse_rW5pANAEQzWxtvy1k2toCw.tar.gz ✅ **AVAILABLE** (23 Aug 2025)
-- **📄 Description**: TITAN Trading System v3.1.0 - Complete System Status Integration (Phase 6.1)
+- **🗄️ Latest Backup**: https://page.gensparksite.com/project_backups/tooluse_d7yQJkViQsuet_ljQCct4Q.tar.gz ✅ **FRESH** (9 Sep 2025)
+- **🗄️ Previous Backup**: https://page.gensparksite.com/project_backups/tooluse_1ARI-oBGQCuWYkyJmxZmsg.tar.gz ✅ **AVAILABLE** (23 Aug 2025)
+- **📄 Description**: TITAN Trading System Phase 6.4 - Complete AI Management Integration with 5 unified tabs
 
 ### **🔑 حساب‌های تست (Demo Accounts):**
 - **Admin**: `admin@titan.com` / `admin123` (دسترسی کامل)
@@ -59,6 +59,7 @@
 - **🆕 حافظه زمینه**: ذخیره و بازیابی مکالمات برای پاسخ‌های هوشمندتر
 - **🆕 آنالیتیکس پیشرفته**: ردیابی عملکرد و بهبود مداوم کیفیت AI
 - **🆕 سیستم تنظیمات پیشرفته**: مدیریت کامل ارائه‌دهندگان AI و پیکربندی
+- **🆕 مدیریت AI یکپارچه**: داشبورد کامل مدیریت 15 ایجنت در تنظیمات با 5 تب (نمای کلی، ایجنت‌ها، آموزش، آنالیتیکس، پیکربندی)
 - **Mixture of Agents**: استفاده همزمان از OpenAI + Google + Anthropic + CoinGecko APIs
 - **یادگیری مداوم**: بهبود مستمر الگوریتم‌ها و دقت پیش‌بینی‌ها
 - **پیش‌بینی قیمت**: با درصد اطمینان و پیگیری نتایج
@@ -555,6 +556,7 @@ POST /api/system/emergency-stop # ✅ توقف اضطراری
 - ✅ **🆕 Authentication-based UI Security** - Chatbot and system status hidden on login page (24 Aug 2025)
 - ✅ **🆕 Enhanced System Status Dashboard (Phase 6.2)** - Complete system activities and metrics (25 Aug 2025)
 - ✅ **🆕 Complete AI Management Dashboard (Phase 6.3)** - Full 15 AI Agents management with 4-section dashboard (25 Aug 2025)
+- ✅ **🆕 AI Management Tab Integration (Phase 6.4)** - Complete AI Management unified into Settings → AI with 5 tabs (9 Sep 2025)
 
 ### **🚀 آماده برای Production:**
 - ✅ سیستم کاملاً عملیاتی و تست شده

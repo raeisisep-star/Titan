@@ -1066,21 +1066,66 @@ class TitanApp {
                     break;
                 case 'settings':
                     try {
-                        if (this.moduleLoader) {
-                            const settingsModule = await this.moduleLoader.loadModule('settings', { showLoading: true });
-                            if (settingsModule) {
-                                mainContent.innerHTML = await settingsModule.getContent();
-                                await settingsModule.initialize();
-                                window.settingsModule = settingsModule;
-                            } else {
-                                throw new Error('Settings module returned null');
-                            }
-                        } else {
-                            throw new Error('Module loader not available');
+                        console.log('⚙️ Starting Unified Settings module loading...');
+                        
+                        // Show loading state
+                        mainContent.innerHTML = `
+                            <div class="space-y-6">
+                                <div class="bg-gray-800 rounded-lg p-8 border border-gray-700">
+                                    <div class="text-center">
+                                        <div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full mb-6"></div>
+                                        <h3 class="text-xl font-semibold text-white mb-2">در حال بارگذاری تنظیمات یکپارچه...</h3>
+                                        <p class="text-gray-400">لطفاً صبر کنید تا سیستم تنظیمات راه‌اندازی شود</p>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
+                        
+                        // Load unified settings module
+                        if (!window.UnifiedSettingsModule) {
+                            const script = document.createElement('script');
+                            script.src = '/static/modules/settings-unified.js?v=' + Date.now();
+                            
+                            await new Promise((resolve, reject) => {
+                                script.onload = resolve;
+                                script.onerror = () => reject(new Error('خطا در بارگذاری فایل settings-unified.js'));
+                                document.head.appendChild(script);
+                            });
                         }
+                        
+                        // Create and initialize unified settings instance
+                        window.unifiedSettings = new window.UnifiedSettingsModule();
+                        await window.unifiedSettings.init();
+                        
+                        // Render unified settings content
+                        const settingsContent = await window.unifiedSettings.render();
+                        mainContent.innerHTML = settingsContent;
+                        
+                        console.log('✅ Unified Settings module loaded successfully');
+                        this.showAlert('تنظیمات یکپارچه بارگذاری شد', 'success');
+                        
                     } catch (error) {
-                        console.error('❌ Settings loading error:', error);
-                        mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری ماژول تنظیمات</div></div>';
+                        console.error('❌ Unified Settings loading error:', error);
+                        this.showAlert('خطا در بارگذاری تنظیمات: ' + error.message, 'error');
+                        mainContent.innerHTML = `
+                            <div class="space-y-6">
+                                <div class="bg-red-900/20 border border-red-600 rounded-lg p-8 text-center">
+                                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                                    <h3 class="text-xl font-bold text-red-400 mb-4">خطا در بارگذاری تنظیمات یکپارچه</h3>
+                                    <p class="text-gray-400 mb-6">${error.message}</p>
+                                    <div class="space-x-3 space-x-reverse">
+                                        <button onclick="app.loadModule('settings')" 
+                                                class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium">
+                                            🔄 تلاش مجدد
+                                        </button>
+                                        <button onclick="app.loadModule('dashboard')" 
+                                                class="px-6 py-3 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium">
+                                            بازگشت به داشبورد
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        `;
                     }
                     break;
                 default:
