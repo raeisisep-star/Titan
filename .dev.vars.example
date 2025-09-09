@@ -1,0 +1,47 @@
+# TITAN Trading System - Cloudflare Development Variables
+# Copy this file to .dev.vars for local Cloudflare Pages development
+
+# === DEVELOPMENT ENVIRONMENT ===
+NODE_ENV=development
+DEBUG_MODE=true
+ENVIRONMENT=development
+
+# === API KEYS - EXTERNAL SERVICES ===
+OPENAI_API_KEY=sk-your-openai-key-here
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-key-here
+GOOGLE_API_KEY=your-google-ai-key-here
+
+# === EXCHANGE APIs (TESTNET/SANDBOX) ===
+BINANCE_API_KEY=your-binance-testnet-key-here
+BINANCE_SECRET_KEY=your-binance-testnet-secret-here
+BINANCE_TESTNET=true
+
+COINBASE_API_KEY=your-coinbase-sandbox-key-here
+COINBASE_SECRET=your-coinbase-sandbox-secret-here
+COINBASE_PASSPHRASE=your-coinbase-sandbox-passphrase-here
+COINBASE_SANDBOX=true
+
+KUCOIN_API_KEY=your-kucoin-sandbox-key-here
+KUCOIN_SECRET_KEY=your-kucoin-sandbox-secret-here
+KUCOIN_PASSPHRASE=your-kucoin-sandbox-passphrase-here
+KUCOIN_SANDBOX=true
+
+# === NOTIFICATION SERVICES ===
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-test-email@gmail.com
+SMTP_PASS=your-app-password-here
+
+TELEGRAM_BOT_TOKEN=your-test-telegram-bot-token-here
+TELEGRAM_CHAT_ID=your-test-chat-id-here
+
+KAVENEGAR_API_KEY=your-test-kavenegar-key-here
+
+# === SECURITY SETTINGS ===
+JWT_SECRET=dev-jwt-secret-change-for-production
+SESSION_SECRET=dev-session-secret-change-for-production
+
+# === FEATURE FLAGS ===
+ENABLE_LIVE_TRADING=false
+ENABLE_AI_PREDICTIONS=true
+ENABLE_NOTIFICATIONS=false

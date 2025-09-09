@@ -15,10 +15,29 @@ dist/
 node_modules/
 .wrangler
 
-# env
+# Environment & Secrets (NEVER COMMIT THESE!)
 .env
+.env.local
+.env.development
+.env.staging
 .env.production
 .dev.vars
+*.env
+secrets/
+keys/
+certificates/
+
+# API Keys & Credentials
+api-keys.json
+credentials.json
+service-account.json
+
+# Backup & Database
+*.db
+*.sqlite
+*.sql.backup
+backups/
+data-exports/
 
 # logs
 logs/

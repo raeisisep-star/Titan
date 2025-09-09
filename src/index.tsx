@@ -62,6 +62,8 @@ import chatbotApiRoutes from './api/chatbot-api'
 import advancedAIApiRoutes from './api/advanced-ai-api'
 // Import AI Config API
 import aiConfigApiRoutes from './api/ai-config-api'
+// Import Configuration Test API
+import configTestRoutes from './modules/system/config-test'
 
 // Import AI modules
 import { artemisRoutes } from './ai/artemis/routes'
@@ -131,6 +133,9 @@ app.route('/api/chatbot', chatbotApiRoutes)
 // Advanced AI API Routes
 app.route('/api/ai/advanced', advancedAIApiRoutes)
 app.route('/api/ai/config', aiConfigApiRoutes)
+
+// Configuration Test API Routes
+app.route('/api/system/config', configTestRoutes)
 
 // AI API Routes
 app.route('/api/ai/artemis', artemisRoutes)
