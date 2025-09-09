@@ -5,6 +5,15 @@
   "compatibility_flags": ["nodejs_compat"],
   "pages_build_output_dir": "./dist",
 
+  // D1 Database for production data storage
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "titan-production",
+      "database_id": "placeholder-will-be-updated-after-creation"
+    }
+  ],
+
   // KV Storage for caching and real-time data
   "kv_namespaces": [
     {

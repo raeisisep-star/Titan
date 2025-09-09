@@ -1,5 +1,6 @@
 // TITAN Exchange Service - Multiple Exchange Integration
 import type { Env } from '../types/cloudflare'
+import ExchangeFactory from '../exchanges/exchange-factory'
 
 export interface ExchangeConfig {
   name: string
@@ -76,10 +77,24 @@ export class ExchangeService {
   private env: Env
   private exchanges: Map<string, ExchangeConfig> = new Map()
   private rateLimiter: Map<string, number[]> = new Map()
+  private exchangeFactory: ExchangeFactory
+  private useRealExchanges: boolean
 
   constructor(env: Env) {
     this.env = env
+    this.useRealExchanges = env.USE_REAL_EXCHANGES === 'true'
+    
+    // Initialize legacy mock exchanges for backward compatibility
     this.initializeExchanges()
+    
+    // Initialize real exchange factory
+    if (this.useRealExchanges) {
+      this.exchangeFactory = new ExchangeFactory({
+        env,
+        enabledExchanges: ['binance', 'coinbase', 'kucoin'],
+        defaultExchange: 'binance'
+      })
+    }
   }
 
   private initializeExchanges() {
@@ -189,6 +204,20 @@ export class ExchangeService {
 
   // Get market data from exchange
   public async getMarketData(symbol: string, exchange = 'mock'): Promise<MarketData> {
+    // Use real exchanges if enabled and available
+    if (this.useRealExchanges && exchange !== 'mock' && this.exchangeFactory) {
+      try {
+        const marketData = await this.exchangeFactory.getMarketData(symbol, exchange)
+        if (marketData) {
+          return marketData
+        }
+      } catch (error) {
+        console.error(`Error fetching real market data from ${exchange}:`, error)
+        // Fall through to mock data
+      }
+    }
+
+    // Legacy mock implementation
     if (!this.checkRateLimit(exchange)) {
       throw new Error(`Rate limit exceeded for ${exchange}`)
     }
@@ -215,6 +244,20 @@ export class ExchangeService {
 
   // Get order book
   public async getOrderBook(symbol: string, exchange = 'mock'): Promise<OrderBook> {
+    // Use real exchanges if enabled and available
+    if (this.useRealExchanges && exchange !== 'mock' && this.exchangeFactory) {
+      try {
+        const orderBook = await this.exchangeFactory.getOrderBook(symbol, exchange)
+        if (orderBook) {
+          return orderBook
+        }
+      } catch (error) {
+        console.error(`Error fetching real order book from ${exchange}:`, error)
+        // Fall through to mock data
+      }
+    }
+
+    // Legacy mock implementation
     if (!this.checkRateLimit(exchange)) {
       throw new Error(`Rate limit exceeded for ${exchange}`)
     }
@@ -231,6 +274,20 @@ export class ExchangeService {
   public async placeOrder(order: TradeOrder): Promise<OrderResponse> {
     const exchange = order.exchange
     
+    // Use real exchanges if enabled and available
+    if (this.useRealExchanges && exchange !== 'mock' && this.exchangeFactory) {
+      try {
+        const orderResponse = await this.exchangeFactory.placeOrder(order, exchange)
+        if (orderResponse) {
+          return orderResponse
+        }
+      } catch (error) {
+        console.error(`Error placing real order on ${exchange}:`, error)
+        // Fall through to mock order
+      }
+    }
+    
+    // Legacy mock implementation
     if (!this.checkRateLimit(exchange)) {
       throw new Error(`Rate limit exceeded for ${exchange}`)
     }
@@ -286,6 +343,20 @@ export class ExchangeService {
 
   // Get account balances
   public async getBalances(exchange = 'mock'): Promise<Balance[]> {
+    // Use real exchanges if enabled and available
+    if (this.useRealExchanges && exchange !== 'mock' && this.exchangeFactory) {
+      try {
+        const balanceMap = await this.exchangeFactory.getBalances(exchange)
+        if (balanceMap[exchange]) {
+          return balanceMap[exchange]
+        }
+      } catch (error) {
+        console.error(`Error fetching real balances from ${exchange}:`, error)
+        // Fall through to mock data
+      }
+    }
+
+    // Legacy mock implementation
     if (!this.checkRateLimit(exchange)) {
       throw new Error(`Rate limit exceeded for ${exchange}`)
     }
@@ -311,6 +382,34 @@ export class ExchangeService {
 
   // Test connection to exchange
   public async testConnection(exchange: string): Promise<{ success: boolean; message: string; data?: any }> {
+    // Use real exchanges if enabled and available
+    if (this.useRealExchanges && exchange !== 'mock' && this.exchangeFactory) {
+      try {
+        const realExchange = this.exchangeFactory.getExchange(exchange)
+        if (realExchange) {
+          const status = await realExchange.testConnection()
+          return {
+            success: status.connected,
+            message: status.connected 
+              ? `Real ${exchange} connection successful` 
+              : status.error || 'Connection failed',
+            data: {
+              exchange,
+              sandbox: false, // Would need to check exchange config
+              status: status.connected ? 'connected' : 'disconnected',
+              authenticated: status.authenticated,
+              rateLimitRemaining: status.rateLimitRemaining,
+              realApi: true
+            }
+          }
+        }
+      } catch (error) {
+        console.error(`Error testing real exchange connection for ${exchange}:`, error)
+        // Fall through to legacy implementation
+      }
+    }
+
+    // Legacy mock implementation
     try {
       const config = this.exchanges.get(exchange)
       if (!config) {
@@ -321,7 +420,7 @@ export class ExchangeService {
         return { 
           success: true, 
           message: 'Mock exchange connection successful',
-          data: { exchange: 'mock', sandbox: true, status: 'connected' }
+          data: { exchange: 'mock', sandbox: true, status: 'connected', realApi: false }
         }
       }
 
@@ -345,7 +444,8 @@ export class ExchangeService {
             sandbox: config.sandbox,
             status: 'connected',
             hasApiKey: !!config.apiKey,
-            hasApiSecret: !!config.apiSecret
+            hasApiSecret: !!config.apiSecret,
+            realApi: false
           }
         }
       } else {
@@ -564,6 +664,20 @@ export class ExchangeService {
 
   // Portfolio value calculation
   public async calculatePortfolioValue(exchange = 'mock'): Promise<number> {
+    // Use real exchange factory for comprehensive portfolio calculation if available
+    if (this.useRealExchanges && this.exchangeFactory && exchange !== 'mock') {
+      try {
+        const portfolioData = await this.exchangeFactory.getTotalPortfolioValue()
+        if (portfolioData.exchanges[exchange]) {
+          return portfolioData.exchanges[exchange].usd
+        }
+      } catch (error) {
+        console.error(`Error calculating real portfolio value for ${exchange}:`, error)
+        // Fall through to legacy calculation
+      }
+    }
+
+    // Legacy calculation
     const balances = await this.getBalances(exchange)
     let totalValue = 0
 
@@ -582,6 +696,86 @@ export class ExchangeService {
     }
 
     return Math.round(totalValue * 100) / 100
+  }
+
+  /**
+   * Get aggregated market data from multiple exchanges (Real API only)
+   */
+  public async getAggregatedMarketData(symbol: string, exchanges?: string[]): Promise<any> {
+    if (!this.useRealExchanges || !this.exchangeFactory) {
+      throw new Error('Aggregated market data requires real exchanges to be enabled')
+    }
+    
+    return await this.exchangeFactory.getAggregatedMarketData(symbol, exchanges)
+  }
+
+  /**
+   * Smart order routing (Real API only)
+   */
+  public async getSmartOrderRouting(order: TradeOrder): Promise<any> {
+    if (!this.useRealExchanges || !this.exchangeFactory) {
+      throw new Error('Smart order routing requires real exchanges to be enabled')
+    }
+    
+    return await this.exchangeFactory.smartOrderRouting(order)
+  }
+
+  /**
+   * Find best price across exchanges (Real API only)
+   */
+  public async findBestPrice(symbol: string, side: 'buy' | 'sell'): Promise<any> {
+    if (!this.useRealExchanges || !this.exchangeFactory) {
+      throw new Error('Best price search requires real exchanges to be enabled')
+    }
+    
+    return await this.exchangeFactory.findBestPrice(symbol, side)
+  }
+
+  /**
+   * Get comprehensive exchange information
+   */
+  public getExchangeInfo(): any {
+    if (this.useRealExchanges && this.exchangeFactory) {
+      return {
+        realApi: true,
+        exchanges: this.exchangeFactory.getExchangeInfo(),
+        legacy: this.getExchangeStatus()
+      }
+    }
+    
+    return {
+      realApi: false,
+      legacy: this.getExchangeStatus()
+    }
+  }
+
+  /**
+   * Test all exchange connections
+   */
+  public async testAllConnections(): Promise<any> {
+    if (this.useRealExchanges && this.exchangeFactory) {
+      return await this.exchangeFactory.testAllConnections()
+    }
+    
+    const results: any = {}
+    for (const exchange of this.getAvailableExchanges()) {
+      results[exchange] = await this.testConnection(exchange)
+    }
+    return results
+  }
+
+  /**
+   * Get exchange factory instance (for advanced operations)
+   */
+  public getExchangeFactory(): ExchangeFactory | null {
+    return this.useRealExchanges ? this.exchangeFactory : null
+  }
+
+  /**
+   * Check if real exchanges are enabled
+   */
+  public isUsingRealExchanges(): boolean {
+    return this.useRealExchanges
   }
 }
 

@@ -18,12 +18,16 @@ import { notificationRoutes } from './modules/notifications/routes'
 
 // Import exchange API
 import exchangeApiRoutes from './modules/trading/exchange-api'
+// Import new Real Exchange API
+import realExchangeApiRoutes from './routes/exchange-api'
 // Import notification API
 import notificationApiRoutes from './modules/notifications/notification-api'
 // Import system API
 import systemApiRoutes from './api/system-api'
 // Import AI API
 import aiApiRoutes from './api/ai-api'
+// Import AI Routes
+import aiRoutes from './routes/ai-routes'
 // Import Database API
 import databaseApiRoutes from './api/database-api'
 // Import Watchlist API
@@ -64,6 +68,8 @@ import advancedAIApiRoutes from './api/advanced-ai-api'
 import aiConfigApiRoutes from './api/ai-config-api'
 // Import Configuration Test API
 import configTestRoutes from './modules/system/config-test'
+// Import Database API
+import databaseApiRoutes from './modules/database/database-api'
 
 // Import AI modules
 import { artemisRoutes } from './ai/artemis/routes'
@@ -103,10 +109,14 @@ app.route('/api/auth', authRoutes)
 app.route('/api/dashboard', dashboardRoutes)
 app.route('/api/trading', tradingRoutes)
 app.route('/api/trading/exchange', exchangeApiRoutes)
+// Real Exchange Integration API
+app.route('/api/exchange', realExchangeApiRoutes)
 app.route('/api/trading/advanced', tradingAdvancedRoutes)
 app.route('/api/notifications', notificationApiRoutes)
 app.route('/api/system', systemApiRoutes)
 app.route('/api/ai', aiApiRoutes)
+// New AI Services Routes
+app.route('/api/ai-services', aiRoutes)
 app.route('/api/database', databaseApiRoutes)
 app.route('/api/watchlist', watchlistApiRoutes)
 app.route('/api/autopilot', autopilotApiRoutes)
@@ -136,6 +146,9 @@ app.route('/api/ai/config', aiConfigApiRoutes)
 
 // Configuration Test API Routes
 app.route('/api/system/config', configTestRoutes)
+
+// Database API Routes
+app.route('/api/database', databaseApiRoutes)
 
 // AI API Routes
 app.route('/api/ai/artemis', artemisRoutes)

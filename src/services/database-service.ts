@@ -1,559 +1,471 @@
-// TITAN Database Service - Cloudflare D1 Integration
-import type { Env } from '../types/cloudflare'
+// TITAN Trading System - Database Service Manager
+// Centralized database operations and connection management
 
-export interface User {
-  id: number
-  username: string
-  email: string
-  password_hash: string
-  full_name?: string
-  role: 'admin' | 'user' | 'trader' | 'analyst'
-  avatar_url?: string
-  settings: any
-  created_at: string
-  updated_at: string
-  last_login?: string
-  is_active: boolean
-  email_verified: boolean
-  two_factor_enabled: boolean
+export interface DatabaseConfig {
+  binding: D1Database;
+  environment: 'development' | 'staging' | 'production';
+  enableLogging: boolean;
+  queryTimeout: number;
+  maxRetries: number;
 }
 
-export interface TradingAccount {
-  id: number
-  user_id: number
-  exchange: string
-  account_name: string
-  api_key_encrypted?: string
-  api_secret_encrypted?: string
-  passphrase_encrypted?: string
-  is_testnet: boolean
-  is_active: boolean
-  balance_usd: number
-  last_sync?: string
-  created_at: string
-  updated_at: string
+export interface QueryResult<T = any> {
+  success: boolean;
+  data?: T[];
+  meta?: {
+    duration?: number;
+    changes?: number;
+    lastRowId?: number;
+    rowsRead?: number;
+    rowsWritten?: number;
+  };
+  error?: string;
 }
 
-export interface Portfolio {
-  id: number
-  user_id: number
-  name: string
-  total_value_usd: number
-  total_pnl_usd: number
-  total_pnl_percentage: number
-  risk_level: 'low' | 'medium' | 'high' | 'aggressive'
-  rebalance_frequency: 'daily' | 'weekly' | 'monthly' | 'manual'
-  created_at: string
-  updated_at: string
-}
-
-export interface Trade {
-  id: number
-  user_id: number
-  trading_account_id: number
-  portfolio_id?: number
-  exchange_order_id?: string
-  symbol: string
-  side: 'buy' | 'sell'
-  type: 'market' | 'limit' | 'stop_loss' | 'take_profit' | 'trailing_stop'
-  status: 'pending' | 'filled' | 'partially_filled' | 'cancelled' | 'failed'
-  quantity: number
-  price?: number
-  filled_quantity: number
-  average_fill_price: number
-  fees: number
-  total_value?: number
-  stop_price?: number
-  take_profit_price?: number
-  strategy?: string
-  ai_agent?: string
-  ai_confidence?: number
-  execution_time?: string
-  created_at: string
-  updated_at: string
-}
-
-export interface AIAnalysis {
-  id: number
-  user_id?: number
-  symbol: string
-  analysis_type: 'market_analysis' | 'price_prediction' | 'trade_signal' | 'portfolio_optimization' | 'risk_assessment'
-  ai_provider: 'openai' | 'anthropic'
-  model_used: string
-  input_data?: any
-  analysis_result: any
-  confidence_score?: number
-  risk_level?: 'low' | 'medium' | 'high' | 'critical'
-  signals?: any
-  price_targets?: any
-  recommendations?: any
-  processing_time_ms?: number
-  tokens_used?: number
-  created_at: string
-  expires_at?: string
+export interface TransactionResult {
+  success: boolean;
+  results?: any[];
+  error?: string;
 }
 
 export class DatabaseService {
-  private db: D1Database
+  private db: D1Database;
+  private config: DatabaseConfig;
+  private static instance: DatabaseService;
 
-  constructor(env: Env) {
-    if (!env.DB) {
-      console.warn('D1 Database not configured - using fallback mode')
-    }
-    this.db = env.DB
+  constructor(config: DatabaseConfig) {
+    this.db = config.binding;
+    this.config = config;
   }
 
-  // ===========================
-  // User Management
-  // ===========================
-
-  async getUserByUsername(username: string): Promise<User | null> {
-    const stmt = this.db.prepare('SELECT * FROM users WHERE username = ? AND is_active = TRUE')
-    const result = await stmt.bind(username).first()
-    return result as User | null
-  }
-
-  async getUserByEmail(email: string): Promise<User | null> {
-    const stmt = this.db.prepare('SELECT * FROM users WHERE email = ? AND is_active = TRUE')
-    const result = await stmt.bind(email).first()
-    return result as User | null
-  }
-
-  async getUserById(userId: number): Promise<User | null> {
-    const stmt = this.db.prepare('SELECT * FROM users WHERE id = ? AND is_active = TRUE')
-    const result = await stmt.bind(userId).first()
-    return result as User | null
-  }
-
-  async createUser(userData: Partial<User>): Promise<User> {
-    const stmt = this.db.prepare(`
-      INSERT INTO users (username, email, password_hash, full_name, role, settings)
-      VALUES (?, ?, ?, ?, ?, ?)
-      RETURNING *
-    `)
-    
-    const result = await stmt.bind(
-      userData.username,
-      userData.email,
-      userData.password_hash,
-      userData.full_name || null,
-      userData.role || 'user',
-      JSON.stringify(userData.settings || {})
-    ).first()
-    
-    return result as User
-  }
-
-  async updateUserLastLogin(userId: number): Promise<void> {
-    const stmt = this.db.prepare('UPDATE users SET last_login = CURRENT_TIMESTAMP WHERE id = ?')
-    await stmt.bind(userId).run()
-  }
-
-  // ===========================
-  // Trading Accounts
-  // ===========================
-
-  async getTradingAccountsByUserId(userId: number): Promise<TradingAccount[]> {
-    const stmt = this.db.prepare('SELECT * FROM trading_accounts WHERE user_id = ? AND is_active = TRUE ORDER BY created_at DESC')
-    const result = await stmt.bind(userId).all()
-    return result.results as TradingAccount[]
-  }
-
-  async getTradingAccountById(accountId: number, userId?: number): Promise<TradingAccount | null> {
-    let query = 'SELECT * FROM trading_accounts WHERE id = ?'
-    const params = [accountId]
-    
-    if (userId) {
-      query += ' AND user_id = ?'
-      params.push(userId)
-    }
-    
-    const stmt = this.db.prepare(query)
-    const result = await stmt.bind(...params).first()
-    return result as TradingAccount | null
-  }
-
-  async createTradingAccount(accountData: Partial<TradingAccount>): Promise<TradingAccount> {
-    const stmt = this.db.prepare(`
-      INSERT INTO trading_accounts (user_id, exchange, account_name, is_testnet, balance_usd)
-      VALUES (?, ?, ?, ?, ?)
-      RETURNING *
-    `)
-    
-    const result = await stmt.bind(
-      accountData.user_id,
-      accountData.exchange,
-      accountData.account_name,
-      accountData.is_testnet || true,
-      accountData.balance_usd || 0
-    ).first()
-    
-    return result as TradingAccount
-  }
-
-  // ===========================
-  // Portfolios
-  // ===========================
-
-  async getPortfoliosByUserId(userId: number): Promise<Portfolio[]> {
-    const stmt = this.db.prepare('SELECT * FROM portfolios WHERE user_id = ? ORDER BY created_at DESC')
-    const result = await stmt.bind(userId).all()
-    return result.results as Portfolio[]
-  }
-
-  async getPortfolioById(portfolioId: number, userId?: number): Promise<Portfolio | null> {
-    let query = 'SELECT * FROM portfolios WHERE id = ?'
-    const params = [portfolioId]
-    
-    if (userId) {
-      query += ' AND user_id = ?'
-      params.push(userId)
-    }
-    
-    const stmt = this.db.prepare(query)
-    const result = await stmt.bind(...params).first()
-    return result as Portfolio | null
-  }
-
-  // ===========================
-  // Trades
-  // ===========================
-
-  async getTradesByUserId(userId: number, limit: number = 50): Promise<Trade[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM trades 
-      WHERE user_id = ? 
-      ORDER BY created_at DESC 
-      LIMIT ?
-    `)
-    const result = await stmt.bind(userId, limit).all()
-    return result.results as Trade[]
-  }
-
-  async getTradesBySymbol(symbol: string, userId?: number, limit: number = 20): Promise<Trade[]> {
-    let query = 'SELECT * FROM trades WHERE symbol = ?'
-    const params = [symbol]
-    
-    if (userId) {
-      query += ' AND user_id = ?'
-      params.push(userId)
-    }
-    
-    query += ' ORDER BY created_at DESC LIMIT ?'
-    params.push(limit)
-    
-    const stmt = this.db.prepare(query)
-    const result = await stmt.bind(...params).all()
-    return result.results as Trade[]
-  }
-
-  async createTrade(tradeData: Partial<Trade>): Promise<Trade> {
-    const stmt = this.db.prepare(`
-      INSERT INTO trades (
-        user_id, trading_account_id, portfolio_id, symbol, side, type, 
-        status, quantity, price, strategy, ai_agent, ai_confidence
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      RETURNING *
-    `)
-    
-    const result = await stmt.bind(
-      tradeData.user_id,
-      tradeData.trading_account_id,
-      tradeData.portfolio_id || null,
-      tradeData.symbol,
-      tradeData.side,
-      tradeData.type,
-      tradeData.status || 'pending',
-      tradeData.quantity,
-      tradeData.price || null,
-      tradeData.strategy || null,
-      tradeData.ai_agent || null,
-      tradeData.ai_confidence || null
-    ).first()
-    
-    return result as Trade
-  }
-
-  async updateTradeStatus(tradeId: number, status: string, updateData?: Partial<Trade>): Promise<void> {
-    let query = 'UPDATE trades SET status = ?, updated_at = CURRENT_TIMESTAMP'
-    const params = [status]
-    
-    if (updateData) {
-      if (updateData.filled_quantity !== undefined) {
-        query += ', filled_quantity = ?'
-        params.push(updateData.filled_quantity)
+  public static getInstance(config?: DatabaseConfig): DatabaseService {
+    if (!DatabaseService.instance) {
+      if (!config) {
+        throw new Error('Database configuration required for first initialization');
       }
-      if (updateData.average_fill_price !== undefined) {
-        query += ', average_fill_price = ?'
-        params.push(updateData.average_fill_price)
-      }
-      if (updateData.fees !== undefined) {
-        query += ', fees = ?'
-        params.push(updateData.fees)
-      }
-      if (updateData.execution_time !== undefined) {
-        query += ', execution_time = ?'
-        params.push(updateData.execution_time)
+      DatabaseService.instance = new DatabaseService(config);
+    }
+    return DatabaseService.instance;
+  }
+
+  // ===========================
+  // Query Execution Methods
+  // ===========================
+
+  public async query<T = any>(
+    sql: string, 
+    params: any[] = [], 
+    options: { timeout?: number; retries?: number } = {}
+  ): Promise<QueryResult<T>> {
+    const startTime = Date.now();
+    const maxRetries = options.retries ?? this.config.maxRetries;
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        if (this.config.enableLogging) {
+          console.log(`[DB Query] ${sql}`, params);
+        }
+
+        const statement = this.db.prepare(sql);
+        const result = params.length > 0 
+          ? await statement.bind(...params).all<T>()
+          : await statement.all<T>();
+
+        const duration = Date.now() - startTime;
+
+        if (this.config.enableLogging) {
+          console.log(`[DB Success] Query completed in ${duration}ms`);
+        }
+
+        return {
+          success: true,
+          data: result.results,
+          meta: {
+            duration,
+            rowsRead: result.results.length,
+            ...result.meta,
+          },
+        };
+
+      } catch (error) {
+        lastError = error as Error;
+        
+        if (this.config.enableLogging) {
+          console.error(`[DB Error] Attempt ${attempt + 1}/${maxRetries + 1}:`, error);
+        }
+
+        if (attempt < maxRetries) {
+          // Exponential backoff
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempt) * 1000));
+          continue;
+        }
       }
     }
-    
-    query += ' WHERE id = ?'
-    params.push(tradeId)
-    
-    const stmt = this.db.prepare(query)
-    await stmt.bind(...params).run()
-  }
-
-  // ===========================
-  // AI Analysis Storage
-  // ===========================
-
-  async storeAIAnalysis(analysisData: Partial<AIAnalysis>): Promise<AIAnalysis> {
-    const stmt = this.db.prepare(`
-      INSERT INTO ai_analyses (
-        user_id, symbol, analysis_type, ai_provider, model_used,
-        input_data, analysis_result, confidence_score, risk_level,
-        signals, price_targets, recommendations, processing_time_ms,
-        tokens_used, expires_at
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      RETURNING *
-    `)
-    
-    // Set expiration (24 hours from now)
-    const expiresAt = new Date()
-    expiresAt.setHours(expiresAt.getHours() + 24)
-    
-    const result = await stmt.bind(
-      analysisData.user_id || null,
-      analysisData.symbol,
-      analysisData.analysis_type,
-      analysisData.ai_provider,
-      analysisData.model_used,
-      JSON.stringify(analysisData.input_data || {}),
-      JSON.stringify(analysisData.analysis_result),
-      analysisData.confidence_score || null,
-      analysisData.risk_level || null,
-      JSON.stringify(analysisData.signals || {}),
-      JSON.stringify(analysisData.price_targets || {}),
-      JSON.stringify(analysisData.recommendations || []),
-      analysisData.processing_time_ms || null,
-      analysisData.tokens_used || null,
-      expiresAt.toISOString()
-    ).first()
-    
-    return result as AIAnalysis
-  }
-
-  async getRecentAIAnalyses(symbol?: string, analysisType?: string, limit: number = 10): Promise<AIAnalysis[]> {
-    let query = `
-      SELECT * FROM ai_analyses 
-      WHERE expires_at > CURRENT_TIMESTAMP
-    `
-    const params = []
-    
-    if (symbol) {
-      query += ' AND symbol = ?'
-      params.push(symbol)
-    }
-    
-    if (analysisType) {
-      query += ' AND analysis_type = ?'
-      params.push(analysisType)
-    }
-    
-    query += ' ORDER BY created_at DESC LIMIT ?'
-    params.push(limit)
-    
-    const stmt = this.db.prepare(query)
-    const result = await stmt.bind(...params).all()
-    return result.results as AIAnalysis[]
-  }
-
-  async getAIAnalysisById(analysisId: number): Promise<AIAnalysis | null> {
-    const stmt = this.db.prepare('SELECT * FROM ai_analyses WHERE id = ?')
-    const result = await stmt.bind(analysisId).first()
-    return result as AIAnalysis | null
-  }
-
-  // ===========================
-  // Market Data
-  // ===========================
-
-  async getLatestMarketData(symbol?: string): Promise<any[]> {
-    let query = `
-      SELECT * FROM market_data 
-      WHERE timestamp > datetime('now', '-1 hour')
-    `
-    const params = []
-    
-    if (symbol) {
-      query += ' AND symbol = ?'
-      params.push(symbol)
-    }
-    
-    query += ' ORDER BY timestamp DESC'
-    
-    const stmt = this.db.prepare(query)
-    const result = await stmt.bind(...params).all()
-    return result.results || []
-  }
-
-  async updateMarketData(marketData: any): Promise<void> {
-    const stmt = this.db.prepare(`
-      INSERT OR REPLACE INTO market_data (
-        symbol, exchange, price, volume_24h, market_cap,
-        change_1h, change_24h, change_7d, high_24h, low_24h,
-        data_source, timestamp
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    `)
-    
-    await stmt.bind(
-      marketData.symbol,
-      marketData.exchange || 'coingecko',
-      marketData.price,
-      marketData.volume_24h || 0,
-      marketData.market_cap || 0,
-      marketData.change_1h || 0,
-      marketData.change_24h || 0,
-      marketData.change_7d || 0,
-      marketData.high_24h || marketData.price,
-      marketData.low_24h || marketData.price,
-      marketData.data_source || 'coingecko'
-    ).run()
-  }
-
-  // ===========================
-  // Notifications
-  // ===========================
-
-  async storeNotification(notificationData: any): Promise<number> {
-    const stmt = this.db.prepare(`
-      INSERT INTO notifications (
-        user_id, type, title, message, priority, channels, status, data
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-      RETURNING id
-    `)
-    
-    const result = await stmt.bind(
-      notificationData.user_id || null,
-      notificationData.type,
-      notificationData.title,
-      notificationData.message,
-      notificationData.priority || 'medium',
-      JSON.stringify(notificationData.channels || []),
-      notificationData.status || 'pending',
-      JSON.stringify(notificationData.data || {})
-    ).first()
-    
-    return (result as any).id
-  }
-
-  async getNotificationsByUserId(userId: number, limit: number = 50): Promise<any[]> {
-    const stmt = this.db.prepare(`
-      SELECT * FROM notifications 
-      WHERE user_id = ? 
-      ORDER BY created_at DESC 
-      LIMIT ?
-    `)
-    const result = await stmt.bind(userId, limit).all()
-    return result.results || []
-  }
-
-  // ===========================
-  // System Statistics
-  // ===========================
-
-  async getDashboardStats(userId?: number): Promise<any> {
-    // Total users
-    const totalUsers = await this.db.prepare('SELECT COUNT(*) as count FROM users WHERE is_active = TRUE').first()
-    
-    // Total trades
-    let tradesQuery = 'SELECT COUNT(*) as count FROM trades'
-    const tradesParams = []
-    if (userId) {
-      tradesQuery += ' WHERE user_id = ?'
-      tradesParams.push(userId)
-    }
-    const totalTrades = await this.db.prepare(tradesQuery).bind(...tradesParams).first()
-    
-    // Recent analyses
-    let analysesQuery = 'SELECT COUNT(*) as count FROM ai_analyses WHERE created_at > datetime("now", "-24 hours")'
-    const analysesParams = []
-    if (userId) {
-      analysesQuery += ' AND user_id = ?'
-      analysesParams.push(userId)
-    }
-    const recentAnalyses = await this.db.prepare(analysesQuery).bind(...analysesParams).first()
-    
-    // Active portfolios
-    let portfoliosQuery = 'SELECT COUNT(*) as count FROM portfolios'
-    const portfoliosParams = []
-    if (userId) {
-      portfoliosQuery += ' WHERE user_id = ?'
-      portfoliosParams.push(userId)
-    }
-    const activePortfolios = await this.db.prepare(portfoliosQuery).bind(...portfoliosParams).first()
 
     return {
-      total_users: (totalUsers as any)?.count || 0,
-      total_trades: (totalTrades as any)?.count || 0,
-      recent_analyses: (recentAnalyses as any)?.count || 0,
-      active_portfolios: (activePortfolios as any)?.count || 0,
-      timestamp: new Date().toISOString()
+      success: false,
+      error: `Query failed after ${maxRetries + 1} attempts: ${lastError?.message}`,
+    };
+  }
+
+  public async execute(
+    sql: string, 
+    params: any[] = []
+  ): Promise<QueryResult> {
+    const startTime = Date.now();
+
+    try {
+      if (this.config.enableLogging) {
+        console.log(`[DB Execute] ${sql}`, params);
+      }
+
+      const statement = this.db.prepare(sql);
+      const result = params.length > 0 
+        ? await statement.bind(...params).run()
+        : await statement.run();
+
+      const duration = Date.now() - startTime;
+
+      if (this.config.enableLogging) {
+        console.log(`[DB Execute Success] Completed in ${duration}ms, changes: ${result.changes}`);
+      }
+
+      return {
+        success: true,
+        meta: {
+          duration,
+          changes: result.changes,
+          lastRowId: result.meta.last_row_id,
+          rowsWritten: result.changes,
+        },
+      };
+
+    } catch (error) {
+      if (this.config.enableLogging) {
+        console.error('[DB Execute Error]:', error);
+      }
+
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
+    }
+  }
+
+  public async transaction(queries: { sql: string; params?: any[] }[]): Promise<TransactionResult> {
+    const startTime = Date.now();
+
+    try {
+      if (this.config.enableLogging) {
+        console.log(`[DB Transaction] Starting transaction with ${queries.length} queries`);
+      }
+
+      // D1 doesn't support traditional transactions, so we simulate with batch
+      const statements = queries.map(query => {
+        const statement = this.db.prepare(query.sql);
+        return query.params ? statement.bind(...query.params) : statement;
+      });
+
+      const results = await this.db.batch(statements);
+      const duration = Date.now() - startTime;
+
+      if (this.config.enableLogging) {
+        console.log(`[DB Transaction Success] Completed in ${duration}ms`);
+      }
+
+      return {
+        success: true,
+        results: results.map(result => ({
+          changes: result.changes,
+          lastRowId: result.meta?.last_row_id,
+          success: result.success,
+          error: result.error,
+        })),
+      };
+
+    } catch (error) {
+      if (this.config.enableLogging) {
+        console.error('[DB Transaction Error]:', error);
+      }
+
+      return {
+        success: false,
+        error: (error as Error).message,
+      };
     }
   }
 
   // ===========================
-  // Database Utilities
+  // High-Level CRUD Operations
   // ===========================
 
-  async healthCheck(): Promise<{ status: string; timestamp: string; tables: number }> {
-    try {
-      // Test basic connectivity
-      const testQuery = await this.db.prepare("SELECT 1 as test").first()
+  public async create<T = any>(
+    table: string, 
+    data: Record<string, any>
+  ): Promise<QueryResult<T>> {
+    const columns = Object.keys(data);
+    const values = Object.values(data);
+    const placeholders = columns.map(() => '?').join(', ');
+    
+    const sql = `INSERT INTO ${table} (${columns.join(', ')}) VALUES (${placeholders})`;
+    
+    return await this.execute(sql, values);
+  }
+
+  public async read<T = any>(
+    table: string, 
+    conditions: Record<string, any> = {}, 
+    options: {
+      columns?: string[];
+      orderBy?: string;
+      limit?: number;
+      offset?: number;
+    } = {}
+  ): Promise<QueryResult<T>> {
+    const columns = options.columns?.join(', ') || '*';
+    let sql = `SELECT ${columns} FROM ${table}`;
+    const params: any[] = [];
+
+    // Add WHERE conditions
+    if (Object.keys(conditions).length > 0) {
+      const whereClause = Object.keys(conditions)
+        .map(key => `${key} = ?`)
+        .join(' AND ');
+      sql += ` WHERE ${whereClause}`;
+      params.push(...Object.values(conditions));
+    }
+
+    // Add ORDER BY
+    if (options.orderBy) {
+      sql += ` ORDER BY ${options.orderBy}`;
+    }
+
+    // Add LIMIT and OFFSET
+    if (options.limit) {
+      sql += ` LIMIT ?`;
+      params.push(options.limit);
       
-      // Count tables
-      const tablesResult = await this.db.prepare(`
-        SELECT COUNT(*) as count 
-        FROM sqlite_master 
-        WHERE type = 'table' AND name NOT LIKE 'sqlite_%'
-      `).first()
+      if (options.offset) {
+        sql += ` OFFSET ?`;
+        params.push(options.offset);
+      }
+    }
+
+    return await this.query<T>(sql, params);
+  }
+
+  public async update<T = any>(
+    table: string, 
+    data: Record<string, any>, 
+    conditions: Record<string, any>
+  ): Promise<QueryResult<T>> {
+    const setClause = Object.keys(data)
+      .map(key => `${key} = ?`)
+      .join(', ');
+    
+    const whereClause = Object.keys(conditions)
+      .map(key => `${key} = ?`)
+      .join(' AND ');
+
+    const sql = `UPDATE ${table} SET ${setClause} WHERE ${whereClause}`;
+    const params = [...Object.values(data), ...Object.values(conditions)];
+
+    return await this.execute(sql, params);
+  }
+
+  public async delete<T = any>(
+    table: string, 
+    conditions: Record<string, any>
+  ): Promise<QueryResult<T>> {
+    if (Object.keys(conditions).length === 0) {
+      throw new Error('Delete conditions are required for safety');
+    }
+
+    const whereClause = Object.keys(conditions)
+      .map(key => `${key} = ?`)
+      .join(' AND ');
+
+    const sql = `DELETE FROM ${table} WHERE ${whereClause}`;
+    const params = Object.values(conditions);
+
+    return await this.execute(sql, params);
+  }
+
+  // ===========================
+  // Specialized Query Methods
+  // ===========================
+
+  public async findOne<T = any>(
+    table: string, 
+    conditions: Record<string, any>
+  ): Promise<T | null> {
+    const result = await this.read<T>(table, conditions, { limit: 1 });
+    return result.success && result.data && result.data.length > 0 
+      ? result.data[0] 
+      : null;
+  }
+
+  public async exists(
+    table: string, 
+    conditions: Record<string, any>
+  ): Promise<boolean> {
+    const result = await this.query(
+      `SELECT 1 FROM ${table} WHERE ${Object.keys(conditions).map(k => `${k} = ?`).join(' AND ')} LIMIT 1`,
+      Object.values(conditions)
+    );
+    return result.success && result.data && result.data.length > 0;
+  }
+
+  public async count(
+    table: string, 
+    conditions: Record<string, any> = {}
+  ): Promise<number> {
+    let sql = `SELECT COUNT(*) as count FROM ${table}`;
+    const params: any[] = [];
+
+    if (Object.keys(conditions).length > 0) {
+      const whereClause = Object.keys(conditions)
+        .map(key => `${key} = ?`)
+        .join(' AND ');
+      sql += ` WHERE ${whereClause}`;
+      params.push(...Object.values(conditions));
+    }
+
+    const result = await this.query<{ count: number }>(sql, params);
+    return result.success && result.data && result.data.length > 0 
+      ? result.data[0].count 
+      : 0;
+  }
+
+  // ===========================
+  // Migration & Schema Methods
+  // ===========================
+
+  public async runMigration(migrationSql: string): Promise<QueryResult> {
+    if (this.config.enableLogging) {
+      console.log('[DB Migration] Running database migration');
+    }
+
+    // Split the migration into individual statements
+    const statements = migrationSql
+      .split(';')
+      .map(stmt => stmt.trim())
+      .filter(stmt => stmt.length > 0);
+
+    const results: QueryResult[] = [];
+
+    for (const statement of statements) {
+      if (statement.toLowerCase().startsWith('--')) {
+        continue; // Skip comments
+      }
+
+      const result = await this.execute(statement);
+      results.push(result);
+
+      if (!result.success) {
+        return {
+          success: false,
+          error: `Migration failed at statement: ${statement.substring(0, 100)}... Error: ${result.error}`,
+        };
+      }
+    }
+
+    if (this.config.enableLogging) {
+      console.log(`[DB Migration] Successfully executed ${statements.length} statements`);
+    }
+
+    return {
+      success: true,
+      meta: {
+        changes: results.reduce((total, result) => total + (result.meta?.changes || 0), 0),
+      },
+    };
+  }
+
+  public async getTableInfo(tableName: string): Promise<QueryResult> {
+    return await this.query(`PRAGMA table_info(${tableName})`);
+  }
+
+  public async getTableList(): Promise<string[]> {
+    const result = await this.query<{ name: string }>(
+      "SELECT name FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%' ORDER BY name"
+    );
+    
+    return result.success && result.data 
+      ? result.data.map(row => row.name)
+      : [];
+  }
+
+  // ===========================
+  // Health & Diagnostics
+  // ===========================
+
+  public async healthCheck(): Promise<{
+    healthy: boolean;
+    responseTime: number;
+    tablesCount: number;
+    error?: string;
+  }> {
+    const startTime = Date.now();
+
+    try {
+      // Simple query to test connectivity
+      const result = await this.query("SELECT 1 as test");
+      const tables = await this.getTableList();
       
       return {
-        status: 'healthy',
-        timestamp: new Date().toISOString(),
-        tables: (tablesResult as any)?.count || 0
-      }
+        healthy: result.success,
+        responseTime: Date.now() - startTime,
+        tablesCount: tables.length,
+      };
+      
     } catch (error) {
       return {
-        status: 'error',
-        timestamp: new Date().toISOString(),
-        tables: 0
-      }
+        healthy: false,
+        responseTime: Date.now() - startTime,
+        tablesCount: 0,
+        error: (error as Error).message,
+      };
     }
   }
 
-  async cleanupExpiredData(): Promise<void> {
-    // Clean up expired AI analyses
-    await this.db.prepare(`
-      DELETE FROM ai_analyses 
-      WHERE expires_at < CURRENT_TIMESTAMP
-    `).run()
-    
-    // Clean up old market data (keep only last 30 days)
-    await this.db.prepare(`
-      DELETE FROM market_data 
-      WHERE timestamp < datetime('now', '-30 days')
-    `).run()
-    
-    // Clean up old system logs (keep only last 7 days)
-    await this.db.prepare(`
-      DELETE FROM system_logs 
-      WHERE created_at < datetime('now', '-7 days')
-    `).run()
+  public async getStats(): Promise<{
+    tablesCount: number;
+    tables: { name: string; rowCount: number }[];
+  }> {
+    const tables = await this.getTableList();
+    const tableStats = await Promise.all(
+      tables.map(async (tableName) => ({
+        name: tableName,
+        rowCount: await this.count(tableName),
+      }))
+    );
+
+    return {
+      tablesCount: tables.length,
+      tables: tableStats,
+    };
+  }
+
+  // ===========================
+  // Configuration Methods
+  // ===========================
+
+  public updateConfig(newConfig: Partial<DatabaseConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+  }
+
+  public getConfig(): DatabaseConfig {
+    return { ...this.config };
   }
 }
+
+// Export convenience functions
+export const createDatabaseService = (config: DatabaseConfig): DatabaseService => {
+  return new DatabaseService(config);
+};
+
+export const getDatabaseService = (config?: DatabaseConfig): DatabaseService => {
+  return DatabaseService.getInstance(config);
+};
