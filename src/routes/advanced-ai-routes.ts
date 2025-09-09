@@ -28,6 +28,8 @@ import {
   getStrategyExecutor,
   type StrategyConfig 
 } from '../ai/strategy-executor';
+import { AIPerformanceLearner } from '../ai/performance-learner';
+import { ChartPatternAnalyzer } from '../ai/chart-pattern-analyzer';
 
 // Initialize advanced AI routes
 const advancedAIRoutes = new Hono();
@@ -839,6 +841,576 @@ advancedAIRoutes.post('/demo/start', async (c) => {
     return c.json({
       success: false,
       error: 'Failed to start demo',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+// ===================================
+// PHASE 6: AI PERFORMANCE LEARNING ROUTES
+// ===================================
+
+let performanceLearner: AIPerformanceLearner | null = null;
+let chartAnalyzer: ChartPatternAnalyzer | null = null;
+
+/**
+ * POST /learning/initialize - Initialize AI Performance Learning System
+ */
+advancedAIRoutes.post('/learning/initialize', validator('json', (value, c) => {
+  const config = value as any;
+  if (typeof config.adaptiveLearning !== 'undefined' && typeof config.adaptiveLearning !== 'boolean') {
+    return c.json({ error: 'adaptiveLearning must be boolean' }, 400);
+  }
+  return config;
+}), async (c) => {
+  try {
+    const config = await c.req.json();
+    
+    performanceLearner = new AIPerformanceLearner({
+      adaptiveLearning: config.adaptiveLearning ?? true,
+      learningRate: config.learningRate ?? 0.1,
+      decayFactor: config.decayFactor ?? 0.95,
+      minSampleSize: config.minSampleSize ?? 10,
+      confidenceThreshold: config.confidenceThreshold ?? 0.6
+    });
+    
+    await performanceLearner.startLearning();
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'AI Performance Learning System initialized',
+        config: config,
+        status: 'learning_active',
+        stats: performanceLearner.getLearningStats(),
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to initialize learning system',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /learning/record-trade - Record a trade result for learning
+ */
+advancedAIRoutes.post('/learning/record-trade', validator('json', (value, c) => {
+  const trade = value as any;
+  if (!trade.symbol || !trade.aiProvider || !trade.prediction || !trade.actualOutcome) {
+    return c.json({ error: 'Missing required trade result fields' }, 400);
+  }
+  return trade;
+}), async (c) => {
+  try {
+    if (!performanceLearner) {
+      return c.json({
+        success: false,
+        error: 'Performance learner not initialized'
+      }, 400);
+    }
+    
+    const tradeResult = await c.req.json();
+    
+    // Add required fields if missing
+    tradeResult.id = tradeResult.id || `trade_${Date.now()}_${Math.random().toString(36).substring(7)}`;
+    tradeResult.executionTime = tradeResult.executionTime || Date.now();
+    tradeResult.timestamp = tradeResult.timestamp || Date.now();
+    
+    await performanceLearner.recordTradeResult(tradeResult);
+    
+    const updatedPerformance = performanceLearner.getModelPerformance(tradeResult.aiProvider);
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'Trade result recorded successfully',
+        tradeId: tradeResult.id,
+        provider: tradeResult.aiProvider,
+        success: tradeResult.success,
+        updatedPerformance: updatedPerformance,
+        learningStats: performanceLearner.getLearningStats(),
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to record trade result',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * GET /learning/performance/:provider - Get model performance for specific provider
+ */
+advancedAIRoutes.get('/learning/performance/:provider', async (c) => {
+  try {
+    if (!performanceLearner) {
+      return c.json({
+        success: false,
+        error: 'Performance learner not initialized'
+      }, 400);
+    }
+    
+    const provider = c.req.param('provider');
+    const performance = performanceLearner.getModelPerformance(provider);
+    
+    if (!performance) {
+      return c.json({
+        success: false,
+        error: `No performance data found for provider: ${provider}`
+      }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        provider: provider,
+        performance: performance,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get performance data',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * GET /learning/performance/all - Get all model performances
+ */
+advancedAIRoutes.get('/learning/performance/all', async (c) => {
+  try {
+    if (!performanceLearner) {
+      return c.json({
+        success: false,
+        error: 'Performance learner not initialized'
+      }, 400);
+    }
+    
+    const allPerformances = performanceLearner.getAllModelPerformances();
+    const optimizedWeights = performanceLearner.getOptimizedWeights();
+    const stats = performanceLearner.getLearningStats();
+    
+    return c.json({
+      success: true,
+      data: {
+        performances: Object.fromEntries(allPerformances),
+        optimizedWeights: optimizedWeights,
+        learningStats: stats,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get all performance data',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * GET /learning/weights - Get optimized model weights for ensemble
+ */
+advancedAIRoutes.get('/learning/weights', async (c) => {
+  try {
+    if (!performanceLearner) {
+      return c.json({
+        success: false,
+        error: 'Performance learner not initialized'
+      }, 400);
+    }
+    
+    const weights = performanceLearner.getOptimizedWeights();
+    
+    return c.json({
+      success: true,
+      data: {
+        weights: weights,
+        message: 'Current optimized model weights based on performance',
+        lastUpdate: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get optimized weights',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /learning/reset - Reset learning data
+ */
+advancedAIRoutes.post('/learning/reset', async (c) => {
+  try {
+    if (!performanceLearner) {
+      return c.json({
+        success: false,
+        error: 'Performance learner not initialized'
+      }, 400);
+    }
+    
+    await performanceLearner.resetLearningData();
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'Learning data reset successfully',
+        status: 'reset_complete',
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to reset learning data',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+// ===================================
+// CHART PATTERN ANALYSIS ROUTES
+// ===================================
+
+/**
+ * POST /patterns/initialize - Initialize Chart Pattern Analyzer
+ */
+advancedAIRoutes.post('/patterns/initialize', validator('json', (value, c) => {
+  const config = value as any;
+  return config;
+}), async (c) => {
+  try {
+    const config = await c.req.json();
+    
+    chartAnalyzer = new ChartPatternAnalyzer({
+      enableDeepLearning: config.enableDeepLearning ?? true,
+      multiTimeframeAnalysis: config.multiTimeframeAnalysis ?? true,
+      timeframes: config.timeframes ?? ['5m', '15m', '1h', '4h', '1d'],
+      aiProviders: config.aiProviders ?? ['openai', 'gemini', 'claude'],
+      minConfidence: config.minConfidence ?? 0.6,
+      minReliability: config.minReliability ?? 0.5,
+      volumeAnalysis: config.volumeAnalysis ?? true,
+      realTimeDetection: config.realTimeDetection ?? true
+    });
+    
+    // Get AI services from existing systems (if available)
+    const aiServices = new Map();
+    // This would be populated from the AI services factory in a real implementation
+    
+    await chartAnalyzer.initialize(aiServices);
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'Chart Pattern Analyzer initialized',
+        config: config,
+        status: 'analyzer_ready',
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to initialize chart analyzer',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /patterns/analyze - Analyze chart for patterns
+ */
+advancedAIRoutes.post('/patterns/analyze', validator('json', (value, c) => {
+  const data = value as any;
+  if (!data.symbol || !data.timeframe || !data.candles) {
+    return c.json({ error: 'Missing required fields: symbol, timeframe, candles' }, 400);
+  }
+  return data;
+}), async (c) => {
+  try {
+    if (!chartAnalyzer) {
+      return c.json({
+        success: false,
+        error: 'Chart analyzer not initialized'
+      }, 400);
+    }
+    
+    const chartData = await c.req.json();
+    
+    // Add timestamp if missing
+    chartData.timestamp = chartData.timestamp || Date.now();
+    
+    const patterns = await chartAnalyzer.analyzeChart(chartData);
+    
+    return c.json({
+      success: true,
+      data: {
+        symbol: chartData.symbol,
+        timeframe: chartData.timeframe,
+        patternsDetected: patterns.length,
+        patterns: patterns,
+        highConfidencePatterns: patterns.filter(p => p.confidence > 0.8).length,
+        analysisTimestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to analyze chart patterns',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * GET /patterns/:symbol - Get detected patterns for symbol
+ */
+advancedAIRoutes.get('/patterns/:symbol', async (c) => {
+  try {
+    if (!chartAnalyzer) {
+      return c.json({
+        success: false,
+        error: 'Chart analyzer not initialized'
+      }, 400);
+    }
+    
+    const symbol = c.req.param('symbol');
+    const patterns = chartAnalyzer.getDetectedPatterns(symbol);
+    
+    return c.json({
+      success: true,
+      data: {
+        symbol: symbol,
+        patterns: patterns,
+        patternCount: patterns.length,
+        lastUpdate: patterns.length > 0 ? 
+          new Date(Math.max(...patterns.map(p => p.timestamp))).toISOString() : 
+          null,
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get detected patterns',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * GET /patterns/all - Get all detected patterns
+ */
+advancedAIRoutes.get('/patterns/all', async (c) => {
+  try {
+    if (!chartAnalyzer) {
+      return c.json({
+        success: false,
+        error: 'Chart analyzer not initialized'
+      }, 400);
+    }
+    
+    const allPatterns = chartAnalyzer.getAllDetectedPatterns();
+    
+    const summary = {
+      totalSymbols: allPatterns.size,
+      totalPatterns: Array.from(allPatterns.values()).reduce((sum, patterns) => sum + patterns.length, 0),
+      patternsBySymbol: Object.fromEntries(
+        Array.from(allPatterns.entries()).map(([symbol, patterns]) => [
+          symbol, 
+          {
+            count: patterns.length,
+            highConfidence: patterns.filter(p => p.confidence > 0.8).length,
+            patterns: patterns
+          }
+        ])
+      )
+    };
+    
+    return c.json({
+      success: true,
+      data: {
+        summary: summary,
+        allPatterns: Object.fromEntries(allPatterns),
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get all patterns',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /patterns/start-detection - Start real-time pattern detection
+ */
+advancedAIRoutes.post('/patterns/start-detection', async (c) => {
+  try {
+    if (!chartAnalyzer) {
+      return c.json({
+        success: false,
+        error: 'Chart analyzer not initialized'
+      }, 400);
+    }
+    
+    await chartAnalyzer.startRealTimeDetection();
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'Real-time pattern detection started',
+        status: 'detection_active',
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to start pattern detection',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+/**
+ * POST /patterns/stop-detection - Stop real-time pattern detection
+ */
+advancedAIRoutes.post('/patterns/stop-detection', async (c) => {
+  try {
+    if (!chartAnalyzer) {
+      return c.json({
+        success: false,
+        error: 'Chart analyzer not initialized'
+      }, 400);
+    }
+    
+    await chartAnalyzer.stopRealTimeDetection();
+    
+    return c.json({
+      success: true,
+      data: {
+        message: 'Real-time pattern detection stopped',
+        status: 'detection_stopped',
+        timestamp: new Date().toISOString()
+      }
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to stop pattern detection',
+      message: (error as Error).message
+    }, 500);
+  }
+});
+
+// ===================================
+// PHASE 6: COMPREHENSIVE STATUS WITH NEW FEATURES
+// ===================================
+
+/**
+ * GET /status/phase6 - Get Phase 6 comprehensive status
+ */
+advancedAIRoutes.get('/status/phase6', async (c) => {
+  try {
+    const monitor = getMarketMonitor();
+    const engine = getPredictionEngine();
+    const executor = getStrategyExecutor();
+    
+    const status = {
+      phase: 'Phase 6: Adaptive Learning & Intelligence Enhancement',
+      timestamp: new Date().toISOString(),
+      systems: {
+        marketMonitor: {
+          status: monitor ? 'active' : 'inactive',
+          config: monitor?.getConfig?.() || null,
+          monitoring: monitor?.isMonitoring?.() || false
+        },
+        predictionEngine: {
+          status: engine ? 'active' : 'inactive',
+          config: engine?.getConfig?.() || null
+        },
+        strategyExecutor: {
+          status: executor ? 'active' : 'inactive',
+          config: executor?.getConfig?.() || null,
+          autoExecution: executor?.isExecuting?.() || false
+        },
+        performanceLearner: {
+          status: performanceLearner ? 'active' : 'inactive',
+          learning: performanceLearner ? 'enabled' : 'disabled',
+          stats: performanceLearner?.getLearningStats?.() || null,
+          optimizedWeights: performanceLearner?.getOptimizedWeights?.() || null
+        },
+        chartAnalyzer: {
+          status: chartAnalyzer ? 'active' : 'inactive',
+          detection: 'ready',
+          patternsDetected: chartAnalyzer ? 
+            Array.from(chartAnalyzer.getAllDetectedPatterns().values()).reduce((sum, patterns) => sum + patterns.length, 0) : 0
+        }
+      },
+      capabilities: {
+        realTimeMonitoring: monitor ? true : false,
+        ensemblePredictions: engine ? true : false,
+        automatedExecution: executor ? true : false,
+        adaptiveLearning: performanceLearner ? true : false,
+        chartPatternAnalysis: chartAnalyzer ? true : false,
+        deepLearningPatterns: chartAnalyzer ? true : false,
+        performanceOptimization: performanceLearner ? true : false
+      },
+      phase6Features: {
+        aiPerformanceLearning: {
+          enabled: performanceLearner !== null,
+          description: 'AI models learn from trading results and improve over time',
+          status: performanceLearner ? 'learning_active' : 'not_initialized'
+        },
+        chartPatternAnalysis: {
+          enabled: chartAnalyzer !== null,
+          description: 'Deep learning powered chart pattern recognition',
+          status: chartAnalyzer ? 'analyzer_ready' : 'not_initialized'
+        },
+        adaptiveWeighting: {
+          enabled: performanceLearner !== null,
+          description: 'Dynamic model weight adjustment based on performance',
+          currentWeights: performanceLearner?.getOptimizedWeights() || null
+        }
+      }
+    };
+    
+    return c.json({
+      success: true,
+      data: status
+    });
+    
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Failed to get Phase 6 status',
       message: (error as Error).message
     }, 500);
   }
