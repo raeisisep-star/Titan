@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Login and Settings</title>
+</head>
+<body>
+    <h1>Testing Login and Settings</h1>
+    <div id="output"></div>
+    
+    <script>
+        async function testLoginAndSettings() {
+            const output = document.getElementById('output');
+            
+            function log(msg) {
+                output.innerHTML += '<div>' + msg + '</div>';
+                console.log(msg);
+            }
+            
+            try {
+                // Test login
+                log('🔑 Testing login...');
+                const loginResponse = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'admin@titan.com',
+                        password: 'admin123'
+                    })
+                });
+                
+                const loginData = await loginResponse.json();
+                if (loginData.success) {
+                    log('✅ Login successful');
+                } else {
+                    log('❌ Login failed: ' + loginData.message);
+                    return;
+                }
+                
+                // Test settings.js loading
+                log('📱 Testing settings.js loading...');
+                const script = document.createElement('script');
+                script.src = '/static/modules/settings.js?v=' + Date.now();
+                
+                script.onload = function() {
+                    log('✅ Settings.js loaded');
+                    
+                    if (window.SettingsModule) {
+                        log('✅ SettingsModule class found');
+                        
+                        try {
+                            const settings = new window.SettingsModule();
+                            log('✅ SettingsModule instance created');
+                            
+                            // Test Trading tab
+                            if (typeof settings.getTradingTab === 'function') {
+                                log('✅ getTradingTab method exists');
+                                const tradingContent = settings.getTradingTab();
+                                log('✅ getTradingTab executed: ' + tradingContent.length + ' chars');
+                            } else {
+                                log('❌ getTradingTab method not found');
+                            }
+                            
+                            // Test System tab
+                            if (typeof settings.getSystemTab === 'function') {
+                                log('✅ getSystemTab method exists');
+                                const systemContent = settings.getSystemTab();
+                                log('✅ getSystemTab executed: ' + systemContent.length + ' chars');
+                            } else {
+                                log('❌ getSystemTab method not found');
+                            }
+                            
+                        } catch (e) {
+                            log('❌ Error creating SettingsModule: ' + e.message);
+                            log('   Stack: ' + e.stack);
+                        }
+                    } else {
+                        log('❌ SettingsModule class not found');
+                    }
+                };
+                
+                script.onerror = function(e) {
+                    log('❌ Failed to load settings.js: ' + e);
+                };
+                
+                document.head.appendChild(script);
+                
+            } catch (error) {
+                log('❌ Test failed: ' + error.message);
+            }
+        }
+        
+        // Add error handlers
+        window.onerror = function(message, source, lineno, colno, error) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div style="color:red">❌ JS Error: ' + message + ' (Line: ' + lineno + ')</div>';
+            return true;
+        };
+        
+        // Start test
+        testLoginAndSettings();
+    </script>
+</body>
+</html>

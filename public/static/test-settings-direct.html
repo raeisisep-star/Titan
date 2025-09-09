@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست مستقیم Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl font-bold mb-6">تست مستقیم فایل Settings.js</h1>
+        
+        <div id="error-output" class="bg-red-900 border border-red-500 rounded p-4 mb-4 hidden">
+            <h3 class="font-bold text-red-200 mb-2">خطای JavaScript:</h3>
+            <pre id="error-details" class="text-red-300 text-sm overflow-x-auto"></pre>
+        </div>
+        
+        <div id="success-output" class="bg-green-900 border border-green-500 rounded p-4 mb-4 hidden">
+            <h3 class="font-bold text-green-200 mb-2">موفقیت:</h3>
+            <p class="text-green-300">فایل settings.js بدون خطا بارگذاری شد!</p>
+        </div>
+        
+        <div id="loading" class="bg-blue-900 border border-blue-500 rounded p-4 mb-4">
+            <p class="text-blue-200">در حال بارگذاری فایل settings.js...</p>
+        </div>
+        
+        <div id="test-container"></div>
+    </div>
+    
+    <script>
+        window.onerror = function(message, source, lineno, colno, error) {
+            console.error('JavaScript Error:', {message, source, lineno, colno, error});
+            
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-output').classList.remove('hidden');
+            document.getElementById('error-details').textContent = `
+خط ${lineno}, ستون ${colno}: ${message}
+فایل: ${source}
+جزئیات: ${error ? error.stack : 'ندارد'}
+            `.trim();
+            return true;
+        };
+        
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Unhandled Promise Rejection:', event.reason);
+            
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-output').classList.remove('hidden');
+            document.getElementById('error-details').textContent = `
+Promise Error: ${event.reason}
+            `.trim();
+        });
+        
+        // Try to load settings.js
+        const script = document.createElement('script');
+        script.src = '/static/modules/settings.js?v=' + Date.now();
+        script.onload = function() {
+            console.log('✅ Settings.js loaded successfully');
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('success-output').classList.remove('hidden');
+            
+            // Test creating SettingsModule
+            try {
+                const settings = new window.SettingsModule();
+                console.log('✅ SettingsModule created successfully:', settings);
+                
+                // Test rendering
+                const container = document.getElementById('test-container');
+                container.innerHTML = '<div class="bg-gray-800 rounded p-4"><h3 class="text-green-400">Settings Module بارگذاری شد!</h3></div>';
+                
+                // Test getTradingTab method
+                if (typeof settings.getTradingTab === 'function') {
+                    console.log('✅ getTradingTab method exists');
+                } else {
+                    console.log('❌ getTradingTab method missing');
+                }
+                
+                // Test getSystemTab method  
+                if (typeof settings.getSystemTab === 'function') {
+                    console.log('✅ getSystemTab method exists');
+                } else {
+                    console.log('❌ getSystemTab method missing');
+                }
+                
+            } catch (e) {
+                console.error('❌ Error creating SettingsModule:', e);
+                document.getElementById('error-output').classList.remove('hidden');
+                document.getElementById('error-details').textContent = `
+SettingsModule Creation Error: ${e.message}
+Stack: ${e.stack}
+                `.trim();
+            }
+        };
+        
+        script.onerror = function(e) {
+            console.error('❌ Failed to load settings.js:', e);
+            document.getElementById('loading').classList.add('hidden');
+            document.getElementById('error-output').classList.remove('hidden');
+            document.getElementById('error-details').textContent = 'خطا در بارگذاری فایل settings.js';
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

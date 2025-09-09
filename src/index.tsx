@@ -428,46 +428,47 @@ app.get('/ai-test', (c) => {
         }
 
         async function loadSettingsModule() {
-            log('🔄 بارگذاری ماژول تنظیمات...', 'info');
+            log('🔄 بارگذاری سیستم تنظیمات مدولار جدید...', 'info');
             
             const container = document.getElementById('settings-container');
             
             try {
+                // Load the new modular settings loader
                 const script = document.createElement('script');
-                script.src = '/static/modules/settings-optimized.js?v=' + Date.now();
+                script.src = '/static/modules/settings/settings-loader.js?v=' + Date.now();
                 
                 script.onload = function() {
-                    log('✅ ماژول تنظیمات بارگذاری شد', 'success');
+                    log('✅ Settings Loader بارگذاری شد', 'success');
                     
-                    setTimeout(() => {
+                    setTimeout(async () => {
                         if (window.TitanModules && window.TitanModules.SettingsModule) {
                             try {
-                                log('✅ ایجاد instance از SettingsModule...', 'info');
+                                log('✅ ایجاد instance از SettingsModule جدید...', 'info');
                                 
-                                // Create instance of SettingsModule
+                                // Create instance of new modular SettingsModule
                                 const settingsInstance = new window.TitanModules.SettingsModule();
                                 
                                 // Set global instance for onclick handlers
                                 window.settingsModule = settingsInstance;
                                 
-                                log('✅ در حال دریافت محتوای تنظیمات...', 'info');
+                                log('✅ در حال دریافت محتوای تنظیمات مدولار...', 'info');
                                 
                                 // Get the settings content (async method)
-                                settingsInstance.getContent().then(content => {
-                                    container.innerHTML = content;
-                                    
-                                    // Initialize the settings
-                                    settingsInstance.initialize();
-                                    
-                                    log('✅ تنظیمات راه‌اندازی شد', 'success');
-                                }).catch(error => {
-                                    log('❌ خطا در دریافت محتوای تنظیمات: ' + error.message, 'error');
-                                });
+                                const content = await settingsInstance.getContent();
+                                container.innerHTML = content;
+                                
+                                // Initialize the settings
+                                await settingsInstance.initialize();
+                                
+                                log('🎉 سیستم تنظیمات مدولار راه‌اندازی شد!', 'success');
+                                log('📦 تب‌های Trading و System حالا با Module System کار می‌کنند', 'success');
+                                log('🚀 MEXC Exchange اضافه شد - No KYC required!', 'success');
+                                
                             } catch (error) {
-                                log('❌ خطا در راه‌اندازی تنظیمات: ' + error.message, 'error');
+                                log('❌ خطا در راه‌اندازی تنظیمات مدولار: ' + error.message, 'error');
                                 container.innerHTML = \`
                                     <div class="bg-red-900 rounded-lg p-6 text-center">
-                                        <p class="text-red-400 mb-4">خطا در بارگذاری تنظیمات: \${error.message}</p>
+                                        <p class="text-red-400 mb-4">خطا در بارگذاری سیستم تنظیمات: \${error.message}</p>
                                         <button onclick="switchMainView('settings')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                                             🔄 تلاش مجدد
                                         </button>
@@ -475,17 +476,17 @@ app.get('/ai-test', (c) => {
                                 \`;
                             }
                         } else {
-                            log('❌ ماژول SettingsModule یافت نشد', 'error');
+                            log('❌ ماژول SettingsModule جدید یافت نشد', 'error');
                             container.innerHTML = \`
                                 <div class="bg-red-900 rounded-lg p-6 text-center">
-                                    <p class="text-red-400 mb-4">ماژول تنظیمات یافت نشد</p>
+                                    <p class="text-red-400 mb-4">سیستم تنظیمات مدولار یافت نشد</p>
                                     <button onclick="switchMainView('settings')" class="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
                                         🔄 تلاش مجدد
                                     </button>
                                 </div>
                             \`;
                         }
-                    }, 200);
+                    }, 300);
                 };
                 
                 script.onerror = function() {
