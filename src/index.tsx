@@ -28,6 +28,8 @@ import systemApiRoutes from './api/system-api'
 import aiApiRoutes from './api/ai-api'
 // Import AI Routes
 import aiRoutes from './routes/ai-routes'
+// Import Advanced AI Routes
+import advancedAIRoutes from './routes/advanced-ai-routes'
 // Import Database API
 import databaseApiRoutes from './api/database-api'
 // Import Watchlist API
@@ -117,6 +119,8 @@ app.route('/api/system', systemApiRoutes)
 app.route('/api/ai', aiApiRoutes)
 // New AI Services Routes
 app.route('/api/ai-services', aiRoutes)
+// Advanced AI Features Routes
+app.route('/api/advanced-ai', advancedAIRoutes)
 app.route('/api/database', databaseApiRoutes)
 app.route('/api/watchlist', watchlistApiRoutes)
 app.route('/api/autopilot', autopilotApiRoutes)
