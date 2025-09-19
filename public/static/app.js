@@ -161,7 +161,7 @@ class TitanApp {
         // Dispatch login event for floating sidebar
         document.dispatchEvent(new CustomEvent('user-logged-in'));
         
-        this.loadDashboard();
+        this.loadDashboardModule();
         
         // Initialize in-app notifications
         this.initInAppNotifications();
@@ -192,18 +192,23 @@ class TitanApp {
         }, 1000); // Increased delay to ensure DOM is fully ready
     }
 
-    async loadDashboard() {
+    async loadDashboardModule() {
         const app = document.getElementById('app');
         app.innerHTML = this.getDashboardHTML();
         
-        // Wait for DOM to be ready, then load dashboard content
+        // Wait for DOM to be ready, then load dashboard using module loader
         setTimeout(async () => {
             const mainContent = document.getElementById('main-content');
-            if (mainContent) {
-                // Load dashboard module instead
-                await this.loadModule('dashboard');
+            if (mainContent && window.moduleLoader) {
+                // Use module loader for dashboard
+                const dashboardContent = await window.moduleLoader.loadModule('dashboard');
+                mainContent.innerHTML = dashboardContent;
+                
+                // Set global instance for onclick handlers
+                window.dashboardModule = window.moduleLoader.modules['dashboard'];
+                console.log('✅ Dashboard loaded using module loader');
             }
-        }, 50);
+        }, 100);
         
         this.setupDashboardEvents();
     }
@@ -269,6 +274,10 @@ class TitanApp {
                                 <a href="#" onclick="app.loadModule('artemis')" class="nav-link">
                                     <i class="fas fa-brain ml-1 text-purple-400"></i>
                                     آرتمیس AI
+                                </a>
+                                <a href="#" onclick="app.loadModule('phase8')" class="nav-link">
+                                    <i class="fas fa-rocket ml-1 text-blue-400"></i>
+                                    Phase 8
                                 </a>
                                 
                                 <!-- More Menu Dropdown -->
@@ -501,6 +510,10 @@ class TitanApp {
                     <a href="#" onclick="app.loadModule('artemis'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-robot text-purple-400"></i>
                         <span>آرتمیس AI</span>
+                    </a>
+                    <a href="#" onclick="app.loadModule('phase8'); app.closeMobileMenu();" class="mobile-nav-link">
+                        <i class="fas fa-rocket text-blue-400"></i>
+                        <span>Phase 8 Advanced Trading</span>
                     </a>
                     <a href="#" onclick="app.loadModule('news'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-newspaper text-green-400"></i>
@@ -832,6 +845,66 @@ class TitanApp {
         }, 1000);
     }
 
+    async loadDashboardContentModule() {
+        const mainContent = document.getElementById('main-content');
+        if (!mainContent) return;
+        
+        mainContent.innerHTML = `
+            <div class="space-y-6">
+                <div class="mb-8">
+                    <h1 class="text-3xl font-bold text-white mb-2">داشبورد تایتان</h1>
+                    <p class="text-gray-400">نمای کلی از عملکرد و وضعیت حساب شما</p>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <!-- Balance Card -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-wallet text-green-400 text-2xl mr-4"></i>
+                            <div>
+                                <p class="text-gray-400 text-sm">موجودی کل</p>
+                                <p class="text-2xl font-bold text-white">$125,430</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Today's P&L -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-chart-line text-blue-400 text-2xl mr-4"></i>
+                            <div>
+                                <p class="text-gray-400 text-sm">سود/زیان امروز</p>
+                                <p class="text-2xl font-bold text-green-400">+$2,340</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Open Positions -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-briefcase text-purple-400 text-2xl mr-4"></i>
+                            <div>
+                                <p class="text-gray-400 text-sm">پوزیشن‌های باز</p>
+                                <p class="text-2xl font-bold text-white">7</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Win Rate -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <div class="flex items-center">
+                            <i class="fas fa-target text-orange-400 text-2xl mr-4"></i>
+                            <div>
+                                <p class="text-gray-400 text-sm">نرخ برد</p>
+                                <p class="text-2xl font-bold text-white">68%</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
     async loadModule(moduleName) {
         // Update active navigation
         document.querySelectorAll('.nav-link').forEach(link => {
@@ -844,28 +917,12 @@ class TitanApp {
         try {
             switch (moduleName) {
                 case 'dashboard':
-                    // Try modular approach first
-                    if (this.moduleLoader && this.moduleLoader.isEnabled) {
-                        try {
-                            const dashboardModule = await this.moduleLoader.loadModule('dashboard', { showLoading: true });
-                            if (dashboardModule) {
-                                // Set global instance for widget access
-                                window.dashboardModule = dashboardModule;
-                                mainContent.innerHTML = await dashboardModule.getContent();
-                                await dashboardModule.initialize();
-                                console.log('✅ Dashboard loaded via modular system');
-                            } else {
-                                throw new Error('Dashboard module failed to load');
-                            }
-                        } catch (error) {
-                            console.error('❌ Dashboard module loading failed:', error);
-                            mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری ماژول داشبورد</div></div>';
-                        }
-                    } else {
-                        // Module loader not available
-                        console.error('❌ Module loader not available');
-                        mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">سیستم ماژولار در دسترس نیست</div></div>';
-                    }
+                    // Use module loader for dashboard
+                    const dashboardContent = await moduleLoader.loadModule('dashboard');
+                    mainContent.innerHTML = dashboardContent;
+                    
+                    // Set global instance for onclick handlers
+                    window.dashboardModule = moduleLoader.modules['dashboard'];
                     break;
                 case 'trading':
                     try {
@@ -883,6 +940,8 @@ class TitanApp {
                                 mainContent.innerHTML = await tradingModule.getContent();
                                 console.log('✅ Trading content loaded, initializing');
                                 await tradingModule.initialize();
+                                // Set global reference for UI interactions
+                                window.tradingModule = tradingModule;
                                 console.log('✅ Trading module initialized successfully');
                             } else {
                                 throw new Error('Trading module returned null');
@@ -912,6 +971,8 @@ class TitanApp {
                                 mainContent.innerHTML = await portfolioModule.getContent();
                                 console.log('✅ Portfolio content loaded, initializing');
                                 await portfolioModule.initialize();
+                                // Set global reference for UI interactions
+                                window.portfolioModule = portfolioModule;
                                 console.log('✅ Portfolio module initialized successfully');
                             } else {
                                 throw new Error('Portfolio module returned null');
@@ -1014,6 +1075,37 @@ class TitanApp {
                         console.error('❌ Artemis loading error:', error);
                         this.showAlert('خطا در بارگذاری ماژول artemis: ' + error.message, 'error');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری ماژول آرتمیس</div></div>';
+                    }
+                    break;
+                case 'phase8':
+                    try {
+                        console.log('🚀 Starting Phase 8 Advanced Trading Intelligence...');
+                        
+                        // Load Phase 8 module
+                        const script = document.createElement('script');
+                        script.src = '/static/modules/phase8-advanced-trading.js?v=' + Date.now();
+                        
+                        script.onload = () => {
+                            if (window.TitanModules && window.TitanModules.Phase8AdvancedTrading) {
+                                mainContent.innerHTML = window.TitanModules.Phase8AdvancedTrading.render();
+                                window.TitanModules.Phase8AdvancedTrading.init();
+                                console.log('✅ Phase 8 Advanced Trading Intelligence loaded successfully');
+                            } else {
+                                console.error('❌ Phase 8 module not found');
+                                mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری Phase 8</div></div>';
+                            }
+                        };
+                        
+                        script.onerror = () => {
+                            console.error('❌ Failed to load Phase 8 script');
+                            mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری فایل Phase 8</div></div>';
+                        };
+                        
+                        document.head.appendChild(script);
+                    } catch (error) {
+                        console.error('❌ Phase 8 loading error:', error);
+                        this.showAlert('خطا در بارگذاری Phase 8: ' + error.message, 'error');
+                        mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری Phase 8 Advanced Trading Intelligence</div></div>';
                     }
                     break;
                 case 'news':
@@ -5449,18 +5541,35 @@ class TitanApp {
 
     async initializeModeToggle() {
         try {
-            const userId = this.currentUser?.id || 'demo_user';
-            const response = await axios.get(`/api/mode/status/${userId}`);
+            // First check localStorage for saved mode
+            const savedMode = localStorage.getItem('titan_trading_mode') || 'demo';
             
-            if (response.data.success) {
-                const modeData = response.data.data;
-                this.currentTradingMode = modeData.mode;
-                this.updateModeDisplay(modeData.mode);
-                await this.loadDemoWalletInfo(userId);
+            // Try to get current mode from API (use test endpoint for now)
+            try {
+                const response = await axios.get('/api/mode/test');
+                
+                if (response.data.success) {
+                    this.currentTradingMode = savedMode; // Use saved mode
+                    this.demoBalance = response.data.demoBalance || 10000;
+                } else {
+                    throw new Error('API response not successful');
+                }
+            } catch (apiError) {
+                console.log('Using saved/default mode due to API error:', apiError.message);
+                this.currentTradingMode = savedMode;
+                this.demoBalance = 10000;
             }
+            
+            // Update display
+            this.updateModeDisplay(this.currentTradingMode);
+            
+            console.log(`Trading mode initialized: ${this.currentTradingMode}`);
+            
         } catch (error) {
             console.error('Mode initialization error:', error);
+            // Fallback to demo mode
             this.currentTradingMode = 'demo';
+            this.demoBalance = 10000;
             this.updateModeDisplay('demo');
         }
     }
@@ -5474,21 +5583,48 @@ class TitanApp {
 
         if (!modeBtn || !modeIndicator || !modeText) return;
 
+        // Clear any existing classes
+        modeBtn.className = 'flex items-center px-4 py-2 rounded-lg border-2 transition-all duration-300 hover:shadow-lg group';
+
         if (mode === 'demo') {
-            modeBtn.className = 'flex items-center px-3 py-1 rounded-full border border-orange-500 bg-orange-500 bg-opacity-20 text-orange-300 transition-all duration-300';
-            modeIndicator.className = 'w-2 h-2 rounded-full mr-2 bg-orange-400 animate-pulse';
+            // Demo Mode Styling
+            modeBtn.classList.add('border-orange-500', 'bg-orange-500/20', 'text-orange-300', 'hover:bg-orange-500/30');
+            modeIndicator.className = 'w-3 h-3 rounded-full ml-2 bg-orange-400 animate-pulse';
             modeText.textContent = 'حالت دمو';
+            modeText.className = 'text-sm font-semibold text-orange-200';
             
+            // Update selection indicators
             demoSelected.forEach(el => el.classList.remove('hidden'));
             liveSelected.forEach(el => el.classList.add('hidden'));
-        } else {
-            modeBtn.className = 'flex items-center px-3 py-1 rounded-full border border-red-500 bg-red-500 bg-opacity-20 text-red-300 transition-all duration-300';
-            modeIndicator.className = 'w-2 h-2 rounded-full mr-2 bg-red-500 animate-pulse';
-            modeText.textContent = 'حالت واقعی';
             
+            // Update page title if needed
+            if (document.title.includes('🔴')) {
+                document.title = document.title.replace('🔴', '🟡');
+            }
+        } else {
+            // Live Mode Styling - More prominent warning
+            modeBtn.classList.add('border-red-500', 'bg-red-500/30', 'text-red-200', 'hover:bg-red-500/40', 'shadow-red-500/20', 'shadow-lg');
+            modeIndicator.className = 'w-3 h-3 rounded-full ml-2 bg-red-500 animate-pulse';
+            modeText.textContent = 'حالت واقعی';
+            modeText.className = 'text-sm font-semibold text-red-100';
+            
+            // Update selection indicators
             liveSelected.forEach(el => el.classList.remove('hidden'));
             demoSelected.forEach(el => el.classList.add('hidden'));
+            
+            // Update page title with warning
+            if (!document.title.includes('🔴')) {
+                document.title = '🔴 ' + document.title.replace('🟡 ', '');
+            }
         }
+
+        // Update demo balance display
+        this.updateDemoBalanceDisplay();
+
+        // Store mode in localStorage
+        localStorage.setItem('titan_trading_mode', mode);
+        
+        console.log(`Trading mode updated to: ${mode}`);
     }
 
     async loadDemoWalletInfo(userId) {
@@ -5522,16 +5658,17 @@ class TitanApp {
 
     async switchTradingMode(mode) {
         try {
-            const userId = this.currentUser?.id || 'demo_user';
-            
             // For switching to live mode, show confirmation
             if (mode === 'live' && this.currentTradingMode !== 'live') {
                 const confirmed = await this.showModeConfirmationDialog(mode);
                 if (!confirmed) return;
             }
 
-            const response = await axios.post('/api/mode/switch', {
-                userId,
+            // Show loading state
+            this.showAlert('در حال تغییر حالت معاملات...', 'info');
+
+            // Use test endpoint for now
+            const response = await axios.post('/api/mode/test-switch', {
                 mode,
                 confirmation: mode === 'live'
             });
@@ -5541,21 +5678,33 @@ class TitanApp {
                 this.updateModeDisplay(mode);
                 this.hideModeSelector();
                 
-                // Show success message
-                this.showAlert(response.data.message, 'success');
+                // Show success message with mode info
+                const modeText = mode === 'demo' ? 'دمو' : 'واقعی';
+                this.showAlert(`✅ با موفقیت به حالت ${modeText} تغییر یافت`, 'success');
                 
-                // Refresh relevant data
+                // Refresh relevant data based on mode
                 if (mode === 'demo') {
-                    await this.loadDemoWalletInfo(userId);
+                    await this.loadDemoWalletInfo();
+                } else {
+                    // Show live mode warning
+                    setTimeout(() => {
+                        this.showAlert('🔴 توجه: شما در حالت معاملات واقعی هستید!', 'warning');
+                    }, 2000);
+                }
+                
+                // Update dashboard if visible
+                if (this.currentPage === 'dashboard') {
+                    await this.loadDashboardModule();
                 }
                 
             } else {
-                this.showAlert(response.data.message || 'خطا در تغییر حالت', 'error');
+                this.showAlert(response.data.message || 'خطا در تغییر حالت معاملات', 'error');
             }
 
         } catch (error) {
             console.error('Mode switch error:', error);
-            this.showAlert('خطا در تغییر حالت معاملات', 'error');
+            const errorMsg = error.response?.data?.message || error.message || 'خطا در تغییر حالت معاملات';
+            this.showAlert(errorMsg, 'error');
         }
     }
 
@@ -5614,17 +5763,239 @@ class TitanApp {
 
     async manageDemoWallet() {
         try {
-            const userId = this.currentUser?.id || 'demo_user';
-            const response = await axios.get(`/api/mode/demo/wallet/${userId}`);
+            this.hideModeSelector();
             
-            if (response.data.success) {
-                const wallet = response.data.data;
-                this.showDemoWalletModal(wallet);
-                this.hideModeSelector();
-            }
+            // Show demo wallet management modal
+            this.showDemoWalletModal();
+            
         } catch (error) {
             console.error('Demo wallet management error:', error);
             this.showAlert('خطا در بارگذاری کیف پول دمو', 'error');
+        }
+    }
+
+    showDemoWalletModal() {
+        const modalHTML = `
+            <div id="demo-wallet-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-gray-800 rounded-lg w-full max-w-md mx-4 border border-gray-700">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between p-6 border-b border-gray-700">
+                        <div class="flex items-center">
+                            <div class="w-4 h-4 bg-orange-400 rounded-full mr-3"></div>
+                            <h3 class="text-lg font-bold text-white">مدیریت کیف پول دمو</h3>
+                        </div>
+                        <button onclick="app.closeDemoWalletModal()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+
+                    <!-- Content -->
+                    <div class="p-6">
+                        <!-- Current Balance -->
+                        <div class="bg-orange-500/20 border border-orange-500/30 rounded-lg p-4 mb-6">
+                            <div class="text-center">
+                                <div class="text-sm text-orange-300 mb-1">موجودی فعلی</div>
+                                <div class="text-2xl font-bold text-orange-100" id="current-demo-balance">$10,000</div>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="space-y-3">
+                            <button onclick="app.resetDemoWallet()" 
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg transition-colors">
+                                <i class="fas fa-undo ml-2"></i>
+                                بازنشانی به مبلغ پیش‌فرض ($10,000)
+                            </button>
+                            
+                            <div class="grid grid-cols-2 gap-3">
+                                <button onclick="app.showAddFundsForm()" 
+                                        class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
+                                    <i class="fas fa-plus ml-2"></i>
+                                    افزودن مبلغ
+                                </button>
+                                <button onclick="app.showRemoveFundsForm()" 
+                                        class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded-lg transition-colors">
+                                    <i class="fas fa-minus ml-2"></i>
+                                    کسر مبلغ
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Add/Remove Funds Form (Initially Hidden) -->
+                        <div id="funds-form" class="hidden mt-6 p-4 bg-gray-700/50 rounded-lg">
+                            <div class="mb-4">
+                                <label class="block text-sm font-medium text-gray-300 mb-2" id="funds-form-label">مبلغ</label>
+                                <input type="number" 
+                                       id="funds-amount" 
+                                       class="w-full px-3 py-2 bg-gray-600 border border-gray-500 rounded-md text-white" 
+                                       placeholder="مبلغ را وارد کنید"
+                                       min="1"
+                                       step="0.01">
+                            </div>
+                            <div class="flex gap-3">
+                                <button onclick="app.processFundsAction()" 
+                                        id="funds-confirm-btn"
+                                        class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded transition-colors">
+                                    تأیید
+                                </button>
+                                <button onclick="app.hideFundsForm()" 
+                                        class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 px-4 rounded transition-colors">
+                                    لغو
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Load current balance
+        this.loadCurrentDemoBalance();
+    }
+
+    async loadCurrentDemoBalance() {
+        try {
+            // For now, get from current display or use default
+            const currentBalance = this.getCurrentDemoBalance() || 10000;
+            const balanceElement = document.getElementById('current-demo-balance');
+            if (balanceElement) {
+                balanceElement.textContent = `$\${currentBalance.toLocaleString()}`;
+            }
+        } catch (error) {
+            console.error('Error loading demo balance:', error);
+        }
+    }
+
+    getCurrentDemoBalance() {
+        const balanceElement = document.getElementById('demo-balance');
+        if (balanceElement) {
+            const balance = balanceElement.textContent.replace('$', '').replace(/,/g, '');
+            return parseFloat(balance) || 10000;
+        }
+        return 10000;
+    }
+
+    closeDemoWalletModal() {
+        const modal = document.getElementById('demo-wallet-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    showAddFundsForm() {
+        const form = document.getElementById('funds-form');
+        const label = document.getElementById('funds-form-label');
+        const confirmBtn = document.getElementById('funds-confirm-btn');
+        
+        if (form && label && confirmBtn) {
+            form.classList.remove('hidden');
+            label.textContent = 'مبلغ افزودنی ($)';
+            confirmBtn.textContent = 'افزودن مبلغ';
+            confirmBtn.className = 'flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors';
+            this.currentFundsAction = 'add';
+            
+            document.getElementById('funds-amount').focus();
+        }
+    }
+
+    showRemoveFundsForm() {
+        const form = document.getElementById('funds-form');
+        const label = document.getElementById('funds-form-label');
+        const confirmBtn = document.getElementById('funds-confirm-btn');
+        
+        if (form && label && confirmBtn) {
+            form.classList.remove('hidden');
+            label.textContent = 'مبلغ کسری ($)';
+            confirmBtn.textContent = 'کسر مبلغ';
+            confirmBtn.className = 'flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition-colors';
+            this.currentFundsAction = 'remove';
+            
+            document.getElementById('funds-amount').focus();
+        }
+    }
+
+    hideFundsForm() {
+        const form = document.getElementById('funds-form');
+        if (form) {
+            form.classList.add('hidden');
+            document.getElementById('funds-amount').value = '';
+        }
+    }
+
+    async processFundsAction() {
+        try {
+            const amount = parseFloat(document.getElementById('funds-amount').value);
+            
+            if (!amount || amount <= 0) {
+                this.showAlert('مبلغ وارد شده نامعتبر است', 'error');
+                return;
+            }
+
+            // Use test endpoint for now
+            const response = await axios.post('/api/mode/test-demo-wallet', {
+                action: this.currentFundsAction,
+                amount: amount
+            });
+
+            if (response.data.success) {
+                this.showAlert(response.data.message, 'success');
+                
+                // Update balance displays
+                this.updateDemoBalanceDisplay(response.data.data.newBalance);
+                this.loadCurrentDemoBalance();
+                
+                // Hide form
+                this.hideFundsForm();
+            } else {
+                this.showAlert(response.data.message || 'خطا در عملیات', 'error');
+            }
+
+        } catch (error) {
+            console.error('Funds action error:', error);
+            this.showAlert('خطا در انجام عملیات', 'error');
+        }
+    }
+
+    async resetDemoWallet() {
+        try {
+            const confirmed = confirm('آیا مطمئن هستید که می‌خواهید کیف پول دمو را بازنشانی کنید؟');
+            if (!confirmed) return;
+
+            // Use test endpoint for now
+            const response = await axios.post('/api/mode/test-demo-wallet', {
+                action: 'reset'
+            });
+
+            if (response.data.success) {
+                this.showAlert('کیف پول دمو با موفقیت بازنشانی شد', 'success');
+                
+                // Update balance displays
+                this.updateDemoBalanceDisplay(10000);
+                this.loadCurrentDemoBalance();
+            } else {
+                this.showAlert(response.data.message || 'خطا در بازنشانی', 'error');
+            }
+
+        } catch (error) {
+            console.error('Reset wallet error:', error);
+            this.showAlert('خطا در بازنشانی کیف پول', 'error');
+        }
+    }
+
+    updateDemoBalanceDisplay(newBalance = null) {
+        if (newBalance !== null) {
+            const demoBalanceElement = document.getElementById('demo-balance');
+            if (demoBalanceElement) {
+                demoBalanceElement.textContent = `$\${newBalance.toLocaleString()}`;
+            }
+            
+            // Update modal balance if open
+            const modalBalanceElement = document.getElementById('current-demo-balance');
+            if (modalBalanceElement) {
+                modalBalanceElement.textContent = `$\${newBalance.toLocaleString()}`;
+            }
         }
     }
 
