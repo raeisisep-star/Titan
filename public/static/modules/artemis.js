@@ -22,6 +22,7 @@ class ArtemisModule {
         };
         this.refreshInterval = null;
         this.isLearning = false;
+        this.conversationId = null;
         
         console.log(`🤖 Artemis AI Module v${this.version} initialized`);
     }
@@ -429,6 +430,9 @@ class ArtemisModule {
             // Setup auto-refresh
             this.setupAutoRefresh();
             
+            // Setup settings sliders
+            this.setupSettingsSliders();
+            
             // Load initial AI data
             await this.loadAIData();
             
@@ -540,44 +544,60 @@ class ArtemisModule {
     }
 
     async loadAIPredictions() {
-        const predictions = [
-            {
-                id: 'pred_1',
-                symbol: 'BTC',
-                timeframe: '4h',
-                prediction: 'صعودی',
-                targetPrice: 47500,
-                confidence: 87,
-                reasoning: 'الگوی مثلث صعودی و شکست مقاومت کلیدی',
-                timestamp: Date.now(),
-                accuracy: 'متوسط'
-            },
-            {
-                id: 'pred_2',
-                symbol: 'ETH',
-                timeframe: '1d',
-                prediction: 'نزولی',
-                targetPrice: 3100,
-                confidence: 73,
-                reasoning: 'واگرایی منفی RSI و کاهش حجم معاملات',
-                timestamp: Date.now() - 1800000,
-                accuracy: 'بالا'
-            },
-            {
-                id: 'pred_3',
-                symbol: 'ADA',
-                timeframe: '1h',
-                prediction: 'خنثی',
-                targetPrice: 0.51,
-                confidence: 65,
-                reasoning: 'عدم وجود سیگنال قوی در بازه زمانی کوتاه',
-                timestamp: Date.now() - 3600000,
-                accuracy: 'پایین'
-            }
-        ];
+        try {
+            const symbol = document.getElementById('prediction-symbol')?.value || 'BTC';
+            const timeframe = document.getElementById('prediction-timeframe')?.value || '4h';
+            
+            const response = await fetch(`/api/artemis/predictions?symbol=${symbol}&timeframe=${timeframe}`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
 
-        this.predictions = predictions;
-        await this.renderPredictions();
+            const data = await response.json();
+            
+            if (data.success) {
+                this.predictions = data.data;
+                await this.renderPredictions();
+            } else {
+                throw new Error(data.error || 'خطا در دریافت پیش‌بینی‌ها');
+            }
+            
+        } catch (error) {
+            console.error('Predictions API Error:', error);
+            
+            // Fallback to mock data
+            const predictions = [
+                {
+                    id: 'pred_1',
+                    symbol: 'BTC',
+                    timeframe: '4h',
+                    prediction: 'صعودی',
+                    targetPrice: 47500,
+                    confidence: 87,
+                    reasoning: 'الگوی مثلث صعودی و شکست مقاومت کلیدی',
+                    timestamp: Date.now(),
+                    accuracy: 'متوسط'
+                },
+                {
+                    id: 'pred_2', 
+                    symbol: 'ETH',
+                    timeframe: '1d',
+                    prediction: 'نزولی',
+                    targetPrice: 3100,
+                    confidence: 73,
+                    reasoning: 'واگرایی منفی RSI و کاهش حجم معاملات',
+                    timestamp: Date.now() - 1800000,
+                    accuracy: 'بالا'
+                }
+            ];
+
+            this.predictions = predictions;
+            await this.renderPredictions();
+            
+            this.showNotification('خطا در دریافت پیش‌بینی‌ها از سرور. از داده‌های محلی استفاده شد.', 'warning');
+        }
     }
 
     async renderPredictions() {
@@ -619,35 +639,66 @@ class ArtemisModule {
     }
 
     async generateInsights() {
-        const insights = [
-            {
-                type: 'market_trend',
-                title: 'روند کلی بازار',
-                content: 'بازار در حال تثبیت در محدوده فعلی است. انتظار حرکت قوی در 48 ساعت آینده.',
-                confidence: 82,
-                impact: 'متوسط',
-                icon: '📈'
-            },
-            {
-                type: 'volume_analysis',
-                title: 'تحلیل حجم معاملات',
-                content: 'حجم معاملات در 24 ساعت گذشته 15% کاهش یافته که نشانگر تردید معامله‌گران است.',
-                confidence: 91,
-                impact: 'بالا',
-                icon: '📊'
-            },
-            {
-                type: 'sentiment',
-                title: 'احساسات بازار',
-                content: 'شاخص ترس و طمع در ناحیه ترس قرار دارد. ممکن است فرصت خرید ایجاد شود.',
-                confidence: 76,
-                impact: 'متوسط',
-                icon: '😰'
-            }
-        ];
+        try {
+            const response = await fetch('/api/artemis/insights', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    analysisTypes: ['market_trend', 'volume_analysis', 'sentiment', 'technical_indicators'],
+                    timeframe: '24h'
+                })
+            });
 
-        this.marketInsights = insights;
-        await this.renderInsights();
+            const data = await response.json();
+            
+            if (data.success) {
+                this.marketInsights = data.data;
+                await this.renderInsights();
+                
+                this.showNotification('بینش‌های جدید تولید شدند', 'success');
+            } else {
+                throw new Error(data.error || 'خطا در تولید بینش‌ها');
+            }
+            
+        } catch (error) {
+            console.error('Insights API Error:', error);
+            
+            // Fallback to mock data
+            const insights = [
+                {
+                    type: 'market_trend',
+                    title: 'روند کلی بازار',
+                    content: 'بازار در حال تثبیت در محدوده فعلی است. انتظار حرکت قوی در 48 ساعت آینده.',
+                    confidence: 82,
+                    impact: 'متوسط',
+                    icon: '📈'
+                },
+                {
+                    type: 'volume_analysis',
+                    title: 'تحلیل حجم معاملات',
+                    content: 'حجم معاملات در 24 ساعت گذشته 15% کاهش یافته که نشانگر تردید معامله‌گران است.',
+                    confidence: 91,
+                    impact: 'بالا',
+                    icon: '📊'
+                },
+                {
+                    type: 'sentiment',
+                    title: 'احساسات بازار',
+                    content: 'شاخص ترس و طمع در ناحیه ترس قرار دارد. ممکن است فرصت خرید ایجاد شود.',
+                    confidence: 76,
+                    impact: 'متوسط',
+                    icon: '😰'
+                }
+            ];
+
+            this.marketInsights = insights;
+            await this.renderInsights();
+            
+            this.showNotification('خطا در دریافت بینش‌ها از سرور. از داده‌های محلی استفاده شد.', 'warning');
+        }
     }
 
     async renderInsights() {
@@ -683,30 +734,53 @@ class ArtemisModule {
     }
 
     async loadAISignals() {
-        const signals = [
-            {
-                symbol: 'BTC',
-                action: 'خرید',
-                strength: 'قوی',
-                price: 45200,
-                confidence: 88,
-                reason: 'شکست خط مقاومت با حجم بالا',
-                timeframe: '4h',
-                timestamp: Date.now() - 900000
-            },
-            {
-                symbol: 'ETH',
-                action: 'فروش',
-                strength: 'متوسط',
-                price: 3180,
-                confidence: 72,
-                reason: 'واگرایی منفی و ضعف نسبی',
-                timeframe: '1h',
-                timestamp: Date.now() - 1800000
-            }
-        ];
+        try {
+            const response = await fetch('/api/artemis/signals', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
 
-        await this.renderAISignals(signals);
+            const data = await response.json();
+            
+            if (data.success) {
+                await this.renderAISignals(data.data);
+            } else {
+                throw new Error(data.error || 'خطا در دریافت سیگنال‌ها');
+            }
+            
+        } catch (error) {
+            console.error('Signals API Error:', error);
+            
+            // Fallback to mock data
+            const signals = [
+                {
+                    symbol: 'BTC',
+                    action: 'خرید',
+                    strength: 'قوی',
+                    price: 45200,
+                    confidence: 88,
+                    reason: 'شکست خط مقاومت با حجم بالا',
+                    timeframe: '4h',
+                    timestamp: Date.now() - 900000
+                },
+                {
+                    symbol: 'ETH',
+                    action: 'فروش',
+                    strength: 'متوسط',
+                    price: 3180,
+                    confidence: 72,
+                    reason: 'واگرایی منفی و ضعف نسبی',
+                    timeframe: '1h',
+                    timestamp: Date.now() - 1800000
+                }
+            ];
+
+            await this.renderAISignals(signals);
+            
+            this.showNotification('خطا در دریافت سیگنال‌ها از سرور. از داده‌های محلی استفاده شد.', 'warning');
+        }
     }
 
     async renderAISignals(signals) {
@@ -766,11 +840,50 @@ class ArtemisModule {
 
         await this.addChatMessage('user', message);
         
-        // Simulate AI response
-        setTimeout(async () => {
-            const aiResponse = await this.generateAIResponse(message);
-            await this.addChatMessage('ai', aiResponse);
-        }, 1500);
+        // Show typing indicator
+        this.showTypingIndicator();
+        
+        try {
+            // Call Artemis AI Chat API instead of simulation
+            const response = await fetch('/api/artemis/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    message: message,
+                    conversationId: this.conversationId || `artemis_${Date.now()}_${Math.random()}`
+                })
+            });
+
+            const data = await response.json();
+            
+            this.hideTypingIndicator();
+
+            if (data.success) {
+                // Store conversation ID for context
+                this.conversationId = data.data.conversationId;
+                
+                await this.addChatMessage('ai', data.data.message, data.data.confidence);
+                
+                // Update chat statistics
+                this.updateChatStats(data.data);
+            } else {
+                throw new Error(data.error || 'خطا در ارتباط با آرتمیس');
+            }
+            
+        } catch (error) {
+            console.error('Artemis Chat Error:', error);
+            this.hideTypingIndicator();
+            
+            // Fallback to local response
+            const fallbackResponse = await this.generateAIResponse(message);
+            await this.addChatMessage('ai', fallbackResponse);
+            
+            // Show error notification
+            this.showNotification('خطا در ارتباط با سرور آرتمیس. از پاسخ محلی استفاده شد.', 'warning');
+        }
     }
 
     async addChatMessage(sender, message) {
@@ -823,32 +936,238 @@ class ArtemisModule {
         }
     }
 
-    // Placeholder methods for buttons
-    startLearning() {
-        this.isLearning = !this.isLearning;
-        const button = document.getElementById('learning-toggle');
-        if (button) {
-            if (this.isLearning) {
-                button.innerHTML = '<i class="fas fa-pause mr-1"></i> توقف یادگیری';
-                button.className = 'bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm';
-            } else {
-                button.innerHTML = '<i class="fas fa-brain mr-1"></i> شروع یادگیری';
-                button.className = 'bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm';
+    // AI Learning and Training Methods
+    async startLearning() {
+        try {
+            const response = await fetch('/api/artemis/learning/progress', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
+
+            const data = await response.json();
+            
+            if (data.success) {
+                this.updateLearningProgress(data.data);
             }
+            
+            this.isLearning = !this.isLearning;
+            const button = document.getElementById('learning-toggle');
+            if (button) {
+                if (this.isLearning) {
+                    button.innerHTML = '<i class="fas fa-pause mr-1"></i> توقف یادگیری';
+                    button.className = 'bg-orange-600 hover:bg-orange-700 text-white px-3 py-1 rounded text-sm';
+                    this.showNotification('یادگیری AI شروع شد', 'success');
+                } else {
+                    button.innerHTML = '<i class="fas fa-brain mr-1"></i> شروع یادگیری';
+                    button.className = 'bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-sm';
+                    this.showNotification('یادگیری AI متوقف شد', 'info');
+                }
+            }
+        } catch (error) {
+            console.error('Learning API Error:', error);
+            this.showNotification('خطا در شروع یادگیری', 'error');
         }
-        console.log(`Learning ${this.isLearning ? 'started' : 'stopped'}`);
     }
 
-    async refreshAgents() { await this.renderAIAgents(); }
-    async updatePredictions() { await this.renderPredictions(); }
-    async refreshSignals() { await this.loadAISignals(); }
-    updateSettings() { console.log('AI settings updated'); }
-    startTraining() { console.log('AI training started'); }
-    pauseTraining() { console.log('AI training paused'); }
-    exportAIData() { console.log('AI data export'); }
-    resetAI() { console.log('AI reset'); }
-    optimizeModels() { console.log('AI models optimization'); }
-    backupAI() { console.log('AI backup created'); }
+    async refreshAgents() { 
+        await this.initializeAIAgents();
+        this.showNotification('عامل‌های AI به‌روزرسانی شدند', 'success');
+    }
+    
+    async updatePredictions() { 
+        await this.loadAIPredictions();
+    }
+    
+    async refreshSignals() { 
+        await this.loadAISignals();
+        this.showNotification('سیگنال‌ها به‌روزرسانی شدند', 'success');
+    }
+    
+    async updateSettings() { 
+        try {
+            const sensitivity = document.getElementById('ai-sensitivity')?.value || 7;
+            const confidence = document.getElementById('confidence-threshold')?.value || 75;
+            const learningRate = document.getElementById('learning-rate')?.value || 5;
+            
+            const response = await fetch('/api/artemis/config', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    sensitivity: parseInt(sensitivity),
+                    confidenceThreshold: parseInt(confidence),
+                    learningRate: parseInt(learningRate)
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('تنظیمات AI به‌روزرسانی شد', 'success');
+            } else {
+                throw new Error(data.error);
+            }
+        } catch (error) {
+            console.error('Settings API Error:', error);
+            this.showNotification('خطا در به‌روزرسانی تنظیمات', 'error');
+        }
+    }
+    
+    async startTraining() { 
+        try {
+            const response = await fetch('/api/artemis/actions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    action: 'start_training'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('آموزش AI شروع شد', 'success');
+            }
+        } catch (error) {
+            console.error('Training API Error:', error);
+            this.showNotification('خطا در شروع آموزش', 'error');
+        }
+    }
+    
+    async pauseTraining() { 
+        try {
+            const response = await fetch('/api/artemis/actions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    action: 'pause_training'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('آموزش AI متوقف شد', 'info');
+            }
+        } catch (error) {
+            console.error('Pause Training API Error:', error);
+            this.showNotification('خطا در توقف آموزش', 'error');
+        }
+    }
+    
+    async exportAIData() { 
+        try {
+            const response = await fetch('/api/artemis/analytics/export', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                // Create and download CSV file
+                const blob = new Blob([data.data.csvData], { type: 'text/csv' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `artemis_ai_data_${new Date().toISOString().split('T')[0]}.csv`;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                this.showNotification('داده‌های AI صادر شدند', 'success');
+            }
+        } catch (error) {
+            console.error('Export API Error:', error);
+            this.showNotification('خطا در صادرات داده‌ها', 'error');
+        }
+    }
+    
+    async resetAI() { 
+        if (!confirm('آیا مطمئن هستید که می‌خواهید AI را ریست کنید؟')) return;
+        
+        try {
+            const response = await fetch('/api/artemis/actions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    action: 'reset_ai'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('AI با موفقیت ریست شد', 'success');
+                await this.loadAIData();
+            }
+        } catch (error) {
+            console.error('Reset AI API Error:', error);
+            this.showNotification('خطا در ریست AI', 'error');
+        }
+    }
+    
+    async optimizeModels() { 
+        try {
+            const response = await fetch('/api/artemis/actions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    action: 'optimize_models'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('مدل‌های AI بهینه‌سازی شدند', 'success');
+            }
+        } catch (error) {
+            console.error('Optimize API Error:', error);
+            this.showNotification('خطا در بهینه‌سازی', 'error');
+        }
+    }
+    
+    async backupAI() { 
+        try {
+            const response = await fetch('/api/artemis/actions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                },
+                body: JSON.stringify({
+                    action: 'backup_ai'
+                })
+            });
+            
+            const data = await response.json();
+            
+            if (data.success) {
+                this.showNotification('پشتیبان AI با موفقیت ایجاد شد', 'success');
+            }
+        } catch (error) {
+            console.error('Backup API Error:', error);
+            this.showNotification('خطا در ایجاد پشتیبان', 'error');
+        }
+    }
 
     async initializeAIChart() {
         // Placeholder for AI performance chart
@@ -856,16 +1175,57 @@ class ArtemisModule {
     }
 
     async loadAIData() {
-        // Update AI stats
-        const accuracyEl = document.getElementById('ai-accuracy');
-        const predictionsEl = document.getElementById('ai-predictions');
-        const profitEl = document.getElementById('ai-profit');
-        const lastUpdateEl = document.getElementById('last-ai-update');
+        try {
+            const response = await fetch('/api/artemis/dashboard', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
 
-        if (accuracyEl) accuracyEl.textContent = `${(90 + Math.random() * 10).toFixed(1)}%`;
-        if (predictionsEl) predictionsEl.textContent = (1200 + Math.floor(Math.random() * 100)).toLocaleString();
-        if (profitEl) profitEl.textContent = `+${(25 + Math.random() * 10).toFixed(1)}%`;
-        if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleTimeString('fa-IR');
+            const data = await response.json();
+            
+            if (data.success) {
+                const stats = data.data;
+                
+                // Update AI stats from API
+                const accuracyEl = document.getElementById('ai-accuracy');
+                const predictionsEl = document.getElementById('ai-predictions');
+                const profitEl = document.getElementById('ai-profit');
+                const lastUpdateEl = document.getElementById('last-ai-update');
+
+                if (accuracyEl) accuracyEl.textContent = `${stats.accuracy}%`;
+                if (predictionsEl) predictionsEl.textContent = stats.totalPredictions.toLocaleString();
+                if (profitEl) profitEl.textContent = `+${stats.profitPercentage}%`;
+                if (lastUpdateEl) lastUpdateEl.textContent = new Date(stats.lastUpdate).toLocaleTimeString('fa-IR');
+                
+                // Update AI models status
+                if (stats.aiModels) {
+                    Object.keys(stats.aiModels).forEach(modelKey => {
+                        if (this.aiModels[modelKey]) {
+                            this.aiModels[modelKey] = { ...this.aiModels[modelKey], ...stats.aiModels[modelKey] };
+                        }
+                    });
+                }
+                
+            } else {
+                throw new Error(data.error || 'خطا در دریافت داده‌های AI');
+            }
+            
+        } catch (error) {
+            console.error('AI Data API Error:', error);
+            
+            // Fallback to mock data
+            const accuracyEl = document.getElementById('ai-accuracy');
+            const predictionsEl = document.getElementById('ai-predictions');
+            const profitEl = document.getElementById('ai-profit');
+            const lastUpdateEl = document.getElementById('last-ai-update');
+
+            if (accuracyEl) accuracyEl.textContent = `${(90 + Math.random() * 10).toFixed(1)}%`;
+            if (predictionsEl) predictionsEl.textContent = (1200 + Math.floor(Math.random() * 100)).toLocaleString();
+            if (profitEl) profitEl.textContent = `+${(25 + Math.random() * 10).toFixed(1)}%`;
+            if (lastUpdateEl) lastUpdateEl.textContent = new Date().toLocaleTimeString('fa-IR');
+        }
     }
 
     setupAutoRefresh() {
@@ -879,6 +1239,126 @@ class ArtemisModule {
                 await this.renderAIAgents();
             }
         }, 10000); // 10 seconds
+    }
+    
+    setupSettingsSliders() {
+        const sensitivitySlider = document.getElementById('ai-sensitivity');
+        const confidenceSlider = document.getElementById('confidence-threshold');
+        const learningSlider = document.getElementById('learning-rate');
+        
+        if (sensitivitySlider) {
+            sensitivitySlider.addEventListener('input', (e) => {
+                document.getElementById('sensitivity-value').textContent = e.target.value;
+            });
+        }
+        
+        if (confidenceSlider) {
+            confidenceSlider.addEventListener('input', (e) => {
+                document.getElementById('confidence-value').textContent = `${e.target.value}%`;
+            });
+        }
+        
+        if (learningSlider) {
+            learningSlider.addEventListener('input', (e) => {
+                document.getElementById('learning-value').textContent = e.target.value;
+            });
+        }
+    }
+
+    // Helper Methods
+    updateLearningProgress(progressData) {
+        const marketEl = document.getElementById('market-learning');
+        const priceEl = document.getElementById('price-learning');
+        const riskEl = document.getElementById('risk-learning');
+        const sentimentEl = document.getElementById('sentiment-learning');
+        
+        if (progressData.marketAnalyzer && marketEl) {
+            marketEl.textContent = `${progressData.marketAnalyzer.progress}%`;
+            marketEl.parentElement.querySelector('.bg-blue-600').style.width = `${progressData.marketAnalyzer.progress}%`;
+        }
+        
+        if (progressData.pricePredictor && priceEl) {
+            priceEl.textContent = `${progressData.pricePredictor.progress}%`;
+            priceEl.parentElement.querySelector('.bg-green-600').style.width = `${progressData.pricePredictor.progress}%`;
+        }
+        
+        if (progressData.riskManager && riskEl) {
+            riskEl.textContent = `${progressData.riskManager.progress}%`;
+            riskEl.parentElement.querySelector('.bg-yellow-600').style.width = `${progressData.riskManager.progress}%`;
+        }
+        
+        if (progressData.newsAnalyzer && sentimentEl) {
+            sentimentEl.textContent = `${progressData.newsAnalyzer.progress}%`;
+            sentimentEl.parentElement.querySelector('.bg-purple-600').style.width = `${progressData.newsAnalyzer.progress}%`;
+        }
+    }
+    
+    showTypingIndicator() {
+        const chatMessages = document.getElementById('ai-chat-messages');
+        if (!chatMessages) return;
+        
+        const typingDiv = document.createElement('div');
+        typingDiv.id = 'typing-indicator';
+        typingDiv.className = 'flex items-center';
+        typingDiv.innerHTML = `
+            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm mr-3">
+                🤖
+            </div>
+            <div class="bg-purple-900/50 rounded-lg p-3">
+                <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.1s"></div>
+                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.2s"></div>
+                </div>
+            </div>
+        `;
+        
+        chatMessages.appendChild(typingDiv);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+    }
+    
+    hideTypingIndicator() {
+        const typingIndicator = document.getElementById('typing-indicator');
+        if (typingIndicator) {
+            typingIndicator.remove();
+        }
+    }
+    
+    updateChatStats(responseData) {
+        // Update conversation statistics if available
+        if (responseData.stats) {
+            console.log('Chat Stats Updated:', responseData.stats);
+        }
+    }
+    
+    showNotification(message, type = 'info') {
+        // Create notification element
+        const notification = document.createElement('div');
+        const bgColor = {
+            'success': 'bg-green-600',
+            'error': 'bg-red-600', 
+            'warning': 'bg-yellow-600',
+            'info': 'bg-blue-600'
+        }[type] || 'bg-blue-600';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 max-w-sm`;
+        notification.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-sm">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (notification.parentElement) {
+                notification.remove();
+            }
+        }, 5000);
     }
 
     destroy() {

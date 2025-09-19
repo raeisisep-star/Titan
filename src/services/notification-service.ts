@@ -1,733 +1,561 @@
-// TITAN Notification Service - Multi-Channel Notifications
-import type { Env } from '../types/cloudflare'
+/**
+ * Notification Service - Real notification delivery system
+ * Handles Telegram, Email, SMS, and Push notifications
+ */
 
-export interface NotificationConfig {
-  email?: {
-    enabled: boolean
-    smtp_host?: string
-    smtp_port?: number
-    smtp_user?: string
-    smtp_pass?: string
-    from_email?: string
-  }
-  telegram?: {
-    enabled: boolean
-    bot_token?: string
-    chat_id?: string
-  }
-  sms?: {
-    enabled: boolean
-    api_key?: string
-    service_provider?: 'twilio' | 'nexmo' | 'kavenegar'
-    phone_number?: string
-  }
-  inapp?: {
-    enabled: boolean
-    position?: 'top-right' | 'top-left' | 'bottom-right' | 'bottom-left'
-    duration?: number // milliseconds
-  }
+export interface NotificationPayload {
+  type: 'alert_triggered' | 'alert_created' | 'alert_deleted' | 'system_notification';
+  title: string;
+  message: string;
+  data?: any;
+  priority: 'high' | 'medium' | 'low';
+  userId: string;
+  alertId?: string;
 }
 
-export interface NotificationMessage {
-  id: string
-  type: 'trade_alert' | 'price_alert' | 'system_alert' | 'ai_insight' | 'portfolio_update'
-  title: string
-  message: string
-  priority: 'low' | 'medium' | 'high' | 'critical'
-  channels: ('email' | 'telegram' | 'sms' | 'inapp')[]
-  data?: any
-  created_at: string
-  sent_at?: string
-  status: 'pending' | 'sent' | 'failed' | 'retry'
-  retry_count?: number
+export interface TelegramConfig {
+  botToken: string;
+  chatId: string;
+  enabled: boolean;
 }
 
-export interface NotificationTemplate {
-  type: string
-  title: string
-  template: string
-  variables: string[]
+export interface EmailConfig {
+  smtpHost: string;
+  smtpPort: number;
+  smtpUser: string;
+  smtpPass: string;
+  from: string;
+  enabled: boolean;
+}
+
+export interface SMSConfig {
+  apiKey: string;
+  sender: string;
+  enabled: boolean;
+}
+
+export interface WhatsAppConfig {
+  accessToken: string;
+  phoneNumberId: string;
+  businessAccountId: string;
+  enabled: boolean;
 }
 
 export class NotificationService {
-  private env: Env
-  private config: NotificationConfig
-  private templates: Map<string, NotificationTemplate> = new Map()
-  private messageQueue: NotificationMessage[] = []
-  private retryQueue: NotificationMessage[] = []
+  private telegramConfig: TelegramConfig;
+  private emailConfig: EmailConfig;
+  private smsConfig: SMSConfig;
+  private whatsappConfig: WhatsAppConfig;
 
-  constructor(env: Env, config?: NotificationConfig) {
-    this.env = env
-    this.config = config || this.getDefaultConfig()
-    this.initializeTemplates()
+  constructor() {
+    // Initialize configurations from environment variables
+    this.telegramConfig = {
+      botToken: process.env.TELEGRAM_BOT_TOKEN || '',
+      chatId: process.env.TELEGRAM_CHAT_ID || '',
+      enabled: !!process.env.TELEGRAM_BOT_TOKEN
+    };
+
+    this.emailConfig = {
+      smtpHost: process.env.SMTP_HOST || 'smtp.gmail.com',
+      smtpPort: parseInt(process.env.SMTP_PORT || '587'),
+      smtpUser: process.env.SMTP_USER || '',
+      smtpPass: process.env.SMTP_PASS || '',
+      from: process.env.EMAIL_FROM || 'noreply@titan.com',
+      enabled: !!process.env.SMTP_USER
+    };
+
+    this.smsConfig = {
+      apiKey: process.env.KAVENEGAR_API_KEY || '',
+      sender: process.env.SMS_SENDER || '10008663',
+      enabled: !!process.env.KAVENEGAR_API_KEY
+    };
+
+    this.whatsappConfig = {
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN || '',
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID || '',
+      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID || '',
+      enabled: !!process.env.WHATSAPP_ACCESS_TOKEN
+    };
   }
 
-  private getDefaultConfig(): NotificationConfig {
-    return {
-      email: {
-        enabled: !!(this.env.SMTP_HOST && this.env.SMTP_USER && this.env.SMTP_PASSWORD),
-        smtp_host: this.env.SMTP_HOST || 'smtp.gmail.com',
-        smtp_port: parseInt(this.env.SMTP_PORT || '587'),
-        smtp_user: this.env.SMTP_USER,
-        smtp_pass: this.env.SMTP_PASSWORD,
-        from_email: this.env.SMTP_USER || 'titan-trading@system.com'
-      },
-      telegram: {
-        enabled: !!(this.env.TELEGRAM_BOT_TOKEN && this.env.TELEGRAM_CHAT_ID),
-        bot_token: this.env.TELEGRAM_BOT_TOKEN,
-        chat_id: this.env.TELEGRAM_CHAT_ID
-      },
-      sms: {
-        enabled: !!(this.env.KAVENEGAR_API_KEY || this.env.TWILIO_ACCOUNT_SID),
-        api_key: this.env.KAVENEGAR_API_KEY || this.env.TWILIO_AUTH_TOKEN,
-        service_provider: this.env.KAVENEGAR_API_KEY ? 'kavenegar' : 'twilio',
-        phone_number: this.env.TWILIO_PHONE_NUMBER
-      },
-      inapp: {
-        enabled: true, // Always enabled for in-app notifications
-        position: 'top-right',
-        duration: 5000 // 5 seconds
+  /**
+   * Send notification through all enabled channels
+   */
+  async sendNotification(payload: NotificationPayload, userSettings: any): Promise<{
+    success: boolean;
+    results: Record<string, boolean>;
+    errors: Record<string, string>;
+  }> {
+    const results: Record<string, boolean> = {};
+    const errors: Record<string, string> = {};
+
+    // Send through enabled channels
+    if (userSettings.telegramNotifications && this.telegramConfig.enabled) {
+      try {
+        await this.sendTelegramNotification(payload, userSettings.telegramChatId);
+        results.telegram = true;
+      } catch (error) {
+        results.telegram = false;
+        errors.telegram = error.message;
       }
     }
-  }
 
-  private initializeTemplates() {
-    // Trade Alert Templates
-    this.templates.set('trade_executed', {
-      type: 'trade_alert',
-      title: '🚀 معامله انجام شد',
-      template: `
-**معامله جدید تایتان**
-📊 نماد: {symbol}
-💰 نوع: {side} - {type}
-📈 قیمت: {price} USDT
-🔢 مقدار: {quantity}
-💵 ارزش: {value} USDT
-🎯 هدف: {target}
-🛡️ استاپ لاس: {stopLoss}
-🤖 ایجنت: {agent}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['symbol', 'side', 'type', 'price', 'quantity', 'value', 'target', 'stopLoss', 'agent', 'timestamp']
-    })
-
-    this.templates.set('trade_closed', {
-      type: 'trade_alert',
-      title: '✅ معامله بسته شد',
-      template: `
-**بستن معامله تایتان**
-📊 نماد: {symbol}
-💰 نوع: {side}
-📈 قیمت ورود: {entryPrice} USDT
-📉 قیمت خروج: {exitPrice} USDT
-💵 سود/زیان: {pnl} USDT ({pnlPercent}%)
-⏱️ مدت: {duration}
-🎯 دلیل بستن: {reason}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['symbol', 'side', 'entryPrice', 'exitPrice', 'pnl', 'pnlPercent', 'duration', 'reason', 'timestamp']
-    })
-
-    // Price Alert Templates
-    this.templates.set('price_alert', {
-      type: 'price_alert',
-      title: '💰 هشدار قیمت',
-      template: `
-**هشدار قیمت تایتان**
-📊 نماد: {symbol}
-💰 قیمت فعلی: {currentPrice} USDT
-📈 تغییر 24 ساعته: {change24h}% ({changeAmount} USDT)
-🎯 هدف شما: {targetPrice} USDT
-📊 وضعیت: {status}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['symbol', 'currentPrice', 'change24h', 'changeAmount', 'targetPrice', 'status', 'timestamp']
-    })
-
-    // AI Insight Templates
-    this.templates.set('ai_insight', {
-      type: 'ai_insight',
-      title: '🧠 بینش هوش مصنوعی',
-      template: `
-**بینش جدید آرتمیس**
-🎯 موضوع: {subject}
-📊 اعتماد: {confidence}%
-💡 توصیه: {recommendation}
-📈 تحلیل: {analysis}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['subject', 'confidence', 'recommendation', 'analysis', 'timestamp']
-    })
-
-    // System Alert Templates
-    this.templates.set('system_alert', {
-      type: 'system_alert',
-      title: '⚠️ هشدار سیستم',
-      template: `
-**هشدار سیستم تایتان**
-🚨 نوع: {alertType}
-📋 پیام: {message}
-🔧 وضعیت: {status}
-⚡ اولویت: {priority}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['alertType', 'message', 'status', 'priority', 'timestamp']
-    })
-
-    // Portfolio Update Templates
-    this.templates.set('portfolio_update', {
-      type: 'portfolio_update',
-      title: '📊 به‌روزرسانی پرتفوی',
-      template: `
-**گزارش پرتفوی تایتان**
-💰 ارزش کل: {totalValue} USDT
-📈 تغییر 24 ساعته: {change24h}% ({changeAmount} USDT)
-💵 سود/زیان کل: {totalPnL} USDT
-📊 بهترین دارایی: {topAsset}
-⚖️ توزیع: {distribution}
-⏰ زمان: {timestamp}
-      `,
-      variables: ['totalValue', 'change24h', 'changeAmount', 'totalPnL', 'topAsset', 'distribution', 'timestamp']
-    })
-  }
-
-  // Send notification using multiple channels
-  public async sendNotification(
-    type: string,
-    data: Record<string, any>,
-    channels?: ('email' | 'telegram' | 'sms' | 'inapp')[],
-    priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'
-  ): Promise<NotificationMessage> {
-    
-    const template = this.templates.get(type)
-    if (!template) {
-      throw new Error(`Notification template '${type}' not found`)
-    }
-
-    // Format message using template
-    const formattedMessage = this.formatMessage(template.template, data)
-    const formattedTitle = this.formatMessage(template.title, data)
-
-    const notification: NotificationMessage = {
-      id: this.generateNotificationId(),
-      type: template.type as any,
-      title: formattedTitle,
-      message: formattedMessage,
-      priority,
-      channels: channels || this.getDefaultChannels(priority),
-      data,
-      created_at: new Date().toISOString(),
-      status: 'pending'
-    }
-
-    // Add to queue
-    this.messageQueue.push(notification)
-
-    // Process immediately for critical notifications
-    if (priority === 'critical') {
-      await this.processNotification(notification)
-    }
-
-    return notification
-  }
-
-  // Process a single notification
-  private async processNotification(notification: NotificationMessage): Promise<void> {
-    try {
-      const results = await Promise.allSettled(
-        notification.channels.map(channel => this.sendToChannel(notification, channel))
-      )
-
-      // Check if at least one channel succeeded
-      const hasSuccess = results.some(result => result.status === 'fulfilled')
-      
-      if (hasSuccess) {
-        notification.status = 'sent'
-        notification.sent_at = new Date().toISOString()
-      } else {
-        notification.status = 'failed'
-        this.addToRetryQueue(notification)
+    if (userSettings.emailNotifications && this.emailConfig.enabled) {
+      try {
+        await this.sendEmailNotification(payload, userSettings.emailAddress);
+        results.email = true;
+      } catch (error) {
+        results.email = false;
+        errors.email = error.message;
       }
-
-    } catch (error) {
-      console.error('Error processing notification:', error)
-      notification.status = 'failed'
-      this.addToRetryQueue(notification)
-    }
-  }
-
-  // Send to specific channel
-  private async sendToChannel(notification: NotificationMessage, channel: string): Promise<void> {
-    switch (channel) {
-      case 'email':
-        return this.sendEmail(notification)
-      case 'telegram':
-        return this.sendTelegram(notification)
-      case 'sms':
-        return this.sendSMS(notification)
-      case 'inapp':
-        return this.sendInApp(notification)
-      default:
-        throw new Error(`Unknown notification channel: ${channel}`)
-    }
-  }
-
-  // Email sending implementation
-  private async sendEmail(notification: NotificationMessage): Promise<void> {
-    if (!this.config.email?.enabled) {
-      throw new Error('Email notifications are disabled - SMTP credentials not configured')
     }
 
-    try {
-      // For Cloudflare Workers, we'll use an external email API service
-      // In production, you would use services like Mailgun, SendGrid, or native SMTP
-      
-      const emailData = {
-        from: this.config.email.from_email,
-        subject: notification.title,
-        html: this.formatEmailHTML(notification),
-        text: notification.message,
-        smtp: {
-          host: this.config.email.smtp_host,
-          port: this.config.email.smtp_port,
-          user: this.config.email.smtp_user,
-          pass: this.config.email.smtp_pass
-        }
+    if (userSettings.smsNotifications && this.smsConfig.enabled) {
+      try {
+        await this.sendSMSNotification(payload, userSettings.phoneNumber);
+        results.sms = true;
+      } catch (error) {
+        results.sms = false;
+        errors.sms = error.message;
       }
-
-      console.log('📧 Email prepared for sending:', {
-        from: emailData.from,
-        subject: emailData.subject,
-        smtp_host: emailData.smtp.host
-      })
-
-      // Mock successful send for now
-      await new Promise(resolve => setTimeout(resolve, 500))
-      
-    } catch (error) {
-      console.error('Email sending failed:', error)
-      throw new Error(`Email sending failed: ${error.message}`)
-    }
-  }
-
-  // Telegram sending implementation
-  private async sendTelegram(notification: NotificationMessage): Promise<void> {
-    if (!this.config.telegram?.enabled) {
-      throw new Error('Telegram notifications are disabled - Bot token not configured')
     }
 
-    try {
-      const telegramMessage = {
-        chat_id: this.config.telegram.chat_id,
-        text: `🚀 *${notification.title}*\n\n${notification.message}`,
-        parse_mode: 'Markdown'
+    if (userSettings.whatsappNotifications && this.whatsappConfig.enabled) {
+      try {
+        await this.sendWhatsAppNotification(payload, userSettings.whatsappPhoneNumber);
+        results.whatsapp = true;
+      } catch (error) {
+        results.whatsapp = false;
+        errors.whatsapp = error.message;
       }
-
-      const telegramUrl = `https://api.telegram.org/bot${this.config.telegram.bot_token}/sendMessage`
-      
-      const response = await fetch(telegramUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(telegramMessage)
-      })
-
-      if (!response.ok) {
-        const error = await response.text()
-        throw new Error(`Telegram API error: ${error}`)
-      }
-
-      console.log('📱 Telegram message sent successfully')
-      
-    } catch (error) {
-      console.error('Telegram sending failed:', error)
-      throw new Error(`Telegram sending failed: ${error.message}`)
-    }
-  }
-
-  // SMS sending implementation  
-  private async sendSMS(notification: NotificationMessage): Promise<void> {
-    if (!this.config.sms?.enabled) {
-      throw new Error('SMS notifications are disabled - SMS API not configured')
     }
 
-    try {
-      const smsText = `${notification.title}: ${notification.message.substring(0, 140)}...`
-      
-      if (this.config.sms.service_provider === 'kavenegar') {
-        // Kavenegar API implementation
-        const kavenegarUrl = `https://api.kavenegar.com/v1/${this.config.sms.api_key}/sms/send.json`
-        
-        const formData = new FormData()
-        formData.append('receptor', this.env.SMS_PHONE_NUMBER || '')
-        formData.append('sender', this.env.KAVENEGAR_SENDER || '1000596446')
-        formData.append('message', smsText)
-
-        const response = await fetch(kavenegarUrl, {
-          method: 'POST',
-          body: formData
-        })
-
-        if (!response.ok) {
-          throw new Error(`Kavenegar API error: ${response.status}`)
-        }
-
-        console.log('📲 Kavenegar SMS sent successfully')
-
-      } else if (this.config.sms.service_provider === 'twilio') {
-        // Twilio API implementation
-        const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${this.env.TWILIO_ACCOUNT_SID}/Messages.json`
-        
-        const credentials = btoa(`${this.env.TWILIO_ACCOUNT_SID}:${this.config.sms.api_key}`)
-        
-        const response = await fetch(twilioUrl, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Basic ${credentials}`,
-            'Content-Type': 'application/x-www-form-urlencoded'
-          },
-          body: new URLSearchParams({
-            From: this.config.sms.phone_number || '',
-            To: this.env.SMS_PHONE_NUMBER || '',
-            Body: smsText
-          })
-        })
-
-        if (!response.ok) {
-          throw new Error(`Twilio API error: ${response.status}`)
-        }
-
-        console.log('📲 Twilio SMS sent successfully')
-      }
-
-    } catch (error) {
-      console.error('SMS sending failed:', error)
-      throw new Error(`SMS sending failed: ${error.message}`)
-    }
-  }
-
-  // In-App notification sending implementation
-  private async sendInApp(notification: NotificationMessage): Promise<void> {
-    if (!this.config.inapp?.enabled) {
-      throw new Error('In-app notifications are disabled')
+    // Always try push notification (handled by frontend)
+    if (userSettings.pushNotifications) {
+      results.push = true; // Frontend will handle this
     }
 
-    try {
-      // Store notification in KV for real-time display
-      if (this.env.KV) {
-        const inAppNotification = {
-          id: notification.id,
-          title: notification.title,
-          message: notification.message,
-          type: notification.type,
-          priority: notification.priority,
-          timestamp: notification.created_at,
-          position: this.config.inapp.position || 'top-right',
-          duration: this.config.inapp.duration || 5000,
-          icon: this.getNotificationIcon(notification.type),
-          color: this.getNotificationColor(notification.priority)
-        }
-
-        // Store with TTL of 1 hour
-        await this.env.KV.put(
-          `inapp_notification_${notification.id}`, 
-          JSON.stringify(inAppNotification),
-          { expirationTtl: 3600 }
-        )
-
-        // Add to active notifications list
-        const activeKey = 'active_notifications'
-        const existingList = await this.env.KV.get(activeKey)
-        const activeNotifications = existingList ? JSON.parse(existingList) : []
-        
-        activeNotifications.unshift(notification.id)
-        
-        // Keep only last 50 notifications
-        if (activeNotifications.length > 50) {
-          activeNotifications.splice(50)
-        }
-
-        await this.env.KV.put(activeKey, JSON.stringify(activeNotifications), { expirationTtl: 3600 })
-      }
-
-      console.log('📱 In-app notification stored successfully:', {
-        id: notification.id,
-        title: notification.title,
-        type: notification.type
-      })
-
-    } catch (error) {
-      console.error('In-app notification failed:', error)
-      throw new Error(`In-app notification failed: ${error.message}`)
-    }
-  }
-
-  // Helper methods for in-app notifications
-  private getNotificationIcon(type: string): string {
-    const icons = {
-      'trade_alert': '💰',
-      'price_alert': '📈',
-      'system_alert': '⚠️',
-      'ai_insight': '🤖',
-      'portfolio_update': '📊'
-    }
-    return icons[type as keyof typeof icons] || '🔔'
-  }
-
-  private getNotificationColor(priority: string): string {
-    const colors = {
-      low: '#10B981',      // Green
-      medium: '#F59E0B',   // Yellow
-      high: '#F97316',     // Orange
-      critical: '#EF4444'  // Red
-    }
-    return colors[priority as keyof typeof colors] || colors.medium
-  }
-
-  // Process notification queue
-  public async processQueue(): Promise<void> {
-    const pendingNotifications = this.messageQueue.filter(n => n.status === 'pending')
-    
-    await Promise.all(
-      pendingNotifications.map(notification => this.processNotification(notification))
-    )
-  }
-
-  // Helper methods
-  private formatMessage(template: string, data: Record<string, any>): string {
-    return template.replace(/\{(\w+)\}/g, (match, key) => {
-      return data[key] !== undefined ? String(data[key]) : match
-    })
-  }
-
-  private getDefaultChannels(priority: string): ('email' | 'telegram' | 'sms' | 'inapp')[] {
-    switch (priority) {
-      case 'critical':
-        return ['inapp', 'email', 'telegram', 'sms']
-      case 'high':
-        return ['inapp', 'telegram', 'email']
-      case 'medium':
-        return ['inapp', 'telegram']
-      case 'low':
-        return ['inapp']
-      default:
-        return ['inapp', 'telegram']
-    }
-  }
-
-  private getPriorityColor(priority: string): number {
-    const colors = {
-      low: 0x00FF00,      // Green
-      medium: 0xFFFF00,   // Yellow
-      high: 0xFF8000,     // Orange
-      critical: 0xFF0000  // Red
-    }
-    return colors[priority as keyof typeof colors] || colors.medium
-  }
-
-  private generateNotificationId(): string {
-    return `NOTIF_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`
-  }
-
-  private addToRetryQueue(notification: NotificationMessage): void {
-    notification.retry_count = (notification.retry_count || 0) + 1
-    if (notification.retry_count < 3) {
-      notification.status = 'retry'
-      this.retryQueue.push(notification)
-    }
-  }
-
-  // Configuration management
-  public updateConfig(newConfig: Partial<NotificationConfig>): void {
-    this.config = { ...this.config, ...newConfig }
-  }
-
-  public getConfig(): NotificationConfig {
-    return { ...this.config }
-  }
-
-  // Notification history and statistics
-  public getNotificationHistory(): NotificationMessage[] {
-    return [...this.messageQueue].sort((a, b) => 
-      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-    )
-  }
-
-  public getNotificationStats() {
-    const total = this.messageQueue.length
-    const sent = this.messageQueue.filter(n => n.status === 'sent').length
-    const failed = this.messageQueue.filter(n => n.status === 'failed').length
-    const pending = this.messageQueue.filter(n => n.status === 'pending').length
+    const success = Object.values(results).some(result => result === true);
 
     return {
-      total,
-      sent,
-      failed,
-      pending,
-      success_rate: total > 0 ? (sent / total) * 100 : 0,
-      by_type: this.groupNotificationsByType(),
-      by_channel: this.groupNotificationsByChannel()
+      success,
+      results,
+      errors
+    };
+  }
+
+  /**
+   * Send Telegram notification
+   */
+  async sendTelegramNotification(payload: NotificationPayload, chatId?: string): Promise<void> {
+    if (!this.telegramConfig.enabled) {
+      throw new Error('Telegram notifications not configured');
     }
-  }
 
-  private groupNotificationsByType(): Record<string, number> {
-    const groups: Record<string, number> = {}
-    this.messageQueue.forEach(notification => {
-      groups[notification.type] = (groups[notification.type] || 0) + 1
-    })
-    return groups
-  }
+    const targetChatId = chatId || this.telegramConfig.chatId;
+    if (!targetChatId) {
+      throw new Error('Telegram chat ID not provided');
+    }
 
-  private groupNotificationsByChannel(): Record<string, number> {
-    const groups: Record<string, number> = {}
-    this.messageQueue.forEach(notification => {
-      notification.channels.forEach(channel => {
-        groups[channel] = (groups[channel] || 0) + 1
+    // Format message for Telegram
+    const telegramMessage = this.formatTelegramMessage(payload);
+
+    const telegramApiUrl = `https://api.telegram.org/bot${this.telegramConfig.botToken}/sendMessage`;
+    
+    const response = await fetch(telegramApiUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        chat_id: targetChatId,
+        text: telegramMessage,
+        parse_mode: 'Markdown',
+        disable_web_page_preview: true
       })
-    })
-    return groups
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Telegram API error: ${error}`);
+    }
+
+    console.log(`✅ Telegram notification sent successfully to ${targetChatId}`);
   }
 
-  // Test notification functionality
-  public async testNotification(channel: string, recipient?: string, message?: string): Promise<{ success: boolean; message: string }> {
-    try {
-      const testNotification: NotificationMessage = {
-        id: this.generateNotificationId(),
-        type: 'system_alert',
-        title: 'تست سیستم اعلان‌ها تایتان',
-        message: message || 'این یک پیام تست از سیستم معاملاتی تایتان است. اگر این پیام را دریافت کردید، سیستم اعلان‌ها به درستی کار می‌کند! 🚀',
-        priority: 'medium',
-        channels: [channel as any],
-        created_at: new Date().toISOString(),
-        status: 'pending'
+  /**
+   * Send Email notification
+   */
+  async sendEmailNotification(payload: NotificationPayload, emailAddress: string): Promise<void> {
+    if (!this.emailConfig.enabled) {
+      throw new Error('Email notifications not configured');
+    }
+
+    if (!emailAddress) {
+      throw new Error('Email address not provided');
+    }
+
+    // In Cloudflare Workers, we can use a service like Resend, SendGrid, or Mailgun
+    // For this example, I'll show how to integrate with a simple API
+
+    const emailContent = this.formatEmailContent(payload);
+
+    // Example using a generic email API (replace with your preferred service)
+    const emailApiUrl = process.env.EMAIL_API_URL || 'https://api.resend.com/emails';
+    const emailApiKey = process.env.EMAIL_API_KEY || '';
+
+    if (!emailApiKey) {
+      throw new Error('Email API key not configured');
+    }
+
+    const response = await fetch(emailApiUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${emailApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        from: this.emailConfig.from,
+        to: [emailAddress],
+        subject: payload.title,
+        html: emailContent
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`Email API error: ${error}`);
+    }
+
+    console.log(`✅ Email notification sent successfully to ${emailAddress}`);
+  }
+
+  /**
+   * Send SMS notification (using Kavenegar for Iran)
+   */
+  async sendSMSNotification(payload: NotificationPayload, phoneNumber: string): Promise<void> {
+    if (!this.smsConfig.enabled) {
+      throw new Error('SMS notifications not configured');
+    }
+
+    if (!phoneNumber) {
+      throw new Error('Phone number not provided');
+    }
+
+    // Format message for SMS (remove emojis and limit length)
+    const smsMessage = this.formatSMSMessage(payload);
+
+    // Kavenegar API (popular Iranian SMS service)
+    const kavenegarUrl = `https://api.kavenegar.com/v1/${this.smsConfig.apiKey}/sms/send.json`;
+
+    const response = await fetch(kavenegarUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: new URLSearchParams({
+        sender: this.smsConfig.sender,
+        receptor: phoneNumber,
+        message: smsMessage
+      })
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`SMS API error: ${error}`);
+    }
+
+    console.log(`✅ SMS notification sent successfully to ${phoneNumber}`);
+  }
+
+  /**
+   * Send WhatsApp notification (using WhatsApp Business API)
+   */
+  async sendWhatsAppNotification(payload: NotificationPayload, phoneNumber: string): Promise<void> {
+    if (!this.whatsappConfig.enabled) {
+      throw new Error('WhatsApp notifications not configured');
+    }
+
+    if (!phoneNumber) {
+      throw new Error('Phone number not provided');
+    }
+
+    // Clean and format phone number for WhatsApp (remove + and ensure proper format)
+    const cleanPhoneNumber = phoneNumber.replace(/\+/g, '').replace(/\s/g, '');
+    
+    // Format message for WhatsApp
+    const whatsappMessage = this.formatWhatsAppMessage(payload);
+
+    // WhatsApp Business API endpoint
+    const whatsappUrl = `https://graph.facebook.com/v18.0/${this.whatsappConfig.phoneNumberId}/messages`;
+
+    const messagePayload = {
+      messaging_product: "whatsapp",
+      recipient_type: "individual", 
+      to: cleanPhoneNumber,
+      type: "text",
+      text: {
+        preview_url: false,
+        body: whatsappMessage
       }
+    };
 
-      // Temporarily override recipient if provided
-      const originalConfig = { ...this.config }
-      if (recipient) {
-        switch (channel) {
-          case 'email':
-            this.config.email = { ...this.config.email!, from_email: recipient }
-            break
-          case 'telegram':
-            this.config.telegram = { ...this.config.telegram!, chat_id: recipient }
-            break
-          case 'sms':
-            // For SMS, recipient should be set in environment variable
-            break
-          case 'inapp':
-            // In-app notifications don't need recipient override
-            break
-        }
+    const response = await fetch(whatsappUrl, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${this.whatsappConfig.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(messagePayload)
+    });
+
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(`WhatsApp API error: ${error}`);
+    }
+
+    const responseData = await response.json();
+    console.log(`✅ WhatsApp notification sent successfully to ${phoneNumber}`, responseData);
+  }
+
+  /**
+   * Format Telegram message
+   */
+  private formatTelegramMessage(payload: NotificationPayload): string {
+    let message = `🚀 *تایتان - سیستم معاملات*\n\n`;
+    
+    // Add appropriate emoji based on type
+    const typeEmojis = {
+      'alert_triggered': '🚨',
+      'alert_created': '✅',
+      'alert_deleted': '🗑️',
+      'system_notification': '📢'
+    };
+
+    message += `${typeEmojis[payload.type] || '📣'} *${payload.title}*\n\n`;
+    message += `${payload.message}\n\n`;
+
+    // Add alert-specific data
+    if (payload.data) {
+      if (payload.data.symbol) {
+        message += `💰 *نماد:* ${payload.data.symbol}\n`;
       }
-
-      await this.sendToChannel(testNotification, channel)
-      
-      // Restore original config
-      this.config = originalConfig
-
-      return {
-        success: true,
-        message: `تست ${channel} با موفقیت انجام شد`
+      if (payload.data.currentPrice) {
+        message += `💲 *قیمت فعلی:* $${payload.data.currentPrice}\n`;
       }
-
-    } catch (error) {
-      return {
-        success: false,
-        message: `خطا در تست ${channel}: ${error.message}`
+      if (payload.data.targetPrice) {
+        message += `🎯 *قیمت هدف:* $${payload.data.targetPrice}\n`;
+      }
+      if (payload.data.change) {
+        const changeEmoji = payload.data.change > 0 ? '📈' : '📉';
+        message += `${changeEmoji} *تغییر:* ${payload.data.change}%\n`;
       }
     }
+
+    message += `\n⏰ ${new Date().toLocaleString('fa-IR')}`;
+
+    return message;
   }
 
-  // Format email HTML
-  private formatEmailHTML(notification: NotificationMessage): string {
+  /**
+   * Format email content
+   */
+  private formatEmailContent(payload: NotificationPayload): string {
     return `
       <!DOCTYPE html>
       <html dir="rtl" lang="fa">
       <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${notification.title}</title>
-          <style>
-              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4; margin: 0; padding: 20px; }
-              .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
-              .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center; }
-              .content { padding: 30px; }
-              .footer { background-color: #f8f9fa; padding: 15px; text-align: center; font-size: 12px; color: #6c757d; }
-              .priority-high { border-left: 4px solid #ff6b6b; }
-              .priority-medium { border-left: 4px solid #4ecdc4; }
-              .priority-low { border-left: 4px solid #45b7d1; }
-              .priority-critical { border-left: 4px solid #ff4757; }
-          </style>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${payload.title}</title>
+        <style>
+          body { font-family: 'Tahoma', sans-serif; direction: rtl; background-color: #f5f5f5; }
+          .container { max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 10px; }
+          .header { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 10px; text-align: center; }
+          .content { padding: 20px; }
+          .footer { text-align: center; color: #666; font-size: 12px; padding: 10px; }
+          .alert-info { background-color: #f0f9ff; border-right: 4px solid #0ea5e9; padding: 15px; margin: 15px 0; }
+        </style>
       </head>
       <body>
-          <div class="container">
-              <div class="header">
-                  <h1>🚀 سیستم معاملاتی تایتان</h1>
-                  <p>${notification.title}</p>
-              </div>
-              <div class="content priority-${notification.priority}">
-                  <div style="white-space: pre-line; line-height: 1.6;">${notification.message}</div>
-                  ${notification.data ? `
-                      <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 4px;">
-                          <strong>اطلاعات اضافی:</strong>
-                          <pre style="font-size: 12px; overflow-x: auto;">${JSON.stringify(notification.data, null, 2)}</pre>
-                      </div>
-                  ` : ''}
-              </div>
-              <div class="footer">
-                  <p>این پیام توسط سیستم معاملاتی تایتان ارسال شده است.</p>
-                  <p>زمان ارسال: ${new Date(notification.created_at).toLocaleString('fa-IR')}</p>
-              </div>
+        <div class="container">
+          <div class="header">
+            <h1>🚀 تایتان - سیستم معاملات</h1>
+            <h2>${payload.title}</h2>
           </div>
+          <div class="content">
+            <p>${payload.message}</p>
+            ${payload.data ? `
+              <div class="alert-info">
+                <strong>جزئیات هشدار:</strong><br>
+                ${payload.data.symbol ? `نماد: ${payload.data.symbol}<br>` : ''}
+                ${payload.data.currentPrice ? `قیمت فعلی: $${payload.data.currentPrice}<br>` : ''}
+                ${payload.data.targetPrice ? `قیمت هدف: $${payload.data.targetPrice}<br>` : ''}
+                ${payload.data.change ? `تغییر: ${payload.data.change}%<br>` : ''}
+              </div>
+            ` : ''}
+            <p><strong>زمان:</strong> ${new Date().toLocaleString('fa-IR')}</p>
+          </div>
+          <div class="footer">
+            این ایمیل از سیستم خودکار تایتان ارسال شده است.<br>
+            برای لغو اشتراک، به تنظیمات حساب کاربری خود مراجعه کنید.
+          </div>
+        </div>
       </body>
       </html>
-    `
+    `;
   }
 
-  // Quick notification methods for common use cases
-  public async sendTradeAlert(symbol: string, side: string, price: number, quantity: number, agent: string): Promise<NotificationMessage> {
-    return this.sendNotification('trade_executed', {
-      symbol,
-      side,
-      type: 'market',
-      price,
-      quantity,
-      value: price * quantity,
-      agent,
-      timestamp: new Date().toLocaleString('fa-IR')
-    }, 'high')
+  /**
+   * Format SMS message (simple text, no formatting)
+   */
+  private formatSMSMessage(payload: NotificationPayload): string {
+    let message = `تایتان: ${payload.title}\n`;
+    message += payload.message;
+    
+    // Keep it short for SMS
+    if (message.length > 160) {
+      message = message.substring(0, 157) + '...';
+    }
+    
+    return message;
   }
 
-  public async sendPriceAlert(symbol: string, price: number, target: number, direction: 'above' | 'below'): Promise<NotificationMessage> {
-    return this.sendNotification('price_alert', {
-      symbol,
-      price,
-      target,
-      direction,
-      timestamp: new Date().toLocaleString('fa-IR')
-    }, 'medium')
-  }
+  /**
+   * Format WhatsApp message
+   */
+  private formatWhatsAppMessage(payload: NotificationPayload): string {
+    let message = `🚀 *تایتان - سیستم معاملات*\n\n`;
+    
+    // Add appropriate emoji based on type
+    const typeEmojis = {
+      'alert_triggered': '🚨',
+      'alert_created': '✅', 
+      'alert_deleted': '🗑️',
+      'system_notification': '📢'
+    };
 
-  public async sendSystemAlert(title: string, message: string, priority: 'low' | 'medium' | 'high' | 'critical' = 'medium'): Promise<NotificationMessage> {
-    const notification: NotificationMessage = {
-      id: this.generateNotificationId(),
-      type: 'system_alert',
-      title,
-      message,
-      priority,
-      channels: this.getDefaultChannels(priority),
-      created_at: new Date().toISOString(),
-      status: 'pending'
+    message += `${typeEmojis[payload.type] || '📣'} *${payload.title}*\n\n`;
+    message += `${payload.message}\n\n`;
+
+    // Add alert-specific data
+    if (payload.data) {
+      if (payload.data.symbol) {
+        message += `💰 *نماد:* ${payload.data.symbol}\n`;
+      }
+      if (payload.data.currentPrice) {
+        message += `💲 *قیمت فعلی:* $${payload.data.currentPrice}\n`;
+      }
+      if (payload.data.targetPrice) {
+        message += `🎯 *قیمت هدف:* $${payload.data.targetPrice}\n`;
+      }
+      if (payload.data.changePercent) {
+        message += `📊 *تغییر:* ${payload.data.changePercent > 0 ? '+' : ''}${payload.data.changePercent}%\n`;
+      }
     }
 
-    this.messageQueue.push(notification)
+    message += `\n⏰ ${new Date().toLocaleString('fa-IR', { timeZone: 'Asia/Tehran' })}`;
+    message += `\n\n💻 سیستم تایتان - معاملات هوشمند`;
 
-    if (priority === 'critical') {
-      await this.processNotification(notification)
+    return message;
+  }
+
+  /**
+   * Test notification delivery
+   */
+  async testNotification(type: 'telegram' | 'email' | 'sms' | 'whatsapp', userSettings: any): Promise<boolean> {
+    const testPayload: NotificationPayload = {
+      type: 'system_notification',
+      title: 'تست اطلاع‌رسانی',
+      message: 'این یک پیام آزمایشی از سیستم تایتان است. اگر این پیام را دریافت کردید، اطلاع‌رسانی‌ها به درستی کار می‌کنند.',
+      priority: 'low',
+      userId: userSettings.userId,
+      data: {
+        testTime: new Date().toLocaleString('fa-IR')
+      }
+    };
+
+    try {
+      switch (type) {
+        case 'telegram':
+          await this.sendTelegramNotification(testPayload, userSettings.telegramChatId);
+          break;
+        case 'email':
+          await this.sendEmailNotification(testPayload, userSettings.emailAddress);
+          break;
+        case 'sms':
+          await this.sendSMSNotification(testPayload, userSettings.phoneNumber);
+          break;
+        case 'whatsapp':
+          await this.sendWhatsAppNotification(testPayload, userSettings.whatsappPhoneNumber);
+          break;
+      }
+      return true;
+    } catch (error) {
+      console.error(`Test notification failed for ${type}:`, error);
+      return false;
     }
+  }
 
-    return notification
+  /**
+   * Get service status
+   */
+  getServiceStatus(): {
+    telegram: boolean;
+    email: boolean;
+    sms: boolean;
+    configurations: any;
+  } {
+    return {
+      telegram: this.telegramConfig.enabled,
+      email: this.emailConfig.enabled,
+      sms: this.smsConfig.enabled,
+      configurations: {
+        telegram: {
+          configured: !!this.telegramConfig.botToken,
+          chatId: !!this.telegramConfig.chatId
+        },
+        email: {
+          configured: !!this.emailConfig.smtpUser,
+          from: this.emailConfig.from
+        },
+        sms: {
+          configured: !!this.smsConfig.apiKey,
+          sender: this.smsConfig.sender
+        }
+      }
+    };
+  }
+
+  /**
+   * Send alert notification specifically
+   */
+  async sendAlertNotification(alert: any, currentPrice: number, userSettings: any): Promise<void> {
+    const payload: NotificationPayload = {
+      type: 'alert_triggered',
+      title: `هشدار فعال شد: ${alert.alertName}`,
+      message: `هشدار ${alert.symbol} در قیمت $${currentPrice} فعال شد.`,
+      priority: 'high',
+      userId: alert.userId,
+      alertId: alert.id,
+      data: {
+        symbol: alert.symbol,
+        currentPrice: currentPrice,
+        targetPrice: alert.targetPrice,
+        alertType: alert.alertType,
+        change: alert.percentageChange
+      }
+    };
+
+    const result = await this.sendNotification(payload, userSettings);
+    
+    if (!result.success) {
+      console.error('Alert notification failed:', result.errors);
+    } else {
+      console.log('Alert notification sent successfully:', result.results);
+    }
   }
 }
+
+// Export singleton instance
+export const notificationService = new NotificationService();

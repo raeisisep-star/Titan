@@ -2,15 +2,11 @@ module.exports = {
   apps: [
     {
       name: 'titan-trading',
-      script: 'npx',
-      args: 'wrangler pages dev dist --d1=titan-trading-production --ip 0.0.0.0 --port 3000',
+      script: 'npx', 
+      args: 'wrangler pages dev dist --d1=titan-production --local --ip 0.0.0.0 --port 3000',
       env: {
-        NODE_ENV: 'development',
-        PORT: 3000
-      },
-      watch: false,
-      instances: 1,
-      exec_mode: 'fork'
+        NODE_ENV: 'development'
+      }
     }
   ]
 }

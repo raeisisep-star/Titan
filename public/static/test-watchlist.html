@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست صفحه مورد علاقه - تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+        .loading-spinner {
+            border: 4px solid #374151;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                <i class="fas fa-star mr-2"></i>
+                تست صفحه مورد علاقه تایتان
+            </h1>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div id="userInfo" class="text-gray-300">در حال بارگذاری...</div>
+                <a href="/" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <!-- Login Section -->
+        <div id="loginSection" class="mb-8 bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-sign-in-alt text-blue-400 mr-2"></i>
+                ورود سریع برای تست
+            </h2>
+            <button onclick="autoLogin()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+                <i class="fas fa-bolt mr-2"></i>
+                ورود خودکار
+            </button>
+            <div id="loginStatus" class="mt-4 text-gray-400"></div>
+        </div>
+
+        <!-- Test Results -->
+        <div id="testResults" class="space-y-6 hidden">
+            <!-- API Tests -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-check-circle text-green-400 mr-2"></i>
+                    تست API های مورد علاقه
+                </h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="space-y-3">
+                        <button onclick="testWatchlistList()" class="w-full bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-lg text-sm">
+                            تست لیست مورد علاقه
+                        </button>
+                        <button onclick="testMarketPrices()" class="w-full bg-green-600 hover:bg-green-700 text-white p-3 rounded-lg text-sm">
+                            تست قیمت‌های بازار
+                        </button>
+                        <button onclick="testMarketOverview()" class="w-full bg-purple-600 hover:bg-purple-700 text-white p-3 rounded-lg text-sm">
+                            تست آمار کلی بازار
+                        </button>
+                    </div>
+                    <div class="space-y-3">
+                        <button onclick="testMarketMovers()" class="w-full bg-orange-600 hover:bg-orange-700 text-white p-3 rounded-lg text-sm">
+                            تست برترین تحرک‌ها
+                        </button>
+                        <button onclick="testFearGreed()" class="w-full bg-red-600 hover:bg-red-700 text-white p-3 rounded-lg text-sm">
+                            تست شاخص ترس و طمع
+                        </button>
+                        <button onclick="testTrending()" class="w-full bg-yellow-600 hover:bg-yellow-700 text-white p-3 rounded-lg text-sm">
+                            تست کوین‌های ترند
+                        </button>
+                    </div>
+                </div>
+                <div id="apiTestResults" class="mt-6 p-4 bg-gray-700 rounded-lg max-h-96 overflow-y-auto">
+                    <p class="text-gray-400">نتایج تست‌ها اینجا نمایش داده می‌شود...</p>
+                </div>
+            </div>
+
+            <!-- Watchlist Module Test -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-star text-yellow-400 mr-2"></i>
+                    تست ماژول مورد علاقه
+                </h2>
+                <div class="flex space-x-4 space-x-reverse mb-4">
+                    <button onclick="loadWatchlistModule()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg">
+                        بارگذاری ماژول مورد علاقه
+                    </button>
+                    <button onclick="testWatchlistUI()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg">
+                        تست رابط کاربری
+                    </button>
+                </div>
+                <div id="watchlistModuleContainer" class="min-h-96 bg-gray-700 rounded-lg p-4">
+                    <p class="text-gray-400 text-center">ماژول مورد علاقه اینجا نمایش داده می‌شود...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let authToken = null;
+        
+        // Auto login function
+        async function autoLogin() {
+            const statusDiv = document.getElementById('loginStatus');
+            statusDiv.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال ورود...';
+            
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    username: 'test@example.com',
+                    password: 'password'
+                });
+                
+                if (response.data.success) {
+                    authToken = response.data.session.accessToken;
+                    const user = response.data.session.user;
+                    
+                    statusDiv.innerHTML = `<i class="fas fa-check-circle text-green-400 mr-2"></i>ورود موفق: ${user.firstName}`;
+                    document.getElementById('userInfo').textContent = `${user.firstName} (${user.email})`;
+                    document.getElementById('testResults').classList.remove('hidden');
+                    
+                    // Set axios default header
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                } else {
+                    throw new Error('ورود ناموفق');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = `<i class="fas fa-times-circle text-red-400 mr-2"></i>خطا: ${error.message}`;
+                console.error('Login error:', error);
+            }
+        }
+
+        // API Test functions
+        async function testWatchlistList() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.get('/api/watchlist/list/demo_user');
+                resultsDiv.innerHTML = `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست لیست مورد علاقه</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>تعداد آیتم‌ها: ${response.data.data.length}</p>
+                            <p>نمونه آیتم: ${JSON.stringify(response.data.data[0], null, 2)}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML = `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست لیست مورد علاقه</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testMarketPrices() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.post('/api/market/prices', {
+                    symbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
+                });
+                
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست قیمت‌های بازار</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>تعداد قیمت‌ها: ${Object.keys(response.data.data).length}</p>
+                            <p>نمونه: ${JSON.stringify(response.data.data.BTCUSDT, null, 2)}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست قیمت‌های بازار</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testMarketOverview() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.get('/api/market/overview');
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست آمار کلی بازار</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>کل بازار: $${(response.data.data.total_market_cap / 1e12).toFixed(2)}T</p>
+                            <p>غالبیت BTC: ${response.data.data.btc_dominance}%</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست آمار کلی بازار</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testMarketMovers() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.get('/api/market/movers');
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست برترین تحرک‌ها</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>صعودی‌ها: ${response.data.data.gainers.length}</p>
+                            <p>نزولی‌ها: ${response.data.data.losers.length}</p>
+                            <p>برترین صعودی: ${response.data.data.gainers[0]?.symbol} (+${response.data.data.gainers[0]?.change_24h}%)</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست برترین تحرک‌ها</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testFearGreed() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.get('/api/market/fear-greed');
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست شاخص ترس و طمع</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>مقدار: ${response.data.data.value}</p>
+                            <p>وضعیت: ${response.data.data.classification} ${response.data.data.emoji}</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست شاخص ترس و طمع</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        async function testTrending() {
+            const resultsDiv = document.getElementById('apiTestResults');
+            try {
+                const response = await axios.get('/api/market/trending');
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-green-400">✅ تست کوین‌های ترند</h3>
+                        <div class="bg-green-900/20 p-3 rounded mt-2">
+                            <p>تعداد کوین‌ها: ${response.data.data.length}</p>
+                            <p>برترین: ${response.data.data[0]?.name} (${response.data.data[0]?.symbol})</p>
+                        </div>
+                    </div>
+                `;
+            } catch (error) {
+                resultsDiv.innerHTML += `
+                    <div class="mb-4">
+                        <h3 class="text-lg font-bold text-red-400">❌ خطا در تست کوین‌های ترند</h3>
+                        <div class="bg-red-900/20 p-3 rounded mt-2">
+                            <p>${error.message}</p>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Load watchlist module
+        async function loadWatchlistModule() {
+            const container = document.getElementById('watchlistModuleContainer');
+            container.innerHTML = '<div class="flex items-center justify-center h-64"><div class="loading-spinner"></div><span class="mr-4">در حال بارگذاری ماژول...</span></div>';
+            
+            try {
+                // Load the watchlist module script
+                const script = document.createElement('script');
+                script.src = '/static/modules/watchlist.js?v=' + Date.now();
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = () => reject(new Error('خطا در بارگذاری فایل watchlist.js'));
+                    document.head.appendChild(script);
+                });
+
+                // Create watchlist module instance
+                if (window.WatchlistModule) {
+                    const watchlistModule = new window.WatchlistModule();
+                    window.watchlistModule = watchlistModule; // Make it globally available
+                    
+                    // Get content and initialize
+                    const content = await watchlistModule.getContent();
+                    container.innerHTML = content;
+                    
+                    await watchlistModule.initialize();
+                    
+                    container.innerHTML = `
+                        <div class="text-center p-8">
+                            <div class="text-green-400 text-4xl mb-4">✅</div>
+                            <h3 class="text-xl font-bold text-white mb-2">ماژول مورد علاقه بارگذاری شد!</h3>
+                            <p class="text-gray-400 mb-4">برای دیدن صفحه کامل، روی لینک زیر کلیک کنید:</p>
+                            <a href="/#watchlist" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-block">
+                                <i class="fas fa-external-link-alt mr-2"></i>
+                                مشاهده صفحه کامل
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    throw new Error('WatchlistModule class not found');
+                }
+                
+            } catch (error) {
+                container.innerHTML = `
+                    <div class="text-center p-8 text-red-400">
+                        <div class="text-red-400 text-4xl mb-4">❌</div>
+                        <h3 class="text-xl font-bold mb-2">خطا در بارگذاری ماژول</h3>
+                        <p>${error.message}</p>
+                    </div>
+                `;
+            }
+        }
+
+        // Test watchlist UI
+        function testWatchlistUI() {
+            const container = document.getElementById('watchlistModuleContainer');
+            container.innerHTML = `
+                <div class="space-y-4">
+                    <div class="bg-gray-600 rounded p-4">
+                        <h3 class="text-lg font-bold text-white mb-2">✅ تست رابط کاربری مورد علاقه</h3>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>✅ لیست مورد علاقه</div>
+                            <div>✅ آمار سریع</div>
+                            <div>✅ قیمت‌های Real-time</div>
+                            <div>✅ آلرت قیمتی</div>
+                            <div>✅ آمار کلی بازار</div>
+                            <div>✅ شاخص ترس و طمع</div>
+                            <div>✅ برترین تحرک‌ها</div>
+                            <div>✅ کوین‌های ترند</div>
+                        </div>
+                    </div>
+                    <div class="text-center">
+                        <a href="/" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg inline-block">
+                            <i class="fas fa-star mr-2"></i>
+                            رفتن به صفحه مورد علاقه در برنامه اصلی
+                        </a>
+                    </div>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

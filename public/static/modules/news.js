@@ -198,20 +198,36 @@ class NewsModule {
 
         try {
             const response = await axios.get('/api/news/latest', {
-                params: this.filters
+                params: this.filters,
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
             });
             
             if (response.data.success) {
-                this.newsData = response.data.news;
+                this.newsData = response.data.data.news;
                 this.renderNewsList(this.newsData);
                 this.updateNewsStats(this.newsData);
+                
+                // Update last update time
+                const lastUpdateEl = document.getElementById('last-news-update');
+                if (lastUpdateEl) {
+                    lastUpdateEl.textContent = new Date().toLocaleTimeString('fa-IR');
+                }
+                
+                // Show success notification
+                this.showAlert('اخبار با موفقیت به‌روزرسانی شد', 'success');
             } else {
-                throw new Error('Failed to load news data');
+                throw new Error(response.data.error || 'Failed to load news data');
             }
             
         } catch (error) {
             console.error('Error loading news data:', error);
-            // Load mock data
+            
+            // Show error notification
+            this.showAlert('خطا در دریافت اخبار از سرور. از داده‌های محلی استفاده شد.', 'warning');
+            
+            // Load mock data as fallback
             this.loadMockNewsData();
         } finally {
             this.isLoading = false;
@@ -280,6 +296,16 @@ class NewsModule {
         const container = document.getElementById('main-news-list');
         if (!container) return;
 
+        if (!newsData || newsData.length === 0) {
+            container.innerHTML = `
+                <div class="p-6 text-center text-gray-400">
+                    <i class="fas fa-newspaper text-3xl mb-3"></i>
+                    <p>هیچ خبری یافت نشد</p>
+                </div>
+            `;
+            return;
+        }
+
         const html = newsData.map(news => {
             const sentimentColor = news.sentiment === 'positive' ? 'text-green-400' :
                                  news.sentiment === 'negative' ? 'text-red-400' : 'text-yellow-400';
@@ -289,6 +315,14 @@ class NewsModule {
 
             const impactBadge = news.impact === 'high' ? 'bg-red-600 text-red-100' :
                               news.impact === 'medium' ? 'bg-yellow-600 text-yellow-100' : 'bg-gray-600 text-gray-100';
+            
+            const impactText = {
+                'high': 'بالا',
+                'medium': 'متوسط',
+                'low': 'پایین'
+            }[news.impact] || news.impact;
+            
+            const timeDisplay = news.timeAgo || news.time || 'تازه منتشر شده';
 
             return `
                 <div class="p-4 hover:bg-gray-700 transition-colors cursor-pointer" onclick="newsModule.showNewsDetail(${news.id})">
@@ -302,10 +336,16 @@ class NewsModule {
                             <div class="flex items-center justify-between text-xs">
                                 <div class="flex items-center space-x-3 space-x-reverse">
                                     <span class="text-gray-400">${news.source}</span>
-                                    <span class="px-2 py-1 ${impactBadge} rounded text-xs">${news.impact}</span>
+                                    <span class="px-2 py-1 ${impactBadge} rounded text-xs">اهمیت ${impactText}</span>
+                                    ${news.sentimentScore ? `<span class="${sentimentColor} text-xs">${Math.round(news.sentimentScore * 100)}% اطمینان</span>` : ''}
                                 </div>
-                                <span class="text-gray-500">${news.time}</span>
+                                <span class="text-gray-500">${timeDisplay}</span>
                             </div>
+                            ${news.tags && news.tags.length > 0 ? `
+                                <div class="flex flex-wrap gap-1 mt-2">
+                                    ${news.tags.slice(0, 3).map(tag => `<span class="bg-blue-900/30 text-blue-300 text-xs px-2 py-1 rounded">${tag}</span>`).join('')}
+                                </div>
+                            ` : ''}
                         </div>
                     </div>
                 </div>
@@ -329,14 +369,23 @@ class NewsModule {
 
     async loadEconomicCalendar() {
         try {
-            const response = await axios.get('/api/news/economic-calendar');
+            const response = await axios.get('/api/news/economic-calendar', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
             
             if (response.data.success) {
-                this.economicEvents = response.data.events;
+                this.economicEvents = response.data.data.events;
                 this.renderEconomicCalendar(this.economicEvents);
+            } else {
+                throw new Error(response.data.error || 'Failed to load economic calendar');
             }
         } catch (error) {
             console.error('Error loading economic calendar:', error);
+            
+            this.showAlert('خطا در دریافت تقویم اقتصادی. از داده‌های محلی استفاده شد.', 'warning');
+            
             this.loadMockEconomicCalendar();
         }
     }
@@ -420,25 +469,259 @@ class NewsModule {
     showNewsDetail(newsId) {
         const news = this.newsData.find(n => n.id === newsId);
         if (news) {
-            // Show detailed news modal or navigate to detail page
-            alert(`جزئیات خبر: ${news.title}\n\n${news.summary}`);
+            // Create detailed news modal
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-4xl max-h-[80vh] overflow-y-auto border border-gray-700">
+                    <div class="p-6">
+                        <div class="flex items-center justify-between mb-4">
+                            <h2 class="text-xl font-bold text-white">جزئیات خبر</h2>
+                            <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                                <i class="fas fa-times text-xl"></i>
+                            </button>
+                        </div>
+                        
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4 space-x-reverse text-sm">
+                                <span class="text-gray-400">${news.source}</span>
+                                <span class="text-gray-500">${news.timeAgo || news.time}</span>
+                                ${news.author ? `<span class="text-blue-400">نویسنده: ${news.author}</span>` : ''}
+                            </div>
+                            
+                            <h1 class="text-2xl font-bold text-white leading-relaxed">${news.title}</h1>
+                            
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <span class="px-3 py-1 rounded text-sm ${
+                                    news.sentiment === 'positive' ? 'bg-green-900/30 text-green-300' :
+                                    news.sentiment === 'negative' ? 'bg-red-900/30 text-red-300' : 'bg-yellow-900/30 text-yellow-300'
+                                }">
+                                    ${
+                                        news.sentiment === 'positive' ? '📈 مثبت' :
+                                        news.sentiment === 'negative' ? '📉 منفی' : '➡️ خنثی'
+                                    }
+                                </span>
+                                <span class="px-3 py-1 rounded text-sm ${
+                                    news.impact === 'high' ? 'bg-red-900/30 text-red-300' :
+                                    news.impact === 'medium' ? 'bg-yellow-900/30 text-yellow-300' : 'bg-gray-900/30 text-gray-300'
+                                }">
+                                    اهمیت ${news.impact === 'high' ? 'بالا' : news.impact === 'medium' ? 'متوسط' : 'پایین'}
+                                </span>
+                                ${news.readTime ? `<span class="text-gray-400 text-sm">• ${news.readTime} مطالعه</span>` : ''}
+                            </div>
+                            
+                            ${news.imageUrl ? `
+                                <div class="rounded-lg overflow-hidden">
+                                    <img src="${news.imageUrl}" alt="${news.title}" class="w-full h-64 object-cover" onerror="this.style.display='none'">
+                                </div>
+                            ` : ''}
+                            
+                            <div class="prose prose-invert max-w-none">
+                                <p class="text-gray-300 leading-relaxed text-base">${news.content || news.summary}</p>
+                            </div>
+                            
+                            ${news.tags && news.tags.length > 0 ? `
+                                <div class="border-t border-gray-700 pt-4">
+                                    <p class="text-sm text-gray-400 mb-2">برچسب‌ها:</p>
+                                    <div class="flex flex-wrap gap-2">
+                                        ${news.tags.map(tag => `<span class="bg-blue-900/30 text-blue-300 text-sm px-3 py-1 rounded-full">#${tag}</span>`).join('')}
+                                    </div>
+                                </div>
+                            ` : ''}
+                            
+                            ${news.url ? `
+                                <div class="border-t border-gray-700 pt-4">
+                                    <a href="${news.url}" target="_blank" class="inline-flex items-center text-blue-400 hover:text-blue-300 text-sm">
+                                        <i class="fas fa-external-link-alt mr-2"></i>
+                                        مطالعه منبع اصلی
+                                    </a>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Close modal on background click
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            });
         }
     }
 
     async refreshNews() {
         this.showAlert('در حال بروزرسانی اخبار...', 'info');
-        await this.loadNewsData();
-        await this.loadEconomicCalendar();
-        this.showAlert('اخبار بروزرسانی شد', 'success');
+        
+        try {
+            // Parallel loading for better performance
+            await Promise.all([
+                this.loadNewsData(),
+                this.loadEconomicCalendar(),
+                this.loadMarketSentiment(),
+                this.loadBreakingNews()
+            ]);
+            
+            this.showAlert('همه اخبار با موفقیت به‌روزرسانی شدند', 'success');
+            
+        } catch (error) {
+            console.error('Refresh news error:', error);
+            this.showAlert('خطا در به‌روزرسانی برخی اخبار', 'warning');
+        }
     }
 
     showAlert(message, type = 'info') {
-        // Use app's alert system if available, otherwise console log
+        // Use app's alert system if available
         if (typeof app !== 'undefined' && app.showAlert) {
             app.showAlert(message, type);
-        } else {
-            console.log(`[${type.toUpperCase()}] ${message}`);
+            return;
         }
+        
+        // Create toast notification
+        const toast = document.createElement('div');
+        const bgColor = {
+            'success': 'bg-green-600',
+            'error': 'bg-red-600',
+            'warning': 'bg-yellow-600',
+            'info': 'bg-blue-600'
+        }[type] || 'bg-blue-600';
+        
+        toast.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-3 rounded-lg shadow-lg z-50 max-w-sm transform transition-all duration-300`;
+        toast.innerHTML = `
+            <div class="flex items-center justify-between">
+                <span class="text-sm">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-3 text-white hover:text-gray-200">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentElement) {
+                toast.style.transform = 'translateX(100%)';
+                setTimeout(() => toast.remove(), 300);
+            }
+        }, 5000);
+    }
+
+    // New methods for additional API integration
+    async loadMarketSentiment() {
+        try {
+            const response = await axios.get('/api/news/market-sentiment', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
+            
+            if (response.data.success) {
+                this.updateSentimentDisplay(response.data.data);
+            }
+        } catch (error) {
+            console.error('Error loading market sentiment:', error);
+        }
+    }
+    
+    async loadBreakingNews() {
+        try {
+            const response = await axios.get('/api/news/breaking', {
+                params: { limit: 3 },
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
+            
+            if (response.data.success && response.data.data.breakingNews.length > 0) {
+                this.updateBreakingNews(response.data.data.breakingNews[0]);
+            }
+        } catch (error) {
+            console.error('Error loading breaking news:', error);
+        }
+    }
+    
+    updateSentimentDisplay(sentimentData) {
+        // Update sentiment bars for BTC, ETH, Market Fear
+        const btcAsset = sentimentData.assets.find(a => a.symbol === 'BTC');
+        const ethAsset = sentimentData.assets.find(a => a.symbol === 'ETH');
+        
+        if (btcAsset) {
+            this.updateSentimentBar('BTC', btcAsset.score, btcAsset.sentiment);
+        }
+        
+        if (ethAsset) {
+            this.updateSentimentBar('ETH', ethAsset.score, ethAsset.sentiment);
+        }
+        
+        // Update fear index
+        if (sentimentData.marketMetrics.fearGreedIndex) {
+            this.updateSentimentBar('Fear', sentimentData.marketMetrics.fearGreedIndex / 100 - 0.5, 'fear');
+        }
+    }
+    
+    updateSentimentBar(asset, score, sentiment) {
+        // Convert score to percentage (score is between -1 and 1)
+        const percentage = Math.max(0, Math.min(100, (score + 1) * 50));
+        const color = sentiment === 'positive' ? 'bg-green-400' : 
+                     sentiment === 'negative' ? 'bg-red-400' : 'bg-yellow-400';
+        const text = sentiment === 'positive' ? 'صعودی' :
+                    sentiment === 'negative' ? 'نزولی' :
+                    sentiment === 'fear' ? 'ترس' : 'خنثی';
+        
+        // Find and update the sentiment bar (this is a simplified approach)
+        const sentimentBars = document.querySelectorAll('.w-20.bg-gray-700');
+        if (asset === 'BTC' && sentimentBars[0]) {
+            const bar = sentimentBars[0].querySelector('div');
+            const label = sentimentBars[0].parentElement.querySelector('.text-sm');
+            if (bar) {
+                bar.className = `${color} h-2 rounded-full transition-all duration-500`;
+                bar.style.width = `${percentage}%`;
+            }
+            if (label) {
+                label.textContent = `${Math.round(percentage)}% ${text}`;
+                label.className = `${color.replace('bg-', 'text-')} text-sm`;
+            }
+        }
+    }
+    
+    updateBreakingNews(breakingNews) {
+        const breakingEl = document.getElementById('breaking-news');
+        if (breakingEl && breakingNews) {
+            breakingEl.innerHTML = `
+                <div class="flex items-center">
+                    <div class="text-red-400 text-xl mr-3">🚨</div>
+                    <div class="flex-1">
+                        <h3 class="text-red-300 font-semibold">خبر فوری</h3>
+                        <p class="text-red-200 text-sm mt-1">${breakingNews.title.replace(/^🚨\s*/, '')}</p>
+                    </div>
+                    <div class="mr-auto text-red-300 text-xs">${breakingNews.timeAgo}</div>
+                </div>
+            `;
+        }
+    }
+    
+    async analyzeSentiment(text) {
+        try {
+            const response = await axios.post('/api/news/sentiment-analysis', {
+                text: text
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.data.success) {
+                return response.data.data.analysis;
+            }
+        } catch (error) {
+            console.error('Error analyzing sentiment:', error);
+        }
+        return null;
     }
 
     destroy() {
@@ -447,6 +730,13 @@ class NewsModule {
         // Clear data
         this.newsData = [];
         this.economicEvents = [];
+        
+        // Remove any created modals or toasts
+        document.querySelectorAll('.fixed.inset-0, .fixed.top-4').forEach(el => {
+            if (el.innerHTML.includes('خبر') || el.innerHTML.includes('toast')) {
+                el.remove();
+            }
+        });
         
         console.log('✅ News module destroyed');
     }

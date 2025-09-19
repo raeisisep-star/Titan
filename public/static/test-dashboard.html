@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آزمایش داشبورد - تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+        .loading-spinner {
+            border: 4px solid #374151;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                <i class="fas fa-chart-pie mr-2"></i>
+                آزمایش داشبورد تایتان
+            </h1>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div id="userInfo" class="text-gray-300">در حال بارگذاری...</div>
+                <a href="/" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <!-- Login Section -->
+        <div id="loginSection" class="mb-8 bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-sign-in-alt text-blue-400 mr-2"></i>
+                ورود خودکار
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل:</label>
+                    <input id="email" type="email" value="test@example.com" 
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور:</label>
+                    <input id="password" type="password" value="testpass" 
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                </div>
+            </div>
+            
+            <div class="mt-4 flex items-center space-x-4 space-x-reverse">
+                <button onclick="login()" id="loginBtn"
+                        class="px-6 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    ورود
+                </button>
+                
+                <button onclick="testAllEndpoints()" id="testBtn"
+                        class="px-6 py-2 bg-green-600 rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-flask mr-2"></i>
+                    تست همه API ها
+                </button>
+                
+                <div id="loginStatus" class="text-gray-400">
+                    آماده برای ورود
+                </div>
+            </div>
+        </div>
+
+        <!-- Dashboard Data Display -->
+        <div id="dashboardSection" class="hidden">
+            <!-- Dashboard Overview -->
+            <div class="mb-8 bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-tachometer-alt text-green-400 mr-2"></i>
+                    نمای کلی داشبورد
+                </h2>
+                <div id="dashboardOverview" class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <!-- Will be populated -->
+                </div>
+            </div>
+
+            <!-- Portfolio Data -->
+            <div class="mb-8 bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-wallet text-purple-400 mr-2"></i>
+                    پورتفولیوها
+                </h2>
+                <div id="portfolioData">
+                    <!-- Will be populated -->
+                </div>
+            </div>
+
+            <!-- Market Data -->
+            <div class="mb-8 bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-line text-yellow-400 mr-2"></i>
+                    بازارها
+                </h2>
+                <div id="marketData">
+                    <!-- Will be populated -->
+                </div>
+            </div>
+
+            <!-- AI Insights -->
+            <div class="mb-8 bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-robot text-blue-400 mr-2"></i>
+                    تحلیل‌های هوش مصنوعی
+                </h2>
+                <div id="aiInsights">
+                    <!-- Will be populated -->
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="mb-8 bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl font-bold mb-4 flex items-center">
+                    <i class="fas fa-history text-orange-400 mr-2"></i>
+                    فعالیت‌های اخیر
+                </h2>
+                <div id="recentActivity">
+                    <!-- Will be populated -->
+                </div>
+            </div>
+        </div>
+
+        <!-- API Test Results -->
+        <div id="testResults" class="mt-8 bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-vial text-green-400 mr-2"></i>
+                نتایج آزمایش API
+            </h2>
+            <div id="testOutput" class="bg-gray-900 rounded p-4 font-mono text-sm max-h-96 overflow-y-auto">
+                آماده برای آزمایش...
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let accessToken = null;
+        let currentUser = null;
+
+        // Auto-login on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            addLog('🚀 صفحه آزمایش داشبورد بارگذاری شد');
+            // Auto-login after 1 second
+            setTimeout(() => {
+                login();
+            }, 1000);
+        });
+
+        async function login() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const loginBtn = document.getElementById('loginBtn');
+            const loginStatus = document.getElementById('loginStatus');
+            
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال ورود...';
+            loginStatus.textContent = 'در حال ورود...';
+            loginStatus.className = 'text-yellow-400';
+            
+            try {
+                addLog('📧 شروع فرآیند ورود...');
+                
+                const response = await axios.post('/api/auth/login', {
+                    email: email,
+                    password: password
+                });
+
+                if (response.data.success) {
+                    accessToken = response.data.session.accessToken;
+                    currentUser = response.data.session.user;
+                    
+                    // Set default authorization header
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${accessToken}`;
+                    
+                    loginStatus.textContent = `ورود موفق: ${currentUser.firstName || currentUser.username}`;
+                    loginStatus.className = 'text-green-400';
+                    
+                    document.getElementById('userInfo').textContent = `خوش آمدید، ${currentUser.firstName || currentUser.username}`;
+                    
+                    addLog(`✅ ورود موفق: ${currentUser.firstName || currentUser.username}`);
+                    
+                    // Show dashboard section
+                    document.getElementById('dashboardSection').classList.remove('hidden');
+                    
+                    // Load dashboard data
+                    await loadDashboardData();
+                    
+                } else {
+                    throw new Error(response.data.error);
+                }
+                
+            } catch (error) {
+                addLog(`❌ خطا در ورود: ${error.message}`, 'error');
+                loginStatus.textContent = `خطا: ${error.message}`;
+                loginStatus.className = 'text-red-400';
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt mr-2"></i>ورود';
+            }
+        }
+
+        async function loadDashboardData() {
+            if (!accessToken) {
+                addLog('❌ لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            try {
+                addLog('📊 بارگذاری داده‌های داشبورد...');
+                
+                // Load dashboard overview
+                const dashboardResponse = await axios.get('/api/dashboard/overview');
+                displayDashboardOverview(dashboardResponse.data.data);
+                addLog('✅ نمای کلی داشبورد بارگذاری شد');
+
+                // Load portfolio data
+                const portfolioResponse = await axios.get('/api/portfolio/list');
+                displayPortfolioData(portfolioResponse.data);
+                addLog('✅ اطلاعات پورتفولیو بارگذاری شد');
+
+                // Load market data
+                const marketResponse = await axios.get('/api/markets');
+                displayMarketData(marketResponse.data);
+                addLog('✅ اطلاعات بازار بارگذاری شد');
+
+                // Load AI insights
+                const insightsResponse = await axios.get('/api/dashboard/ai-insights');
+                displayAIInsights(insightsResponse.data.data);
+                addLog('✅ تحلیل‌های AI بارگذاری شد');
+
+                // Load recent activity
+                const activityResponse = await axios.get('/api/dashboard/recent-activity?limit=5');
+                displayRecentActivity(activityResponse.data.data);
+                addLog('✅ فعالیت‌های اخیر بارگذاری شد');
+
+                addLog('🎉 تمام داده‌های داشبورد با موفقیت بارگذاری شد!', 'success');
+
+            } catch (error) {
+                addLog(`❌ خطا در بارگذاری داشبورد: ${error.message}`, 'error');
+            }
+        }
+
+        function displayDashboardOverview(data) {
+            const container = document.getElementById('dashboardOverview');
+            container.innerHTML = `
+                <div class="bg-gray-700 rounded p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-wallet text-green-400 text-2xl mr-3"></i>
+                        <div>
+                            <p class="text-gray-400 text-sm">موجودی کل</p>
+                            <p class="text-xl font-bold text-white">$${data.portfolio.totalBalance.toFixed(2)}</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-700 rounded p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-line text-blue-400 text-2xl mr-3"></i>
+                        <div>
+                            <p class="text-gray-400 text-sm">تغییر روزانه</p>
+                            <p class="text-xl font-bold ${data.portfolio.dailyChange >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ${data.portfolio.dailyChange >= 0 ? '+' : ''}$${data.portfolio.dailyChange.toFixed(2)}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-700 rounded p-4">
+                    <div class="flex items-center">
+                        <i class="fas fa-briefcase text-purple-400 text-2xl mr-3"></i>
+                        <div>
+                            <p class="text-gray-400 text-sm">پورتفولیوها</p>
+                            <p class="text-xl font-bold text-white">${data.portfolio.portfolioCount}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayPortfolioData(data) {
+            const container = document.getElementById('portfolioData');
+            const portfolios = data.portfolios || [];
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${portfolios.map(portfolio => `
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h3 class="text-lg font-bold text-white mb-2">${portfolio.name}</h3>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">موجودی:</span>
+                                    <span class="text-white">$${parseFloat(portfolio.total_balance || 0).toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">P&L:</span>
+                                    <span class="${parseFloat(portfolio.total_pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                        ${parseFloat(portfolio.total_pnl || 0) >= 0 ? '+' : ''}$${parseFloat(portfolio.total_pnl || 0).toFixed(2)}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">صرافی:</span>
+                                    <span class="text-gray-300">${portfolio.exchange || 'نامشخص'}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="mt-4 p-3 bg-gray-700 rounded">
+                    <div class="text-sm text-gray-300">
+                        مجموع: ${data.totals ? `$${data.totals.total_balance.toFixed(2)}` : 'نامحدود'} |
+                        پورتفولیوهای فعال: ${data.totals ? data.totals.active_portfolios : portfolios.length}
+                    </div>
+                </div>
+            `;
+        }
+
+        function displayMarketData(data) {
+            const container = document.getElementById('marketData');
+            const markets = (data.markets || []).slice(0, 6);
+            
+            container.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    ${markets.map(market => `
+                        <div class="bg-gray-700 rounded p-3">
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <h4 class="font-bold text-white">${market.symbol}</h4>
+                                    <p class="text-xs text-gray-400">${market.exchange}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-white font-bold">$${market.price.toFixed(2)}</div>
+                                    <div class="${market.price_change_percent_24h >= 0 ? 'text-green-400' : 'text-red-400'} text-xs">
+                                        ${market.price_change_percent_24h >= 0 ? '+' : ''}${market.price_change_percent_24h.toFixed(2)}%
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                ${data.stats ? `
+                    <div class="mt-4 p-3 bg-gray-700 rounded">
+                        <div class="text-sm text-gray-300">
+                            کل بازارها: ${data.stats.total_markets} |
+                            صعودی: ${data.stats.gainers} |
+                            نزولی: ${data.stats.losers}
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        function displayAIInsights(data) {
+            const container = document.getElementById('aiInsights');
+            const insights = data.insights || [];
+            
+            container.innerHTML = `
+                <div class="space-y-4">
+                    ${insights.map(insight => `
+                        <div class="bg-gray-700 rounded p-4">
+                            <div class="flex items-start justify-between mb-2">
+                                <h4 class="font-bold text-white">${insight.title}</h4>
+                                <span class="text-xs bg-blue-600 text-white px-2 py-1 rounded">
+                                    ${Math.round(insight.confidence * 100)}%
+                                </span>
+                            </div>
+                            <p class="text-gray-300 text-sm mb-2">${insight.content}</p>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-gray-400">${insight.source}</span>
+                                <span class="text-gray-500">${new Date(insight.timestamp).toLocaleString('fa-IR')}</span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function displayRecentActivity(data) {
+            const container = document.getElementById('recentActivity');
+            const activities = data.activities || [];
+            
+            container.innerHTML = `
+                <div class="space-y-3">
+                    ${activities.map(activity => `
+                        <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                            <div class="flex items-center">
+                                <i class="fas fa-${getActivityIcon(activity.type)} text-blue-400 mr-3"></i>
+                                <div>
+                                    <div class="text-white text-sm">
+                                        ${getActivityDescription(activity)}
+                                    </div>
+                                    <div class="text-gray-400 text-xs">
+                                        ${new Date(activity.timestamp).toLocaleString('fa-IR')}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <span class="${activity.status === 'completed' ? 'text-green-400' : 'text-yellow-400'} text-xs">
+                                    ${activity.status === 'completed' ? 'تکمیل شده' : 'در انتظار'}
+                                </span>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+
+        function getActivityIcon(type) {
+            const icons = {
+                'trade': 'exchange-alt',
+                'deposit': 'plus-circle',
+                'withdrawal': 'minus-circle',
+                'strategy': 'robot',
+                'alert': 'bell'
+            };
+            return icons[type] || 'circle';
+        }
+
+        function getActivityDescription(activity) {
+            switch (activity.type) {
+                case 'trade':
+                    return `${activity.action === 'buy' ? 'خرید' : 'فروش'} ${activity.amount} ${activity.symbol}`;
+                case 'deposit':
+                    return `واریز ${activity.amount} ${activity.currency || 'USDT'}`;
+                case 'strategy':
+                    return `${activity.action === 'activated' ? 'فعال‌سازی' : 'غیرفعال‌سازی'} استراتژی`;
+                default:
+                    return 'فعالیت نامشخص';
+            }
+        }
+
+        async function testAllEndpoints() {
+            const testBtn = document.getElementById('testBtn');
+            testBtn.disabled = true;
+            testBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال آزمایش...';
+            
+            addLog('🧪 شروع آزمایش همه API endpoints...', 'info');
+            
+            const endpoints = [
+                { method: 'GET', url: '/api/dashboard/overview', auth: true },
+                { method: 'GET', url: '/api/dashboard/quick-stats', auth: true },
+                { method: 'GET', url: '/api/dashboard/notifications', auth: true },
+                { method: 'GET', url: '/api/dashboard/ai-insights', auth: true },
+                { method: 'GET', url: '/api/dashboard/recent-activity', auth: true },
+                { method: 'GET', url: '/api/portfolio/list', auth: true },
+                { method: 'GET', url: '/api/portfolio/1', auth: true },
+                { method: 'GET', url: '/api/markets', auth: false },
+                { method: 'GET', url: '/api/markets/trending', auth: false },
+                { method: 'GET', url: '/api/health', auth: false }
+            ];
+            
+            let passed = 0;
+            let failed = 0;
+            
+            for (const endpoint of endpoints) {
+                try {
+                    const config = {
+                        method: endpoint.method,
+                        url: endpoint.url
+                    };
+                    
+                    if (endpoint.auth && accessToken) {
+                        config.headers = { 'Authorization': `Bearer ${accessToken}` };
+                    }
+                    
+                    const response = await axios(config);
+                    
+                    if (response.data.success !== false) {
+                        addLog(`✅ ${endpoint.method} ${endpoint.url} - موفق`, 'success');
+                        passed++;
+                    } else {
+                        addLog(`❌ ${endpoint.method} ${endpoint.url} - ناموفق: ${response.data.error}`, 'error');
+                        failed++;
+                    }
+                } catch (error) {
+                    addLog(`❌ ${endpoint.method} ${endpoint.url} - خطا: ${error.message}`, 'error');
+                    failed++;
+                }
+            }
+            
+            addLog(`📊 خلاصه آزمایش: ${passed} موفق، ${failed} ناموفق`, passed > failed ? 'success' : 'error');
+            
+            testBtn.disabled = false;
+            testBtn.innerHTML = '<i class="fas fa-flask mr-2"></i>تست همه API ها';
+        }
+
+        function addLog(message, type = 'info') {
+            const output = document.getElementById('testOutput');
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400',
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            
+            const color = colors[type] || 'text-gray-300';
+            const logEntry = `<div class="${color}">[${timestamp}] ${message}</div>`;
+            
+            output.innerHTML += logEntry;
+            output.scrollTop = output.scrollHeight;
+            
+            console.log(`[DASHBOARD-TEST] ${message}`);
+        }
+    </script>
+</body>
+</html>

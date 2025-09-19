@@ -1,6 +1,6 @@
 import type { Env } from "../../types/cloudflare"
 import { Hono } from 'hono'
-import AIService from '../../services/ai-service'
+import { AIService } from '../../services/ai-service'
 
 export const chatRoutes = new Hono<{ Bindings: Env }>()
 

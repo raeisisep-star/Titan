@@ -1,7 +1,7 @@
 import type { Env } from "../../types/cloudflare"
 import { Hono } from 'hono'
 import { AgentManager } from './specialized-agents'
-import AIService from '../../services/ai-service'
+import { AIService } from '../../services/ai-service'
 
 export const agentRoutes = new Hono<{ Bindings: Env }>()
 

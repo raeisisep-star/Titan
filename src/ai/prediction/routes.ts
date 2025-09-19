@@ -1,7 +1,7 @@
 import type { Env } from "../../types/cloudflare"
 import { Hono } from 'hono'
 import { PredictionSystem } from './prediction-system'
-import AIService from '../../services/ai-service'
+import { AIService } from '../../services/ai-service'
 
 export const predictionRoutes = new Hono<{ Bindings: Env }>()
 

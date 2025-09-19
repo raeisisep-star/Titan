@@ -1,1509 +1,1358 @@
-// Alerts Module for Titan Trading System - Complete Implementation
-// Comprehensive notification and alert management system
+/**
+ * Alerts Module - Market Alerts and Notifications System
+ * Handles alert management, templates, and notifications
+ */
 
-class AlertsModule {
+class AlertsManager {
     constructor() {
         this.alerts = [];
-        this.alertRules = [];
-        this.activeAlerts = [];
-        this.notificationChannels = {
-            email: { enabled: false, templates: {} },
-            telegram: { enabled: false, templates: {} },
-            whatsapp: { enabled: false, templates: {} },
-            sms: { enabled: false, templates: {} },
-            inapp: { enabled: true, templates: {} },
-            mobile: { enabled: false, templates: {} },
-            discord: { enabled: false, templates: {} }
-        };
-        this.alertTypes = [
-            'price_alert',
-            'trade_execution',
-            'portfolio_change',
-            'ai_signal',
-            'system_warning',
-            'security_alert',
-            'market_news',
-            'stop_loss_hit',
-            'take_profit_hit',
-            'balance_low'
-        ];
-        this.currentPage = 1;
-        this.itemsPerPage = 10;
+        this.templates = [];
+        this.settings = {};
+        this.statistics = {};
+        this.marketPrices = {};
+        this.refreshInterval = null;
     }
 
-    async initialize() {
-        console.log('🔔 Initializing Alerts module...');
-        
+    // Initialize alerts system
+    async init() {
         try {
-            await this.loadAlertsData();
-            await this.loadNotificationTemplates();
-            this.setupEventListeners();
-            this.startAlertMonitoring();
-            console.log('✅ Alerts module initialized successfully');
+            await this.loadDashboardData();
+            this.startPriceMonitoring();
+            console.log('✅ Alerts system initialized');
         } catch (error) {
-            console.error('❌ Error initializing alerts module:', error);
+            console.error('❌ Alerts system initialization failed:', error);
+        }
+    }
+
+    // Load comprehensive dashboard data
+    async loadDashboardData() {
+        try {
+            const response = await axios.get('/api/alerts/dashboard');
+            if (response.data.success) {
+                const data = response.data.data;
+                this.alerts = data.alerts;
+                this.statistics = data.statistics;
+                this.settings = data.settings;
+                this.marketPrices = data.marketPrices;
+                return data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error loading dashboard data:', error);
             throw error;
         }
     }
 
-    async getContent() {
-        return `
-        <div class="space-y-6">
+    // Load alert templates
+    async loadTemplates() {
+        try {
+            const response = await axios.get('/api/alerts/templates');
+            if (response.data.success) {
+                this.templates = response.data.data;
+                return this.templates;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error loading templates:', error);
+            throw error;
+        }
+    }
+
+    // Create new alert
+    async createAlert(alertData) {
+        try {
+            const response = await axios.post('/api/alerts', alertData);
+            if (response.data.success) {
+                this.alerts.push(response.data.data);
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error creating alert:', error);
+            throw error;
+        }
+    }
+
+    // Create alert from template
+    async createAlertFromTemplate(templateId, params) {
+        try {
+            const response = await axios.post('/api/alerts/from-template', {
+                templateId,
+                ...params
+            });
+            if (response.data.success) {
+                this.alerts.push(response.data.data);
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error creating alert from template:', error);
+            throw error;
+        }
+    }
+
+    // Update existing alert
+    async updateAlert(alertId, updateData) {
+        try {
+            const response = await axios.put(`/api/alerts/${alertId}`, updateData);
+            if (response.data.success) {
+                const index = this.alerts.findIndex(a => a.id === alertId);
+                if (index !== -1) {
+                    this.alerts[index] = { ...this.alerts[index], ...response.data.data };
+                }
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error updating alert:', error);
+            throw error;
+        }
+    }
+
+    // Delete alert
+    async deleteAlert(alertId) {
+        try {
+            const response = await axios.delete(`/api/alerts/${alertId}`);
+            if (response.data.success) {
+                this.alerts = this.alerts.filter(a => a.id !== alertId);
+                return true;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error deleting alert:', error);
+            throw error;
+        }
+    }
+
+    // Toggle alert status
+    async toggleAlert(alertId, enabled) {
+        try {
+            const response = await axios.patch(`/api/alerts/${alertId}/toggle`, { enabled });
+            if (response.data.success) {
+                const index = this.alerts.findIndex(a => a.id === alertId);
+                if (index !== -1) {
+                    this.alerts[index].isActive = enabled;
+                }
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error toggling alert:', error);
+            throw error;
+        }
+    }
+
+    // Bulk operations
+    async performBulkOperation(operation, alertIds) {
+        try {
+            const response = await axios.post('/api/alerts/bulk', {
+                operation,
+                alertIds
+            });
+            if (response.data.success) {
+                // Refresh alerts data
+                await this.loadDashboardData();
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error performing bulk operation:', error);
+            throw error;
+        }
+    }
+
+    // Update notification settings
+    async updateSettings(settingsData) {
+        try {
+            const response = await axios.put('/api/alerts/settings', settingsData);
+            if (response.data.success) {
+                this.settings = { ...this.settings, ...response.data.data };
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error updating settings:', error);
+            throw error;
+        }
+    }
+
+    // Start monitoring prices for alerts
+    startPriceMonitoring() {
+        // Update prices every 30 seconds
+        this.refreshInterval = setInterval(async () => {
+            try {
+                const symbols = [...new Set(this.alerts.map(a => a.symbol))];
+                if (symbols.length > 0) {
+                    const response = await axios.get(`/api/alerts/market-prices?symbols=${symbols.join(',')}`);
+                    if (response.data.success) {
+                        this.marketPrices = { ...this.marketPrices, ...response.data.data.prices };
+                        this.checkAlertConditions();
+                    }
+                }
+            } catch (error) {
+                console.warn('Price monitoring error:', error);
+            }
+        }, 30000);
+    }
+
+    // Stop price monitoring
+    stopPriceMonitoring() {
+        if (this.refreshInterval) {
+            clearInterval(this.refreshInterval);
+            this.refreshInterval = null;
+        }
+    }
+
+    // Check alert conditions locally (for UI feedback)
+    checkAlertConditions() {
+        this.alerts.forEach(alert => {
+            if (!alert.isActive) return;
+
+            const currentPrice = this.marketPrices[alert.symbol];
+            if (!currentPrice) return;
+
+            let triggered = false;
+
+            switch (alert.alertType) {
+                case 'price_above':
+                    triggered = currentPrice > alert.targetPrice;
+                    break;
+                case 'price_below':
+                    triggered = currentPrice < alert.targetPrice;
+                    break;
+                // Add more alert type checks as needed
+            }
+
+            // Update UI to show alert status
+            if (triggered) {
+                this.showAlertTriggeredIndicator(alert, currentPrice);
+            }
+        });
+    }
+
+    // Show alert triggered indicator
+    showAlertTriggeredIndicator(alert, currentPrice) {
+        // This would update the UI to show that an alert was triggered
+        console.log(`🚨 Alert triggered: ${alert.alertName} at ${currentPrice}`);
+        
+        // You could show a notification or update the alert row
+        this.showNotification(`هشدار فعال شد: ${alert.alertName}`, 'success');
+    }
+
+    // Show notification
+    showNotification(message, type = 'info') {
+        // Create a simple notification
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 p-4 rounded-lg shadow-lg z-50 ${
+            type === 'success' ? 'bg-green-600' : 
+            type === 'error' ? 'bg-red-600' : 
+            type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
+        } text-white`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+
+    // Test alert notification
+    async testNotification(alertId, notificationType) {
+        try {
+            const response = await axios.post('/api/alerts/test-notification', {
+                alertId,
+                notificationType
+            });
+            if (response.data.success) {
+                this.showNotification('اطلاع‌رسانی آزمایشی ارسال شد', 'success');
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error testing notification:', error);
+            throw error;
+        }
+    }
+
+    // Get alert history
+    async getAlertHistory(limit = 20) {
+        try {
+            const response = await axios.get(`/api/alerts/history?limit=${limit}`);
+            if (response.data.success) {
+                return response.data.data;
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error getting alert history:', error);
+            throw error;
+        }
+    }
+
+    // Cleanup
+    destroy() {
+        this.stopPriceMonitoring();
+    }
+}
+
+// Global instance
+window.alertsManager = new AlertsManager();
+
+// Alert rendering functions
+function renderAlertsPage() {
+    return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
             <!-- Header -->
-            <div class="flex items-center justify-between">
+            <div class="flex justify-between items-center mb-8">
                 <div>
-                    <h2 class="text-2xl font-bold text-white">🔔 سیستم هشدارها و اعلان‌ها</h2>
-                    <p class="text-gray-400 mt-1">مدیریت کامل اعلان‌های چندکانال و هشدارهای هوشمند</p>
+                    <h1 class="text-3xl font-bold text-white mb-2">
+                        <i class="fas fa-bell text-yellow-400 mr-3"></i>
+                        سیستم هشدارها و اعلان‌ها
+                    </h1>
+                    <p class="text-gray-400">مدیریت هشدارهای بازار و اطلاع‌رسانی‌های قیمتی</p>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="alertsModule.createAlert()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
-                        <i class="fas fa-plus mr-2"></i>ایجاد هشدار جدید
+                    <button onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>
+                        هشدار جدید
                     </button>
-                    <button onclick="alertsModule.testAllChannels()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
-                        <i class="fas fa-broadcast-tower mr-2"></i>تست همه کانال‌ها
+                    <button onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-template mr-2"></i>
+                        قالب‌ها
+                    </button>
+                    <button onclick="showSettingsModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-cog mr-2"></i>
+                        تنظیمات
                     </button>
                 </div>
             </div>
 
-            <!-- Alert Stats -->
-            <div class="grid grid-cols-2 md:grid-cols-5 gap-4">
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div class="flex items-center justify-between">
+            <!-- Statistics Cards -->
+            <div id="alertsStatistics" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-bell text-blue-400 text-2xl mr-4"></i>
                         <div>
-                            <p class="text-2xl font-bold text-blue-400" id="total-alerts">0</p>
-                            <p class="text-sm text-gray-400">کل هشدارها</p>
+                            <p class="text-gray-400 text-sm">کل هشدارها</p>
+                            <p class="text-2xl font-bold text-white">-</p>
                         </div>
-                        <i class="fas fa-bell text-blue-400 text-xl opacity-50"></i>
                     </div>
                 </div>
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div class="flex items-center justify-between">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-check-circle text-green-400 text-2xl mr-4"></i>
                         <div>
-                            <p class="text-2xl font-bold text-green-400" id="active-alerts">0</p>
-                            <p class="text-sm text-gray-400">فعال</p>
+                            <p class="text-gray-400 text-sm">هشدارهای فعال</p>
+                            <p class="text-2xl font-bold text-white">-</p>
                         </div>
-                        <i class="fas fa-check-circle text-green-400 text-xl opacity-50"></i>
                     </div>
                 </div>
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div class="flex items-center justify-between">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-fire text-orange-400 text-2xl mr-4"></i>
                         <div>
-                            <p class="text-2xl font-bold text-yellow-400" id="triggered-today">0</p>
-                            <p class="text-sm text-gray-400">امروز فعال شده</p>
+                            <p class="text-gray-400 text-sm">فعال شده امروز</p>
+                            <p class="text-2xl font-bold text-white">-</p>
                         </div>
-                        <i class="fas fa-fire text-yellow-400 text-xl opacity-50"></i>
                     </div>
                 </div>
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div class="flex items-center justify-between">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-chart-line text-purple-400 text-2xl mr-4"></i>
                         <div>
-                            <p class="text-2xl font-bold text-red-400" id="failed-alerts">0</p>
-                            <p class="text-sm text-gray-400">ناموفق</p>
-                        </div>
-                        <i class="fas fa-exclamation-triangle text-red-400 text-xl opacity-50"></i>
-                    </div>
-                </div>
-                <div class="bg-gray-800 rounded-lg p-4 border border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-2xl font-bold text-purple-400" id="channels-active">0</p>
-                            <p class="text-sm text-gray-400">کانال‌های فعال</p>
-                        </div>
-                        <i class="fas fa-broadcast-tower text-purple-400 text-xl opacity-50"></i>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Notification Channels Status -->
-            <div class="bg-gray-800 rounded-lg border border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-700">
-                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fas fa-broadcast-tower"></i>
-                        وضعیت کانال‌های اعلان
-                    </h3>
-                </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                        ${this.getChannelStatusCards()}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Alert Filters -->
-            <div class="bg-gray-800 rounded-lg border border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-700">
-                    <h3 class="text-lg font-semibold text-white">🔍 فیلتر هشدارها</h3>
-                </div>
-                <div class="p-6">
-                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">نوع هشدار</label>
-                            <select id="alert-type-filter" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                <option value="">همه انواع</option>
-                                <option value="price_alert">هشدار قیمت</option>
-                                <option value="trade_execution">اجرای معامله</option>
-                                <option value="portfolio_change">تغییر پورتفولیو</option>
-                                <option value="ai_signal">سیگنال هوش مصنوعی</option>
-                                <option value="system_warning">هشدار سیستم</option>
-                                <option value="security_alert">هشدار امنیتی</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">وضعیت</label>
-                            <select id="alert-status-filter" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                <option value="">همه</option>
-                                <option value="active">فعال</option>
-                                <option value="triggered">فعال شده</option>
-                                <option value="paused">متوقف</option>
-                                <option value="expired">منقضی</option>
-                            </select>
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">کانال اعلان</label>
-                            <select id="channel-filter" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                <option value="">همه کانال‌ها</option>
-                                <option value="email">ایمیل</option>
-                                <option value="telegram">تلگرام</option>
-                                <option value="whatsapp">واتساپ</option>
-                                <option value="sms">پیامک</option>
-                                <option value="inapp">داخل برنامه</option>
-                            </select>
-                        </div>
-                        <div class="flex items-end">
-                            <button onclick="alertsModule.filterAlerts()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
-                                <i class="fas fa-search mr-2"></i>اعمال فیلتر
-                            </button>
+                            <p class="text-gray-400 text-sm">نماد پربازده</p>
+                            <p class="text-2xl font-bold text-white">-</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Alerts List -->
-            <div class="bg-gray-800 rounded-lg border border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-                    <h3 class="text-lg font-semibold text-white">📋 لیست هشدارها</h3>
-                    <div class="flex gap-2">
-                        <button onclick="alertsModule.bulkAction('enable')" class="bg-green-600 hover:bg-green-700 px-3 py-1 rounded text-white text-sm">
-                            <i class="fas fa-play mr-1"></i>فعال‌سازی گروهی
+            <!-- Main Content Tabs -->
+            <div class="bg-gray-800 rounded-lg">
+                <!-- Tab Headers -->
+                <div class="border-b border-gray-700">
+                    <nav class="flex space-x-8 space-x-reverse px-6">
+                        <button onclick="switchAlertsTab('active')" id="tab-active" class="alert-tab py-4 px-2 border-b-2 border-blue-500 text-blue-500 font-medium">
+                            هشدارهای فعال
                         </button>
-                        <button onclick="alertsModule.bulkAction('disable')" class="bg-yellow-600 hover:bg-yellow-700 px-3 py-1 rounded text-white text-sm">
-                            <i class="fas fa-pause mr-1"></i>توقف گروهی
+                        <button onclick="switchAlertsTab('history')" id="tab-history" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
+                            تاریخچه
                         </button>
-                        <button onclick="alertsModule.bulkAction('delete')" class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm">
-                            <i class="fas fa-trash mr-1"></i>حذف گروهی
+                        <button onclick="switchAlertsTab('templates')" id="tab-templates" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
+                            قالب‌ها
                         </button>
-                    </div>
+                    </nav>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full">
-                        <thead class="bg-gray-900">
-                            <tr>
-                                <th class="px-4 py-3 text-right">
-                                    <input type="checkbox" id="select-all-alerts" class="w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                                </th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">هشدار</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">نوع</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">شرایط</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">کانال‌ها</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">وضعیت</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">آخرین اجرا</th>
-                                <th class="px-4 py-3 text-right text-xs font-medium text-gray-300 uppercase">عملیات</th>
-                            </tr>
-                        </thead>
-                        <tbody id="alerts-table-body" class="bg-gray-800 divide-y divide-gray-700">
-                            <!-- Alerts will be loaded here -->
-                        </tbody>
-                    </table>
-                </div>
-                <div class="px-6 py-4 bg-gray-900 border-t border-gray-700">
-                    <div class="flex items-center justify-between">
-                        <div class="text-sm text-gray-400">
-                            نمایش <span id="alerts-from">1</span> تا <span id="alerts-to">10</span> از <span id="alerts-total">0</span> هشدار
-                        </div>
-                        <div class="flex gap-2">
-                            <button onclick="alertsModule.prevPage()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm">قبلی</button>
-                            <span class="px-3 py-1 text-white text-sm" id="current-page">1</span>
-                            <button onclick="alertsModule.nextPage()" class="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-white text-sm">بعدی</button>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Recent Alert Activities -->
-            <div class="bg-gray-800 rounded-lg border border-gray-700">
-                <div class="px-6 py-4 border-b border-gray-700">
-                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                        <i class="fas fa-history"></i>
-                        فعالیت‌های اخیر هشدارها
-                    </h3>
-                </div>
-                <div id="recent-activities" class="p-6">
-                    <!-- Recent activities will be loaded here -->
+                <!-- Tab Content -->
+                <div id="alertsTabContent" class="p-6">
+                    <div class="text-center py-8">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p class="text-gray-400">در حال بارگذاری هشدارها...</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <!-- Create Alert Modal -->
-        <div id="create-alert-modal" class="fixed inset-0 bg-black bg-opacity-50 z-50 hidden">
-            <div class="flex items-center justify-center min-h-screen p-4">
-                <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-                    <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-white">🔔 ایجاد هشدار جدید</h3>
-                        <button onclick="alertsModule.closeCreateModal()" class="text-gray-400 hover:text-white">
-                            <i class="fas fa-times"></i>
-                        </button>
-                    </div>
-                    <div id="create-alert-content" class="p-6">
-                        <!-- Modal content will be loaded here -->
-                    </div>
+        <div id="createAlertModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">ایجاد هشدار جدید</h3>
+                    <button onclick="closeCreateAlertModal()" class="text-gray-400 hover:text-gray-300">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-            </div>
-        </div>`;
-    }
-
-    getChannelStatusCards() {
-        const channels = [
-            { key: 'email', name: 'ایمیل', icon: 'fa-envelope', color: 'blue' },
-            { key: 'telegram', name: 'تلگرام', icon: 'fa-paper-plane', color: 'cyan' },
-            { key: 'whatsapp', name: 'واتساپ', icon: 'fa-whatsapp', color: 'green' },
-            { key: 'sms', name: 'پیامک', icon: 'fa-sms', color: 'yellow' },
-            { key: 'inapp', name: 'درون‌برنامه', icon: 'fa-bell', color: 'purple' },
-            { key: 'mobile', name: 'موبایل', icon: 'fa-mobile-alt', color: 'pink' },
-            { key: 'discord', name: 'دیسکورد', icon: 'fa-discord', color: 'indigo' }
-        ];
-
-        return channels.map(channel => {
-            const isEnabled = this.notificationChannels[channel.key]?.enabled || false;
-            const statusColor = isEnabled ? channel.color : 'gray';
-            const statusText = isEnabled ? 'فعال' : 'غیرفعال';
-            
-            return `
-                <div class="bg-gray-900 rounded-lg p-4 text-center border border-gray-600">
-                    <div class="flex flex-col items-center">
-                        <i class="fas ${channel.icon} text-2xl text-${statusColor}-400 mb-2"></i>
-                        <h4 class="text-sm font-medium text-white mb-1">${channel.name}</h4>
-                        <span class="text-xs px-2 py-1 rounded-full bg-${statusColor}-100 text-${statusColor}-800">
-                            ${statusText}
-                        </span>
-                        <button data-channel="${channel.key}" class="configure-channel-btn mt-2 text-xs text-blue-400 hover:text-blue-300">
-                            تنظیم
-                        </button>
-                    </div>
-                </div>
-            `;
-        }).join('');
-    }
-
-    async loadAlertsData() {
-        try {
-            // Load from localStorage first
-            const saved = localStorage.getItem('titan_alerts');
-            if (saved) {
-                const data = JSON.parse(saved);
-                this.alerts = data.alerts || [];
-                this.alertRules = data.rules || [];
-            }
-
-            // Try to load from server
-            if (typeof axios !== 'undefined') {
-                try {
-                    const response = await axios.get('/api/alerts/list');
-                    if (response.data.success) {
-                        this.alerts = response.data.alerts || [];
-                        this.alertRules = response.data.rules || [];
-                    }
-                } catch (error) {
-                    console.warn('Could not load alerts from server, using local data:', error);
-                }
-            }
-
-            this.updateAlertStats();
-            this.renderAlertsTable();
-            
-        } catch (error) {
-            console.error('Error loading alerts data:', error);
-        }
-    }
-
-    async loadNotificationTemplates() {
-        try {
-            // Default notification templates
-            const defaultTemplates = {
-                email: {
-                    price_alert: {
-                        subject: 'TITAN - هشدار قیمت {{symbol}}',
-                        body: `
-                            <h2>هشدار قیمت</h2>
-                            <p>{{symbol}} به قیمت {{price}} {{currency}} رسیده است.</p>
-                            <p><strong>شرایط:</strong> {{condition}}</p>
-                            <p><strong>زمان:</strong> {{timestamp}}</p>
-                            <hr>
-                            <p><small>سیستم معاملاتی TITAN</small></p>
-                        `
-                    },
-                    trade_execution: {
-                        subject: 'TITAN - اجرای معامله {{symbol}}',
-                        body: `
-                            <h2>اجرای معامله</h2>
-                            <p>معامله {{type}} برای {{symbol}} با موفقیت انجام شد.</p>
-                            <p><strong>مقدار:</strong> {{amount}} {{symbol}}</p>
-                            <p><strong>قیمت:</strong> {{price}} {{currency}}</p>
-                            <p><strong>کل:</strong> {{total}} {{currency}}</p>
-                            <hr>
-                            <p><small>سیستم معاملاتی TITAN</small></p>
-                        `
-                    }
-                },
-                telegram: {
-                    price_alert: `
-🚨 <b>هشدار قیمت</b>
-
-💰 <b>{{symbol}}</b> به قیمت <b>{{price}} {{currency}}</b> رسید
-
-📋 <b>شرایط:</b> {{condition}}
-⏰ <b>زمان:</b> {{timestamp}}
-
-🤖 سیستم معاملاتی TITAN
-                    `,
-                    trade_execution: `
-✅ <b>اجرای معامله</b>
-
-💎 <b>{{symbol}}</b>
-🔄 <b>نوع:</b> {{type}}
-📊 <b>مقدار:</b> {{amount}}
-💵 <b>قیمت:</b> {{price}} {{currency}}
-💰 <b>کل:</b> {{total}} {{currency}}
-
-🤖 سیستم معاملاتی TITAN
-                    `
-                },
-                whatsapp: {
-                    price_alert: `
-🚨 *هشدار قیمت TITAN*
-
-💰 *{{symbol}}* به قیمت *{{price}} {{currency}}* رسید
-
-📋 شرایط: {{condition}}
-⏰ زمان: {{timestamp}}
-
-🤖 سیستم معاملاتی TITAN
-                    `,
-                    trade_execution: `
-✅ *اجرای معامله TITAN*
-
-💎 {{symbol}}
-🔄 نوع: {{type}}  
-📊 مقدار: {{amount}}
-💵 قیمت: {{price}} {{currency}}
-💰 کل: {{total}} {{currency}}
-
-🤖 سیستم معاملاتی TITAN
-                    `
-                },
-                sms: {
-                    price_alert: 'TITAN: {{symbol}} به {{price}} {{currency}} رسید. شرایط: {{condition}}',
-                    trade_execution: 'TITAN: معامله {{type}} {{symbol}} انجام شد. مقدار: {{amount}}, قیمت: {{price}}'
-                }
-            };
-
-            // Load custom templates if available
-            const savedTemplates = localStorage.getItem('titan_notification_templates');
-            if (savedTemplates) {
-                const customTemplates = JSON.parse(savedTemplates);
-                this.notificationChannels = { ...this.notificationChannels, ...customTemplates };
-            } else {
-                // Set default templates
-                Object.keys(defaultTemplates).forEach(channel => {
-                    this.notificationChannels[channel].templates = defaultTemplates[channel];
-                });
-            }
-            
-        } catch (error) {
-            console.error('Error loading notification templates:', error);
-        }
-    }
-
-    updateAlertStats() {
-        try {
-            const stats = {
-                total: this.alerts.length,
-                active: this.alerts.filter(a => a.status === 'active').length,
-                triggeredToday: this.alerts.filter(a => {
-                    if (!a.lastTriggered) return false;
-                    const today = new Date().toDateString();
-                    const triggered = new Date(a.lastTriggered).toDateString();
-                    return today === triggered;
-                }).length,
-                failed: this.alerts.filter(a => a.status === 'failed').length,
-                channelsActive: Object.values(this.notificationChannels).filter(c => c.enabled).length
-            };
-
-            document.getElementById('total-alerts').textContent = stats.total;
-            document.getElementById('active-alerts').textContent = stats.active;
-            document.getElementById('triggered-today').textContent = stats.triggeredToday;
-            document.getElementById('failed-alerts').textContent = stats.failed;
-            document.getElementById('channels-active').textContent = stats.channelsActive;
-            
-        } catch (error) {
-            console.error('Error updating alert stats:', error);
-        }
-    }
-
-    renderAlertsTable() {
-        try {
-            const tbody = document.getElementById('alerts-table-body');
-            if (!tbody) return;
-
-            if (this.alerts.length === 0) {
-                tbody.innerHTML = `
-                    <tr>
-                        <td colspan="8" class="px-4 py-8 text-center text-gray-400">
-                            <i class="fas fa-bell-slash text-4xl mb-4"></i>
-                            <p>هیچ هشداری تعریف نشده است</p>
-                            <button onclick="alertsModule.createAlert()" class="mt-3 bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
-                                <i class="fas fa-plus mr-2"></i>ایجاد اولین هشدار
-                            </button>
-                        </td>
-                    </tr>
-                `;
-                return;
-            }
-
-            const startIndex = (this.currentPage - 1) * this.itemsPerPage;
-            const endIndex = startIndex + this.itemsPerPage;
-            const pageAlerts = this.alerts.slice(startIndex, endIndex);
-
-            tbody.innerHTML = pageAlerts.map(alert => `
-                <tr class="hover:bg-gray-700">
-                    <td class="px-4 py-3">
-                        <input type="checkbox" class="alert-checkbox w-4 h-4 text-blue-600 bg-gray-700 border-gray-600 rounded" value="${alert.id}">
-                    </td>
-                    <td class="px-4 py-3">
-                        <div>
-                            <div class="text-sm font-medium text-white">${alert.name}</div>
-                            <div class="text-sm text-gray-400">${alert.description || ''}</div>
-                        </div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-1 text-xs rounded-full ${this.getTypeColor(alert.type)}">
-                            ${this.getTypeText(alert.type)}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-300">
-                        ${this.formatCondition(alert.conditions)}
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex gap-1">
-                            ${alert.channels.map(channel => `
-                                <span class="w-6 h-6 rounded-full bg-${this.getChannelColor(channel)}-600 flex items-center justify-center">
-                                    <i class="fas ${this.getChannelIcon(channel)} text-xs text-white"></i>
-                                </span>
-                            `).join('')}
-                        </div>
-                    </td>
-                    <td class="px-4 py-3">
-                        <span class="px-2 py-1 text-xs rounded-full ${this.getStatusColor(alert.status)}">
-                            ${this.getStatusText(alert.status)}
-                        </span>
-                    </td>
-                    <td class="px-4 py-3 text-sm text-gray-300">
-                        ${alert.lastTriggered ? this.formatDate(alert.lastTriggered) : 'هرگز'}
-                    </td>
-                    <td class="px-4 py-3">
-                        <div class="flex gap-2">
-                            <button onclick="alertsModule.editAlert('${alert.id}')" class="text-blue-400 hover:text-blue-300">
-                                <i class="fas fa-edit"></i>
-                            </button>
-                            <button onclick="alertsModule.toggleAlert('${alert.id}')" class="text-${alert.status === 'active' ? 'yellow' : 'green'}-400 hover:text-${alert.status === 'active' ? 'yellow' : 'green'}-300">
-                                <i class="fas fa-${alert.status === 'active' ? 'pause' : 'play'}"></i>
-                            </button>
-                            <button onclick="alertsModule.testAlert('${alert.id}')" class="text-purple-400 hover:text-purple-300">
-                                <i class="fas fa-vial"></i>
-                            </button>
-                            <button onclick="alertsModule.deleteAlert('${alert.id}')" class="text-red-400 hover:text-red-300">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    </td>
-                </tr>
-            `).join('');
-
-            // Update pagination info
-            document.getElementById('alerts-from').textContent = startIndex + 1;
-            document.getElementById('alerts-to').textContent = Math.min(endIndex, this.alerts.length);
-            document.getElementById('alerts-total').textContent = this.alerts.length;
-            document.getElementById('current-page').textContent = this.currentPage;
-            
-        } catch (error) {
-            console.error('Error rendering alerts table:', error);
-        }
-    }
-
-    createAlert() {
-        const modal = document.getElementById('create-alert-modal');
-        const content = document.getElementById('create-alert-content');
-        
-        if (!modal || !content) {
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('خطا در بارگذاری فرم ایجاد هشدار', 'error');
-            }
-            return;
-        }
-
-        content.innerHTML = this.getCreateAlertForm();
-        modal.classList.remove('hidden');
-    }
-
-    getCreateAlertForm() {
-        return `
-        <form id="create-alert-form" class="space-y-6">
-            <!-- Basic Info -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">نام هشدار</label>
-                    <input type="text" id="alert-name" required class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="نام توصیفی برای هشدار">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">نوع هشدار</label>
-                    <select id="alert-type" required class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="">انتخاب کنید</option>
-                        <option value="price_alert">هشدار قیمت</option>
-                        <option value="trade_execution">اجرای معامله</option>
-                        <option value="portfolio_change">تغییر پورتفولیو</option>
-                        <option value="ai_signal">سیگنال هوش مصنوعی</option>
-                        <option value="system_warning">هشدار سیستم</option>
-                        <option value="balance_low">موجودی کم</option>
-                    </select>
-                </div>
-            </div>
-
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">توضیحات</label>
-                <textarea id="alert-description" rows="2" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="توضیح مختصری از هشدار"></textarea>
-            </div>
-
-            <!-- Conditions -->
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h4 class="text-lg font-semibold text-white mb-4">شرایط فعال‌سازی</h4>
-                <div id="alert-conditions">
-                    <div class="condition-row flex gap-4 items-end mb-4">
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">متغیر</label>
-                            <select class="condition-variable w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                <option value="price">قیمت</option>
-                                <option value="volume">حجم معاملات</option>
-                                <option value="change_percent">درصد تغییر</option>
-                                <option value="portfolio_value">ارزش پورتفولیو</option>
-                                <option value="balance">موجودی</option>
-                            </select>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">نماد</label>
-                            <input type="text" class="condition-symbol w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="BTCUSDT">
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">عملگر</label>
-                            <select class="condition-operator w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                                <option value=">">&gt; بیشتر از</option>
-                                <option value="<">&lt; کمتر از</option>
-                                <option value="=">=  مساوی</option>
-                                <option value=">=">&gt;= بیشتر مساوی</option>
-                                <option value="<=">&lt;= کمتر مساوی</option>
-                            </select>
-                        </div>
-                        <div class="flex-1">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">مقدار</label>
-                            <input type="number" class="condition-value w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="0">
-                        </div>
-                        <button type="button" onclick="alertsModule.removeCondition(this)" class="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-white">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                <button type="button" onclick="alertsModule.addCondition()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
-                    <i class="fas fa-plus mr-2"></i>افزودن شرط
-                </button>
-            </div>
-
-            <!-- Notification Channels -->
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h4 class="text-lg font-semibold text-white mb-4">کانال‌های اعلان</h4>
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="email" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fas fa-envelope text-blue-400"></i>
-                        <span class="text-gray-300">ایمیل</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="telegram" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fas fa-paper-plane text-cyan-400"></i>
-                        <span class="text-gray-300">تلگرام</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="whatsapp" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fab fa-whatsapp text-green-400"></i>
-                        <span class="text-gray-300">واتساپ</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="sms" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fas fa-sms text-yellow-400"></i>
-                        <span class="text-gray-300">پیامک</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="inapp" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded" checked>
-                        <i class="fas fa-bell text-purple-400"></i>
-                        <span class="text-gray-300">درون‌برنامه</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="mobile" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fas fa-mobile-alt text-pink-400"></i>
-                        <span class="text-gray-300">موبایل</span>
-                    </label>
-                    <label class="flex items-center gap-2 cursor-pointer">
-                        <input type="checkbox" name="channels" value="discord" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <i class="fab fa-discord text-indigo-400"></i>
-                        <span class="text-gray-300">دیسکورد</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Message Templates -->
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h4 class="text-lg font-semibold text-white mb-4">قالب پیام سفارشی</h4>
-                <div class="space-y-4">
+                
+                <form id="createAlertForm" class="space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">عنوان پیام</label>
-                        <input type="text" id="message-title" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="متغیرها: {{symbol}}, {{price}}, {{timestamp}}">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام هشدار</label>
+                        <input type="text" id="alertName" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" required>
                     </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">محتوای پیام</label>
-                        <textarea id="message-body" rows="4" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="محتوای پیام خود را بنویسید. می‌توانید از متغیرهای {{symbol}}, {{price}}, {{condition}}, {{timestamp}} استفاده کنید."></textarea>
-                    </div>
-                    <div class="text-sm text-gray-400">
-                        <strong>متغیرهای قابل استفاده:</strong>
-                        {{symbol}}, {{price}}, {{condition}}, {{timestamp}}, {{user}}, {{portfolio_value}}
-                    </div>
-                </div>
-            </div>
-
-            <!-- Advanced Settings -->
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h4 class="text-lg font-semibold text-white mb-4">تنظیمات پیشرفته</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">اولویت</label>
-                        <select id="alert-priority" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                            <option value="low">کم</option>
-                            <option value="medium" selected>متوسط</option>
-                            <option value="high">بالا</option>
-                            <option value="critical">بحرانی</option>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نماد ارز</label>
+                        <select id="alertSymbol" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" required>
+                            <option value="">انتخاب کنید</option>
+                            <option value="BTC">Bitcoin (BTC)</option>
+                            <option value="ETH">Ethereum (ETH)</option>
+                            <option value="ADA">Cardano (ADA)</option>
+                            <option value="SOL">Solana (SOL)</option>
+                            <option value="DOT">Polkadot (DOT)</option>
                         </select>
                     </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر تکرار در روز</label>
-                        <input type="number" id="max-triggers" min="1" max="100" value="5" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نوع هشدار</label>
+                        <select id="alertType" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white" onchange="updateAlertFields()" required>
+                            <option value="">انتخاب کنید</option>
+                            <option value="price_above">قیمت بالای مقدار</option>
+                            <option value="price_below">قیمت پایین مقدار</option>
+                            <option value="percentage_change_up">افزایش درصدی</option>
+                            <option value="percentage_change_down">کاهش درصدی</option>
+                            <option value="volume_surge">افزایش حجم</option>
+                        </select>
                     </div>
+                    
+                    <div id="priceFields" class="hidden">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">قیمت هدف (دلار)</label>
+                        <input type="number" id="targetPrice" step="0.01" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                    </div>
+                    
+                    <div id="percentageFields" class="hidden">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">درصد تغییر</label>
+                                <input type="number" id="percentageChange" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">بازه زمانی</label>
+                                <select id="timePeriod" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                                    <option value="1h">1 ساعت</option>
+                                    <option value="4h">4 ساعت</option>
+                                    <option value="24h">24 ساعت</option>
+                                    <option value="7d">7 روز</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">فاصله بین تکرار (دقیقه)</label>
-                        <input type="number" id="cooldown" min="1" max="1440" value="30" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">روش‌های اطلاع‌رسانی</label>
+                        <div class="space-y-2">
+                            <label class="flex items-center">
+                                <input type="checkbox" id="notifyPush" class="mr-2" checked>
+                                <span class="text-gray-300">اعلان Push</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="checkbox" id="notifyEmail" class="mr-2">
+                                <span class="text-gray-300">ایمیل</span>
+                            </label>
+                        </div>
                     </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                            ایجاد هشدار
+                        </button>
+                        <button type="button" onclick="closeCreateAlertModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg">
+                            انصراف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Settings Modal -->
+        <div id="settingsModal" class="fixed inset-0 bg-black bg-opacity-50 hidden flex items-center justify-center z-50">
+            <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">تنظیمات اطلاع‌رسانی</h3>
+                    <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-300">
+                        <i class="fas fa-times"></i>
+                    </button>
                 </div>
-                <div class="mt-4">
-                    <label class="flex items-center gap-2">
-                        <input type="checkbox" id="auto-disable" class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                        <span class="text-gray-300">غیرفعال شدن خودکار پس از اولین اجرا</span>
-                    </label>
-                </div>
-            </div>
-
-            <!-- Form Actions -->
-            <div class="flex justify-end gap-3 pt-4 border-t border-gray-700">
-                <button type="button" onclick="alertsModule.closeCreateModal()" class="bg-gray-600 hover:bg-gray-700 px-6 py-2 rounded-lg text-white">
-                    انصراف
-                </button>
-                <button type="button" onclick="alertsModule.testAlertForm()" class="bg-purple-600 hover:bg-purple-700 px-6 py-2 rounded-lg text-white">
-                    <i class="fas fa-vial mr-2"></i>تست هشدار
-                </button>
-                <button type="submit" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg text-white">
-                    <i class="fas fa-save mr-2"></i>ایجاد هشدار
-                </button>
-            </div>
-        </form>`;
-    }
-
-    addCondition() {
-        const container = document.getElementById('alert-conditions');
-        const conditionRow = document.createElement('div');
-        conditionRow.className = 'condition-row flex gap-4 items-end mb-4';
-        conditionRow.innerHTML = `
-            <div class="flex-1">
-                <select class="condition-variable w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    <option value="price">قیمت</option>
-                    <option value="volume">حجم معاملات</option>
-                    <option value="change_percent">درصد تغییر</option>
-                    <option value="portfolio_value">ارزش پورتفولیو</option>
-                    <option value="balance">موجودی</option>
-                </select>
-            </div>
-            <div class="flex-1">
-                <input type="text" class="condition-symbol w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="BTCUSDT">
-            </div>
-            <div class="flex-1">
-                <select class="condition-operator w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    <option value=">">&gt; بیشتر از</option>
-                    <option value="<">&lt; کمتر از</option>
-                    <option value="=">=  مساوی</option>
-                    <option value=">=">&gt;= بیشتر مساوی</option>
-                    <option value="<=">&lt;= کمتر مساوی</option>
-                </select>
-            </div>
-            <div class="flex-1">
-                <input type="number" class="condition-value w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="0">
-            </div>
-            <button type="button" onclick="alertsModule.removeCondition(this)" class="bg-red-600 hover:bg-red-700 px-3 py-2 rounded-lg text-white">
-                <i class="fas fa-trash"></i>
-            </button>
-        `;
-        container.appendChild(conditionRow);
-    }
-
-    removeCondition(button) {
-        const row = button.closest('.condition-row');
-        if (row) {
-            row.remove();
-        }
-    }
-
-    closeCreateModal() {
-        const modal = document.getElementById('create-alert-modal');
-        if (modal) {
-            modal.classList.add('hidden');
-        }
-    }
-
-    async saveAlert(formData) {
-        try {
-            const newAlert = {
-                id: Date.now().toString(),
-                name: formData.name,
-                type: formData.type,
-                description: formData.description,
-                conditions: formData.conditions,
-                channels: formData.channels,
-                messageTemplate: formData.messageTemplate,
-                priority: formData.priority,
-                maxTriggers: formData.maxTriggers,
-                cooldown: formData.cooldown,
-                autoDisable: formData.autoDisable,
-                status: 'active',
-                createdAt: new Date().toISOString(),
-                triggeredCount: 0,
-                lastTriggered: null
-            };
-
-            this.alerts.push(newAlert);
-            this.saveToStorage();
-            this.updateAlertStats();
-            this.renderAlertsTable();
-            this.closeCreateModal();
-
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('هشدار با موفقیت ایجاد شد', 'success');
-            }
-
-        } catch (error) {
-            console.error('Error saving alert:', error);
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('خطا در ایجاد هشدار', 'error');
-            }
-        }
-    }
-
-    saveToStorage() {
-        try {
-            const data = {
-                alerts: this.alerts,
-                rules: this.alertRules,
-                channels: this.notificationChannels
-            };
-            localStorage.setItem('titan_alerts', JSON.stringify(data));
-        } catch (error) {
-            console.error('Error saving to storage:', error);
-        }
-    }
-
-    async testAllChannels() {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert('تست همه کانال‌های اعلان در حال انجام...', 'info');
-        }
-        
-        // Test implementation would go here
-        setTimeout(() => {
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('تست کانال‌های اعلان تکمیل شد', 'success');
-            }
-        }, 2000);
-    }
-
-    startAlertMonitoring() {
-        // Start monitoring for alert conditions
-        console.log('🔄 Alert monitoring started');
-    }
-
-    // Helper methods for styling
-    getTypeColor(type) {
-        const colors = {
-            'price_alert': 'bg-blue-100 text-blue-800',
-            'trade_execution': 'bg-green-100 text-green-800',
-            'portfolio_change': 'bg-purple-100 text-purple-800',
-            'ai_signal': 'bg-cyan-100 text-cyan-800',
-            'system_warning': 'bg-yellow-100 text-yellow-800',
-            'security_alert': 'bg-red-100 text-red-800'
-        };
-        return colors[type] || 'bg-gray-100 text-gray-800';
-    }
-
-    getTypeText(type) {
-        const texts = {
-            'price_alert': 'هشدار قیمت',
-            'trade_execution': 'اجرای معامله',
-            'portfolio_change': 'تغییر پورتفولیو',
-            'ai_signal': 'سیگنال هوش مصنوعی',
-            'system_warning': 'هشدار سیستم',
-            'security_alert': 'هشدار امنیتی'
-        };
-        return texts[type] || type;
-    }
-
-    getStatusColor(status) {
-        const colors = {
-            'active': 'bg-green-100 text-green-800',
-            'paused': 'bg-yellow-100 text-yellow-800',
-            'triggered': 'bg-blue-100 text-blue-800',
-            'failed': 'bg-red-100 text-red-800',
-            'expired': 'bg-gray-100 text-gray-800'
-        };
-        return colors[status] || 'bg-gray-100 text-gray-800';
-    }
-
-    getStatusText(status) {
-        const texts = {
-            'active': 'فعال',
-            'paused': 'متوقف',
-            'triggered': 'فعال شده',
-            'failed': 'ناموفق',
-            'expired': 'منقضی'
-        };
-        return texts[status] || status;
-    }
-
-    getChannelColor(channel) {
-        const colors = {
-            'email': 'blue',
-            'telegram': 'cyan',
-            'whatsapp': 'green',
-            'sms': 'yellow',
-            'inapp': 'purple',
-            'mobile': 'pink',
-            'discord': 'indigo'
-        };
-        return colors[channel] || 'gray';
-    }
-
-    getChannelIcon(channel) {
-        const icons = {
-            'email': 'fa-envelope',
-            'telegram': 'fa-paper-plane',
-            'whatsapp': 'fa-whatsapp',
-            'sms': 'fa-sms',
-            'inapp': 'fa-bell',
-            'mobile': 'fa-mobile-alt',
-            'discord': 'fa-discord'
-        };
-        return icons[channel] || 'fa-bell';
-    }
-
-    formatCondition(conditions) {
-        if (!conditions || conditions.length === 0) return '-';
-        return conditions.map(c => `${c.variable} ${c.operator} ${c.value}`).join(' و ');
-    }
-
-    formatDate(dateString) {
-        if (!dateString) return '-';
-        return new Date(dateString).toLocaleString('fa-IR');
-    }
-
-    setupEventListeners() {
-        console.log('📡 Alerts event listeners set up');
-        
-        // Setup form submission
-        document.addEventListener('submit', (e) => {
-            if (e.target.id === 'create-alert-form') {
-                e.preventDefault();
-                this.handleFormSubmit(e.target);
-            }
-        });
-        
-        // Setup event delegation for channel configure buttons
-        document.addEventListener('click', (e) => {
-            if (e.target.classList.contains('configure-channel-btn')) {
-                const channelKey = e.target.getAttribute('data-channel');
-                if (channelKey) {
-                    this.configureChannel(channelKey);
-                }
-            }
-        });
-    }
-
-    handleFormSubmit(form) {
-        const formData = new FormData(form);
-        const alertData = {
-            name: formData.get('alert-name') || document.getElementById('alert-name')?.value,
-            type: formData.get('alert-type') || document.getElementById('alert-type')?.value,
-            description: formData.get('alert-description') || document.getElementById('alert-description')?.value,
-            // ... collect other form data
-        };
-        
-        // Process form data and save alert
-        this.saveAlert(alertData);
-    }
-
-    // Channel Configuration Methods
-    configureChannel(channelKey) {
-        console.log('🔧 Configuring channel:', channelKey);
-        
-        // Create and show channel configuration modal
-        this.showChannelConfigModal(channelKey);
-    }
-
-    showChannelConfigModal(channelKey) {
-        // Remove existing modal if any
-        const existingModal = document.getElementById('channel-config-modal');
-        if (existingModal) {
-            existingModal.remove();
-        }
-
-        // Create modal
-        const modal = document.createElement('div');
-        modal.id = 'channel-config-modal';
-        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
-        modal.innerHTML = this.getChannelConfigContent(channelKey);
-        
-        document.body.appendChild(modal);
-        
-        // Load current settings for this channel
-        this.loadChannelSettings(channelKey);
-    }
-
-    getChannelConfigContent(channelKey) {
-        const channelInfo = this.getChannelInfo(channelKey);
-        
-        return `
-        <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
-                <h3 class="text-lg font-semibold text-white flex items-center gap-2">
-                    <i class="fas ${channelInfo.icon} text-${channelInfo.color}-400"></i>
-                    تنظیم کانال ${channelInfo.name}
-                </h3>
-                <button onclick="alertsModule.closeChannelConfigModal()" class="text-gray-400 hover:text-white">
-                    <i class="fas fa-times"></i>
-                </button>
-            </div>
-            <div class="p-6">
-                ${this.getChannelSpecificConfig(channelKey)}
-            </div>
-            <div class="px-6 py-4 border-t border-gray-700 flex justify-end gap-3">
-                <button onclick="alertsModule.testChannelConfig('${channelKey}')" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm">
-                    <i class="fas fa-vial mr-2"></i>تست اتصال
-                </button>
-                <button onclick="alertsModule.closeChannelConfigModal()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white text-sm">
-                    انصراف
-                </button>
-                <button onclick="alertsModule.saveChannelConfig('${channelKey}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
-                    <i class="fas fa-save mr-2"></i>ذخیره تنظیمات
-                </button>
-            </div>
-        </div>`;
-    }
-
-    getChannelInfo(channelKey) {
-        const channelMap = {
-            'email': { name: 'ایمیل', icon: 'fa-envelope', color: 'blue' },
-            'telegram': { name: 'تلگرام', icon: 'fa-paper-plane', color: 'cyan' },
-            'whatsapp': { name: 'واتساپ', icon: 'fa-whatsapp', color: 'green' },
-            'sms': { name: 'پیامک', icon: 'fa-sms', color: 'yellow' },
-            'inapp': { name: 'درون‌برنامه', icon: 'fa-bell', color: 'purple' },
-            'mobile': { name: 'موبایل', icon: 'fa-mobile-alt', color: 'pink' },
-            'discord': { name: 'دیسکورد', icon: 'fa-discord', color: 'indigo' }
-        };
-        return channelMap[channelKey] || { name: channelKey, icon: 'fa-bell', color: 'gray' };
-    }
-
-    getChannelSpecificConfig(channelKey) {
-        switch(channelKey) {
-            case 'email':
-                return this.getEmailConfig();
-            case 'telegram':
-                return this.getTelegramConfig();
-            case 'whatsapp':
-                return this.getWhatsAppConfig();
-            case 'sms':
-                return this.getSMSConfig();
-            case 'discord':
-                return this.getDiscordConfig();
-            case 'inapp':
-                return this.getInAppConfig();
-            case 'mobile':
-                return this.getMobileConfig();
-            default:
-                return this.getGenericConfig(channelKey);
-        }
-    }
-
-    getEmailConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">📧 تنظیمات ایمیل</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="email-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">سرور SMTP</label>
-                    <input type="text" id="email-smtp-host" placeholder="smtp.gmail.com" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">پورت</label>
-                    <input type="number" id="email-smtp-port" placeholder="587" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">نام کاربری</label>
-                    <input type="email" id="email-username" placeholder="your-email@gmail.com" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
-                    <input type="password" id="email-password" placeholder="••••••••" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل فرستنده</label>
-                    <input type="email" id="email-from" placeholder="noreply@yourcompany.com" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">نام فرستنده</label>
-                    <input type="text" id="email-from-name" placeholder="TITAN Trading System" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل‌های دریافت‌کننده (هر کدام در یک خط)</label>
-                <textarea id="email-recipients" rows="3" placeholder="admin@yourcompany.com&#10;alerts@yourcompany.com" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"></textarea>
-            </div>
-        </div>`;
-    }
-
-    getTelegramConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">📱 تنظیمات تلگرام</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="telegram-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">توکن ربات تلگرام</label>
-                    <input type="text" id="telegram-token" placeholder="123456789:ABCdefGHIjklMNOpqrsTUVwxyz" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    <p class="text-xs text-gray-400 mt-1">از @BotFather در تلگرام دریافت کنید</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">شناسه چت</label>
-                    <input type="text" id="telegram-chat-id" placeholder="@your_channel یا 123456789" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    <p class="text-xs text-gray-400 mt-1">شناسه کانال، گروه یا کاربر مقصد</p>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">حالت پارس</label>
-                    <select id="telegram-parse-mode" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="HTML">HTML</option>
-                        <option value="Markdown">Markdown</option>
-                        <option value="">بدون فرمت</option>
-                    </select>
-                </div>
-            </div>
-            
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h5 class="text-sm font-semibold text-white mb-2">راهنمای راه‌اندازی:</h5>
-                <ol class="text-xs text-gray-300 space-y-1 list-decimal list-inside">
-                    <li>به @BotFather در تلگرام مراجعه کنید</li>
-                    <li>دستور /newbot را ارسال کنید</li>
-                    <li>نام و نام کاربری ربات را تعیین کنید</li>
-                    <li>توکن دریافتی را در بالا وارد کنید</li>
-                    <li>ربات را به کانال یا گروه مورد نظر اضافه کنید</li>
-                </ol>
-            </div>
-        </div>`;
-    }
-
-    getWhatsAppConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">📲 تنظیمات واتساپ</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="whatsapp-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">توکن WhatsApp Business API</label>
-                    <input type="text" id="whatsapp-token" placeholder="WhatsApp Business API Token" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">شماره تلفن</label>
-                    <input type="tel" id="whatsapp-phone" placeholder="+989123456789" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">شناسه Instance</label>
-                    <input type="text" id="whatsapp-instance" placeholder="Instance ID" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-            </div>
-            
-            <div class="bg-yellow-900 border border-yellow-600 rounded-lg p-4">
-                <h5 class="text-sm font-semibold text-yellow-200 mb-2">⚠️ توجه:</h5>
-                <p class="text-xs text-yellow-200">
-                    برای استفاده از واتساپ نیاز به WhatsApp Business API دارید که نیاز به تأیید فیس‌بوک دارد.
-                    می‌توانید از سرویس‌های شخص ثالث مانند Twilio یا MessageBird استفاده کنید.
-                </p>
-            </div>
-        </div>`;
-    }
-
-    getSMSConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">💬 تنظیمات پیامک</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="sms-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">ارائه‌دهنده خدمات</label>
-                    <select id="sms-provider" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="kavenegar">کاوه‌نگار (Kavenegar)</option>
-                        <option value="twilio">Twilio</option>
-                        <option value="custom">سرویس سفارشی</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">کلید API</label>
-                    <input type="text" id="sms-api-key" placeholder="API Key" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">شماره فرستنده</label>
-                    <input type="text" id="sms-sender" placeholder="TITAN" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">شماره‌های دریافت‌کننده (هر کدام در یک خط)</label>
-                    <textarea id="sms-recipients" rows="3" placeholder="+989123456789&#10;+989987654321" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"></textarea>
-                </div>
-            </div>
-        </div>`;
-    }
-
-    getDiscordConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">🎮 تنظیمات دیسکورد</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="discord-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">Webhook URL</label>
-                    <input type="url" id="discord-webhook" placeholder="https://discord.com/api/webhooks/..." class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">نام کاربری ربات</label>
-                    <input type="text" id="discord-username" placeholder="TITAN Trading Bot" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">آواتار ربات (URL)</label>
-                    <input type="url" id="discord-avatar" placeholder="https://example.com/avatar.png" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-            </div>
-            
-            <div class="bg-gray-900 rounded-lg p-4">
-                <h5 class="text-sm font-semibold text-white mb-2">راهنمای راه‌اندازی Webhook:</h5>
-                <ol class="text-xs text-gray-300 space-y-1 list-decimal list-inside">
-                    <li>وارد کانال Discord مورد نظر شوید</li>
-                    <li>روی تنظیمات کانال کلیک کنید</li>
-                    <li>بخش Integrations > Webhooks را انتخاب کنید</li>
-                    <li>New Webhook را کلیک کنید</li>
-                    <li>URL ایجاد شده را کپی کرده و در بالا وارد کنید</li>
-                </ol>
-            </div>
-        </div>`;
-    }
-
-    getInAppConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">🔔 تنظیمات اعلان‌های درون‌برنامه</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="inapp-enabled" class="sr-only peer" checked>
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">اعلان‌های دسکتاپ</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="inapp-desktop" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">صدای اعلان</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="inapp-sound" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-gray-300">نمایش در Badge</span>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="inapp-badge" class="sr-only peer" checked>
-                        <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                    </label>
-                </div>
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">مدت زمان نمایش (ثانیه)</label>
-                <input type="number" id="inapp-duration" min="1" max="60" value="5" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-            </div>
-            
-            <div>
-                <label class="block text-sm font-medium text-gray-300 mb-2">موقعیت نمایش</label>
-                <select id="inapp-position" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    <option value="top-right">بالا راست</option>
-                    <option value="top-left">بالا چپ</option>
-                    <option value="bottom-right">پایین راست</option>
-                    <option value="bottom-left">پایین چپ</option>
-                </select>
-            </div>
-        </div>`;
-    }
-
-    getMobileConfig() {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">📱 تنظیمات اعلان‌های موبایل</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="mobile-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="space-y-4">
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">سرویس Push Notification</label>
-                    <select id="mobile-service" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                        <option value="firebase">Firebase Cloud Messaging</option>
-                        <option value="onesignal">OneSignal</option>
-                        <option value="pusher">Pusher</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">کلید سرور</label>
-                    <input type="text" id="mobile-server-key" placeholder="Server Key" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-300 mb-2">App ID</label>
-                    <input type="text" id="mobile-app-id" placeholder="Application ID" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                </div>
-            </div>
-            
-            <div class="bg-blue-900 border border-blue-600 rounded-lg p-4">
-                <h5 class="text-sm font-semibold text-blue-200 mb-2">ℹ️ اطلاعات:</h5>
-                <p class="text-xs text-blue-200">
-                    برای فعال‌سازی اعلان‌های موبایل، کاربران باید اپلیکیشن موبایل TITAN را نصب کرده و اجازه دریافت اعلان را داده باشند.
-                </p>
-            </div>
-        </div>`;
-    }
-
-    getGenericConfig(channelKey) {
-        return `
-        <div class="space-y-6">
-            <div class="flex items-center justify-between">
-                <h4 class="text-lg font-semibold text-white">🔧 تنظیمات ${channelKey}</h4>
-                <label class="relative inline-flex items-center cursor-pointer">
-                    <input type="checkbox" id="${channelKey}-enabled" class="sr-only peer">
-                    <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
-            </div>
-            
-            <div class="text-center text-gray-400 py-8">
-                <i class="fas fa-cog text-4xl mb-4"></i>
-                <p>تنظیمات برای این کانال هنوز پیاده‌سازی نشده است.</p>
-            </div>
-        </div>`;
-    }
-
-    loadChannelSettings(channelKey) {
-        try {
-            // Load settings from localStorage or server
-            const savedSettings = localStorage.getItem('titan_notification_channels');
-            if (savedSettings) {
-                const settings = JSON.parse(savedSettings);
-                const channelSettings = settings[channelKey];
                 
-                if (channelSettings) {
-                    // Apply settings to form fields
-                    Object.keys(channelSettings).forEach(key => {
-                        const element = document.getElementById(`${channelKey}-${key}`);
-                        if (element) {
-                            if (element.type === 'checkbox') {
-                                element.checked = channelSettings[key];
-                            } else {
-                                element.value = channelSettings[key];
-                            }
-                        }
-                    });
-                }
-            }
-        } catch (error) {
-            console.error('Error loading channel settings:', error);
-        }
-    }
+                <form id="settingsForm" class="space-y-4">
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="enablePushNotifications" class="mr-2">
+                            <span class="text-gray-300">فعال‌سازی اعلان‌های Push</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="enableEmailNotifications" class="mr-2">
+                            <span class="text-gray-300">فعال‌سازی اعلان‌های ایمیل</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="flex items-center">
+                            <input type="checkbox" id="enableTelegramNotifications" class="mr-2">
+                            <span class="text-gray-300">فعال‌سازی اعلان‌های تلگرام</span>
+                        </label>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">Chat ID تلگرام</label>
+                        <input type="text" id="telegramChatId" placeholder="123456789 یا @username" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">ساعات سکوت</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <input type="time" id="quietHoursStart" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                            <input type="time" id="quietHoursEnd" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر هشدار در روز</label>
+                        <input type="number" id="maxAlertsPerDay" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white">
+                    </div>
+                    
+                    <!-- Test Notifications -->
+                    <div class="border-t border-gray-600 pt-4 mt-4">
+                        <label class="block text-sm font-medium text-gray-300 mb-3">تست اطلاع‌رسانی‌ها</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" onclick="testNotification('telegram')" class="bg-green-600 hover:bg-green-700 text-white py-2 px-3 rounded text-sm">
+                                تست تلگرام
+                            </button>
+                            <button type="button" onclick="testNotification('email')" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-3 rounded text-sm">
+                                تست ایمیل
+                            </button>
+                        </div>
+                        <button type="button" onclick="checkNotificationStatus()" class="w-full mt-2 bg-purple-600 hover:bg-purple-700 text-white py-2 px-3 rounded text-sm">
+                            بررسی وضعیت سرویس‌ها
+                        </button>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button type="submit" class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg">
+                            ذخیره تنظیمات
+                        </button>
+                        <button type="button" onclick="closeSettingsModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg">
+                            انصراف
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    `;
+}
 
-    async saveChannelConfig(channelKey) {
-        try {
-            // Collect form data
-            const formData = this.collectChannelFormData(channelKey);
-            
-            // Save to notificationChannels object
-            this.notificationChannels[channelKey] = {
-                ...this.notificationChannels[channelKey],
-                ...formData
-            };
-            
-            // Save to localStorage
-            localStorage.setItem('titan_notification_channels', JSON.stringify(this.notificationChannels));
-            
-            // Update UI
-            this.updateChannelStatusDisplay();
-            this.closeChannelConfigModal();
-            
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert(`تنظیمات کانال ${this.getChannelInfo(channelKey).name} ذخیره شد`, 'success');
-            }
-            
-        } catch (error) {
-            console.error('Error saving channel config:', error);
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('خطا در ذخیره تنظیمات', 'error');
-            }
-        }
-    }
-
-    collectChannelFormData(channelKey) {
-        const formData = {};
-        const modal = document.getElementById('channel-config-modal');
-        if (!modal) return formData;
-        
-        // Collect all form inputs for this channel
-        const inputs = modal.querySelectorAll(`[id^="${channelKey}-"]`);
-        inputs.forEach(input => {
-            const key = input.id.replace(`${channelKey}-`, '');
-            if (input.type === 'checkbox') {
-                formData[key] = input.checked;
-            } else {
-                formData[key] = input.value;
-            }
-        });
-        
-        return formData;
-    }
-
-    async testChannelConfig(channelKey) {
-        try {
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert(`تست کانال ${this.getChannelInfo(channelKey).name} در حال انجام...`, 'info');
-            }
-            
-            // Collect current form data
-            const formData = this.collectChannelFormData(channelKey);
-            
-            // Send test message
-            const testMessage = {
-                channel: channelKey,
-                title: 'تست سیستم TITAN',
-                message: `این یک پیام تست از سیستم معاملاتی TITAN است.\nزمان: ${new Date().toLocaleString('fa-IR')}`,
-                settings: formData
-            };
-            
-            // Simulate API call for testing
-            setTimeout(() => {
-                if (typeof app !== 'undefined' && app.showAlert) {
-                    app.showAlert(`تست کانال ${this.getChannelInfo(channelKey).name} موفقیت‌آمیز بود`, 'success');
-                }
-            }, 2000);
-            
-        } catch (error) {
-            console.error(`Error testing ${channelKey}:`, error);
-            if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert(`خطا در تست کانال ${this.getChannelInfo(channelKey).name}`, 'error');
-            }
-        }
-    }
-
-    closeChannelConfigModal() {
-        const modal = document.getElementById('channel-config-modal');
-        if (modal) {
-            modal.remove();
-        }
-    }
-
-    updateChannelStatusDisplay() {
-        // Update the channel status cards in the main view
-        const container = document.querySelector('.grid.grid-cols-2.md\\:grid-cols-4.lg\\:grid-cols-7');
-        if (container) {
-            container.innerHTML = this.getChannelStatusCards();
-        }
-        
-        // Update stats
-        this.updateAlertStats();
-    }
-
-    destroy() {
-        console.log('✅ Alerts module destroyed');
+// Tab switching function
+function switchAlertsTab(tabName) {
+    // Update tab buttons
+    document.querySelectorAll('.alert-tab').forEach(tab => {
+        tab.classList.remove('border-blue-500', 'text-blue-500');
+        tab.classList.add('border-transparent', 'text-gray-400');
+    });
+    
+    document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-400');
+    document.getElementById(`tab-${tabName}`).classList.add('border-blue-500', 'text-blue-500');
+    
+    // Load content based on tab
+    switch (tabName) {
+        case 'active':
+            loadActiveAlerts();
+            break;
+        case 'history':
+            loadAlertHistory();
+            break;
+        case 'templates':
+            loadAlertTemplates();
+            break;
     }
 }
 
-// Register module in global namespace
-window.TitanModules = window.TitanModules || {};
-window.TitanModules.AlertsModule = AlertsModule;
+// Load active alerts
+async function loadActiveAlerts() {
+    const content = document.getElementById('alertsTabContent');
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-400">در حال بارگذاری هشدارهای فعال...</p>
+        </div>
+    `;
+    
+    try {
+        await window.alertsManager.loadDashboardData();
+        const alerts = window.alertsManager.alerts;
+        
+        if (alerts.length === 0) {
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-bell-slash text-gray-500 text-4xl mb-4"></i>
+                    <p class="text-gray-400">هشداری ایجاد نشده است</p>
+                    <button onclick="showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>
+                        ایجاد اولین هشدار
+                    </button>
+                </div>
+            `;
+            return;
+        }
+        
+        content.innerHTML = `
+            <div class="space-y-4">
+                ${alerts.map(alert => `
+                    <div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-4 space-x-reverse">
+                                <div class="flex-shrink-0">
+                                    <i class="fas fa-bell ${alert.isActive ? 'text-green-400' : 'text-gray-500'} text-xl"></i>
+                                </div>
+                                <div>
+                                    <h3 class="text-white font-medium">${alert.alertName}</h3>
+                                    <p class="text-gray-400 text-sm">${alert.symbol} - ${getAlertTypeLabel(alert.alertType)}</p>
+                                    <div class="flex items-center mt-1 text-xs text-gray-500">
+                                        <span>ایجاد شده: ${new Date(alert.createdAt).toLocaleDateString('fa-IR')}</span>
+                                        ${alert.lastTriggered ? `<span class="mr-4">آخرین فعال‌سازی: ${new Date(alert.lastTriggered).toLocaleDateString('fa-IR')}</span>` : ''}
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-2 space-x-reverse">
+                                <div class="text-right mr-4">
+                                    ${alert.targetPrice ? `<div class="text-white font-bold">$${alert.targetPrice}</div>` : ''}
+                                    ${alert.percentageChange ? `<div class="text-white font-bold">${alert.percentageChange}%</div>` : ''}
+                                    <div class="text-xs text-gray-400">فعال‌سازی: ${alert.triggeredCount} بار</div>
+                                </div>
+                                
+                                <button onclick="toggleAlert('${alert.id}', ${!alert.isActive})" class="px-3 py-1 rounded text-sm ${alert.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
+                                    ${alert.isActive ? 'غیرفعال' : 'فعال'}
+                                </button>
+                                
+                                <button onclick="editAlert('${alert.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                                    ویرایش
+                                </button>
+                                
+                                <button onclick="deleteAlert('${alert.id}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
+                                    حذف
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+            
+            <div class="mt-6 flex justify-between items-center">
+                <div class="text-sm text-gray-400">
+                    مجموع: ${alerts.length} هشدار (${alerts.filter(a => a.isActive).length} فعال)
+                </div>
+                <div class="flex gap-2">
+                    <button onclick="performBulkOperation('enable')" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm">
+                        فعال‌سازی همه
+                    </button>
+                    <button onclick="performBulkOperation('disable')" class="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm">
+                        غیرفعال‌سازی همه
+                    </button>
+                </div>
+            </div>
+        `;
+        
+    } catch (error) {
+        content.innerHTML = `
+            <div class="bg-red-900 rounded-lg p-4 text-center">
+                <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-4"></i>
+                <p class="text-red-400">خطا در بارگذاری هشدارها</p>
+                <p class="text-gray-300 text-sm mt-2">${error.message}</p>
+            </div>
+        `;
+    }
+}
 
-// Create global instance for easy access
-window.alertsModule = null;
+// Load alert history
+async function loadAlertHistory() {
+    const content = document.getElementById('alertsTabContent');
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-400">در حال بارگذاری تاریخچه...</p>
+        </div>
+    `;
+    
+    try {
+        const history = await window.alertsManager.getAlertHistory(50);
+        
+        if (history.length === 0) {
+            content.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-history text-gray-500 text-4xl mb-4"></i>
+                    <p class="text-gray-400">تاریخچه‌ای موجود نیست</p>
+                </div>
+            `;
+            return;
+        }
+        
+        content.innerHTML = `
+            <div class="space-y-3">
+                ${history.map(item => `
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center space-x-3 space-x-reverse">
+                                <i class="fas fa-bell text-orange-400"></i>
+                                <div>
+                                    <div class="text-white font-medium">${item.marketData?.symbol || 'نامعلوم'}</div>
+                                    <div class="text-gray-400 text-sm">قیمت فعال‌سازی: $${item.triggerPrice}</div>
+                                </div>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-gray-300 text-sm">${new Date(item.triggeredAt).toLocaleDateString('fa-IR')}</div>
+                                <div class="text-gray-400 text-xs">${new Date(item.triggeredAt).toLocaleTimeString('fa-IR')}</div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+    } catch (error) {
+        content.innerHTML = `
+            <div class="bg-red-900 rounded-lg p-4 text-center">
+                <p class="text-red-400">خطا در بارگذاری تاریخچه</p>
+            </div>
+        `;
+    }
+}
+
+// Load alert templates
+async function loadAlertTemplates() {
+    const content = document.getElementById('alertsTabContent');
+    content.innerHTML = `
+        <div class="text-center py-4">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-400">در حال بارگذاری قالب‌ها...</p>
+        </div>
+    `;
+    
+    try {
+        const templates = await window.alertsManager.loadTemplates();
+        
+        content.innerHTML = `
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                ${templates.map(template => `
+                    <div class="bg-gray-700 rounded-lg p-6 hover:bg-gray-600 transition-colors">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="text-white font-bold">${template.templateName}</h3>
+                            <span class="px-2 py-1 bg-blue-600 text-white text-xs rounded">${template.category}</span>
+                        </div>
+                        <p class="text-gray-300 text-sm mb-4">${template.description}</p>
+                        <div class="flex items-center justify-between">
+                            <span class="text-gray-400 text-xs">استفاده شده: ${template.usageCount} بار</span>
+                            <button onclick="useTemplate('${template.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                                استفاده از قالب
+                            </button>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+        
+    } catch (error) {
+        content.innerHTML = `
+            <div class="bg-red-900 rounded-lg p-4 text-center">
+                <p class="text-red-400">خطا در بارگذاری قالب‌ها</p>
+            </div>
+        `;
+    }
+}
+
+// Helper functions
+function getAlertTypeLabel(alertType) {
+    const labels = {
+        'price_above': 'قیمت بالای مقدار',
+        'price_below': 'قیمت پایین مقدار',
+        'percentage_change_up': 'افزایش درصدی',
+        'percentage_change_down': 'کاهش درصدی',
+        'volume_surge': 'افزایش حجم',
+        'rsi_oversold': 'RSI فروش بیش از حد',
+        'rsi_overbought': 'RSI خرید بیش از حد'
+    };
+    return labels[alertType] || alertType;
+}
+
+// Modal functions
+function showCreateAlertModal() {
+    document.getElementById('createAlertModal').classList.remove('hidden');
+}
+
+function closeCreateAlertModal() {
+    document.getElementById('createAlertModal').classList.add('hidden');
+    document.getElementById('createAlertForm').reset();
+    updateAlertFields();
+}
+
+function showSettingsModal() {
+    const settings = window.alertsManager.settings;
+    if (settings) {
+        document.getElementById('enablePushNotifications').checked = settings.pushNotifications;
+        document.getElementById('enableEmailNotifications').checked = settings.emailNotifications;
+        document.getElementById('enableTelegramNotifications').checked = settings.telegramNotifications;
+        document.getElementById('quietHoursStart').value = settings.quietHoursStart || '22:00';
+        document.getElementById('quietHoursEnd').value = settings.quietHoursEnd || '08:00';
+        document.getElementById('maxAlertsPerDay').value = settings.maxAlertsPerDay || 20;
+        document.getElementById('telegramChatId').value = settings.telegramChatId || '';
+    }
+    document.getElementById('settingsModal').classList.remove('hidden');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.add('hidden');
+}
+
+function updateAlertFields() {
+    const alertType = document.getElementById('alertType').value;
+    const priceFields = document.getElementById('priceFields');
+    const percentageFields = document.getElementById('percentageFields');
+    
+    priceFields.classList.add('hidden');
+    percentageFields.classList.add('hidden');
+    
+    if (alertType === 'price_above' || alertType === 'price_below') {
+        priceFields.classList.remove('hidden');
+    } else if (alertType === 'percentage_change_up' || alertType === 'percentage_change_down') {
+        percentageFields.classList.remove('hidden');
+    }
+}
+
+// Action functions
+async function toggleAlert(alertId, enabled) {
+    try {
+        await window.alertsManager.toggleAlert(alertId, enabled);
+        window.alertsManager.showNotification(`هشدار با موفقیت ${enabled ? 'فعال' : 'غیرفعال'} شد`, 'success');
+        loadActiveAlerts(); // Refresh
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در تغییر وضعیت هشدار: ' + error.message, 'error');
+    }
+}
+
+async function deleteAlert(alertId) {
+    if (!confirm('آیا از حذف این هشدار اطمینان دارید؟')) return;
+    
+    try {
+        await window.alertsManager.deleteAlert(alertId);
+        window.alertsManager.showNotification('هشدار با موفقیت حذف شد', 'success');
+        loadActiveAlerts(); // Refresh
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در حذف هشدار: ' + error.message, 'error');
+    }
+}
+
+function editAlert(alertId) {
+    // TODO: Implement edit functionality
+    window.alertsManager.showNotification('عملکرد ویرایش به زودی اضافه خواهد شد', 'info');
+}
+
+function useTemplate(templateId) {
+    // TODO: Implement template usage
+    window.alertsManager.showNotification('عملکرد استفاده از قالب به زودی اضافه خواهد شد', 'info');
+}
+
+async function performBulkOperation(operation) {
+    const alertIds = window.alertsManager.alerts.map(a => a.id);
+    if (alertIds.length === 0) return;
+    
+    try {
+        const result = await window.alertsManager.performBulkOperation(operation, alertIds);
+        window.alertsManager.showNotification(`عملیات ${operation} روی ${result.successCount} هشدار انجام شد`, 'success');
+        loadActiveAlerts(); // Refresh
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در انجام عملیات گروهی: ' + error.message, 'error');
+    }
+}
+
+// Test notification function
+async function testNotification(type) {
+    try {
+        const response = await axios.post('/api/alerts/test-notification', {
+            notificationType: type
+        });
+        
+        if (response.data.success) {
+            window.alertsManager.showNotification(`تست ${type} با موفقیت ارسال شد!`, 'success');
+        } else {
+            window.alertsManager.showNotification(`خطا در تست ${type}: ${response.data.error}`, 'error');
+        }
+    } catch (error) {
+        window.alertsManager.showNotification(`خطا در ارسال تست ${type}: ${error.message}`, 'error');
+    }
+}
+
+// Check notification service status
+async function checkNotificationStatus() {
+    try {
+        const response = await axios.get('/api/alerts/notification-status');
+        
+        if (response.data.success) {
+            const status = response.data.data;
+            let message = 'وضعیت سرویس‌های اطلاع‌رسانی:\n\n';
+            message += `تلگرام: ${status.telegram ? '✅ فعال' : '❌ غیرفعال'}\n`;
+            message += `ایمیل: ${status.email ? '✅ فعال' : '❌ غیرفعال'}\n`;
+            message += `SMS: ${status.sms ? '✅ فعال' : '❌ غیرفعال'}\n\n`;
+            
+            if (status.configurations.telegram.configured) {
+                message += `تلگرام بات: پیکربندی شده ✅\n`;
+            } else {
+                message += `تلگرام بات: نیاز به پیکربندی ❌\n`;
+            }
+            
+            alert(message);
+        } else {
+            window.alertsManager.showNotification('خطا در دریافت وضعیت سرویس‌ها', 'error');
+        }
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در بررسی وضعیت: ' + error.message, 'error');
+    }
+}
+
+// Manual trigger alert check
+async function manualAlertCheck() {
+    try {
+        const response = await axios.post('/api/alerts/trigger-check');
+        
+        if (response.data.success) {
+            window.alertsManager.showNotification('بررسی هشدارها با موفقیت انجام شد', 'success');
+        } else {
+            window.alertsManager.showNotification('خطا در بررسی هشدارها: ' + response.data.error, 'error');
+        }
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در بررسی هشدارها: ' + error.message, 'error');
+    }
+}
+
+// Form submissions
+document.addEventListener('DOMContentLoaded', function() {
+    // Create Alert Form
+    const createForm = document.getElementById('createAlertForm');
+    if (createForm) {
+        createForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const alertData = {
+                alertName: document.getElementById('alertName').value,
+                symbol: document.getElementById('alertSymbol').value,
+                alertType: document.getElementById('alertType').value,
+                targetPrice: document.getElementById('targetPrice').value ? parseFloat(document.getElementById('targetPrice').value) : undefined,
+                percentageChange: document.getElementById('percentageChange').value ? parseFloat(document.getElementById('percentageChange').value) : undefined,
+                timePeriod: document.getElementById('timePeriod').value,
+                isActive: true,
+                isRecurring: false,
+                notificationMethods: []
+            };
+            
+            if (document.getElementById('notifyPush').checked) {
+                alertData.notificationMethods.push('push');
+            }
+            if (document.getElementById('notifyEmail').checked) {
+                alertData.notificationMethods.push('email');
+            }
+            
+            try {
+                await window.alertsManager.createAlert(alertData);
+                window.alertsManager.showNotification('هشدار با موفقیت ایجاد شد', 'success');
+                closeCreateAlertModal();
+                loadActiveAlerts(); // Refresh
+            } catch (error) {
+                window.alertsManager.showNotification('خطا در ایجاد هشدار: ' + error.message, 'error');
+            }
+        });
+    }
+    
+    // Settings Form
+    const settingsForm = document.getElementById('settingsForm');
+    if (settingsForm) {
+        settingsForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const settingsData = {
+                pushNotifications: document.getElementById('enablePushNotifications').checked,
+                emailNotifications: document.getElementById('enableEmailNotifications').checked,
+                telegramNotifications: document.getElementById('enableTelegramNotifications').checked,
+                quietHoursStart: document.getElementById('quietHoursStart').value,
+                quietHoursEnd: document.getElementById('quietHoursEnd').value,
+                maxAlertsPerDay: parseInt(document.getElementById('maxAlertsPerDay').value),
+                telegramChatId: document.getElementById('telegramChatId').value
+            };
+            
+            try {
+                await window.alertsManager.updateSettings(settingsData);
+                window.alertsManager.showNotification('تنظیمات با موفقیت ذخیره شد', 'success');
+                closeSettingsModal();
+            } catch (error) {
+                window.alertsManager.showNotification('خطا در ذخیره تنظیمات: ' + error.message, 'error');
+            }
+        });
+    }
+});
+
+// Update statistics display
+async function updateAlertsStatistics() {
+    try {
+        const stats = window.alertsManager.statistics;
+        if (!stats) return;
+        
+        const cards = document.querySelectorAll('#alertsStatistics .bg-gray-800 p-6');
+        if (cards.length >= 4) {
+            cards[0].querySelector('.text-2xl').textContent = stats.totalAlerts || 0;
+            cards[1].querySelector('.text-2xl').textContent = stats.activeAlerts || 0;
+            cards[2].querySelector('.text-2xl').textContent = stats.triggeredToday || 0;
+            cards[3].querySelector('.text-2xl').textContent = stats.mostTriggeredSymbol || 'N/A';
+        }
+    } catch (error) {
+        console.warn('Error updating statistics:', error);
+    }
+}
+
+// Initialize when page loads
+async function initializeAlertsPage() {
+    try {
+        await window.alertsManager.init();
+        await updateAlertsStatistics();
+        loadActiveAlerts(); // Load default tab
+    } catch (error) {
+        console.error('Failed to initialize alerts page:', error);
+    }
+}
+
+// Create AlertsModule wrapper class for compatibility
+class AlertsModule {
+    constructor() {
+        this.manager = new AlertsManager();
+        this.isInitialized = false;
+        this.data = null;
+    }
+
+    async initialize() {
+        if (!this.isInitialized) {
+            try {
+                console.log('📊 Loading real alerts data from API...');
+                // Load real data from backend APIs
+                await this.manager.init();
+                this.data = await this.manager.loadDashboardData();
+                this.isInitialized = true;
+                console.log('✅ Alerts real data loaded:', this.data);
+            } catch (error) {
+                console.warn('⚠️ Alerts API failed, using fallback data:', error);
+                // Provide fallback data instead of failing
+                this.data = {
+                    alerts: [],
+                    statistics: { totalAlerts: 0, activeAlerts: 0, triggeredToday: 0, triggeredThisWeek: 0 },
+                    settings: {},
+                    marketPrices: {}
+                };
+                this.isInitialized = true;
+            }
+        }
+    }
+
+    async getContent() {
+        // Always try to initialize
+        if (!this.isInitialized) {
+            await this.initialize();
+        }
+        
+        // Generate content with real data or fallback
+        return this.generateRealAlertsContent();
+    }
+
+    generateRealAlertsContent() {
+        const alerts = this.data?.alerts || [];
+        const stats = this.data?.statistics || {};
+        
+        return `
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <!-- Header -->
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h1 class="text-3xl font-bold text-white mb-2">
+                        <i class="fas fa-bell text-yellow-400 mr-3"></i>
+                        سیستم هشدارها و اعلان‌ها
+                    </h1>
+                    <p class="text-gray-400">مدیریت هشدارهای بازار و اطلاع‌رسانی‌های قیمتی</p>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="window.alertsModule.showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-plus mr-2"></i>
+                        هشدار جدید
+                    </button>
+                    <button onclick="window.alertsModule.loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-template mr-2"></i>
+                        قالب‌ها
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Cards with Real Data -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-300">کل هشدارها</h3>
+                            <p class="text-2xl font-bold text-white">${stats.totalAlerts || 0}</p>
+                        </div>
+                        <i class="fas fa-bell text-blue-400 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-300">هشدارهای فعال</h3>
+                            <p class="text-2xl font-bold text-green-400">${stats.activeAlerts || 0}</p>
+                        </div>
+                        <i class="fas fa-check-circle text-green-400 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-300">فعال‌شده امروز</h3>
+                            <p class="text-2xl font-bold text-yellow-400">${stats.triggeredToday || 0}</p>
+                        </div>
+                        <i class="fas fa-calendar-day text-yellow-400 text-2xl"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <h3 class="text-sm font-medium text-gray-300">این هفته</h3>
+                            <p class="text-2xl font-bold text-purple-400">${stats.triggeredThisWeek || 0}</p>
+                        </div>
+                        <i class="fas fa-calendar-week text-purple-400 text-2xl"></i>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Active Alerts List with Real Data -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white">
+                        <i class="fas fa-list-alt text-blue-400 mr-2"></i>
+                        هشدارهای فعال
+                    </h2>
+                    <div class="flex gap-2">
+                        <button onclick="window.alertsModule.refreshAlerts()" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+                            <i class="fas fa-sync-alt mr-1"></i>
+                            بروزرسانی
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="alerts-container">
+                    ${this.generateAlertsListHTML(alerts)}
+                </div>
+            </div>
+        </div>
+        `;
+    }
+
+    generateAlertsListHTML(alerts) {
+        if (!alerts || alerts.length === 0) {
+            return `
+                <div class="text-center py-8">
+                    <i class="fas fa-bell-slash text-gray-500 text-4xl mb-4"></i>
+                    <p class="text-gray-400">هیچ هشدار فعالی وجود ندارد</p>
+                    <button onclick="window.alertsModule.showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                        اولین هشدار را ایجاد کنید
+                    </button>
+                </div>
+            `;
+        }
+
+        return alerts.map(alert => `
+            <div class="border border-gray-700 rounded-lg p-4 mb-4 hover:border-gray-600 transition-colors">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="w-3 h-3 rounded-full ${alert.isActive ? 'bg-green-400' : 'bg-gray-500'} mr-3"></div>
+                        <div>
+                            <h3 class="text-white font-medium">${alert.alertName || alert.symbol}</h3>
+                            <p class="text-gray-400 text-sm">${alert.symbol} - ${alert.alertType}</p>
+                            ${alert.description ? `<p class="text-gray-500 text-xs mt-1">${alert.description}</p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="text-right">
+                            ${alert.targetPrice ? `<div class="text-white font-bold">$${alert.targetPrice}</div>` : ''}
+                            ${alert.percentageChange ? `<div class="text-white font-bold">${alert.percentageChange}%</div>` : ''}
+                            <div class="text-xs text-gray-400">فعال‌شده: ${alert.triggeredCount || 0} بار</div>
+                        </div>
+                        
+                        <div class="flex gap-2">
+                            <button onclick="window.alertsModule.toggleAlert('${alert.id}', ${!alert.isActive})" 
+                                    class="px-3 py-1 rounded text-sm ${alert.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
+                                ${alert.isActive ? 'غیرفعال' : 'فعال'}
+                            </button>
+                            <button onclick="window.alertsModule.editAlert('${alert.id}')" 
+                                    class="px-3 py-1 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="window.alertsModule.deleteAlert('${alert.id}')" 
+                                    class="px-3 py-1 rounded text-sm bg-red-600 hover:bg-red-700 text-white">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // Real API integration methods
+    async refreshAlerts() {
+        console.log('🔄 Refreshing alerts data...');
+        this.data = await this.manager.loadDashboardData();
+        const container = document.getElementById('alerts-container');
+        if (container) {
+            container.innerHTML = this.generateAlertsListHTML(this.data.alerts || []);
+        }
+        console.log('✅ Alerts data refreshed');
+    }
+
+    async toggleAlert(alertId, enabled) {
+        try {
+            const response = await axios.patch(`/api/alerts/${alertId}/toggle`, {
+                enabled: enabled
+            });
+            
+            if (response.data.success) {
+                await this.refreshAlerts();
+                this.showNotification(`هشدار با موفقیت ${enabled ? 'فعال' : 'غیرفعال'} شد`, 'success');
+            }
+        } catch (error) {
+            console.error('Error toggling alert:', error);
+            this.showNotification('خطا در تغییر وضعیت هشدار', 'error');
+        }
+    }
+
+    async deleteAlert(alertId) {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید این هشدار را حذف کنید؟')) {
+            return;
+        }
+
+        try {
+            const response = await axios.delete(`/api/alerts/${alertId}`);
+            
+            if (response.data.success) {
+                await this.refreshAlerts();
+                this.showNotification('هشدار با موفقیت حذف شد', 'success');
+            }
+        } catch (error) {
+            console.error('Error deleting alert:', error);
+            this.showNotification('خطا در حذف هشدار', 'error');
+        }
+    }
+
+    showCreateAlertModal() {
+        // Implementation for create alert modal
+        this.showNotification('ایجاد هشدار جدید - در حال توسعه', 'info');
+    }
+
+    editAlert(alertId) {
+        // Implementation for edit alert  
+        this.showNotification(`ویرایش هشدار ${alertId} - در حال توسعه`, 'info');
+    }
+
+    loadAlertTemplates() {
+        // Implementation for loading templates
+        this.showNotification('بارگذاری قالب‌ها - در حال توسعه', 'info');
+    }
+
+    showNotification(message, type = 'info') {
+        const colors = {
+            success: 'bg-green-600',
+            error: 'bg-red-600', 
+            info: 'bg-blue-600',
+            warning: 'bg-yellow-600'
+        };
+
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 ${colors[type]} text-white px-4 py-2 rounded-lg shadow-lg z-50 transform transition-transform duration-300`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+
+        document.body.appendChild(notification);
+        setTimeout(() => notification.remove(), 3000);
+    }
+
+    destroy() {
+        if (this.manager.refreshInterval) {
+            clearInterval(this.manager.refreshInterval);
+        }
+        this.isInitialized = false;
+    }
+}
+
+// Register in TitanModules namespace for ModuleLoader
+if (typeof window !== 'undefined') {
+    window.TitanModules = window.TitanModules || {};
+    window.TitanModules.AlertsModule = AlertsModule;
+    
+    // Global instance for direct access from HTML buttons
+    window.alertsModule = null;
+    
+    console.log('📦 Alerts Module registered in TitanModules');
+}
+
+// Export functions for global use
+window.AlertsManager = AlertsManager;
+window.renderAlertsPage = renderAlertsPage;
+window.switchAlertsTab = switchAlertsTab;
+window.loadActiveAlerts = loadActiveAlerts;
+window.initializeAlertsPage = initializeAlertsPage;
+window.showCreateAlertModal = showCreateAlertModal;
+window.closeCreateAlertModal = closeCreateAlertModal;
+window.showSettingsModal = showSettingsModal;
+window.closeSettingsModal = closeSettingsModal;
+window.updateAlertFields = updateAlertFields;
+window.toggleAlert = toggleAlert;
+window.deleteAlert = deleteAlert;
+window.editAlert = editAlert;
+window.useTemplate = useTemplate;
+window.performBulkOperation = performBulkOperation;
+window.testNotification = testNotification;
+window.checkNotificationStatus = checkNotificationStatus;
+window.manualAlertCheck = manualAlertCheck;

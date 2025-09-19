@@ -1,0 +1,655 @@
+app.get('/', (c) => {
+  return c.html(`
+    <!DOCTYPE html>
+    <html lang="fa" dir="rtl">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>تایتان - سیستم معاملات حقیقی</title>
+        
+        <!-- PWA Manifest -->
+        <link rel="manifest" href="/static/manifest.json">
+        <meta name="theme-color" content="#1f2937">
+        <meta name="background-color" content="#111827">
+        
+        <!-- iOS PWA Support -->
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+        <meta name="apple-mobile-web-app-title" content="تایتان">
+        <link rel="apple-touch-icon" href="/static/icons/icon-192x192.svg">
+        <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.svg">
+        
+        <!-- Favicon -->
+        <link rel="icon" type="image/svg+xml" href="/static/icons/icon-72x72.svg">
+        <link rel="shortcut icon" href="/static/icons/icon-72x72.svg">
+        
+        <!-- Meta Tags for PWA -->
+        <meta name="description" content="سیستم جامع معاملات، هشدارهای بازار و نظارت Real-time">
+        <meta name="keywords" content="تایتان, معاملات, ارز دیجیتال, هشدار, بازار">
+        <meta name="author" content="TITAN Trading System">
+        
+        <!-- External Libraries -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+        <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+        <style>
+            body { font-family: 'Vazir', sans-serif; }
+            .loading-spinner {
+                border: 4px solid #374151;
+                border-top: 4px solid #3b82f6;
+                border-radius: 50%;
+                width: 40px;
+                height: 40px;
+                animation: spin 1s linear infinite;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+            .nav-btn {
+                background-color: transparent;
+                color: #9ca3af;
+                border: none;
+                transition: all 0.2s ease-in-out;
+            }
+            .nav-btn:hover {
+                background-color: #374151;
+                color: #f3f4f6;
+            }
+            .nav-btn.active {
+                background-color: #1f2937;
+                color: #60a5fa;
+            }
+        </style>
+    </head>
+    <body class="bg-gray-900 text-white" dir="rtl">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">🚀</div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                        تایتان
+                    </h1>
+                    <p class="text-gray-400 mt-2">سیستم معاملات حقیقی</p>
+                    <div class="flex items-center justify-center mt-3 text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                        <span class="text-green-400">PostgreSQL + Redis Backend</span>
+                    </div>
+                </div>
+                
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل</label>
+                        <input type="email" id="email" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
+                        <input type="password" id="password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="rememberMe" class="mr-2">
+                        <label for="rememberMe" class="text-sm text-gray-300">مرا به خاطر بسپار</label>
+                    </div>
+                    <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
+                        ورود به سیستم
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-500 text-sm mb-2">
+                        حساب کاربری ندارید؟
+                        <a href="#" onclick="showRegisterForm()" class="text-blue-400 hover:text-blue-300">ثبت نام کنید</a>
+                    </p>
+                    <button onclick="testConnection()" class="text-xs text-gray-400 hover:text-gray-300">
+                        🔍 تست اتصال پایگاه داده
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Screen -->
+        <div id="registerScreen" class="min-h-screen flex items-center justify-center hidden">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">📝</div>
+                    <h1 class="text-2xl font-bold text-white">ثبت نام در تایتان</h1>
+                    <p class="text-gray-400 mt-2">حساب کاربری جدید ایجاد کنید</p>
+                </div>
+                
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام کاربری</label>
+                        <input type="text" id="reg_username" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل</label>
+                        <input type="email" id="reg_email" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
+                        <input type="password" id="reg_password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام (اختیاری)</label>
+                        <input type="text" id="reg_firstName" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" id="registerBtn" class="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-2 px-4 rounded-md hover:from-green-600 hover:to-blue-700 transition duration-300">
+                        ثبت نام
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-500 text-sm">
+                        حساب کاربری دارید؟
+                        <a href="#" onclick="showLoginForm()" class="text-blue-400 hover:text-blue-300">ورود</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Application -->
+        <div id="mainApp" class="hidden">
+            <div class="min-h-screen bg-gray-900">
+                <!-- Navigation -->
+                <nav class="bg-gray-800 border-b border-gray-700">
+                    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                        <div class="flex items-center justify-between h-16">
+                            <div class="flex items-center">
+                                <div class="text-xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                                    تایتان
+                                </div>
+                                <div class="mr-4 flex items-center text-sm">
+                                    <div class="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                                    <span class="text-green-400">Real Backend</span>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-center space-x-4 space-x-reverse">
+                                <button onclick="loadDashboard()" class="nav-btn px-4 py-2 rounded-lg">
+                                    <i class="fas fa-chart-pie mr-2"></i>
+                                    داشبورد
+                                </button>
+                                <button onclick="loadPortfolio()" class="nav-btn px-4 py-2 rounded-lg">
+                                    <i class="fas fa-wallet mr-2"></i>
+                                    پورتفولیو
+                                </button>
+                                <button onclick="loadMarkets()" class="nav-btn px-4 py-2 rounded-lg">
+                                    <i class="fas fa-chart-line mr-2"></i>
+                                    بازارها
+                                </button>
+                                <button onclick="loadAlerts()" class="nav-btn px-4 py-2 rounded-lg">
+                                    <i class="fas fa-bell mr-2"></i>
+                                    هشدارها
+                                </button>
+                                
+                                <div class="border-r border-gray-700 pr-4">
+                                    <span id="userInfo" class="text-gray-300"></span>
+                                    <button onclick="logout()" class="mr-4 text-red-400 hover:text-red-300">
+                                        <i class="fas fa-sign-out-alt"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </nav>
+
+                <!-- Main Content -->
+                <div id="mainContent" class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p class="text-gray-400">در حال بارگذاری...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Scripts -->
+        <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+        <script src="/static/modules/notifications.js"></script>
+        <script src="/static/modules/system-status.js"></script>
+        <script src="/static/modules/settings-status-integration.js"></script>
+        <script src="/static/modules/status-widgets.js"></script>
+        <script>
+            // Global state
+            let currentUser = null;
+            let accessToken = null;
+
+            // Authentication functions
+            async function login(email, password, rememberMe = false) {
+                try {
+                    const response = await axios.post('/api/auth/login', {
+                        email,
+                        password,
+                        rememberMe
+                    });
+
+                    if (response.data.success) {
+                        accessToken = response.data.session.accessToken;
+                        currentUser = response.data.session.user;
+                        
+                        // Set Authorization header for future requests
+                        axios.defaults.headers.common['Authorization'] = 'Bearer ' + accessToken;
+                        
+                        showMainApp();
+                        return true;
+                    } else {
+                        throw new Error(response.data.error);
+                    }
+                } catch (error) {
+                    throw new Error(error.response?.data?.error || error.message);
+                }
+            }
+
+            async function register(userData) {
+                try {
+                    const response = await axios.post('/api/auth/register', userData);
+                    
+                    if (response.data.success) {
+                        return response.data.user;
+                    } else {
+                        throw new Error(response.data.error);
+                    }
+                } catch (error) {
+                    throw new Error(error.response?.data?.error || error.message);
+                }
+            }
+
+            async function logout() {
+                try {
+                    if (accessToken) {
+                        await axios.post('/api/auth/logout');
+                    }
+                } catch (error) {
+                    console.warn('Logout API failed:', error);
+                } finally {
+                    accessToken = null;
+                    currentUser = null;
+                    delete axios.defaults.headers.common['Authorization'];
+                    showLoginScreen();
+                }
+            }
+
+            // UI functions
+            function showLoginScreen() {
+                document.getElementById('loginScreen').classList.remove('hidden');
+                document.getElementById('registerScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+            }
+
+            function showRegisterForm() {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('registerScreen').classList.remove('hidden');
+            }
+
+            function showLoginForm() {
+                document.getElementById('registerScreen').classList.add('hidden');
+                document.getElementById('loginScreen').classList.remove('hidden');
+            }
+
+            function showMainApp() {
+                document.getElementById('loginScreen').classList.add('hidden');
+                document.getElementById('registerScreen').classList.add('hidden');
+                document.getElementById('mainApp').classList.remove('hidden');
+                
+                // Update user info
+                document.getElementById('userInfo').textContent = currentUser.firstName || currentUser.username;
+                
+                // Load dashboard by default
+                setTimeout(loadDashboard, 500);
+            }
+
+            // Content loading functions
+            async function loadDashboard() {
+                const content = document.getElementById('mainContent');
+                content.innerHTML = \`
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p class="text-gray-400">در حال بارگذاری داشبورد...</p>
+                    </div>
+                \`;
+
+                try {
+                    const response = await axios.get('/api/dashboard/overview');
+                    const data = response.data.data;
+
+                    content.innerHTML = \`
+                        <div class="mb-8">
+                            <h1 class="text-3xl font-bold text-white mb-2">
+                                خوش آمدید، \${data.user.name}
+                            </h1>
+                            <p class="text-gray-400">آخرین فعالیت‌های حساب شما</p>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <div class="flex items-center">
+                                    <i class="fas fa-wallet text-green-400 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="text-gray-400 text-sm">موجودی کل</p>
+                                        <p class="text-2xl font-bold text-white">$\${data.portfolio.totalBalance.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <div class="flex items-center">
+                                    <i class="fas fa-chart-line text-blue-400 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="text-gray-400 text-sm">تغییر روزانه</p>
+                                        <p class="text-2xl font-bold text-white">+\${data.portfolio.dailyChange.toFixed(2)}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-800 rounded-lg p-6">
+                                <div class="flex items-center">
+                                    <i class="fas fa-briefcase text-purple-400 text-2xl mr-4"></i>
+                                    <div>
+                                        <p class="text-gray-400 text-sm">پورتفولیوها</p>
+                                        <p class="text-2xl font-bold text-white">\${data.portfolio.portfolioCount}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h2 class="text-xl font-bold text-white mb-4">وضعیت پایگاه داده</h2>
+                            <div id="databaseStatus" class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">PostgreSQL:</span>
+                                    <span class="text-yellow-400">در حال بررسی...</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-400">Redis Cache:</span>
+                                    <span class="text-yellow-400">در حال بررسی...</span>
+                                </div>
+                            </div>
+                        </div>
+                    \`;
+
+                    // Check database status
+                    checkDatabaseStatus();
+                } catch (error) {
+                    console.error('Dashboard load error:', error);
+                    content.innerHTML = \`
+                        <div class="bg-red-900 rounded-lg p-6 text-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-4"></i>
+                            <p class="text-red-400">خطا در بارگذاری داشبورد</p>
+                            <p class="text-gray-300 text-sm mt-2">\${error.message}</p>
+                        </div>
+                    \`;
+                }
+            }
+
+            async function loadPortfolio() {
+                const content = document.getElementById('mainContent');
+                content.innerHTML = \`
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p class="text-gray-400">در حال بارگذاری پورتفولیو...</p>
+                    </div>
+                \`;
+
+                try {
+                    const response = await axios.get('/api/portfolio/list');
+                    const portfolios = response.data.portfolios;
+
+                    content.innerHTML = \`
+                        <div class="mb-8">
+                            <h1 class="text-3xl font-bold text-white mb-4">پورتفولیو</h1>
+                            <button onclick="createPortfolio()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-plus mr-2"></i>
+                                پورتفولیو جدید
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                            \${portfolios.map(portfolio => \`
+                                <div class="bg-gray-800 rounded-lg p-6">
+                                    <h3 class="text-xl font-bold text-white mb-2">\${portfolio.name}</h3>
+                                    <div class="space-y-2 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">موجودی کل:</span>
+                                            <span class="text-white">$\${parseFloat(portfolio.total_balance || 0).toFixed(2)}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">P&L کل:</span>
+                                            <span class="\${parseFloat(portfolio.total_pnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                                $\${parseFloat(portfolio.total_pnl || 0).toFixed(2)}
+                                            </span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">حساب:</span>
+                                            <span class="text-gray-300">\${portfolio.account_name || 'نامشخص'}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                            \`).join('')}
+                        </div>
+                    \`;
+                } catch (error) {
+                    console.error('Portfolio load error:', error);
+                    content.innerHTML = \`
+                        <div class="bg-red-900 rounded-lg p-6 text-center">
+                            <p class="text-red-400">خطا در بارگذاری پورتفولیو</p>
+                        </div>
+                    \`;
+                }
+            }
+
+            async function loadMarkets() {
+                const content = document.getElementById('mainContent');
+                content.innerHTML = \`
+                    <div class="text-center">
+                        <div class="loading-spinner mx-auto mb-4"></div>
+                        <p class="text-gray-400">در حال بارگذاری بازارها...</p>
+                    </div>
+                \`;
+
+                try {
+                    const response = await axios.get('/api/markets');
+                    const markets = response.data.markets;
+
+                    const groupedMarkets = markets.reduce((groups, market) => {
+                        const type = market.market_type;
+                        if (!groups[type]) groups[type] = [];
+                        groups[type].push(market);
+                        return groups;
+                    }, {});
+
+                    content.innerHTML = \`
+                        <div class="mb-8">
+                            <h1 class="text-3xl font-bold text-white mb-4">بازارها</h1>
+                            <p class="text-gray-400">نمادهای موجود برای معامله</p>
+                        </div>
+
+                        \${Object.entries(groupedMarkets).map(([type, typeMarkets]) => \`
+                            <div class="mb-8">
+                                <h2 class="text-xl font-bold text-white mb-4 capitalize">\${type}</h2>
+                                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                                    \${typeMarkets.map(market => \`
+                                        <div class="bg-gray-800 rounded-lg p-4 hover:bg-gray-700 transition-colors cursor-pointer">
+                                            <div class="flex justify-between items-center">
+                                                <div>
+                                                    <h3 class="font-bold text-white">\${market.symbol}</h3>
+                                                    <p class="text-xs text-gray-400">\${market.base_currency}/\${market.quote_currency}</p>
+                                                </div>
+                                                <div class="text-right">
+                                                    <div class="text-xs text-gray-500">\${market.exchange}</div>
+                                                    <div class="w-2 h-2 bg-green-400 rounded-full"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    \`).join('')}
+                                </div>
+                            </div>
+                        \`).join('')}
+                    \`;
+                } catch (error) {
+                    console.error('Markets load error:', error);
+                    content.innerHTML = \`
+                        <div class="bg-red-900 rounded-lg p-6 text-center">
+                            <p class="text-red-400">خطا در بارگذاری بازارها</p>
+                        </div>
+                    \`;
+                }
+            }
+
+            async function checkDatabaseStatus() {
+                try {
+                    const response = await axios.get('/api/health');
+                    const health = response.data.database;
+                    
+                    const statusDiv = document.getElementById('databaseStatus');
+                    if (statusDiv) {
+                        statusDiv.innerHTML = \`
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">PostgreSQL:</span>
+                                <span class="\${health.postgres ? 'text-green-400' : 'text-red-400'}">
+                                    \${health.postgres ? '✅ متصل' : '❌ قطع'}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">Redis Cache:</span>
+                                <span class="\${health.redis ? 'text-green-400' : 'text-red-400'}">
+                                    \${health.redis ? '✅ فعال' : '❌ غیرفعال'}
+                                </span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-400">آخرین بررسی:</span>
+                                <span class="text-gray-300 text-xs">\${new Date(health.timestamp).toLocaleTimeString('fa-IR')}</span>
+                            </div>
+                        \`;
+                    }
+                } catch (error) {
+                    console.error('Health check failed:', error);
+                }
+            }
+
+            async function testConnection() {
+                try {
+                    const button = event.target;
+                    const originalText = button.textContent;
+                    button.textContent = '🔍 در حال تست...';
+                    button.disabled = true;
+
+                    const response = await axios.get('/api/health');
+                    
+                    if (response.data.status === 'ok') {
+                        alert(\`✅ اتصال موفق!\\n\\nPostgreSQL: \${response.data.database.postgres ? '✅' : '❌'}\\nRedis: \${response.data.database.redis ? '✅' : '❌'}\\nزمان: \${new Date(response.data.timestamp).toLocaleString('fa-IR')}\`);
+                    } else {
+                        alert('❌ اتصال ناموفق');
+                    }
+                } catch (error) {
+                    alert('❌ خطا در اتصال: ' + error.message);
+                } finally {
+                    const button = event.target;
+                    button.textContent = '🔍 تست اتصال پایگاه داده';
+                    button.disabled = false;
+                }
+            }
+
+            async function loadAlerts() {
+                const content = document.getElementById('mainContent');
+                
+                try {
+                    // Load alerts module if not already loaded
+                    if (typeof window.renderAlertsPage === 'undefined') {
+                        // Load the alerts module dynamically
+                        const script = document.createElement('script');
+                        script.src = '/static/modules/alerts.js';
+                        document.head.appendChild(script);
+                        
+                        // Wait for script to load
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                        });
+                    }
+                    
+                    // Render alerts page
+                    content.innerHTML = window.renderAlertsPage();
+                    
+                    // Initialize alerts system
+                    await window.initializeAlertsPage();
+                    
+                } catch (error) {
+                    console.error('Alerts load error:', error);
+                    content.innerHTML = \`
+                        <div class="bg-red-900 rounded-lg p-6 text-center">
+                            <i class="fas fa-exclamation-triangle text-red-400 text-2xl mb-4"></i>
+                            <p class="text-red-400">خطا در بارگذاری سیستم هشدارها</p>
+                            <p class="text-gray-300 text-sm mt-2">\${error.message}</p>
+                            <button onclick="loadAlerts()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                                <i class="fas fa-redo mr-2"></i>
+                                تلاش مجدد
+                            </button>
+                        </div>
+                    \`;
+                }
+            }
+
+            // Event listeners
+            document.getElementById('loginForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                const rememberMe = document.getElementById('rememberMe').checked;
+                
+                const btn = document.getElementById('loginBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'در حال ورود...';
+                btn.disabled = true;
+
+                try {
+                    await login(email, password, rememberMe);
+                } catch (error) {
+                    alert('خطا در ورود: ' + error.message);
+                } finally {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            });
+
+            document.getElementById('registerForm').addEventListener('submit', async (e) => {
+                e.preventDefault();
+                
+                const userData = {
+                    username: document.getElementById('reg_username').value,
+                    email: document.getElementById('reg_email').value,
+                    password: document.getElementById('reg_password').value,
+                    firstName: document.getElementById('reg_firstName').value
+                };
+                
+                const btn = document.getElementById('registerBtn');
+                const originalText = btn.textContent;
+                btn.textContent = 'در حال ثبت نام...';
+                btn.disabled = true;
+
+                try {
+                    await register(userData);
+                    alert('✅ ثبت نام موفقیت آمیز! حالا وارد شوید.');
+                    showLoginForm();
+                } catch (error) {
+                    alert('خطا در ثبت نام: ' + error.message);
+                } finally {
+                    btn.textContent = originalText;
+                    btn.disabled = false;
+                }
+            });
+
+            // Initialize
+            document.addEventListener('DOMContentLoaded', function() {
+                // Check if user is already logged in (implement token persistence if needed)
+                console.log('🚀 TITAN Real Backend System loaded');
+            });
+        </script>
+        
+        <!-- Main Application JavaScript -->
+        <script src="/static/app.js"></script>
+    </body>
+    </html>
+  `)
+})
