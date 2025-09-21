@@ -35,6 +35,11 @@ class DashboardModule {
             // Setup auto-refresh
             this.setupAutoRefresh();
             
+            // Load saved widget configuration
+            setTimeout(() => {
+                this.loadWidgetConfiguration();
+            }, 500); // Wait for DOM to be ready
+            
             this.isInitialized = true;
             console.log('✅ Dashboard module initialized successfully');
             
@@ -307,6 +312,16 @@ class DashboardModule {
                                 class="w-10 h-10 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
                                 title="بروزرسانی">
                             <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button onclick="window.dashboardModule.clearAllWidgets()" 
+                                class="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
+                                title="پاک کردن همه ویجت‌ها">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                        <button onclick="window.dashboardModule.resetToDefault()" 
+                                class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
+                                title="بازنشانی پیش‌فرض">
+                            <i class="fas fa-undo"></i>
                         </button>
                         <div class="hidden md:flex items-center gap-2">
                             <span class="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded">
@@ -847,7 +862,7 @@ class DashboardModule {
             'price-tracker': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">ردیاب قیمت</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -877,7 +892,7 @@ class DashboardModule {
             'portfolio-summary': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">خلاصه پورتفولیو</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -899,7 +914,7 @@ class DashboardModule {
             'trading-signals': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">سیگنال‌های معاملاتی</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -923,7 +938,7 @@ class DashboardModule {
             'market-news': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">اخبار بازار</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -943,7 +958,7 @@ class DashboardModule {
             'performance-chart': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">نمودار عملکرد</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -958,7 +973,7 @@ class DashboardModule {
             'active-trades': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">معاملات فعال</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -982,7 +997,7 @@ class DashboardModule {
             'ai-insights': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">بینش‌های آرتمیس</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1000,7 +1015,7 @@ class DashboardModule {
             'alerts-summary': `
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-lg font-semibold text-white">خلاصه هشدارها</h3>
-                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-400">
+                    <button onclick="window.dashboardModule.removeWidget(this.closest('[data-widget-type]'))" class="text-gray-400 hover:text-red-400">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -1042,8 +1057,72 @@ class DashboardModule {
             }));
             
             localStorage.setItem('dashboard_widgets', JSON.stringify(config));
+            console.log('💾 Widget configuration saved:', config);
         } catch (error) {
             console.error('Error saving widget configuration:', error);
+        }
+    }
+
+    /**
+     * Remove widget from dashboard
+     */
+    removeWidget(widgetElement) {
+        try {
+            if (widgetElement) {
+                widgetElement.remove();
+                // Save configuration after removal
+                this.saveWidgetConfiguration();
+                console.log('🗑️ Widget removed and configuration saved');
+                
+                // Show success message
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert('ویجت حذف شد', 'info');
+                }
+            }
+        } catch (error) {
+            console.error('Error removing widget:', error);
+        }
+    }
+
+    /**
+     * Load saved widget configuration
+     */
+    loadWidgetConfiguration() {
+        try {
+            const saved = localStorage.getItem('dashboard_widgets');
+            if (!saved) {
+                console.log('📋 No saved widget configuration found');
+                return;
+            }
+
+            const config = JSON.parse(saved);
+            console.log('📋 Loading saved widget configuration:', config);
+            
+            // Get dashboard grid container
+            const container = document.getElementById('dashboard-grid');
+            if (!container) {
+                console.warn('Dashboard grid container not found');
+                return;
+            }
+
+            // Clear existing widgets except default ones if any
+            const existingWidgets = container.querySelectorAll('[data-widget-type]');
+            existingWidgets.forEach(widget => {
+                if (!widget.hasAttribute('data-default')) {
+                    widget.remove();
+                }
+            });
+
+            // Add widgets from saved configuration
+            config.forEach(widgetConfig => {
+                if (widgetConfig.type) {
+                    this.addWidget(widgetConfig.type);
+                }
+            });
+            
+            console.log('✅ Widget configuration loaded successfully');
+        } catch (error) {
+            console.error('Error loading widget configuration:', error);
         }
     }
 
@@ -1162,12 +1241,201 @@ class DashboardModule {
     }
 
     /**
-     * Show widget library - placeholder for future functionality
+     * Show widget library with all available widgets
      */
     showWidgetLibrary() {
         console.log('📦 Opening widget library...');
-        // TODO: Implement widget library UI
-        alert('کتابخانه ویجت‌ها - در حال توسعه');
+        
+        // Define available widgets with descriptions
+        const availableWidgets = [
+            {
+                type: 'price-tracker',
+                name: 'ردیاب قیمت',
+                description: 'نمایش قیمت‌های لحظه‌ای ارزهای دیجیتال',
+                icon: 'fas fa-chart-line'
+            },
+            {
+                type: 'portfolio-summary', 
+                name: 'خلاصه پورتفولیو',
+                description: 'اطلاعات کلی و عملکرد پورتفولیو شما',
+                icon: 'fas fa-wallet'
+            },
+            {
+                type: 'trading-signals',
+                name: 'سیگنال‌های معاملاتی', 
+                description: 'سیگنال‌های خرید و فروش بر اساس تحلیل تکنیکال',
+                icon: 'fas fa-bullseye'
+            },
+            {
+                type: 'market-news',
+                name: 'اخبار بازار',
+                description: 'آخرین اخبار و تحلیل‌های بازار ارز دیجیتال',
+                icon: 'fas fa-newspaper'
+            },
+            {
+                type: 'performance-chart',
+                name: 'نمودار عملکرد',
+                description: 'نمودار عملکرد پورتفولیو در بازه‌های زمانی مختلف',
+                icon: 'fas fa-chart-area'
+            },
+            {
+                type: 'active-trades',
+                name: 'معاملات فعال',
+                description: 'لیست معاملات باز و در حال انجام',
+                icon: 'fas fa-exchange-alt'
+            },
+            {
+                type: 'ai-insights',
+                name: 'بینش‌های آرتمیس',
+                description: 'تحلیل‌ها و پیشنهادات هوش مصنوعی آرتمیس',
+                icon: 'fas fa-robot'
+            },
+            {
+                type: 'alerts-summary',
+                name: 'خلاصه هشدارها',
+                description: 'وضعیت هشدارهای قیمت و نوتیفیکیشن‌ها',
+                icon: 'fas fa-bell'
+            }
+        ];
+
+        // Create modal HTML
+        const modalHTML = `
+            <div id="widget-library-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                <div class="bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full mx-4 max-h-[80vh] overflow-hidden">
+                    <!-- Header -->
+                    <div class="flex items-center justify-between p-6 border-b border-gray-700">
+                        <h2 class="text-xl font-bold text-white flex items-center gap-2">
+                            <i class="fas fa-th-large text-blue-400"></i>
+                            کتابخانه ویجت‌ها
+                        </h2>
+                        <button onclick="document.getElementById('widget-library-modal').remove()" 
+                                class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    
+                    <!-- Content -->
+                    <div class="p-6 overflow-y-auto max-h-96">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            ${availableWidgets.map(widget => `
+                                <div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 transition-colors cursor-pointer border border-gray-600 hover:border-blue-500"
+                                     onclick="window.dashboardModule.addWidgetFromLibrary('${widget.type}'); document.getElementById('widget-library-modal').remove();">
+                                    <div class="flex items-center gap-3 mb-3">
+                                        <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center">
+                                            <i class="${widget.icon} text-white"></i>
+                                        </div>
+                                        <div>
+                                            <h3 class="font-semibold text-white">${widget.name}</h3>
+                                        </div>
+                                    </div>
+                                    <p class="text-gray-300 text-sm leading-relaxed">${widget.description}</p>
+                                    <div class="mt-3 flex justify-end">
+                                        <span class="text-blue-400 text-sm font-medium hover:text-blue-300">
+                                            <i class="fas fa-plus mr-1"></i>
+                                            افزودن
+                                        </span>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <!-- Footer -->
+                    <div class="flex items-center justify-between p-6 border-t border-gray-700 bg-gray-750">
+                        <div class="text-gray-400 text-sm">
+                            <i class="fas fa-info-circle mr-1"></i>
+                            ${availableWidgets.length} ویجت موجود
+                        </div>
+                        <button onclick="document.getElementById('widget-library-modal').remove()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHTML);
+        
+        // Add click outside to close
+        setTimeout(() => {
+            const modal = document.getElementById('widget-library-modal');
+            const modalContent = modal.querySelector('.bg-gray-800');
+            modal.addEventListener('click', (e) => {
+                if (!modalContent.contains(e.target)) {
+                    modal.remove();
+                }
+            });
+        }, 100);
+    }
+
+    /**
+     * Add widget from library (called from modal)
+     */
+    addWidgetFromLibrary(widgetType) {
+        console.log(`📦 Adding widget from library: ${widgetType}`);
+        this.addWidget(widgetType);
+    }
+
+    /**
+     * Clear all custom widgets
+     */
+    clearAllWidgets() {
+        try {
+            const container = document.getElementById('dashboard-widgets-container');
+            if (!container) return;
+
+            // Confirm before clearing
+            if (!confirm('آیا مطمئن هستید که می‌خواهید تمام ویجت‌های اضافه شده را حذف کنید؟')) {
+                return;
+            }
+
+            // Remove all custom widgets (keep only default ones)
+            const customWidgets = container.querySelectorAll('[data-widget-type]:not([data-default])');
+            customWidgets.forEach(widget => widget.remove());
+
+            // Clear saved configuration
+            localStorage.removeItem('dashboard_widgets');
+            
+            console.log('🗑️ All custom widgets cleared');
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('تمام ویجت‌ها پاک شدند', 'info');
+            }
+        } catch (error) {
+            console.error('Error clearing widgets:', error);
+        }
+    }
+
+    /**
+     * Reset dashboard to default layout
+     */
+    resetToDefault() {
+        try {
+            // Confirm before resetting
+            if (!confirm('آیا مطمئن هستید که می‌خواهید داشبورد را به حالت پیش‌فرض برگردانید؟')) {
+                return;
+            }
+
+            // Clear all widgets
+            this.clearAllWidgets();
+
+            // Add default widgets
+            const defaultWidgets = ['portfolio-summary', 'price-tracker', 'trading-signals'];
+            
+            setTimeout(() => {
+                defaultWidgets.forEach(widgetType => {
+                    this.addWidget(widgetType);
+                });
+                console.log('🔄 Dashboard reset to default layout');
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert('داشبورد به حالت پیش‌فرض بازنشانی شد', 'success');
+                }
+            }, 100);
+
+        } catch (error) {
+            console.error('Error resetting dashboard:', error);
+        }
     }
 }
 
