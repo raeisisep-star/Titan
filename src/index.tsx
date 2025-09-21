@@ -1,12 +1,18 @@
 /**
- * TITAN Trading System - Real Backend Integration
- * Main application entry point with PostgreSQL + Redis
+ * TITAN Trading System - Real Backend Integration  
+ * Main application entry point with D1 SQLite Database
  */
+
+// D1 Database interface for TypeScript
+interface D1Database {
+  prepare(query: string): any;
+  exec(query: string): Promise<any>;
+}
 
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serveStatic } from 'hono/cloudflare-workers'
-import { db } from './lib/database-adapter'
+import { d1db } from './lib/database-d1-adapter'
 import { authService } from './services/auth-adapter'
 import { mexcClient } from './services/mexc-api'
 import { AIChatService } from './services/ai-chat-service'
@@ -54,11 +60,7 @@ async function authMiddleware(c: any, next: any) {
 
 // Initialize database on startup
 console.log('🚀 Starting TITAN Trading System - Cloudflare Workers Edition...')
-db.connect().then(() => {
-  console.log('✅ Database adapter initialized')
-}).catch(error => {
-  console.error('❌ Database initialization failed:', error)
-})
+// Database will be initialized with D1 binding in request context
 
 // =============================================================================
 // MIDDLEWARE SETUP
@@ -94,7 +96,7 @@ const aiChatService = new AIChatService()
 // =============================================================================
 
 app.get('/api/health', async (c) => {
-  const health = await db.healthCheck()
+  const health = await d1db.healthCheck()
   return c.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
@@ -9515,4 +9517,28 @@ app.get('/api/mode/demo-wallet/history', authMiddleware, async (c) => {
   }
 })
 
-export default app
+// =============================================================================
+// D1 DATABASE INTEGRATION
+// =============================================================================
+
+// Wrapper to initialize D1 database in each request
+const appWithD1 = new Hono<{ Bindings: { DB: D1Database } }>();
+
+// Initialize database middleware
+appWithD1.use('*', async (c, next) => {
+  // Initialize D1 database adapter with the binding
+  if (c.env?.DB) {
+    await d1db.connect(c.env.DB);
+    console.log('✅ D1 Database initialized for request');
+  } else {
+    console.warn('⚠️ No D1 database binding found, using fallback mode');
+    await d1db.connect();
+  }
+  
+  await next();
+});
+
+// Mount the original app
+appWithD1.route('/', app);
+
+export default appWithD1

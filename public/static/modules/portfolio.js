@@ -297,8 +297,14 @@ class PortfolioModule {
 
     async loadPortfolioData() {
         try {
-            // Try to load from API
-            const portfolioResponse = await axios.get('/api/portfolio/advanced');
+            // Try to load from API with authentication
+            const token = localStorage.getItem('titan_auth_token');
+            const portfolioResponse = await axios.get('/api/portfolio/advanced', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             if (portfolioResponse.data.success) {
                 this.portfolioData = portfolioResponse.data.data;
                 this.performanceData = portfolioResponse.data.performance;

@@ -4,7 +4,7 @@
  */
 
 import { v4 as uuidv4 } from 'uuid'
-import { db } from '../lib/database-adapter'
+import { d1db } from '../lib/database-d1-adapter'
 
 // =============================================================================
 // INTERFACES
@@ -14,6 +14,7 @@ export interface User {
   id: string
   username: string
   email: string
+  password_hash?: string  // Added for authentication
   firstName?: string
   lastName?: string
   phone?: string
@@ -177,8 +178,8 @@ async function hashPassword(password: string): Promise<string> {
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
   try {
     if (!hash.startsWith('$titan$')) {
-      // For demo purposes, accept any password for existing mock hash
-      return password.length >= 6
+      // For testing purposes, simple string comparison  
+      return password === hash
     }
     
     const parts = hash.split('$')
@@ -254,7 +255,7 @@ export class AuthService {
       // Create user
       const userId = uuidv4()
 
-      const result = await db.query(`
+      const result = await d1db.query(`
         INSERT INTO users (
           id, username, email, password_hash, first_name, last_name, 
           phone, country, created_at, updated_at
@@ -303,7 +304,7 @@ export class AuthService {
       }
 
       // Verify password
-      const isPasswordValid = await this.verifyPassword(credentials.password, user.id)
+      const isPasswordValid = await verifyPassword(credentials.password, user.password_hash)
       if (!isPasswordValid) {
         return { success: false, error: 'Invalid email or password' }
       }
@@ -342,7 +343,7 @@ export class AuthService {
 
     // Cache session
     const sessionData = { userId: user.id, sessionId, user }
-    await db.setCache(`session:${accessToken}`, sessionData, 900) // 15 minutes
+    await d1db.setCache(`session:${accessToken}`, sessionData, 900) // 15 minutes
 
     return {
       sessionId,
@@ -357,7 +358,7 @@ export class AuthService {
   async validateSession(token: string): Promise<{ valid: boolean; user?: User; error?: string }> {
     try {
       // Check cache first
-      const cachedSession = await db.getCache(`session:${token}`)
+      const cachedSession = await d1db.getCache(`session:${token}`)
       if (cachedSession) {
         return { valid: true, user: cachedSession.user }
       }
@@ -375,7 +376,7 @@ export class AuthService {
       }
       
       // Update cache
-      await db.setCache(`session:${token}`, { userId: user.id, user }, 900)
+      await d1db.setCache(`session:${token}`, { userId: user.id, user }, 900)
 
       return { valid: true, user }
 
@@ -387,7 +388,7 @@ export class AuthService {
 
   async logout(token: string): Promise<{ success: boolean }> {
     try {
-      await db.deleteCache(`session:${token}`)
+      await d1db.deleteCache(`session:${token}`)
       return { success: true }
     } catch (error) {
       console.error('Logout error:', error)
@@ -400,22 +401,22 @@ export class AuthService {
   // =============================================================================
 
   async findUserByEmail(email: string): Promise<User | null> {
-    const result = await db.query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email])
+    const result = await d1db.query('SELECT * FROM users WHERE email = $1 AND is_active = true', [email])
     return result.rows.length > 0 ? this.mapDbUserToUser(result.rows[0]) : null
   }
 
   async findUserByUsername(username: string): Promise<User | null> {
-    const result = await db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [username])
+    const result = await d1db.query('SELECT * FROM users WHERE username = $1 AND is_active = true', [username])
     return result.rows.length > 0 ? this.mapDbUserToUser(result.rows[0]) : null
   }
 
   async findUserById(userId: string): Promise<User | null> {
-    const result = await db.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [userId])
+    const result = await d1db.query('SELECT * FROM users WHERE id = $1 AND is_active = true', [userId])
     return result.rows.length > 0 ? this.mapDbUserToUser(result.rows[0]) : null
   }
 
   async findUserByEmailOrUsername(email: string, username: string): Promise<User | null> {
-    const result = await db.query('SELECT * FROM users WHERE (email = $1 OR username = $2) AND is_active = true', [email, username])
+    const result = await d1db.query('SELECT * FROM users WHERE (email = $1 OR username = $2) AND is_active = true', [email, username])
     return result.rows.length > 0 ? this.mapDbUserToUser(result.rows[0]) : null
   }
 
@@ -424,7 +425,7 @@ export class AuthService {
   // =============================================================================
 
   private async verifyPassword(password: string, userId: string): Promise<boolean> {
-    const result = await db.query('SELECT password_hash FROM users WHERE id = $1', [userId])
+    const result = await d1db.query('SELECT password_hash FROM users WHERE id = $1', [userId])
     
     if (result.rows.length === 0) {
       return false
@@ -462,6 +463,7 @@ export class AuthService {
       id: dbUser.id,
       username: dbUser.username,
       email: dbUser.email,
+      password_hash: dbUser.password_hash,  // Added for authentication
       firstName: dbUser.first_name,
       lastName: dbUser.last_name,
       phone: dbUser.phone,

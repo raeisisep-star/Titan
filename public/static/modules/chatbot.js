@@ -3022,3 +3022,10 @@ window.initializeChatbotIfNeeded = function() {
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = ArtemisAIChatbot;
 }
+
+// Register in global TitanModules namespace
+if (typeof window !== 'undefined') {
+    window.TitanModules = window.TitanModules || {};
+    window.TitanModules.ArtemisAIChatbot = ArtemisAIChatbot;
+    console.log('📦 Artemis AI Chatbot registered in TitanModules');
+}

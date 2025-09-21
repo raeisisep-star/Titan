@@ -54,7 +54,13 @@ class DashboardModule {
     async loadDashboardData() {
         try {
             console.log('📊 Loading real dashboard data from API...');
-            const response = await axios.get('/api/dashboard/overview');
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.get('/api/dashboard/overview', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             
             if (response.data.success) {
                 this.dashboardData = response.data.data;
@@ -1072,8 +1078,14 @@ class DashboardModule {
      */
     async updateAIStats() {
         try {
-            // Fetch AI data from API
-            const response = await fetch('/api/ai-analytics/agents');
+            // Fetch AI data from API with authentication
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await fetch('/api/ai-analytics/agents', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             if (response.ok) {
                 const data = await response.json();
                 

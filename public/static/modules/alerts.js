@@ -13,6 +13,15 @@ class AlertsManager {
         this.refreshInterval = null;
     }
 
+    // Get authentication headers for API calls
+    getAuthHeaders() {
+        const token = localStorage.getItem('titan_auth_token');
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
+    }
+
     // Initialize alerts system
     async init() {
         try {
@@ -27,7 +36,9 @@ class AlertsManager {
     // Load comprehensive dashboard data
     async loadDashboardData() {
         try {
-            const response = await axios.get('/api/alerts/dashboard');
+            const response = await axios.get('/api/alerts/dashboard', {
+                headers: this.getAuthHeaders()
+            });
             if (response.data.success) {
                 const data = response.data.data;
                 this.alerts = data.alerts;
@@ -47,7 +58,9 @@ class AlertsManager {
     // Load alert templates
     async loadTemplates() {
         try {
-            const response = await axios.get('/api/alerts/templates');
+            const response = await axios.get('/api/alerts/templates', {
+                headers: this.getAuthHeaders()
+            });
             if (response.data.success) {
                 this.templates = response.data.data;
                 return this.templates;
@@ -63,7 +76,9 @@ class AlertsManager {
     // Create new alert
     async createAlert(alertData) {
         try {
-            const response = await axios.post('/api/alerts', alertData);
+            const response = await axios.post('/api/alerts', alertData, {
+                headers: this.getAuthHeaders()
+            });
             if (response.data.success) {
                 this.alerts.push(response.data.data);
                 return response.data.data;
@@ -82,6 +97,8 @@ class AlertsManager {
             const response = await axios.post('/api/alerts/from-template', {
                 templateId,
                 ...params
+            }, {
+                headers: this.getAuthHeaders()
             });
             if (response.data.success) {
                 this.alerts.push(response.data.data);
@@ -98,7 +115,7 @@ class AlertsManager {
     // Update existing alert
     async updateAlert(alertId, updateData) {
         try {
-            const response = await axios.put(`/api/alerts/${alertId}`, updateData);
+            const response = await axios.put(`/api/alerts/${alertId}`, updateData, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 const index = this.alerts.findIndex(a => a.id === alertId);
                 if (index !== -1) {
@@ -117,7 +134,7 @@ class AlertsManager {
     // Delete alert
     async deleteAlert(alertId) {
         try {
-            const response = await axios.delete(`/api/alerts/${alertId}`);
+            const response = await axios.delete(`/api/alerts/${alertId}`, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 this.alerts = this.alerts.filter(a => a.id !== alertId);
                 return true;
@@ -133,7 +150,7 @@ class AlertsManager {
     // Toggle alert status
     async toggleAlert(alertId, enabled) {
         try {
-            const response = await axios.patch(`/api/alerts/${alertId}/toggle`, { enabled });
+            const response = await axios.patch(`/api/alerts/${alertId}/toggle`, { enabled }, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 const index = this.alerts.findIndex(a => a.id === alertId);
                 if (index !== -1) {
@@ -155,7 +172,7 @@ class AlertsManager {
             const response = await axios.post('/api/alerts/bulk', {
                 operation,
                 alertIds
-            });
+            }, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 // Refresh alerts data
                 await this.loadDashboardData();
@@ -172,7 +189,7 @@ class AlertsManager {
     // Update notification settings
     async updateSettings(settingsData) {
         try {
-            const response = await axios.put('/api/alerts/settings', settingsData);
+            const response = await axios.put('/api/alerts/settings', settingsData, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 this.settings = { ...this.settings, ...response.data.data };
                 return response.data.data;
@@ -192,7 +209,9 @@ class AlertsManager {
             try {
                 const symbols = [...new Set(this.alerts.map(a => a.symbol))];
                 if (symbols.length > 0) {
-                    const response = await axios.get(`/api/alerts/market-prices?symbols=${symbols.join(',')}`);
+                    const response = await axios.get(`/api/alerts/market-prices?symbols=${symbols.join(',')}`, {
+                        headers: this.getAuthHeaders()
+                    });
                     if (response.data.success) {
                         this.marketPrices = { ...this.marketPrices, ...response.data.data.prices };
                         this.checkAlertConditions();
@@ -273,6 +292,8 @@ class AlertsManager {
             const response = await axios.post('/api/alerts/test-notification', {
                 alertId,
                 notificationType
+            }, {
+                headers: this.getAuthHeaders()
             });
             if (response.data.success) {
                 this.showNotification('اطلاع‌رسانی آزمایشی ارسال شد', 'success');
@@ -289,7 +310,7 @@ class AlertsManager {
     // Get alert history
     async getAlertHistory(limit = 20) {
         try {
-            const response = await axios.get(`/api/alerts/history?limit=${limit}`);
+            const response = await axios.get(`/api/alerts/history?limit=${limit}`, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 return response.data.data;
             } else {
@@ -900,8 +921,14 @@ async function performBulkOperation(operation) {
 // Test notification function
 async function testNotification(type) {
     try {
+        const token = localStorage.getItem('titan_auth_token');
         const response = await axios.post('/api/alerts/test-notification', {
             notificationType: type
+        }, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
         });
         
         if (response.data.success) {
@@ -917,7 +944,13 @@ async function testNotification(type) {
 // Check notification service status
 async function checkNotificationStatus() {
     try {
-        const response = await axios.get('/api/alerts/notification-status');
+        const token = localStorage.getItem('titan_auth_token');
+        const response = await axios.get('/api/alerts/notification-status', {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
         
         if (response.data.success) {
             const status = response.data.data;
@@ -944,7 +977,13 @@ async function checkNotificationStatus() {
 // Manual trigger alert check
 async function manualAlertCheck() {
     try {
-        const response = await axios.post('/api/alerts/trigger-check');
+        const token = localStorage.getItem('titan_auth_token');
+        const response = await axios.post('/api/alerts/trigger-check', {}, {
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
         
         if (response.data.success) {
             window.alertsManager.showNotification('بررسی هشدارها با موفقیت انجام شد', 'success');
@@ -1250,8 +1289,14 @@ class AlertsModule {
 
     async toggleAlert(alertId, enabled) {
         try {
+            const token = localStorage.getItem('titan_auth_token');
             const response = await axios.patch(`/api/alerts/${alertId}/toggle`, {
                 enabled: enabled
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
             });
             
             if (response.data.success) {
@@ -1270,7 +1315,7 @@ class AlertsModule {
         }
 
         try {
-            const response = await axios.delete(`/api/alerts/${alertId}`);
+            const response = await axios.delete(`/api/alerts/${alertId}`, { headers: this.getAuthHeaders() });
             
             if (response.data.success) {
                 await this.refreshAlerts();

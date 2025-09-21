@@ -625,8 +625,14 @@ class TradingModule {
 
     async loadTradingData() {
         try {
-            // Try to load from API
-            const tradingResponse = await axios.get('/api/trading/advanced');
+            // Try to load from API with authentication
+            const token = localStorage.getItem('titan_auth_token');
+            const tradingResponse = await axios.get('/api/trading/advanced', {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             if (tradingResponse.data.success) {
                 this.tradingData = tradingResponse.data.data;
                 await this.updateTradingStats(this.tradingData);
