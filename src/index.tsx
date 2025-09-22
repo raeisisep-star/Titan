@@ -6272,6 +6272,598 @@ app.get('/api/markets/trending', async (c) => {
   }
 })
 
+// =============================================================================
+// CHARTS API ENDPOINTS - Critical for Dashboard
+// =============================================================================
+
+// Portfolio Performance Chart
+app.get('/api/charts/portfolio-performance/:portfolioId', authMiddleware, async (c) => {
+  try {
+    const portfolioId = c.req.param('portfolioId')
+    const period = c.req.query('period') || '30d'
+    
+    // Mock performance data based on period
+    const dataPoints = period === '7d' ? 7 : period === '30d' ? 30 : 365
+    const performance = []
+    
+    for (let i = 0; i < dataPoints; i++) {
+      const date = new Date()
+      date.setDate(date.getDate() - (dataPoints - 1 - i))
+      
+      const baseValue = 100000
+      const volatility = Math.random() * 0.05 - 0.025 // ±2.5% daily
+      const trend = i * 0.002 // Slight upward trend
+      
+      const value = baseValue * (1 + trend + volatility)
+      
+      performance.push({
+        date: date.toISOString().split('T')[0],
+        value: Math.round(value * 100) / 100,
+        profit: Math.round((value - baseValue) * 100) / 100,
+        profitPercent: Math.round(((value - baseValue) / baseValue) * 10000) / 100
+      })
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        portfolioId,
+        period,
+        performance,
+        summary: {
+          totalValue: performance[performance.length - 1]?.value || 100000,
+          totalProfit: performance[performance.length - 1]?.profit || 0,
+          totalProfitPercent: performance[performance.length - 1]?.profitPercent || 0,
+          bestDay: Math.max(...performance.map(p => p.profit)),
+          worstDay: Math.min(...performance.map(p => p.profit))
+        }
+      }
+    })
+  } catch (error) {
+    console.error('Portfolio performance error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت عملکرد پورتفولیو'
+    }, 500)
+  }
+})
+
+// Price History Chart  
+app.get('/api/charts/price-history/:symbol', authMiddleware, async (c) => {
+  try {
+    const symbol = c.req.param('symbol')
+    const timeframe = c.req.query('timeframe') || '1h'
+    const limit = parseInt(c.req.query('limit') || '24')
+    
+    // Mock price data
+    const priceHistory = []
+    const basePrice = symbol.includes('BTC') ? 45000 : symbol.includes('ETH') ? 3000 : 100
+    
+    for (let i = 0; i < limit; i++) {
+      const date = new Date()
+      const hoursBack = timeframe === '1h' ? i : timeframe === '4h' ? i * 4 : i * 24
+      date.setHours(date.getHours() - hoursBack)
+      
+      const volatility = (Math.random() - 0.5) * 0.02 // ±1%
+      const price = basePrice * (1 + volatility + (Math.random() - 0.5) * 0.01)
+      
+      priceHistory.unshift({
+        timestamp: date.toISOString(),
+        price: Math.round(price * 100) / 100,
+        volume: Math.round(Math.random() * 1000000)
+      })
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        symbol,
+        timeframe,
+        history: priceHistory,
+        currentPrice: priceHistory[priceHistory.length - 1]?.price
+      }
+    })
+  } catch (error) {
+    console.error('Price history error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت تاریخچه قیمت'
+    }, 500)
+  }
+})
+
+// Portfolio Distribution Chart
+app.get('/api/charts/portfolio-distribution/:portfolioId', authMiddleware, async (c) => {
+  try {
+    const portfolioId = c.req.param('portfolioId')
+    
+    // Mock distribution data
+    const assets = [
+      { symbol: 'BTC', name: 'Bitcoin', value: 45000, percentage: 45, color: '#f7931a' },
+      { symbol: 'ETH', name: 'Ethereum', value: 25000, percentage: 25, color: '#627eea' },
+      { symbol: 'BNB', name: 'BNB', value: 15000, percentage: 15, color: '#f3ba2f' },
+      { symbol: 'SOL', name: 'Solana', value: 10000, percentage: 10, color: '#9945ff' },
+      { symbol: 'ADA', name: 'Cardano', value: 5000, percentage: 5, color: '#0033ad' }
+    ]
+    
+    return c.json({
+      success: true,
+      data: {
+        portfolioId,
+        distribution: assets,
+        totalValue: assets.reduce((sum, asset) => sum + asset.value, 0)
+      }
+    })
+  } catch (error) {
+    console.error('Portfolio distribution error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت توزیع پورتفولیو'
+    }, 500)
+  }
+})
+
+// Market Heatmap
+app.get('/api/charts/market-heatmap', authMiddleware, async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '20')
+    
+    // Mock heatmap data
+    const symbols = ['BTC', 'ETH', 'BNB', 'SOL', 'ADA', 'DOT', 'LINK', 'UNI', 'MATIC', 'AVAX', 
+                    'LTC', 'XRP', 'ATOM', 'FTM', 'NEAR', 'SAND', 'MANA', 'CRV', 'AAVE', 'MKR']
+    
+    const heatmapData = symbols.slice(0, limit).map(symbol => {
+      const change24h = (Math.random() - 0.5) * 20 // ±10%
+      const volume = Math.random() * 1000000000
+      const price = Math.random() * 1000
+      
+      return {
+        symbol,
+        name: symbol,
+        price: Math.round(price * 100) / 100,
+        change24h: Math.round(change24h * 100) / 100,
+        volume24h: Math.round(volume),
+        marketCap: Math.round(volume * 100),
+        size: Math.abs(change24h) + 2 // For heatmap sizing
+      }
+    })
+    
+    return c.json({
+      success: true,
+      data: {
+        heatmap: heatmapData,
+        lastUpdate: new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    console.error('Market heatmap error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت نقشه حرارتی بازار'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// AI ANALYTICS API ENDPOINTS - For AI Management & Dashboard  
+// =============================================================================
+
+// AI System Overview
+app.get('/api/ai-analytics/system/overview', authMiddleware, async (c) => {
+  try {
+    const overview = {
+      totalAgents: 15,
+      activeAgents: 12,
+      inactiveAgents: 3,
+      averagePerformance: 87.3,
+      totalPredictions: 2847,
+      accuratePredictions: 2489,
+      accuracyRate: 87.4,
+      profitGenerated: 23456.78,
+      systemHealth: 'excellent',
+      lastUpdate: new Date().toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      data: overview
+    })
+  } catch (error) {
+    console.error('AI system overview error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت نمای کلی سیستم AI'
+    }, 500)
+  }
+})
+
+// AI Agents List & Status
+app.get('/api/ai-analytics/agents', authMiddleware, async (c) => {
+  try {
+    const agents = [
+      {
+        id: 'agent-001',
+        name: 'Artemis Prime',
+        type: 'Trading Strategy',
+        status: 'active',
+        performance: 92.1,
+        accuracy: 89.5,
+        profitGenerated: 8234.56,
+        activeTrades: 3,
+        lastActivity: new Date().toISOString()
+      },
+      {
+        id: 'agent-002', 
+        name: 'Risk Guardian',
+        type: 'Risk Management',
+        status: 'active',
+        performance: 95.8,
+        accuracy: 97.2,
+        profitGenerated: 0, // Risk management doesn't generate direct profit
+        activeTrades: 0,
+        lastActivity: new Date().toISOString()
+      },
+      {
+        id: 'agent-003',
+        name: 'Market Sentinel',
+        type: 'Market Analysis',
+        status: 'active',
+        performance: 78.4,
+        accuracy: 84.7,
+        profitGenerated: 4567.89,
+        activeTrades: 1,
+        lastActivity: new Date().toISOString()
+      },
+      {
+        id: 'agent-004',
+        name: 'News Oracle',
+        type: 'Sentiment Analysis',
+        status: 'training',
+        performance: 85.2,
+        accuracy: 88.1,
+        profitGenerated: 2345.67,
+        activeTrades: 0,
+        lastActivity: new Date(Date.now() - 3600000).toISOString() // 1 hour ago
+      }
+    ]
+    
+    return c.json({
+      success: true,
+      data: {
+        agents,
+        summary: {
+          total: agents.length,
+          active: agents.filter(a => a.status === 'active').length,
+          training: agents.filter(a => a.status === 'training').length,
+          inactive: agents.filter(a => a.status === 'inactive').length,
+          averagePerformance: agents.reduce((sum, a) => sum + a.performance, 0) / agents.length
+        }
+      }
+    })
+  } catch (error) {
+    console.error('AI agents error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لیست عوامل AI'
+    }, 500)
+  }
+})
+
+// AI Training Sessions
+app.get('/api/ai-analytics/training/sessions', authMiddleware, async (c) => {
+  try {
+    const sessions = [
+      {
+        id: 'session-001',
+        agentId: 'agent-001',
+        agentName: 'Artemis Prime',
+        type: 'Strategy Optimization',
+        status: 'completed',
+        startTime: new Date(Date.now() - 7200000).toISOString(), // 2 hours ago
+        endTime: new Date(Date.now() - 3600000).toISOString(), // 1 hour ago
+        duration: 3600, // seconds
+        improvementRate: 12.5,
+        dataPoints: 15000,
+        accuracy: 91.2
+      },
+      {
+        id: 'session-002',
+        agentId: 'agent-004',
+        agentName: 'News Oracle',
+        type: 'Sentiment Analysis',
+        status: 'running',
+        startTime: new Date(Date.now() - 1800000).toISOString(), // 30 min ago
+        endTime: null,
+        duration: 1800,
+        improvementRate: 0,
+        dataPoints: 8500,
+        accuracy: 0
+      }
+    ]
+    
+    return c.json({
+      success: true,
+      data: {
+        sessions,
+        stats: {
+          totalSessions: sessions.length + 23, // Historical sessions
+          activeSessions: sessions.filter(s => s.status === 'running').length,
+          completedSessions: sessions.filter(s => s.status === 'completed').length,
+          averageImprovement: 8.7
+        }
+      }
+    })
+  } catch (error) {
+    console.error('AI training sessions error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت جلسات آموزش AI'
+    }, 500)
+  }
+})
+
+// Individual Agent Status
+app.get('/api/ai-analytics/agents/:agentId/status', authMiddleware, async (c) => {
+  try {
+    const agentId = c.req.param('agentId')
+    
+    // Mock detailed agent status
+    const agentStatus = {
+      id: agentId,
+      name: `Agent ${agentId}`,
+      status: 'active',
+      performance: {
+        current: 89.5,
+        trend: 'up',
+        change24h: 2.3
+      },
+      metrics: {
+        accuracy: 91.2,
+        precision: 88.7,
+        recall: 85.4,
+        f1Score: 87.0
+      },
+      resources: {
+        cpuUsage: 34.5,
+        memoryUsage: 67.8,
+        gpuUsage: 45.2
+      },
+      activity: {
+        predictionsToday: 147,
+        tradesExecuted: 8,
+        profitGenerated: 2340.56
+      },
+      lastUpdate: new Date().toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      data: agentStatus
+    })
+  } catch (error) {
+    console.error('Agent status error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت وضعیت عامل AI'
+    }, 500)
+  }
+})
+
+// Start AI Training
+app.post('/api/ai-analytics/training/start', authMiddleware, async (c) => {
+  try {
+    const { agentId, trainingType, datasetSize } = await c.req.json()
+    
+    // Mock training start
+    const trainingSession = {
+      id: `session-${Date.now()}`,
+      agentId,
+      type: trainingType,
+      status: 'starting',
+      startTime: new Date().toISOString(),
+      estimatedDuration: 1800, // 30 minutes
+      datasetSize: datasetSize || 10000
+    }
+    
+    return c.json({
+      success: true,
+      data: trainingSession,
+      message: 'آموزش AI شروع شد'
+    })
+  } catch (error) {
+    console.error('Start training error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در شروع آموزش AI'
+    }, 500)
+  }
+})
+
+// Create AI Backup
+app.post('/api/ai-analytics/backup/create', authMiddleware, async (c) => {
+  try {
+    const { backupName, includeModels, includeData } = await c.req.json()
+    
+    // Mock backup creation
+    const backup = {
+      id: `backup-${Date.now()}`,
+      name: backupName || `AI-Backup-${new Date().toISOString().split('T')[0]}`,
+      status: 'creating',
+      progress: 0,
+      includeModels: includeModels !== false,
+      includeData: includeData !== false,
+      estimatedSize: '2.4 GB',
+      createdAt: new Date().toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      data: backup,
+      message: 'پشتیبان‌گیری AI شروع شد'
+    })
+  } catch (error) {
+    console.error('Create backup error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در ایجاد پشتیبان AI'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// VOICE & CHAT STREAMING API ENDPOINTS  
+// =============================================================================
+
+// Text to Speech
+app.post('/api/voice/text-to-speech', authMiddleware, async (c) => {
+  try {
+    const { text, voice = 'fa-female', speed = 1.0 } = await c.req.json()
+    
+    if (!text) {
+      return c.json({
+        success: false,
+        error: 'متن الزامی است'
+      }, 400)
+    }
+    
+    // Mock TTS response - در حقیقت باید به سرویس TTS اتصال داشته باشد
+    const audioData = {
+      audioUrl: `data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVgodDbq2EcBj+a2/LDciUFLIHO8tiJNwgZaLvt559NEAxQp+PwtmMcBjiR1/LMeSwFJHfH8N2QQAoUXrTp66hVFApGn+DyvmEc...`, // Mock base64 audio
+      duration: text.length * 0.1, // Rough estimate
+      voice,
+      speed
+    }
+    
+    return c.json({
+      success: true,
+      data: audioData,
+      message: 'تبدیل متن به صدا انجام شد'
+    })
+  } catch (error) {
+    console.error('Text to speech error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در تبدیل متن به صدا'
+    }, 500)
+  }
+})
+
+// Chat Stream Endpoint (Server-Sent Events)
+app.get('/api/chat/stream/:conversationId', authMiddleware, async (c) => {
+  try {
+    const conversationId = c.req.param('conversationId')
+    
+    // Set up Server-Sent Events headers
+    c.header('Content-Type', 'text/event-stream')
+    c.header('Cache-Control', 'no-cache')
+    c.header('Connection', 'keep-alive')
+    c.header('Access-Control-Allow-Origin', '*')
+    
+    // Mock streaming response
+    const stream = new ReadableStream({
+      start(controller) {
+        // Send initial connection message
+        controller.enqueue(`data: ${JSON.stringify({
+          type: 'connection',
+          conversationId,
+          message: 'اتصال برقرار شد',
+          timestamp: new Date().toISOString()
+        })}\n\n`)
+        
+        // Simulate periodic messages
+        let messageCount = 0
+        const interval = setInterval(() => {
+          messageCount++
+          
+          if (messageCount > 5) {
+            controller.enqueue(`data: ${JSON.stringify({
+              type: 'close',
+              message: 'اتصال بسته شد'
+            })}\n\n`)
+            controller.close()
+            clearInterval(interval)
+            return
+          }
+          
+          controller.enqueue(`data: ${JSON.stringify({
+            type: 'message',
+            conversationId,
+            message: `پیام شماره ${messageCount}`,
+            timestamp: new Date().toISOString()
+          })}\n\n`)
+        }, 2000)
+      }
+    })
+    
+    return new Response(stream, {
+      headers: {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      }
+    })
+  } catch (error) {
+    console.error('Chat stream error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در جریان چت'
+    }, 500)
+  }
+})
+
+// Advanced AI Chat Enhanced
+app.post('/api/advanced-ai/chat/enhanced', authMiddleware, async (c) => {
+  try {
+    const { message, context, model = 'artemis-pro', options = {} } = await c.req.json()
+    
+    if (!message) {
+      return c.json({
+        success: false,
+        error: 'پیام الزامی است'
+      }, 400)
+    }
+    
+    // Mock enhanced AI response
+    const responses = [
+      'بر اساس تحلیل بازار، Bitcoin در حال تشکیل الگوی صعودی است.',
+      'پیشنهاد می‌کنم موقعیت‌های خود را مدیریت کنید.',
+      'بازار فعلاً در روند صعودی قرار دارد و فرصت‌های خوبی وجود دارد.',
+      'توصیه می‌کنم قبل از هر تصمیمی، ریسک را محاسبه کنید.',
+      'آنالیز تکنیکال نشان‌دهنده احتمال ادامه روند فعلی است.'
+    ]
+    
+    const randomResponse = responses[Math.floor(Math.random() * responses.length)]
+    
+    const enhancedResponse = {
+      response: randomResponse,
+      confidence: Math.random() * 30 + 70, // 70-100%
+      model: model,
+      context: context || 'trading',
+      suggestions: [
+        'مشاهده نمودار قیمت',
+        'بررسی پورتفولیو',
+        'تنظیم هشدار قیمت'
+      ],
+      metadata: {
+        processingTime: Math.random() * 500 + 200, // 200-700ms
+        tokensUsed: message.length * 2,
+        language: 'fa'
+      }
+    }
+    
+    return c.json({
+      success: true,
+      data: enhancedResponse
+    })
+  } catch (error) {
+    console.error('Enhanced AI chat error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در چت پیشرفته AI'
+    }, 500)
+  }
+})
+
 // HTML FILES ROUTE - Serve HTML files from public directory
 app.get('/*.html', serveStatic({ root: './public' }))
 
