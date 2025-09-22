@@ -834,9 +834,19 @@ function showCreateAlertModal() {
 }
 
 function closeCreateAlertModal() {
-    document.getElementById('createAlertModal').classList.add('hidden');
+    const modal = document.getElementById('createAlertModal');
+    modal.classList.add('hidden');
     document.getElementById('createAlertForm').reset();
     updateAlertFields();
+    
+    // Reset modal to create mode
+    const title = modal.querySelector('h3');
+    const button = modal.querySelector('button[type="submit"]');
+    title.textContent = 'ایجاد هشدار جدید';
+    button.textContent = 'ایجاد هشدار';
+    
+    // Remove editing flag
+    delete modal.dataset.editingAlertId;
 }
 
 function showSettingsModal() {
@@ -895,14 +905,91 @@ async function deleteAlert(alertId) {
     }
 }
 
-function editAlert(alertId) {
-    // TODO: Implement edit functionality
-    window.alertsManager.showNotification('عملکرد ویرایش به زودی اضافه خواهد شد', 'info');
+async function editAlert(alertId) {
+    try {
+        // Get alert data
+        const alert = window.alertsManager.alerts.find(a => a.id === alertId);
+        if (!alert) {
+            window.alertsManager.showNotification('هشدار یافت نشد', 'error');
+            return;
+        }
+        
+        // Pre-fill the create modal with existing data
+        document.getElementById('alertName').value = alert.alertName;
+        document.getElementById('alertSymbol').value = alert.symbol;
+        document.getElementById('alertType').value = alert.alertType;
+        
+        if (alert.targetPrice) {
+            document.getElementById('targetPrice').value = alert.targetPrice;
+        }
+        if (alert.percentageChange) {
+            document.getElementById('percentageChange').value = alert.percentageChange;
+        }
+        if (alert.timePeriod) {
+            document.getElementById('timePeriod').value = alert.timePeriod;
+        }
+        
+        // Set notification methods
+        document.getElementById('notifyPush').checked = alert.notificationMethods.includes('push') || alert.notificationMethods.includes('web');
+        document.getElementById('notifyEmail').checked = alert.notificationMethods.includes('email');
+        
+        updateAlertFields();
+        
+        // Change modal title and button to indicate editing
+        const modal = document.getElementById('createAlertModal');
+        const title = modal.querySelector('h3');
+        const button = modal.querySelector('button[type="submit"]');
+        
+        title.textContent = 'ویرایش هشدار';
+        button.textContent = 'بروزرسانی هشدار';
+        
+        // Store the alert ID for update
+        modal.dataset.editingAlertId = alertId;
+        
+        // Show modal
+        modal.classList.remove('hidden');
+        
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در بارگذاری اطلاعات هشدار: ' + error.message, 'error');
+    }
 }
 
-function useTemplate(templateId) {
-    // TODO: Implement template usage
-    window.alertsManager.showNotification('عملکرد استفاده از قالب به زودی اضافه خواهد شد', 'info');
+async function useTemplate(templateId) {
+    try {
+        // Get template data
+        const template = window.alertsManager.templates.find(t => t.id === templateId);
+        if (!template) {
+            window.alertsManager.showNotification('قالب یافت نشد', 'error');
+            return;
+        }
+        
+        // Pre-fill the create modal with template data
+        document.getElementById('alertName').value = template.templateName;
+        document.getElementById('alertType').value = template.alertType;
+        
+        // Apply default configuration from template
+        if (template.defaultConfig) {
+            if (template.defaultConfig.notificationMethods) {
+                document.getElementById('notifyPush').checked = template.defaultConfig.notificationMethods.includes('push') || template.defaultConfig.notificationMethods.includes('web');
+                document.getElementById('notifyEmail').checked = template.defaultConfig.notificationMethods.includes('email');
+            }
+            
+            if (template.defaultConfig.timePeriod) {
+                document.getElementById('timePeriod').value = template.defaultConfig.timePeriod;
+            }
+        }
+        
+        updateAlertFields();
+        
+        // Show create modal
+        showCreateAlertModal();
+        
+        // Show success message
+        window.alertsManager.showNotification(`قالب "${template.templateName}" بارگذاری شد`, 'success');
+        
+    } catch (error) {
+        window.alertsManager.showNotification('خطا در بارگذاری قالب: ' + error.message, 'error');
+    }
 }
 
 async function performBulkOperation(operation) {
@@ -1024,12 +1111,24 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             try {
-                await window.alertsManager.createAlert(alertData);
-                window.alertsManager.showNotification('هشدار با موفقیت ایجاد شد', 'success');
+                const modal = document.getElementById('createAlertModal');
+                const editingAlertId = modal.dataset.editingAlertId;
+                
+                if (editingAlertId) {
+                    // Update existing alert
+                    await window.alertsManager.updateAlert(editingAlertId, alertData);
+                    window.alertsManager.showNotification('هشدار با موفقیت بروزرسانی شد', 'success');
+                    delete modal.dataset.editingAlertId;
+                } else {
+                    // Create new alert
+                    await window.alertsManager.createAlert(alertData);
+                    window.alertsManager.showNotification('هشدار با موفقیت ایجاد شد', 'success');
+                }
+                
                 closeCreateAlertModal();
                 loadActiveAlerts(); // Refresh
             } catch (error) {
-                window.alertsManager.showNotification('خطا در ایجاد هشدار: ' + error.message, 'error');
+                window.alertsManager.showNotification('خطا در ذخیره هشدار: ' + error.message, 'error');
             }
         });
     }
@@ -1328,18 +1427,27 @@ class AlertsModule {
     }
 
     showCreateAlertModal() {
-        // Implementation for create alert modal
-        this.showNotification('ایجاد هشدار جدید - در حال توسعه', 'info');
+        // Show create alert modal
+        showCreateAlertModal();
     }
 
-    editAlert(alertId) {
-        // Implementation for edit alert  
-        this.showNotification(`ویرایش هشدار ${alertId} - در حال توسعه`, 'info');
+    async editAlert(alertId) {
+        // Use the global editAlert function
+        await editAlert(alertId);
     }
 
     loadAlertTemplates() {
-        // Implementation for loading templates
-        this.showNotification('بارگذاری قالب‌ها - در حال توسعه', 'info');
+        // Load and show alert templates
+        this.showNotification('بارگذاری قالب‌ها...', 'info');
+        switchAlertsTab('templates');
+    }
+
+    getAuthHeaders() {
+        const token = localStorage.getItem('titan_auth_token') || localStorage.getItem('token');
+        return {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+        };
     }
 
     showNotification(message, type = 'info') {

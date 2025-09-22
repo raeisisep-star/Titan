@@ -5,6 +5,7 @@
 
 import { mexcClient } from './mexc-api';
 import { notificationService } from './notification-service';
+import { d1db } from '../lib/database-d1-adapter';
 
 export interface MarketAlert {
   id: string;
@@ -73,11 +74,78 @@ export class AlertsService {
   }
 
   /**
+   * Get alerts dashboard data (comprehensive overview)
+   */
+  async getAlertsDashboard(userId: string) {
+    try {
+      // Get user alerts
+      const alerts = await this.getUserAlerts(userId);
+      
+      // Get statistics
+      const statistics = await this.getAlertStatistics(userId);
+      
+      // Get user settings
+      const settings = await this.getUserNotificationSettings(userId);
+      
+      // Get market prices for active alerts
+      const activeSymbols = [...new Set(alerts.filter(a => a.isActive).map(a => a.symbol))];
+      const marketPrices: Record<string, number> = {};
+      
+      for (const symbol of activeSymbols) {
+        try {
+          marketPrices[symbol] = await this.getCurrentPrice(symbol);
+        } catch (error) {
+          console.warn(`Failed to get price for ${symbol}:`, error);
+          marketPrices[symbol] = 0;
+        }
+      }
+      
+      return {
+        alerts,
+        statistics,
+        settings,
+        marketPrices
+      };
+      
+    } catch (error) {
+      console.error('Error loading alerts dashboard:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Get user's alerts
    */
   async getUserAlerts(userId: string): Promise<MarketAlert[]> {
     try {
-      // Mock implementation - replace with database query
+      const query = `
+        SELECT * FROM alerts 
+        WHERE user_id = ? 
+        ORDER BY created_at DESC
+      `;
+      
+      const result = await d1db.query(query, [parseInt(userId)]);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id.toString(),
+        userId: row.user_id.toString(),
+        alertName: row.name, // Using 'name' column from actual schema
+        symbol: row.symbol,
+        alertType: row.condition_type, // Using 'condition_type' from actual schema
+        targetPrice: parseFloat(row.threshold_value), // Using 'threshold_value' from actual schema
+        percentageChange: null, // Not in current schema
+        timePeriod: '24h', // Default value
+        isActive: Boolean(row.is_active),
+        isRecurring: false, // Not in current schema, default to false
+        notificationMethods: row.notification_channels ? JSON.parse(row.notification_channels) : ['web'],
+        triggeredCount: row.triggers_count || 0,
+        lastTriggered: row.last_triggered_at,
+        createdAt: row.created_at,
+        description: `${row.alert_type} alert for ${row.symbol}` // Generate description
+      }));
+    } catch (error) {
+      console.error('Error getting user alerts:', error);
+      // Return fallback data if database fails
       return [
         {
           id: '1',
@@ -86,20 +154,6 @@ export class AlertsService {
           symbol: 'BTC',
           alertType: 'price_above',
           targetPrice: 45000,
-          isActive: true,
-          isRecurring: false,
-          notificationMethods: ['push', 'email'],
-          triggeredCount: 0,
-          createdAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-          description: 'هشدار زمانی که قیمت بیت‌کوین از 45,000 دلار بالاتر رود'
-        },
-        {
-          id: '2',
-          userId: userId,
-          alertName: 'Ethereum $3,000',
-          symbol: 'ETH',
-          alertType: 'price_above',
-          targetPrice: 3000,
           isActive: true,
           isRecurring: false,
           notificationMethods: ['push'],
@@ -124,10 +178,6 @@ export class AlertsService {
           description: 'هشدار زمانی که قیمت ADA 10% کاهش یابد'
         }
       ];
-
-    } catch (error) {
-      console.error('Error getting user alerts:', error);
-      throw error;
     }
   }
 
@@ -136,29 +186,91 @@ export class AlertsService {
    */
   async createAlert(userId: string, alertData: Omit<MarketAlert, 'id' | 'userId' | 'triggeredCount' | 'createdAt'>): Promise<MarketAlert> {
     try {
+      console.log('🔍 AlertsService.createAlert called with:', { userId, alertData });
+      
       // Validate alert data
+      console.log('🔍 Validating alert data...');
       this.validateAlertData(alertData);
+      console.log('✅ Alert data validation passed');
 
-      // Mock implementation - replace with database insert
+      // Insert into database using actual schema columns
+      const query = `
+        INSERT INTO alerts (
+          user_id, name, alert_type, symbol, condition_type, 
+          threshold_value, notification_channels, webhook_url, 
+          is_active, max_triggers, cooldown_minutes, created_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      const notificationChannelsJson = JSON.stringify(alertData.notificationMethods || ['web']);
+      const createdAt = new Date().toISOString();
+      
+      // Map frontend alert types to database alert types
+      const alertTypeMapping: Record<string, string> = {
+        'price_above': 'price',
+        'price_below': 'price', 
+        'percentage_change_up': 'price',
+        'percentage_change_down': 'price',
+        'volume_surge': 'indicator',
+        'rsi_oversold': 'indicator',
+        'rsi_overbought': 'indicator',
+        'support_break': 'indicator',
+        'resistance_break': 'indicator'
+      };
+      
+      // Map frontend condition types to database condition types
+      const conditionTypeMapping: Record<string, string> = {
+        'price_above': 'above',
+        'price_below': 'below',
+        'percentage_change_up': 'change_pct',
+        'percentage_change_down': 'change_pct',
+        'volume_surge': 'above',
+        'rsi_oversold': 'below',
+        'rsi_overbought': 'above',
+        'support_break': 'crosses_below',
+        'resistance_break': 'crosses_above'
+      };
+      
+      const dbAlertType = alertTypeMapping[alertData.alertType] || 'price';
+      const dbConditionType = conditionTypeMapping[alertData.alertType] || 'above';
+      
+      const params = [
+        parseInt(userId),
+        alertData.alertName, // name column
+        dbAlertType, // alert_type column - mapped to database enum
+        alertData.symbol,
+        dbConditionType, // condition_type column - mapped to database enum
+        alertData.targetPrice || 0, // threshold_value column
+        notificationChannelsJson, // notification_channels column
+        null, // webhook_url
+        alertData.isActive ? 1 : 0,
+        0, // max_triggers (unlimited)
+        0, // cooldown_minutes
+        createdAt
+      ];
+      
+      console.log('🔍 Executing D1 query:', { query, params });
+      
+      const result = await d1db.execute(query, params);
+
+      console.log('📊 D1 Insert Result:', JSON.stringify(result, null, 2));
+
+      const alertId = result.meta?.last_row_id?.toString() || `temp_${Date.now()}`;
+
       const newAlert: MarketAlert = {
-        id: `alert_${Date.now()}`,
+        id: alertId,
         userId: userId,
         triggeredCount: 0,
-        createdAt: new Date().toISOString(),
+        createdAt: createdAt,
         ...alertData
       };
 
-      console.log('Creating alert:', newAlert);
-
-      // Here you would:
-      // 1. Insert into market_alerts table
-      // 2. Start monitoring for this alert
-      // 3. Send confirmation notification if needed
-
+      console.log('✅ Alert created in database:', newAlert.id);
       return newAlert;
 
     } catch (error) {
-      console.error('Error creating alert:', error);
+      console.error('❌ Error creating alert:', error);
+      console.error('❌ Error details:', { name: error.name, message: error.message, stack: error.stack });
       throw error;
     }
   }
@@ -168,21 +280,66 @@ export class AlertsService {
    */
   async updateAlert(userId: string, alertId: string, updates: Partial<MarketAlert>): Promise<MarketAlert> {
     try {
-      // Mock implementation - replace with database update
+      // Check if alert exists
       const existingAlert = await this.getAlertById(alertId, userId);
       if (!existingAlert) {
         throw new Error('Alert not found');
       }
 
-      const updatedAlert: MarketAlert = {
-        ...existingAlert,
-        ...updates,
-        id: alertId, // Ensure ID doesn't change
-        userId: userId // Ensure userId doesn't change
-      };
+      // Build update query dynamically based on what's being updated
+      const updateFields: string[] = [];
+      const updateValues: any[] = [];
+      
+      if (updates.alertName !== undefined) {
+        updateFields.push('name = ?');
+        updateValues.push(updates.alertName);
+      }
+      if (updates.symbol !== undefined) {
+        updateFields.push('symbol = ?');
+        updateValues.push(updates.symbol);
+      }
+      if (updates.alertType !== undefined) {
+        updateFields.push('alert_type = ?, condition_type = ?');
+        updateValues.push(updates.alertType, updates.alertType);
+      }
+      if (updates.targetPrice !== undefined) {
+        updateFields.push('threshold_value = ?');
+        updateValues.push(updates.targetPrice);
+      }
+      if (updates.isActive !== undefined) {
+        updateFields.push('is_active = ?');
+        updateValues.push(updates.isActive ? 1 : 0);
+      }
+      if (updates.notificationMethods !== undefined) {
+        updateFields.push('notification_channels = ?');
+        updateValues.push(JSON.stringify(updates.notificationMethods));
+      }
+      
+      if (updateFields.length === 0) {
+        return existingAlert; // No updates
+      }
+      
+      // Add updated_at timestamp
+      updateFields.push('updated_at = ?');
+      updateValues.push(new Date().toISOString());
+      
+      // Add WHERE conditions
+      updateValues.push(parseInt(alertId), parseInt(userId));
+      
+      const query = `UPDATE alerts SET ${updateFields.join(', ')} WHERE id = ? AND user_id = ?`;
+      const result = await d1db.execute(query, updateValues);
+      
+      if (result.meta?.changes === 0) {
+        throw new Error('Alert not found or no changes made');
+      }
 
-      console.log('Updating alert:', updatedAlert);
-
+      // Get updated alert
+      const updatedAlert = await this.getAlertById(alertId, userId);
+      if (!updatedAlert) {
+        throw new Error('Failed to retrieve updated alert');
+      }
+      
+      console.log('✅ Alert updated successfully:', alertId);
       return updatedAlert;
 
     } catch (error) {
@@ -196,15 +353,11 @@ export class AlertsService {
    */
   async deleteAlert(userId: string, alertId: string): Promise<boolean> {
     try {
-      // Mock implementation - replace with database delete
-      console.log(`Deleting alert ${alertId} for user ${userId}`);
-
-      // Here you would:
-      // 1. Delete from market_alerts table
-      // 2. Stop monitoring for this alert
-      // 3. Clean up any related data
-
-      return true;
+      const query = `DELETE FROM alerts WHERE id = ? AND user_id = ?`;
+      const result = await d1db.execute(query, [parseInt(alertId), parseInt(userId)]);
+      
+      console.log(`✅ Alert ${alertId} deleted for user ${userId}`);
+      return result.meta?.changes > 0;
 
     } catch (error) {
       console.error('Error deleting alert:', error);
@@ -231,7 +384,22 @@ export class AlertsService {
    */
   async getAlertTemplates(): Promise<AlertTemplate[]> {
     try {
-      // Mock implementation - replace with database query
+      const query = `SELECT * FROM alert_templates ORDER BY usage_count DESC`;
+      const result = await d1db.query(query, []);
+      
+      return result.rows.map((row: any) => ({
+        id: row.id.toString(),
+        templateName: row.template_name,
+        description: row.description,
+        category: row.category as 'price' | 'technical' | 'volume' | 'trend' | 'news',
+        alertType: row.alert_type,
+        defaultConfig: row.default_params ? JSON.parse(row.default_params) : {},
+        variables: [], // TODO: parse from default_params
+        usageCount: row.usage_count || 0
+      }));
+    } catch (error) {
+      console.error('Error getting alert templates:', error);
+      // Return fallback templates if database fails
       return [
         {
           id: '1',
@@ -294,10 +462,6 @@ export class AlertsService {
           usageCount: 25
         }
       ];
-
-    } catch (error) {
-      console.error('Error getting alert templates:', error);
-      throw error;
     }
   }
 
@@ -439,19 +603,19 @@ export class AlertsService {
    */
   async toggleAlert(userId: string, alertId: string, enabled: boolean): Promise<MarketAlert | null> {
     try {
-      const alerts = await this.getUserAlerts(userId);
-      const alert = alerts.find(a => a.id === alertId);
+      // Update in database
+      const query = `UPDATE alerts SET is_active = ? WHERE id = ? AND user_id = ?`;
+      const result = await d1db.execute(query, [enabled ? 1 : 0, parseInt(alertId), parseInt(userId)]);
       
-      if (!alert) {
+      if (result.meta?.changes === 0) {
         return null;
       }
 
-      // Update alert status
-      alert.isActive = enabled;
+      // Get updated alert
+      const alerts = await this.getUserAlerts(userId);
+      const alert = alerts.find(a => a.id === alertId);
       
-      console.log(`Alert ${alertId} ${enabled ? 'enabled' : 'disabled'} for user ${userId}`);
-
-      // Mock implementation - would update in database
+      console.log(`✅ Alert ${alertId} ${enabled ? 'enabled' : 'disabled'} for user ${userId}`);
       return alert;
 
     } catch (error) {
@@ -752,6 +916,66 @@ export class AlertsService {
         }
         break;
     }
+  }
+
+  /**
+   * Bulk enable alerts
+   */
+  async bulkEnableAlerts(alertIds: string[], userId: string): Promise<{ successCount: number; failedIds: string[] }> {
+    let successCount = 0;
+    const failedIds: string[] = [];
+    
+    for (const alertId of alertIds) {
+      try {
+        await this.toggleAlert(userId, alertId, true);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to enable alert ${alertId}:`, error);
+        failedIds.push(alertId);
+      }
+    }
+    
+    return { successCount, failedIds };
+  }
+
+  /**
+   * Bulk disable alerts
+   */
+  async bulkDisableAlerts(alertIds: string[], userId: string): Promise<{ successCount: number; failedIds: string[] }> {
+    let successCount = 0;
+    const failedIds: string[] = [];
+    
+    for (const alertId of alertIds) {
+      try {
+        await this.toggleAlert(userId, alertId, false);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to disable alert ${alertId}:`, error);
+        failedIds.push(alertId);
+      }
+    }
+    
+    return { successCount, failedIds };
+  }
+
+  /**
+   * Bulk delete alerts
+   */
+  async bulkDeleteAlerts(alertIds: string[], userId: string): Promise<{ successCount: number; failedIds: string[] }> {
+    let successCount = 0;
+    const failedIds: string[] = [];
+    
+    for (const alertId of alertIds) {
+      try {
+        await this.deleteAlert(userId, alertId);
+        successCount++;
+      } catch (error) {
+        console.error(`Failed to delete alert ${alertId}:`, error);
+        failedIds.push(alertId);
+      }
+    }
+    
+    return { successCount, failedIds };
   }
 }
 

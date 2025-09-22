@@ -2962,18 +2962,26 @@ app.get('/api/alerts', authMiddleware, async (c) => {
 // Create new market alert
 app.post('/api/alerts', authMiddleware, async (c) => {
   try {
+    console.log('📝 Create Alert Request Started');
+    
     const user = c.get('user')
+    console.log('👤 User:', user?.id);
+    
     const alertData = await c.req.json()
+    console.log('📊 Alert Data:', JSON.stringify(alertData, null, 2));
     
     // Validate required fields
     if (!alertData.alertName || !alertData.symbol || !alertData.alertType) {
+      console.log('❌ Validation failed - missing required fields');
       return c.json({
         success: false,
         error: 'اطلاعات هشدار ناقص است (نام هشدار، نماد، و نوع هشدار الزامی است)'
       }, 400)
     }
     
+    console.log('🔄 Calling alertsService.createAlert...');
     const alert = await alertsService.createAlert(user.id, alertData)
+    console.log('✅ Alert created successfully:', alert?.id);
     
     return c.json({
       success: true,
@@ -2982,7 +2990,8 @@ app.post('/api/alerts', authMiddleware, async (c) => {
     })
     
   } catch (error) {
-    console.error('Create Alert Error:', error)
+    console.error('❌ Create Alert Error:', error)
+    console.error('❌ Error stack:', error.stack);
     return c.json({
       success: false,
       error: 'خطا در ایجاد هشدار بازار'
@@ -5951,6 +5960,7 @@ app.get('/api/portfolio/:id', authMiddleware, async (c) => {
   }
 })
 
+
 // =============================================================================
 // ENHANCED MARKETS API ENDPOINTS
 // =============================================================================
@@ -6261,6 +6271,9 @@ app.get('/api/markets/trending', async (c) => {
     }, 500)
   }
 })
+
+// HTML FILES ROUTE - Serve HTML files from public directory
+app.get('/*.html', serveStatic({ root: './public' }))
 
 // DEFAULT ROUTE - MAIN APPLICATION
 // =============================================================================
