@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart.js Test</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { 
+            font-family: Arial, sans-serif; 
+            padding: 20px; 
+            background: #1f2937; 
+            color: white;
+        }
+        .container { 
+            max-width: 800px; 
+            margin: 0 auto; 
+        }
+        #chartContainer {
+            background: #374151;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+        #status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #065f46; }
+        .error { background: #7f1d1d; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Chart.js Loading Test</h1>
+        <p>This page tests if Chart.js loads correctly and can create charts.</p>
+        
+        <div id="status">Testing Chart.js availability...</div>
+        
+        <button onclick="testChartCreation()" style="background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">
+            Test Chart Creation
+        </button>
+        
+        <div id="chartContainer">
+            <canvas id="testChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = type;
+        }
+
+        // Test Chart.js availability
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('Testing Chart.js...');
+            
+            if (typeof Chart === 'undefined') {
+                updateStatus('❌ Chart.js not loaded!', 'error');
+            } else {
+                updateStatus('✅ Chart.js loaded successfully! Version: ' + Chart.version, 'success');
+            }
+        });
+
+        function testChartCreation() {
+            console.log('Testing chart creation...');
+            
+            try {
+                if (typeof Chart === 'undefined') {
+                    throw new Error('Chart.js not available');
+                }
+
+                const ctx = document.getElementById('testChart');
+                
+                // Destroy existing chart if any
+                if (window.testChartInstance) {
+                    window.testChartInstance.destroy();
+                }
+
+                // Create test chart
+                window.testChartInstance = new Chart(ctx.getContext('2d'), {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May'],
+                        datasets: [{
+                            label: 'Test Data',
+                            data: [10, 25, 15, 40, 30],
+                            borderColor: '#3b82f6',
+                            backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                            borderWidth: 2,
+                            fill: true
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                labels: { 
+                                    color: '#ffffff'
+                                }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                ticks: { color: '#9CA3AF' },
+                                grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                            },
+                            x: {
+                                ticks: { color: '#9CA3AF' },
+                                grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                            }
+                        }
+                    }
+                });
+
+                updateStatus('✅ Chart created successfully!', 'success');
+                
+            } catch (error) {
+                updateStatus('❌ Error creating chart: ' + error.message, 'error');
+                console.error('Chart creation error:', error);
+            }
+        }
+    </script>
+</body>
+</html>

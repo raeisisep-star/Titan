@@ -625,8 +625,387 @@ class ManualTradingAdvancedModule {
     }
 
     async initializeCharts() {
-        // Initialize chart placeholders
         console.log('📊 Initializing charts...');
+        
+        try {
+            // Check if Chart.js is available
+            if (typeof Chart === 'undefined') {
+                console.warn('⚠️ Chart.js not loaded, loading from CDN...');
+                await this.loadChartJS();
+            }
+
+            // Initialize Advanced Trading Chart
+            await this.initAdvancedChart();
+            
+            // Initialize Portfolio Pie Chart
+            await this.initPortfolioPieChart();
+            
+            // Initialize Performance Chart
+            await this.initPerformanceChart();
+            
+            console.log('✅ All charts initialized successfully');
+            
+        } catch (error) {
+            console.error('❌ Error initializing charts:', error);
+            this.showChartFallback();
+        }
+    }
+
+    async loadChartJS() {
+        return new Promise((resolve, reject) => {
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const checkChart = () => {
+                attempts++;
+                
+                if (typeof Chart !== 'undefined') {
+                    console.log('✅ Chart.js found and ready');
+                    resolve();
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    console.warn('⚠️ Chart.js not found, loading from CDN...');
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = () => {
+                        console.log('✅ Chart.js loaded from CDN');
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.error('❌ Failed to load Chart.js from CDN');
+                        reject(new Error('Chart library not available'));
+                    };
+                    document.head.appendChild(script);
+                    return;
+                }
+                
+                setTimeout(checkChart, 200);
+            };
+            
+            checkChart();
+        });
+    }
+
+    async initAdvancedChart() {
+        const canvas = document.getElementById('advanced-chart');
+        if (!canvas) {
+            console.warn('Advanced chart canvas not found');
+            return;
+        }
+
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            // Destroy existing chart
+            if (this.advancedChart) {
+                this.advancedChart.destroy();
+            }
+
+            // Generate mock candlestick data
+            const candlestickData = this.generateCandlestickData();
+
+            this.advancedChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: candlestickData.labels,
+                    datasets: [{
+                        label: 'قیمت BTC/USDT',
+                        data: candlestickData.prices,
+                        borderColor: '#3B82F6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.1,
+                        pointBackgroundColor: '#3B82F6',
+                        pointBorderColor: '#1E40AF',
+                        pointBorderWidth: 1,
+                        pointRadius: 3
+                    }, {
+                        label: 'Volume',
+                        data: candlestickData.volumes,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.3)',
+                        borderWidth: 1,
+                        type: 'bar',
+                        yAxisID: 'volumeAxis'
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            labels: { 
+                                color: '#ffffff',
+                                font: { size: 12 }
+                            }
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            borderColor: '#3B82F6',
+                            borderWidth: 1,
+                            callbacks: {
+                                label: function(context) {
+                                    if (context.datasetIndex === 0) {
+                                        return `قیمت: $${context.parsed.y.toLocaleString()}`;
+                                    } else {
+                                        return `حجم: ${context.parsed.y.toLocaleString()}`;
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            type: 'linear',
+                            display: true,
+                            position: 'right',
+                            ticks: { 
+                                color: '#9CA3AF',
+                                callback: function(value) {
+                                    return '$' + value.toLocaleString();
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        },
+                        volumeAxis: {
+                            type: 'linear',
+                            display: true,
+                            position: 'left',
+                            ticks: { 
+                                color: '#10B981',
+                                callback: function(value) {
+                                    return (value / 1000) + 'K';
+                                }
+                            },
+                            grid: { drawOnChartArea: false }
+                        },
+                        x: {
+                            ticks: { color: '#9CA3AF' },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        }
+                    },
+                    interaction: {
+                        intersect: false,
+                        mode: 'index'
+                    }
+                }
+            });
+
+            // Update chart data every 30 seconds
+            setInterval(() => {
+                this.updateAdvancedChart();
+            }, 30000);
+
+        } catch (error) {
+            console.error('❌ Error creating advanced chart:', error);
+            this.showChartFallback('advanced-chart');
+        }
+    }
+
+    async initPortfolioPieChart() {
+        const canvas = document.getElementById('portfolio-pie-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            if (this.portfolioPieChart) {
+                this.portfolioPieChart.destroy();
+            }
+
+            this.portfolioPieChart = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['BTC', 'ETH', 'USDT', 'Others'],
+                    datasets: [{
+                        data: [45.2, 32.1, 22.7, 15.0],
+                        backgroundColor: [
+                            '#F7931A', // Bitcoin Orange
+                            '#627EEA', // Ethereum Blue  
+                            '#26A17B', // USDT Green
+                            '#6B7280'  // Gray for others
+                        ],
+                        borderColor: '#1F2937',
+                        borderWidth: 2
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false // We'll show custom legend
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff',
+                            callbacks: {
+                                label: function(context) {
+                                    return `${context.label}: ${context.parsed}%`;
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Error creating portfolio pie chart:', error);
+        }
+    }
+
+    async initPerformanceChart() {
+        const canvas = document.getElementById('performance-chart');
+        if (!canvas) return;
+
+        const ctx = canvas.getContext('2d');
+        
+        try {
+            if (this.performanceChart) {
+                this.performanceChart.destroy();
+            }
+
+            // Generate mock performance data
+            const performanceData = this.generatePerformanceData();
+
+            this.performanceChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: performanceData.labels,
+                    datasets: [{
+                        label: 'بازده پورتفولیو',
+                        data: performanceData.returns,
+                        borderColor: '#10B981',
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        borderWidth: 2,
+                        fill: true,
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#ffffff',
+                            bodyColor: '#ffffff'
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: { 
+                                color: '#9CA3AF',
+                                callback: function(value) {
+                                    return value + '%';
+                                }
+                            },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        },
+                        x: {
+                            ticks: { color: '#9CA3AF' },
+                            grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                        }
+                    }
+                }
+            });
+
+        } catch (error) {
+            console.error('❌ Error creating performance chart:', error);
+        }
+    }
+
+    generateCandlestickData() {
+        const labels = [];
+        const prices = [];
+        const volumes = [];
+        
+        let basePrice = 43000;
+        const now = new Date();
+        
+        for (let i = 23; i >= 0; i--) {
+            const time = new Date(now.getTime() - i * 60 * 60 * 1000);
+            labels.push(time.getHours().toString().padStart(2, '0') + ':00');
+            
+            // Generate realistic price movement
+            const change = (Math.random() - 0.5) * 1000;
+            basePrice += change;
+            prices.push(Math.round(basePrice));
+            
+            // Generate volume data
+            volumes.push(Math.floor(Math.random() * 50000) + 10000);
+        }
+        
+        return { labels, prices, volumes };
+    }
+
+    generatePerformanceData() {
+        const labels = [];
+        const returns = [];
+        
+        let baseReturn = 0;
+        
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.getDate().toString());
+            
+            const change = (Math.random() - 0.4) * 2; // Slightly positive bias
+            baseReturn += change;
+            returns.push(parseFloat(baseReturn.toFixed(2)));
+        }
+        
+        return { labels, returns };
+    }
+
+    updateAdvancedChart() {
+        if (!this.advancedChart) return;
+        
+        try {
+            // Update with new data point
+            const newData = this.generateCandlestickData();
+            this.advancedChart.data.labels = newData.labels;
+            this.advancedChart.data.datasets[0].data = newData.prices;
+            this.advancedChart.data.datasets[1].data = newData.volumes;
+            this.advancedChart.update();
+            
+            // Update last update time
+            const lastUpdateEl = document.getElementById('chart-last-update');
+            if (lastUpdateEl) {
+                lastUpdateEl.textContent = new Date().toLocaleTimeString('fa-IR');
+            }
+            
+        } catch (error) {
+            console.error('Error updating advanced chart:', error);
+        }
+    }
+
+    showChartFallback(chartId = 'advanced-chart') {
+        const canvas = document.getElementById(chartId);
+        if (!canvas) return;
+        
+        const container = canvas.parentElement;
+        container.innerHTML = `
+            <div class="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+                <div class="text-center">
+                    <i class="fas fa-chart-line text-4xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400">نمودار در حال بارگذاری...</p>
+                    <p class="text-gray-500 text-sm mt-2">مشکل در بارگذاری Chart.js</p>
+                    <button onclick="window.manualTradingAdvanced?.initializeCharts()" class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                        تلاش مجدد
+                    </button>
+                </div>
+            </div>
+        `;
     }
 
     startRealTimeUpdates() {
@@ -701,10 +1080,30 @@ class ManualTradingAdvancedModule {
     }
 
     destroy() {
+        console.log('🧹 Cleaning up Manual Trading Advanced module...');
+        
+        // Clear intervals
         if (this.refreshInterval) {
             clearInterval(this.refreshInterval);
         }
-        console.log('🧹 Manual Trading Advanced module cleaned up');
+        
+        // Destroy charts
+        if (this.advancedChart) {
+            this.advancedChart.destroy();
+            this.advancedChart = null;
+        }
+        
+        if (this.portfolioPieChart) {
+            this.portfolioPieChart.destroy();
+            this.portfolioPieChart = null;
+        }
+        
+        if (this.performanceChart) {
+            this.performanceChart.destroy();
+            this.performanceChart = null;
+        }
+        
+        console.log('✅ Manual Trading Advanced module cleaned up');
     }
 
     // Placeholder methods for UI interactions
