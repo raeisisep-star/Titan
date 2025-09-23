@@ -10,10 +10,59 @@ class AnalyticsModule {
         this.isLoading = false;
     }
 
+    // Safe Chart creation wrapper
+    createChart(canvasId, config, chartKey) {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) {
+            console.warn(`Canvas element with id "${canvasId}" not found`);
+            return null;
+        }
+
+        try {
+            if (typeof Chart === 'undefined') {
+                throw new Error('Chart.js library not loaded');
+            }
+
+            // Destroy existing chart
+            if (this.charts.has(chartKey)) {
+                this.charts.get(chartKey).destroy();
+            }
+
+            const chart = new Chart(ctx.getContext('2d'), config);
+            this.charts.set(chartKey, chart);
+            return chart;
+
+        } catch (error) {
+            console.error(`❌ Error creating chart "${chartKey}":`, error);
+            
+            // Show fallback UI
+            const canvasParent = ctx.parentElement;
+            canvasParent.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-4xl text-gray-500 mb-4"></i>
+                        <p class="text-gray-400">نمودار در حال بارگذاری...</p>
+                        <p class="text-gray-500 text-sm mt-2">مشکل در بارگذاری Chart.js</p>
+                        <button onclick="analyticsModule.refreshAnalytics()" class="mt-3 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                            تلاش مجدد
+                        </button>
+                    </div>
+                </div>
+            `;
+            return null;
+        }
+    }
+
     async initialize() {
         console.log('📊 Initializing Analytics module...');
         
         try {
+            // Check if Chart.js is loaded
+            if (typeof Chart === 'undefined') {
+                console.warn('⚠️ Chart.js not loaded, loading from CDN...');
+                await this.loadChartJS();
+            }
+            
             // Load analytics data
             await this.loadAnalyticsData();
             
@@ -25,6 +74,46 @@ class AnalyticsModule {
             console.error('❌ Error initializing analytics module:', error);
             throw error;
         }
+    }
+
+    async loadChartJS() {
+        return new Promise((resolve, reject) => {
+            // Check multiple times as Chart.js might be loading
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            const checkChart = () => {
+                attempts++;
+                
+                if (typeof Chart !== 'undefined') {
+                    console.log('✅ Chart.js found and ready');
+                    resolve();
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    console.warn('⚠️ Chart.js not found, loading from CDN...');
+                    // Load Chart.js from CDN as fallback
+                    const script = document.createElement('script');
+                    script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+                    script.onload = () => {
+                        console.log('✅ Chart.js loaded from CDN');
+                        resolve();
+                    };
+                    script.onerror = () => {
+                        console.error('❌ Failed to load Chart.js from CDN');
+                        reject(new Error('Chart library not available'));
+                    };
+                    document.head.appendChild(script);
+                    return;
+                }
+                
+                // Wait and try again
+                setTimeout(checkChart, 200);
+            };
+            
+            checkChart();
+        });
     }
 
     async getContent() {
@@ -407,7 +496,14 @@ class AnalyticsModule {
             this.charts.get('analytics').destroy();
         }
 
-        const chart = new Chart(ctx.getContext('2d'), {
+        // Safe Chart creation with error handling
+        let chart;
+        try {
+            if (typeof Chart === 'undefined') {
+                throw new Error('Chart.js library not loaded');
+            }
+            
+            chart = this.createChart('analyticsChart', {
             type: 'line',
             data: {
                 labels: data.map(d => new Date(d.date).toLocaleDateString('fa-IR')),
@@ -470,9 +566,24 @@ class AnalyticsModule {
                     mode: 'index'
                 }
             }
-        });
+        }, 'analytics');
 
-        this.charts.set('analytics', chart);
+        // Chart already stored in createChart method
+        
+        } catch (error) {
+            console.error('❌ Error creating analytics chart:', error);
+            // Show fallback message
+            const canvasParent = ctx.parentElement;
+            canvasParent.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+                    <div class="text-center">
+                        <i class="fas fa-chart-line text-4xl text-gray-500 mb-4"></i>
+                        <p class="text-gray-400">نمودار در حال بارگذاری...</p>
+                        <p class="text-gray-500 text-sm mt-2">Chart.js ${typeof Chart === 'undefined' ? 'not loaded' : 'loading...'}</p>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     renderProfitDistribution(data) {
@@ -484,7 +595,12 @@ class AnalyticsModule {
             this.charts.get('profitDistribution').destroy();
         }
 
-        const chart = new Chart(ctx.getContext('2d'), {
+        try {
+            if (typeof Chart === 'undefined') {
+                throw new Error('Chart.js library not loaded');
+            }
+
+            const chart = this.createChart('profitDistributionChart', {
             type: 'doughnut',
             data: {
                 labels: ['معاملات سودآور', 'معاملات زیان‌ده', 'سر به سر'],
@@ -519,9 +635,23 @@ class AnalyticsModule {
                     }
                 }
             }
-        });
+        }, 'profitDistribution');
 
-        this.charts.set('profitDistribution', chart);
+        // Chart already stored in createChart method
+        } catch (error) {
+            console.error('❌ Error creating profit distribution chart:', error);
+            // Show fallback message
+            const canvasParent = ctx.parentElement;
+            canvasParent.innerHTML = `
+                <div class="flex items-center justify-center h-64 bg-gray-700 rounded-lg">
+                    <div class="text-center">
+                        <i class="fas fa-chart-pie text-4xl text-gray-500 mb-4"></i>
+                        <p class="text-gray-400">نمودار در حال بارگذاری...</p>
+                        <p class="text-gray-500 text-sm mt-2">مشکل در بارگذاری Chart.js</p>
+                    </div>
+                </div>
+            `;
+        }
     }
 
     renderAssetAllocation(data) {
@@ -533,7 +663,7 @@ class AnalyticsModule {
             this.charts.get('assetAllocation').destroy();
         }
 
-        const chart = new Chart(ctx.getContext('2d'), {
+        const chart = this.createChart('assetAllocationChart', {
             type: 'pie',
             data: {
                 labels: data.map(item => item.name),
@@ -568,9 +698,9 @@ class AnalyticsModule {
                     }
                 }
             }
-        });
+        }, 'assetAllocation');
 
-        this.charts.set('assetAllocation', chart);
+        // Chart already stored in createChart method
     }
 
     renderAIPredictions(predictions) {
