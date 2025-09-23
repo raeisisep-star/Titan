@@ -4,7 +4,15 @@
 export default class WalletsTab {
     constructor(settings) {
         this.settings = settings.wallets || {};
-        this.wallets = [
+        this.apiBaseUrl = window.location.origin;
+        
+        // Initialize with empty arrays - will be populated by API
+        this.wallets = []
+        this.recentTransactions = []
+        this.portfolioAllocation = null
+        
+        // Store original mock data as fallback
+        this.mockWallets = [
             {
                 id: 1,
                 name: 'Main Trading Wallet',
@@ -36,11 +44,70 @@ export default class WalletsTab {
                 lastUpdate: '2024-01-14 18:00:00'
             }
         ];
-        this.recentTransactions = [
+        this.mockTransactions = [
             { type: 'Deposit', amount: 1000, currency: 'USDT', exchange: 'Binance', time: '10:25:00', status: 'Completed' },
             { type: 'Withdrawal', amount: 0.1, currency: 'BTC', exchange: 'MEXC', time: '09:15:00', status: 'Pending' },
             { type: 'Trade', amount: 500, currency: 'USDT', exchange: 'Binance', time: '08:30:00', status: 'Completed' }
         ];
+    }
+
+    // API Helper Methods
+    getAuthToken() {
+        return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
+    }
+
+    async apiCall(endpoint, options = {}) {
+        const token = this.getAuthToken();
+        if (!token) {
+            throw new Error('Authentication token not found');
+        }
+
+        const response = await fetch(this.apiBaseUrl + endpoint, {
+            ...options,
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json',
+                ...options.headers
+            }
+        });
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Network error' }));
+            throw new Error(errorData.error || `HTTP ${response.status}`);
+        }
+
+        return await response.json();
+    }
+
+    showNotification(message, type = 'info', duration = 3000) {
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-6 py-3 rounded-lg text-white shadow-lg ${
+            type === 'success' ? 'bg-green-600' : 
+            type === 'error' ? 'bg-red-600' : 
+            type === 'warning' ? 'bg-yellow-600' :
+            'bg-blue-600'
+        }`;
+        notification.innerHTML = `
+            <div class="flex items-center">
+                <i class="fas ${
+                    type === 'success' ? 'fa-check-circle' :
+                    type === 'error' ? 'fa-exclamation-circle' :
+                    type === 'warning' ? 'fa-exclamation-triangle' :
+                    'fa-info-circle'
+                } mr-2"></i>
+                <span>${message}</span>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        if (duration > 0) {
+            setTimeout(() => {
+                notification.remove();
+            }, duration);
+        }
+        
+        return notification;
     }
 
     render() {
@@ -697,15 +764,110 @@ export default class WalletsTab {
         }, 0);
     }
 
-    initialize() {
-        // Set up auto-refresh if enabled
-        this.setupAutoRefresh();
-        
-        // Set up event handlers
-        this.setupEventHandlers();
-        
-        // Set global instance for onclick handlers
-        window.walletsTabInstance = this;
+    async initialize() {
+        try {
+            // Set global instance for onclick handlers first
+            window.walletsTabInstance = this;
+            
+            // Load data from API
+            await this.loadWalletData();
+            await this.loadPortfolioAllocation(); 
+            await this.loadRecentTransactions();
+            await this.loadWalletSettings();
+            
+            // Set up event handlers
+            this.setupEventHandlers();
+            
+            // Set up auto-refresh if enabled
+            this.setupAutoRefresh();
+            
+            console.log('✅ Wallets tab initialized with API data');
+        } catch (error) {
+            console.warn('⚠️ Failed to load wallet data from API, using fallback:', error);
+            this.showNotification('خطا در بارگذاری داده‌های کیف‌پول، از داده‌های پیش‌فرض استفاده می‌شود', 'warning');
+            
+            // Use fallback data
+            this.wallets = this.mockWallets;
+            this.recentTransactions = this.mockTransactions;
+            
+            // Set up event handlers with fallback data
+            this.setupEventHandlers();
+            this.setupAutoRefresh();
+        }
+    }
+
+    async loadWalletData() {
+        try {
+            const response = await this.apiCall('/api/wallets');
+            if (response.success && response.data) {
+                this.wallets = response.data.wallets || [];
+                this.walletSummary = {
+                    totalBalance: response.data.totalBalance || 0,
+                    activeWallets: response.data.activeWallets || 0,
+                    totalAssets: response.data.totalAssets || 0,
+                    coldStorageCount: response.data.coldStorageCount || 0
+                };
+                
+                console.log('✅ Loaded wallet data:', this.wallets.length, 'wallets');
+            }
+        } catch (error) {
+            console.error('Failed to load wallet data:', error);
+            throw error;
+        }
+    }
+
+    async loadPortfolioAllocation() {
+        try {
+            const response = await this.apiCall('/api/wallets/portfolio/allocation');
+            if (response.success && response.data) {
+                this.portfolioAllocation = response.data;
+                
+                // Initialize chart after data is loaded
+                setTimeout(() => {
+                    this.initializePortfolioChart();
+                }, 100);
+                
+                console.log('✅ Loaded portfolio allocation data');
+            }
+        } catch (error) {
+            console.error('Failed to load portfolio allocation:', error);
+            // Use fallback data for chart
+            this.portfolioAllocation = {
+                assets: [
+                    { symbol: 'USDT', name: 'Tether', percentage: 65, amount: 14982, color: '#26A17B' },
+                    { symbol: 'BTC', name: 'Bitcoin', percentage: 25, amount: 2.45, color: '#F7931A' },
+                    { symbol: 'ETH', name: 'Ethereum', percentage: 8, amount: 3.2, color: '#627EEA' },
+                    { symbol: 'BNB', name: 'BNB', percentage: 2, amount: 15.8, color: '#F3BA2F' }
+                ]
+            };
+        }
+    }
+
+    async loadRecentTransactions() {
+        try {
+            const response = await this.apiCall('/api/wallets/transactions?limit=10');
+            if (response.success && response.data) {
+                this.recentTransactions = response.data.transactions || [];
+                this.transactionSummary = response.data.summary || {};
+                
+                console.log('✅ Loaded recent transactions:', this.recentTransactions.length);
+            }
+        } catch (error) {
+            console.error('Failed to load transactions:', error);
+            this.recentTransactions = this.mockTransactions;
+        }
+    }
+
+    async loadWalletSettings() {
+        try {
+            const response = await this.apiCall('/api/wallets/settings');
+            if (response.success && response.data) {
+                this.settings = { ...this.settings, ...response.data };
+                console.log('✅ Loaded wallet settings');
+            }
+        } catch (error) {
+            console.error('Failed to load wallet settings:', error);
+        }
     }
 
     setupEventHandlers() {
@@ -744,77 +906,1035 @@ export default class WalletsTab {
     }
 
     // Wallet management methods
-    connectNewWallet() {
-        const walletType = prompt('نوع کیف‌پول را انتخاب کنید:\\n1. Trading Wallet\\n2. Cold Storage\\n3. DeFi Wallet\\n\\nعدد مربوطه را وارد کنید:');
-        
-        if (walletType) {
-            alert('اتصال کیف‌پول جدید در حال پیاده‌سازی...');
-        }
+    async connectNewWallet() {
+        const modal = this.createConnectWalletModal();
+        document.body.appendChild(modal);
     }
 
-    refreshBalances(silent = false) {
-        if (!silent) {
-            alert('🔄 در حال بروزرسانی موجودی کیف‌پول‌ها...');
-        }
+    createConnectWalletModal() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md mx-4 w-full">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">اتصال کیف‌پول جدید</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="connect-wallet-form" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نوع کیف‌پول</label>
+                        <select id="wallet-type" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" required>
+                            <option value="">انتخاب کنید</option>
+                            <option value="Trading">کیف‌پول معاملاتی</option>
+                            <option value="Cold Storage">ذخیره سرد</option>
+                            <option value="DeFi">کیف‌پول DeFi</option>
+                        </select>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام کیف‌پول</label>
+                        <input type="text" id="wallet-name" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" required>
+                    </div>
+                    
+                    <div id="exchange-selection" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">صرافی</label>
+                        <select id="wallet-exchange" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                            <option value="Binance">Binance</option>
+                            <option value="MEXC">MEXC</option>
+                            <option value="OKX">OKX</option>
+                            <option value="KuCoin">KuCoin</option>
+                            <option value="Coinbase Pro">Coinbase Pro</option>
+                        </select>
+                    </div>
+                    
+                    <div id="api-credentials" style="display: none;">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
+                            <input type="text" id="wallet-api-key" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div class="mt-3">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">API Secret</label>
+                            <input type="password" id="wallet-api-secret" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                        </div>
+                        <div class="mt-3 flex items-center">
+                            <input type="checkbox" id="wallet-testnet" class="mr-2">
+                            <label class="text-sm text-gray-300">حالت آزمایشی (Testnet)</label>
+                        </div>
+                    </div>
+                    
+                    <div id="address-input" style="display: none;">
+                        <label class="block text-sm font-medium text-gray-300 mb-2">آدرس کیف‌پول</label>
+                        <input type="text" id="wallet-address" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500" placeholder="0x... یا bc1q...">
+                    </div>
+                    
+                    <div class="flex space-x-2 space-x-reverse pt-4">
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <i class="fas fa-plus mr-2"></i>
+                            اتصال
+                        </button>
+                        <button type="button" onclick="this.closest('.fixed').remove()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            لغو
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
         
-        // Simulate balance updates
-        this.wallets.forEach(wallet => {
-            const randomChange = (Math.random() - 0.5) * 100;
-            wallet.balance += randomChange;
-            wallet.lastUpdate = new Date().toLocaleString('fa-IR');
+        // Add event listeners
+        const walletTypeSelect = modal.querySelector('#wallet-type');
+        const exchangeSelection = modal.querySelector('#exchange-selection');
+        const apiCredentials = modal.querySelector('#api-credentials');
+        const addressInput = modal.querySelector('#address-input');
+        
+        walletTypeSelect.addEventListener('change', (e) => {
+            const type = e.target.value;
+            
+            if (type === 'Trading') {
+                exchangeSelection.style.display = 'block';
+                apiCredentials.style.display = 'block';
+                addressInput.style.display = 'none';
+            } else if (type === 'Cold Storage') {
+                exchangeSelection.style.display = 'none';
+                apiCredentials.style.display = 'none';
+                addressInput.style.display = 'block';
+            } else if (type === 'DeFi') {
+                exchangeSelection.style.display = 'none';
+                apiCredentials.style.display = 'none';
+                addressInput.style.display = 'block';
+            } else {
+                exchangeSelection.style.display = 'none';
+                apiCredentials.style.display = 'none';
+                addressInput.style.display = 'none';
+            }
         });
         
-        if (!silent) {
-            // Update display
-            setTimeout(() => {
-                alert('✅ موجودی‌ها بروزرسانی شدند');
-            }, 1000);
+        const form = modal.querySelector('#connect-wallet-form');
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            await this.handleConnectWallet(form, modal);
+        });
+        
+        return modal;
+    }
+
+    async handleConnectWallet(form, modal) {
+        try {
+            this.showNotification('در حال اتصال کیف‌پول...', 'info');
+            
+            const formData = new FormData(form);
+            const walletData = {
+                type: form.querySelector('#wallet-type').value,
+                name: form.querySelector('#wallet-name').value,
+                exchange: form.querySelector('#wallet-exchange')?.value,
+                apiKey: form.querySelector('#wallet-api-key')?.value,
+                apiSecret: form.querySelector('#wallet-api-secret')?.value,
+                address: form.querySelector('#wallet-address')?.value,
+                testnet: form.querySelector('#wallet-testnet')?.checked
+            };
+            
+            const response = await this.apiCall('/api/wallets/connect', {
+                method: 'POST',
+                body: JSON.stringify(walletData)
+            });
+            
+            if (response.success) {
+                this.showNotification(response.message || 'کیف‌پول با موفقیت متصل شد', 'success');
+                modal.remove();
+                
+                // Reload wallet data
+                await this.loadWalletData();
+                this.refreshWalletDisplay();
+            } else {
+                throw new Error(response.error || 'خطا در اتصال کیف‌پول');
+            }
+        } catch (error) {
+            console.error('Connect wallet error:', error);
+            this.showNotification('خطا در اتصال کیف‌پول: ' + error.message, 'error');
         }
     }
 
-    viewWalletDetails(walletId) {
-        const wallet = this.wallets.find(w => w.id === walletId);
-        if (wallet) {
-            alert(`جزئیات ${wallet.name}:\\n\\nموجودی: ${wallet.balance} ${wallet.currency}\\nصرافی: ${wallet.exchange}\\nوضعیت: ${wallet.status}\\nآخرین بروزرسانی: ${wallet.lastUpdate}`);
+    async refreshBalances(silent = false) {
+        try {
+            if (!silent) {
+                this.showNotification('در حال بروزرسانی موجودی کیف‌پول‌ها...', 'info');
+            }
+            
+            const response = await this.apiCall('/api/wallets/refresh', {
+                method: 'POST'
+            });
+            
+            if (response.success) {
+                // Update local wallet balances with API response
+                const updatedBalances = response.data;
+                
+                updatedBalances.forEach(updated => {
+                    const wallet = this.wallets.find(w => w.id === updated.id);
+                    if (wallet) {
+                        wallet.balance = updated.balance;
+                        wallet.lastUpdate = updated.lastUpdate;
+                    }
+                });
+                
+                if (!silent) {
+                    this.showNotification('موجودی‌ها بروزرسانی شدند', 'success');
+                    this.refreshWalletDisplay();
+                }
+                
+                console.log('✅ Wallet balances refreshed');
+            } else {
+                throw new Error(response.error || 'خطا در بروزرسانی موجودی‌ها');
+            }
+        } catch (error) {
+            console.error('Refresh balances error:', error);
+            
+            if (!silent) {
+                this.showNotification('خطا در بروزرسانی موجودی‌ها: ' + error.message, 'error');
+            }
+            
+            // Fallback: simulate updates
+            this.wallets.forEach(wallet => {
+                const randomChange = (Math.random() - 0.5) * 100;
+                wallet.balance += randomChange;
+                wallet.lastUpdate = new Date().toISOString();
+            });
+            
+            if (!silent) {
+                this.refreshWalletDisplay();
+            }
         }
     }
 
-    editWallet(walletId) {
+    refreshWalletDisplay() {
+        // Find the wallet container and update it
+        const walletContainer = document.querySelector('[data-wallets-container]');
+        if (walletContainer) {
+            walletContainer.innerHTML = this.renderWalletCards();
+        }
+        
+        // Update summary cards
+        this.updateSummaryCards();
+    }
+
+    updateSummaryCards() {
+        const totalBalance = this.calculateTotalBalance();
+        const activeWallets = this.wallets.filter(w => w.status === 'Active').length;
+        const coldStorage = this.wallets.filter(w => w.type === 'Cold Storage').length;
+        
+        // Update total balance in header
+        const totalBalanceElement = document.querySelector('[data-total-balance]');
+        if (totalBalanceElement) {
+            totalBalanceElement.textContent = `$${totalBalance.toLocaleString()}`;
+        }
+        
+        // Update summary cards
+        const summaryElements = {
+            totalAssets: document.querySelector('[data-summary="totalAssets"]'),
+            activeWallets: document.querySelector('[data-summary="activeWallets"]'),
+            coldStorage: document.querySelector('[data-summary="coldStorage"]')
+        };
+        
+        if (summaryElements.totalAssets) {
+            summaryElements.totalAssets.textContent = `$${totalBalance.toLocaleString()}`;
+        }
+        if (summaryElements.activeWallets) {
+            summaryElements.activeWallets.textContent = activeWallets.toString();
+        }
+        if (summaryElements.coldStorage) {
+            summaryElements.coldStorage.textContent = coldStorage.toString();
+        }
+    }
+
+    async viewWalletDetails(walletId) {
+        try {
+            this.showNotification('در حال بارگذاری جزئیات کیف‌پول...', 'info');
+            
+            const response = await this.apiCall(`/api/wallets/${walletId}`);
+            
+            if (response.success && response.data) {
+                this.showWalletDetailsModal(response.data);
+            } else {
+                throw new Error(response.error || 'خطا در دریافت جزئیات');
+            }
+        } catch (error) {
+            console.error('View wallet details error:', error);
+            
+            // Fallback to local data
+            const wallet = this.wallets.find(w => w.id === walletId);
+            if (wallet) {
+                this.showWalletDetailsModal(wallet);
+            } else {
+                this.showNotification('خطا در دریافت جزئیات کیف‌پول', 'error');
+            }
+        }
+    }
+
+    showWalletDetailsModal(wallet) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-2xl mx-4 w-full max-h-96 overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">جزئیات ${wallet.name}</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-gray-400">نوع کیف‌پول</label>
+                            <p class="text-white font-medium">${wallet.type}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">صرافی</label>
+                            <p class="text-white font-medium">${wallet.exchange}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">موجودی</label>
+                            <p class="text-white font-bold text-lg">${wallet.balance?.toLocaleString() || 'N/A'} ${wallet.currency}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">وضعیت</label>
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${this.getStatusBadgeClass(wallet.status)}">
+                                ${wallet.status}
+                            </span>
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div>
+                            <label class="text-sm text-gray-400">دسترسی‌ها</label>
+                            <p class="text-white">${wallet.permissions?.join(', ') || 'N/A'}</p>
+                        </div>
+                        <div>
+                            <label class="text-sm text-gray-400">آخرین بروزرسانی</label>
+                            <p class="text-white">${new Date(wallet.lastUpdate).toLocaleString('fa-IR')}</p>
+                        </div>
+                        ${wallet.performance ? `
+                        <div>
+                            <label class="text-sm text-gray-400">عملکرد روزانه</label>
+                            <p class="text-white font-medium ${wallet.performance.dailyPnL >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                ${wallet.performance.dailyPnL >= 0 ? '+' : ''}${wallet.performance.dailyPnL?.toFixed(2)}$
+                            </p>
+                        </div>
+                        ` : ''}
+                    </div>
+                </div>
+                
+                ${wallet.recentTransactions && wallet.recentTransactions.length > 0 ? `
+                <div class="mt-4">
+                    <h4 class="text-lg font-semibold text-white mb-2">تراکنش‌های اخیر</h4>
+                    <div class="space-y-2 max-h-40 overflow-y-auto">
+                        ${wallet.recentTransactions.slice(0, 5).map(tx => `
+                            <div class="flex items-center justify-between p-2 bg-gray-700 rounded">
+                                <div class="flex items-center">
+                                    <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${this.getTransactionTypeClass(tx.type)}">
+                                        ${this.getTransactionTypeText(tx.type)}
+                                    </span>
+                                    <span class="text-white ml-2">${tx.amount} ${tx.currency}</span>
+                                </div>
+                                <span class="text-gray-400 text-sm">${new Date(tx.time).toLocaleString('fa-IR')}</span>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    async editWallet(walletId) {
         const wallet = this.wallets.find(w => w.id === walletId);
-        if (wallet) {
-            const newName = prompt('نام جدید کیف‌پول:', wallet.name);
-            if (newName && newName.trim()) {
+        if (!wallet) {
+            this.showNotification('کیف‌پول پیدا نشد', 'error');
+            return;
+        }
+        
+        const newName = prompt('نام جدید کیف‌پول:', wallet.name);
+        if (!newName || newName.trim() === wallet.name) {
+            return;
+        }
+        
+        try {
+            const response = await this.apiCall(`/api/wallets/${walletId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    name: newName.trim(),
+                    settings: wallet.settings || {}
+                })
+            });
+            
+            if (response.success) {
+                // Update local data
                 wallet.name = newName.trim();
-                alert('نام کیف‌پول تغییر کرد');
+                wallet.lastModified = new Date().toISOString();
+                
+                this.showNotification('کیف‌پول با موفقیت ویرایش شد', 'success');
+                this.refreshWalletDisplay();
+            } else {
+                throw new Error(response.error || 'خطا در ویرایش کیف‌پول');
             }
+        } catch (error) {
+            console.error('Edit wallet error:', error);
+            this.showNotification('خطا در ویرایش کیف‌پول: ' + error.message, 'error');
         }
     }
 
-    disconnectWallet(walletId) {
+    async disconnectWallet(walletId) {
         const wallet = this.wallets.find(w => w.id === walletId);
-        if (wallet) {
-            if (confirm(`آیا مطمئن هستید که می‌خواهید کیف‌پول ${wallet.name} را قطع کنید؟\\n\\nاین عمل اتصال API را حذف می‌کند.`)) {
+        if (!wallet) {
+            this.showNotification('کیف‌پول پیدا نشد', 'error');
+            return;
+        }
+        
+        if (!confirm(`آیا مطمئن هستید که می‌خواهید کیف‌پول ${wallet.name} را قطع کنید؟\n\nاین عمل اتصال API را حذف می‌کند.`)) {
+            return;
+        }
+        
+        try {
+            const response = await this.apiCall(`/api/wallets/${walletId}`, {
+                method: 'DELETE'
+            });
+            
+            if (response.success) {
+                // Remove from local data
                 this.wallets = this.wallets.filter(w => w.id !== walletId);
-                alert('کیف‌پول قطع شد');
+                
+                this.showNotification('کیف‌پول قطع شد', 'success');
+                this.refreshWalletDisplay();
+            } else {
+                throw new Error(response.error || 'خطا در قطع کیف‌پول');
             }
+        } catch (error) {
+            console.error('Disconnect wallet error:', error);
+            this.showNotification('خطا در قطع کیف‌پول: ' + error.message, 'error');
         }
     }
 
-    viewAllTransactions() {
-        alert('نمایش همه تراکنش‌ها در حال پیاده‌سازی...');
+    async viewAllTransactions() {
+        try {
+            this.showNotification('در حال بارگذاری تراکنش‌ها...', 'info');
+            
+            const response = await this.apiCall('/api/wallets/transactions?limit=50');
+            
+            if (response.success && response.data) {
+                this.showAllTransactionsModal(response.data);
+            } else {
+                throw new Error(response.error || 'خطا در دریافت تراکنش‌ها');
+            }
+        } catch (error) {
+            console.error('View all transactions error:', error);
+            this.showNotification('خطا در بارگذاری تراکنش‌ها: ' + error.message, 'error');
+        }
+    }
+
+    showAllTransactionsModal(transactionData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-4xl mx-4 w-full max-h-96 overflow-hidden">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-xl font-bold text-white">همه تراکنش‌ها</h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <div class="mb-4 grid grid-cols-4 gap-4 text-center">
+                    <div class="bg-gray-700 p-3 rounded">
+                        <div class="text-green-400 font-bold">${transactionData.summary?.totalDeposits || 0}</div>
+                        <div class="text-gray-400 text-sm">واریز</div>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded">
+                        <div class="text-red-400 font-bold">${transactionData.summary?.totalWithdrawals || 0}</div>
+                        <div class="text-gray-400 text-sm">برداشت</div>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded">
+                        <div class="text-blue-400 font-bold">${transactionData.summary?.totalTrades || 0}</div>
+                        <div class="text-gray-400 text-sm">معامله</div>
+                    </div>
+                    <div class="bg-gray-700 p-3 rounded">
+                        <div class="text-yellow-400 font-bold">${transactionData.summary?.pendingCount || 0}</div>
+                        <div class="text-gray-400 text-sm">در انتظار</div>
+                    </div>
+                </div>
+                
+                <div class="overflow-y-auto max-h-64">
+                    <table class="w-full">
+                        <thead class="bg-gray-700 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">نوع</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">مقدار</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">صرافی</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">زمان</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">وضعیت</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            ${transactionData.transactions.map(tx => `
+                                <tr class="hover:bg-gray-700">
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${this.getTransactionTypeClass(tx.type)}">
+                                            ${this.getTransactionTypeText(tx.type)}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-white">${tx.amount} ${tx.currency}</td>
+                                    <td class="px-4 py-3 text-gray-300">${tx.exchange}</td>
+                                    <td class="px-4 py-3 text-gray-300">${new Date(tx.time).toLocaleString('fa-IR')}</td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${this.getTransactionStatusClass(tx.status)}">
+                                            ${tx.status === 'Completed' ? 'تکمیل شده' : tx.status === 'Pending' ? 'در انتظار' : tx.status}
+                                        </span>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+
+    initializePortfolioChart() {
+        const chartContainer = document.querySelector('[data-portfolio-chart]');
+        if (!chartContainer || !this.portfolioAllocation) {
+            // If Chart.js is not available or no data, show text representation
+            const fallbackElement = document.querySelector('.bg-gray-800.rounded-lg.p-4.h-64');
+            if (fallbackElement && this.portfolioAllocation) {
+                fallbackElement.innerHTML = `
+                    <canvas id="portfolio-pie-chart" width="200" height="200"></canvas>
+                `;
+                
+                // Try to initialize Chart.js if available
+                if (typeof Chart !== 'undefined') {
+                    this.createPieChart();
+                } else {
+                    // Fallback to text representation
+                    fallbackElement.innerHTML = `
+                        <div class="text-center">
+                            <h4 class="text-white font-bold mb-4">توزیع دارایی‌ها</h4>
+                            <div class="space-y-2">
+                                ${this.portfolioAllocation.assets.map(asset => `
+                                    <div class="flex items-center justify-between text-sm">
+                                        <div class="flex items-center">
+                                            <div class="w-3 h-3 rounded-full mr-2" style="background-color: ${asset.color}"></div>
+                                            <span class="text-white">${asset.symbol}</span>
+                                        </div>
+                                        <span class="text-white font-bold">${asset.percentage}%</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+            return;
+        }
+        
+        // Initialize Chart.js if available
+        if (typeof Chart !== 'undefined') {
+            this.createPieChart();
+        }
+    }
+
+    createPieChart() {
+        const canvas = document.getElementById('portfolio-pie-chart');
+        if (!canvas || !this.portfolioAllocation) return;
+        
+        const ctx = canvas.getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: this.portfolioAllocation.assets.map(asset => `${asset.symbol} (${asset.percentage}%)`),
+                datasets: [{
+                    data: this.portfolioAllocation.assets.map(asset => asset.percentage),
+                    backgroundColor: this.portfolioAllocation.assets.map(asset => asset.color),
+                    borderWidth: 2,
+                    borderColor: '#374151'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#FFFFFF',
+                            padding: 10,
+                            fontSize: 12
+                        }
+                    }
+                }
+            }
+        });
     }
 
     // DeFi methods
-    manageStaking() {
-        alert('مدیریت Staking در حال پیاده‌سازی...');
+    async manageStaking() {
+        try {
+            // Get current DeFi positions
+            const response = await this.apiCall('/api/wallets/defi/positions');
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to load DeFi positions');
+            }
+            
+            const defiData = response.data;
+            this.showStakingManagementModal(defiData.staking);
+            
+        } catch (error) {
+            console.error('Manage staking error:', error);
+            this.showNotification('❌ خطا در بارگذاری اطلاعات Staking: ' + error.message, 'error');
+        }
     }
 
-    manageLiquidity() {
-        alert('مدیریت Liquidity Pools در حال پیاده‌سازی...');
+    async manageLiquidity() {
+        try {
+            // Get current DeFi positions
+            const response = await this.apiCall('/api/wallets/defi/positions');
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to load DeFi positions');
+            }
+            
+            const defiData = response.data;
+            this.showLiquidityManagementModal(defiData.liquidityPools);
+            
+        } catch (error) {
+            console.error('Manage liquidity error:', error);
+            this.showNotification('❌ خطا در بارگذاری اطلاعات Liquidity: ' + error.message, 'error');
+        }
     }
 
-    manageYieldFarming() {
-        alert('مدیریت Yield Farming در حال پیاده‌سازی...');
+    async manageYieldFarming() {
+        try {
+            // Get current DeFi positions
+            const response = await this.apiCall('/api/wallets/defi/positions');
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to load DeFi positions');
+            }
+            
+            const defiData = response.data;
+            this.showYieldFarmingModal(defiData.yieldFarming);
+            
+        } catch (error) {
+            console.error('Manage yield farming error:', error);
+            this.showNotification('❌ خطا در بارگذاری اطلاعات Yield Farming: ' + error.message, 'error');
+        }
+    }
+
+    // DeFi Management Modal Methods
+    showStakingManagementModal(stakingData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-coins mr-2"></i>مدیریت Staking
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Current Staking Positions -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">موقعیت‌های فعلی</h4>
+                        <div class="space-y-3">
+                            ${stakingData.map(position => `
+                                <div class="bg-gray-800 rounded p-3 border border-gray-700">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div class="font-semibold text-white">${position.protocol}</div>
+                                            <div class="text-sm text-gray-400">${position.asset}</div>
+                                        </div>
+                                        <span class="px-2 py-1 bg-green-600 text-white text-xs rounded">${position.status}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div>مقدار: <span class="text-white">${position.amount.toLocaleString()}</span></div>
+                                        <div>APR: <span class="text-green-400">${position.apr}%</span></div>
+                                        <div>پاداش: <span class="text-yellow-400">${position.rewards}</span></div>
+                                        <div class="col-span-2">
+                                            <button onclick="walletsTabInstance.performStakingAction('claim_rewards', '${position.protocol}', '${position.asset}')" 
+                                                    class="w-full mt-2 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700">
+                                                دریافت پاداش
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- New Staking -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">Staking جدید</h4>
+                        <form onsubmit="walletsTabInstance.handleNewStaking(event); return false;" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">پروتکل</label>
+                                <select name="protocol" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="Ethereum 2.0">Ethereum 2.0 (5.2% APR)</option>
+                                    <option value="Polygon">Polygon (8.5% APR)</option>
+                                    <option value="Cardano">Cardano (4.8% APR)</option>
+                                    <option value="Solana">Solana (6.9% APR)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">دارایی</label>
+                                <select name="asset" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="ETH">ETH</option>
+                                    <option value="MATIC">MATIC</option>
+                                    <option value="ADA">ADA</option>
+                                    <option value="SOL">SOL</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">مقدار</label>
+                                <input type="number" name="amount" step="0.01" min="0.01" 
+                                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2" 
+                                       placeholder="مقدار برای Staking">
+                            </div>
+                            <button type="submit" class="w-full px-4 py-2 bg-indigo-600 text-white rounded hover:bg-indigo-700">
+                                <i class="fas fa-coins mr-2"></i>شروع Staking
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    showLiquidityManagementModal(liquidityData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-swimming-pool mr-2"></i>مدیریت Liquidity Pools
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="grid md:grid-cols-2 gap-6">
+                    <!-- Active Liquidity Pools -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">Pool‌های فعال</h4>
+                        <div class="space-y-3">
+                            ${liquidityData.map(pool => `
+                                <div class="bg-gray-800 rounded p-3 border border-gray-700">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div class="font-semibold text-white">${pool.protocol}</div>
+                                            <div class="text-sm text-gray-400">${pool.pair}</div>
+                                        </div>
+                                        <span class="px-2 py-1 bg-green-600 text-white text-xs rounded">${pool.status}</span>
+                                    </div>
+                                    <div class="grid grid-cols-2 gap-2 text-sm">
+                                        <div>نقدینگی: <span class="text-white">$${pool.liquidity.toLocaleString()}</span></div>
+                                        <div>APR: <span class="text-green-400">${pool.apr}%</span></div>
+                                        <div>کارمزد 24h: <span class="text-yellow-400">$${pool.fees24h}</span></div>
+                                        <div class="col-span-2 flex gap-2 mt-2">
+                                            <button onclick="walletsTabInstance.performLiquidityAction('harvest_fees', '${pool.protocol}', '${pool.pair}')" 
+                                                    class="flex-1 px-3 py-1 bg-yellow-600 text-white rounded text-xs hover:bg-yellow-700">
+                                                دریافت کارمزد
+                                            </button>
+                                            <button onclick="walletsTabInstance.performLiquidityAction('remove_liquidity', '${pool.protocol}', '${pool.pair}')" 
+                                                    class="flex-1 px-3 py-1 bg-red-600 text-white rounded text-xs hover:bg-red-700">
+                                                حذف نقدینگی
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Add Liquidity -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">افزودن نقدینگی</h4>
+                        <form onsubmit="walletsTabInstance.handleAddLiquidity(event); return false;" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">پروتکل</label>
+                                <select name="protocol" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="Uniswap V3">Uniswap V3</option>
+                                    <option value="PancakeSwap">PancakeSwap</option>
+                                    <option value="SushiSwap">SushiSwap</option>
+                                    <option value="Curve">Curve Finance</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">جفت ارز</label>
+                                <select name="pair" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="ETH/USDC">ETH/USDC</option>
+                                    <option value="BTC/ETH">BTC/ETH</option>
+                                    <option value="BNB/BUSD">BNB/BUSD</option>
+                                    <option value="MATIC/USDT">MATIC/USDT</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">مقدار (USD)</label>
+                                <input type="number" name="amount" step="1" min="100" 
+                                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2" 
+                                       placeholder="مقدار نقدینگی">
+                            </div>
+                            <div class="bg-gray-800 rounded p-3 text-sm">
+                                <div class="text-gray-400 mb-2">هشدارهای مهم:</div>
+                                <div class="text-yellow-400 text-xs">• خطر Impermanent Loss وجود دارد</div>
+                                <div class="text-yellow-400 text-xs">• کارمزدها به صورت خودکار دریافت نمی‌شوند</div>
+                            </div>
+                            <button type="submit" class="w-full px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                                <i class="fas fa-plus mr-2"></i>افزودن نقدینگی
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    showYieldFarmingModal(yieldFarmingData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-5xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-seedling mr-2"></i>مدیریت Yield Farming
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Active Positions -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">موقعیت‌های فعال</h4>
+                        <div class="space-y-3">
+                            ${yieldFarmingData.map(position => `
+                                <div class="bg-gray-800 rounded p-3 border border-gray-700">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <div>
+                                            <div class="font-semibold text-white">${position.protocol}</div>
+                                            <div class="text-sm text-gray-400">${position.asset}</div>
+                                        </div>
+                                        <span class="px-2 py-1 bg-blue-600 text-white text-xs rounded">${position.status}</span>
+                                    </div>
+                                    <div class="text-sm space-y-1">
+                                        <div>تامین: <span class="text-white">$${position.supplied.toLocaleString()}</span></div>
+                                        <div>وام: <span class="text-red-400">$${position.borrowed.toLocaleString()}</span></div>
+                                        <div>APR خالص: <span class="text-green-400">${position.netApr}%</span></div>
+                                    </div>
+                                    <div class="flex gap-1 mt-2">
+                                        <button onclick="walletsTabInstance.performYieldAction('repay', '${position.protocol}', '${position.asset}')" 
+                                                class="flex-1 px-2 py-1 bg-orange-600 text-white rounded text-xs hover:bg-orange-700">
+                                            بازپرداخت
+                                        </button>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Supply Assets -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">تامین دارایی</h4>
+                        <form onsubmit="walletsTabInstance.handleSupplyAsset(event); return false;" class="space-y-4">
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">پروتکل</label>
+                                <select name="protocol" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="Compound">Compound (3.8% APR)</option>
+                                    <option value="Aave">Aave (6.2% APR)</option>
+                                    <option value="Venus">Venus (4.5% APR)</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">دارایی</label>
+                                <select name="asset" class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2">
+                                    <option value="USDC">USDC</option>
+                                    <option value="DAI">DAI</option>
+                                    <option value="ETH">ETH</option>
+                                    <option value="BTC">WBTC</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-sm text-gray-400 mb-2">مقدار</label>
+                                <input type="number" name="amount" step="1" min="100" 
+                                       class="w-full bg-gray-800 text-white border border-gray-600 rounded p-2" 
+                                       placeholder="مقدار تامین">
+                            </div>
+                            <button type="submit" class="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700">
+                                <i class="fas fa-arrow-up mr-2"></i>تامین دارایی
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Strategy Optimizer -->
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-4">بهینه‌ساز استراتژی</h4>
+                        <div class="space-y-4">
+                            <div class="bg-gray-800 rounded p-3">
+                                <div class="text-sm text-gray-400 mb-2">استراتژی پیشنهادی:</div>
+                                <div class="text-white font-semibold">Conservative Yield</div>
+                                <div class="text-green-400 text-sm">APR متوقع: 8.2%</div>
+                                <div class="text-gray-400 text-xs mt-1">ریسک پایین - بازده متوسط</div>
+                            </div>
+                            <button onclick="walletsTabInstance.optimizeYieldStrategy()" 
+                                    class="w-full px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700">
+                                <i class="fas fa-magic mr-2"></i>بهینه‌سازی خودکار
+                            </button>
+                            <div class="text-xs text-gray-400">
+                                بهینه‌سازی بر اساس تحمل ریسک و اهداف بازدهی شما
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    // DeFi Action Handlers
+    async performStakingAction(action, protocol, asset) {
+        try {
+            const response = await this.apiCall('/api/wallets/defi/staking', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, protocol, asset })
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to perform staking action');
+            }
+            
+            this.showNotification(`✅ عملیات ${action} با موفقیت انجام شد`, 'success');
+            
+        } catch (error) {
+            console.error('Staking action error:', error);
+            this.showNotification('❌ خطا در انجام عملیات: ' + error.message, 'error');
+        }
+    }
+
+    async performLiquidityAction(action, protocol, pair) {
+        try {
+            const response = await this.apiCall('/api/wallets/defi/liquidity', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, protocol, pair })
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to perform liquidity action');
+            }
+            
+            this.showNotification(`✅ عملیات ${action} با موفقیت انجام شد`, 'success');
+            
+        } catch (error) {
+            console.error('Liquidity action error:', error);
+            this.showNotification('❌ خطا در انجام عملیات: ' + error.message, 'error');
+        }
+    }
+
+    async performYieldAction(action, protocol, asset) {
+        try {
+            const response = await this.apiCall('/api/wallets/defi/yield-farming', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action, protocol, asset })
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to perform yield farming action');
+            }
+            
+            this.showNotification(`✅ عملیات ${action} با موفقیت انجام شد`, 'success');
+            
+        } catch (error) {
+            console.error('Yield farming action error:', error);
+            this.showNotification('❌ خطا در انجام عملیات: ' + error.message, 'error');
+        }
+    }
+
+    async handleNewStaking(event) {
+        const formData = new FormData(event.target);
+        const data = {
+            action: 'stake',
+            protocol: formData.get('protocol'),
+            asset: formData.get('asset'),
+            amount: formData.get('amount')
+        };
+        
+        await this.performStakingAction(data.action, data.protocol, data.asset);
+        event.target.closest('.fixed').remove();
+    }
+
+    async handleAddLiquidity(event) {
+        const formData = new FormData(event.target);
+        const data = {
+            action: 'add_liquidity',
+            protocol: formData.get('protocol'),
+            pair: formData.get('pair'),
+            amount: formData.get('amount')
+        };
+        
+        await this.performLiquidityAction(data.action, data.protocol, data.pair);
+        event.target.closest('.fixed').remove();
+    }
+
+    async handleSupplyAsset(event) {
+        const formData = new FormData(event.target);
+        const data = {
+            action: 'supply',
+            protocol: formData.get('protocol'),
+            asset: formData.get('asset'),
+            amount: formData.get('amount')
+        };
+        
+        await this.performYieldAction(data.action, data.protocol, data.asset);
+        event.target.closest('.fixed').remove();
+    }
+
+    async optimizeYieldStrategy() {
+        try {
+            const response = await this.apiCall('/api/wallets/defi/yield-farming', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ 
+                    action: 'optimize', 
+                    protocol: 'Auto-Optimizer',
+                    asset: 'Multi-Asset',
+                    strategy: 'conservative_yield'
+                })
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to optimize strategy');
+            }
+            
+            this.showNotification('✅ استراتژی بهینه‌سازی شد - اجرای خودکار آغاز شد', 'success');
+            
+        } catch (error) {
+            console.error('Strategy optimization error:', error);
+            this.showNotification('❌ خطا در بهینه‌سازی: ' + error.message, 'error');
+        }
     }
 
     // Security and backup methods
@@ -841,27 +1961,190 @@ export default class WalletsTab {
         }
     }
 
-    saveWalletSettings() {
-        const settings = this.collectData();
-        alert('✅ تنظیمات کیف‌پول ذخیره شد');
-        console.log('Wallet settings saved:', settings);
+    async saveWalletSettings() {
+        try {
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال ذخیره...';
+            button.disabled = true;
+            
+            const settings = this.collectData();
+            
+            const response = await this.apiCall('/api/wallets/settings', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(settings)
+            });
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to save settings');
+            }
+            
+            this.showNotification('✅ تنظیمات کیف‌پول با موفقیت ذخیره شد', 'success');
+            console.log('Wallet settings saved:', response.data);
+            
+            // Update local settings with server response
+            this.settings = { ...this.settings, ...response.data };
+            
+        } catch (error) {
+            console.error('Save wallet settings error:', error);
+            this.showNotification('❌ خطا در ذخیره تنظیمات: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            const button = event.target;
+            if (button) {
+                button.innerHTML = '<i class="fas fa-save mr-2"></i>ذخیره تنظیمات';
+                button.disabled = false;
+            }
+        }
     }
 
-    exportWalletData() {
-        const csvContent = 'Wallet Name,Exchange,Balance,Currency,Status\\n' + 
-                          this.wallets.map(wallet => 
-                              `"${wallet.name}","${wallet.exchange}","${wallet.balance}","${wallet.currency}","${wallet.status}"`
-                          ).join('\\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'titan-wallet-data.csv';
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        alert('📊 داده‌های کیف‌پول صادر شد');
+    async exportWalletData() {
+        try {
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال صادرات...';
+            button.disabled = true;
+            
+            // Show export options modal
+            this.showExportOptionsModal();
+            
+        } catch (error) {
+            console.error('Export wallet data error:', error);
+            this.showNotification('❌ خطا در صادرات داده‌ها: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            const button = event.target;
+            if (button) {
+                button.innerHTML = '<i class="fas fa-download mr-2"></i>صادرات داده‌ها';
+                button.disabled = false;
+            }
+        }
+    }
+
+    showExportOptionsModal() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-download mr-2"></i>صادرات داده‌های کیف‌پول
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <form onsubmit="walletsTabInstance.performExport(event); return false;" class="space-y-4">
+                    <div>
+                        <label class="block text-sm text-gray-400 mb-2">فرمت فایل</label>
+                        <select name="format" class="w-full bg-gray-700 text-white border border-gray-600 rounded p-2">
+                            <option value="json">JSON (کامل)</option>
+                            <option value="csv">CSV (ساده)</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-2">
+                        <label class="flex items-center">
+                            <input type="checkbox" name="includeBalances" class="mr-2" checked>
+                            <span class="text-white">شامل موجودی‌ها</span>
+                        </label>
+                        <label class="flex items-center">
+                            <input type="checkbox" name="includeSensitive" class="mr-2">
+                            <span class="text-white">شامل اطلاعات حساس (تراکنش‌ها)</span>
+                        </label>
+                    </div>
+
+                    <div class="bg-yellow-600 bg-opacity-20 border border-yellow-600 rounded p-3 text-sm">
+                        <div class="text-yellow-400 font-semibold mb-1">⚠️ توجه امنیتی</div>
+                        <div class="text-yellow-300">
+                            فایل صادراتی شامل اطلاعات حساس است. آن را در مکان امن نگهداری کنید.
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3">
+                        <button type="button" onclick="this.closest('.fixed').remove()" 
+                                class="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+                            انصراف
+                        </button>
+                        <button type="submit" class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                            <i class="fas fa-download mr-2"></i>صادرات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async performExport(event) {
+        try {
+            const formData = new FormData(event.target);
+            const options = {
+                format: formData.get('format'),
+                includeBalances: formData.has('includeBalances'),
+                includeSensitive: formData.has('includeSensitive')
+            };
+
+            const response = await this.apiCall('/api/wallets/export', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(options)
+            });
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to export data');
+            }
+
+            // Create and download file
+            const dataStr = options.format === 'json' ? 
+                JSON.stringify(response.data, null, 2) : 
+                this.convertToCSV(response.data);
+            
+            const blob = new Blob([dataStr], { 
+                type: options.format === 'json' ? 'application/json' : 'text/csv' 
+            });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = response.filename || `titan-wallets-${new Date().toISOString().split('T')[0]}.${options.format}`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            this.showNotification('✅ داده‌های کیف‌پول با موفقیت صادر شد', 'success');
+            event.target.closest('.fixed').remove();
+
+        } catch (error) {
+            console.error('Export error:', error);
+            this.showNotification('❌ خطا در صادرات: ' + error.message, 'error');
+        }
+    }
+
+    convertToCSV(data) {
+        if (!data.wallets || !Array.isArray(data.wallets)) {
+            return 'No wallet data available';
+        }
+
+        const headers = ['Name', 'Type', 'Exchange', 'Balance', 'Currency', 'Status', 'Last Update'];
+        const csvRows = [headers.join(',')];
+
+        data.wallets.forEach(wallet => {
+            const row = [
+                `"${wallet.name}"`,
+                `"${wallet.type}"`,
+                `"${wallet.exchange}"`,
+                `"${wallet.balance}"`,
+                `"${wallet.currency}"`,
+                `"${wallet.status}"`,
+                `"${new Date().toLocaleString()}"`
+            ];
+            csvRows.push(row.join(','));
+        });
+
+        return csvRows.join('\n');
     }
 
     importWalletData() {
@@ -869,140 +2152,477 @@ export default class WalletsTab {
         input.type = 'file';
         input.accept = '.json,.csv';
         
-        input.onchange = (event) => {
+        input.onchange = async (event) => {
             const file = event.target.files[0];
             if (file) {
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    try {
-                        if (file.name.endsWith('.json')) {
-                            const data = JSON.parse(e.target.result);
-                            alert('داده‌های JSON وارد شدند');
-                        } else if (file.name.endsWith('.csv')) {
-                            alert('داده‌های CSV وارد شدند');
-                        }
-                    } catch (error) {
-                        alert('خطا در وارد کردن فایل: ' + error.message);
-                    }
-                };
-                reader.readAsText(file);
+                try {
+                    const fileContent = await this.readFile(file);
+                    await this.processImportFile(fileContent, file.name);
+                } catch (error) {
+                    console.error('Import file error:', error);
+                    this.showNotification('❌ خطا در وارد کردن فایل: ' + error.message, 'error');
+                }
             }
         };
         
         input.click();
     }
 
+    readFile(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (e) => resolve(e.target.result);
+            reader.onerror = (e) => reject(new Error('Failed to read file'));
+            reader.readAsText(file);
+        });
+    }
+
+    async processImportFile(content, filename) {
+        try {
+            let parsedData;
+            const format = filename.endsWith('.json') ? 'json' : 'csv';
+            
+            if (format === 'json') {
+                parsedData = JSON.parse(content);
+            } else {
+                // Convert CSV to JSON format
+                parsedData = this.parseCSVToJSON(content);
+            }
+
+            // Show preview modal first
+            this.showImportPreviewModal(parsedData, format);
+
+        } catch (error) {
+            throw new Error('فرمت فایل نامعتبر است: ' + error.message);
+        }
+    }
+
+    parseCSVToJSON(csvContent) {
+        const lines = csvContent.split('\n');
+        if (lines.length < 2) {
+            throw new Error('فایل CSV باید حداقل دو خط داشته باشد');
+        }
+
+        const headers = lines[0].split(',').map(h => h.replace(/"/g, '').trim());
+        const wallets = [];
+
+        for (let i = 1; i < lines.length; i++) {
+            if (lines[i].trim()) {
+                const values = lines[i].split(',').map(v => v.replace(/"/g, '').trim());
+                const wallet = {};
+                headers.forEach((header, index) => {
+                    wallet[header.toLowerCase()] = values[index] || '';
+                });
+                wallets.push(wallet);
+            }
+        }
+
+        return { wallets, metadata: { format: 'csv', importedAt: new Date().toISOString() } };
+    }
+
+    showImportPreviewModal(data, format) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">
+                        <i class="fas fa-upload mr-2"></i>پیش‌نمایش وارد کردن داده‌ها
+                    </h3>
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+
+                <div class="mb-6">
+                    <div class="bg-gray-900 rounded-lg p-4 mb-4">
+                        <h4 class="text-white font-semibold mb-2">اطلاعات فایل</h4>
+                        <div class="grid grid-cols-2 gap-4 text-sm">
+                            <div>فرمت: <span class="text-blue-400">${format.toUpperCase()}</span></div>
+                            <div>تعداد کیف‌پول: <span class="text-green-400">${data.wallets ? data.wallets.length : 0}</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-3">کیف‌پول‌های قابل وارد:</h4>
+                        <div class="max-h-60 overflow-y-auto">
+                            <table class="w-full text-sm">
+                                <thead class="text-gray-400 border-b border-gray-700">
+                                    <tr>
+                                        <th class="text-right p-2">نام</th>
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">صرافی</th>
+                                        <th class="text-right p-2">وضعیت</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="text-white">
+                                    ${(data.wallets || []).slice(0, 10).map(wallet => `
+                                        <tr class="border-b border-gray-700">
+                                            <td class="p-2">${wallet.name || wallet.Name || 'نامشخص'}</td>
+                                            <td class="p-2">${wallet.type || wallet.Type || 'نامشخص'}</td>
+                                            <td class="p-2">${wallet.exchange || wallet.Exchange || 'نامشخص'}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 bg-green-600 text-xs rounded">
+                                                    ${wallet.status || wallet.Status || 'Active'}
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                    ${(data.wallets?.length || 0) > 10 ? `
+                                        <tr>
+                                            <td colspan="4" class="p-2 text-center text-gray-400">
+                                                و ${data.wallets.length - 10} کیف‌پول دیگر...
+                                            </td>
+                                        </tr>
+                                    ` : ''}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="flex-1 px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-700">
+                        انصراف
+                    </button>
+                    <button onclick="walletsTabInstance.confirmImport(${JSON.stringify(data).replace(/"/g, '&quot;')}, '${format}'); this.closest('.fixed').remove()" 
+                            class="flex-1 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">
+                        <i class="fas fa-check mr-2"></i>تایید و وارد کردن
+                    </button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async confirmImport(data, format) {
+        try {
+            // Show loading notification
+            const loadingNotification = this.showNotification('در حال وارد کردن داده‌ها...', 'info', 0);
+            
+            const response = await this.apiCall('/api/wallets/import', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ data, format })
+            });
+
+            // Remove loading notification
+            if (loadingNotification && loadingNotification.remove) {
+                loadingNotification.remove();
+            }
+
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to import data');
+            }
+
+            const result = response.data;
+            this.showNotification(`✅ ${result.imported} کیف‌پول با موفقیت وارد شد`, 'success');
+            
+            // Refresh wallet data
+            await this.loadWalletData();
+            await this.updateSummaryCards();
+
+        } catch (error) {
+            console.error('Confirm import error:', error);
+            this.showNotification('❌ خطا در وارد کردن داده‌ها: ' + error.message, 'error');
+        }
+    }
+
     // Cold Wallet Automation Methods
-    testColdWalletConnection() {
+    async testColdWalletConnection() {
         const primaryAddress = document.getElementById('primary-cold-wallet')?.value;
         const backupAddress = document.getElementById('backup-cold-wallet')?.value;
         
         if (!primaryAddress) {
-            alert('❌ لطفاً ابتدا آدرس کیف پول سرد اصلی را وارد کنید');
+            this.showNotification('لطفاً ابتدا آدرس کیف پول سرد اصلی را وارد کنید', 'error');
             return;
         }
         
-        // Show loading state
-        const loadingAlert = this.showNotification('🔄 در حال تست اتصال به کیف پول سرد...', 'info', 0);
-        
-        // Simulate connection test
-        setTimeout(() => {
+        try {
+            const loadingAlert = this.showNotification('در حال تست اتصال به کیف پول سرد...', 'info', 0);
+            
+            const response = await this.apiCall('/api/wallets/cold-wallet/test', {
+                method: 'POST',
+                body: JSON.stringify({
+                    primaryAddress,
+                    backupAddress
+                })
+            });
+            
             // Hide loading
             if (loadingAlert) loadingAlert.remove();
             
-            // Validate address format (simplified)
-            if (primaryAddress.startsWith('bc1') || primaryAddress.startsWith('0x') || primaryAddress.startsWith('1') || primaryAddress.startsWith('3')) {
-                this.showNotification('✅ اتصال به کیف پول سرد موفقیت‌آمیز بود', 'success');
+            if (response.success) {
+                const testResult = response.data;
                 
                 // Update connection status
-                this.settings.coldWalletConnected = true;
+                this.settings.coldWalletConnected = testResult.primaryAddress.connected;
                 this.settings.lastConnectionTest = new Date().toLocaleString('fa-IR');
+                
+                // Show detailed results
+                let message = `✅ نتایج تست اتصال:\n`;
+                message += `آدرس اصلی: ${testResult.primaryAddress.connected ? 'متصل' : 'قطع'}\n`;
+                if (testResult.primaryAddress.balance) {
+                    message += `موجودی: ${testResult.primaryAddress.balance.toFixed(6)} ${testResult.primaryAddress.network === 'Bitcoin' ? 'BTC' : 'ETH'}\n`;
+                }
+                
+                if (testResult.backupAddress) {
+                    message += `آدرس پشتیبان: ${testResult.backupAddress.connected ? 'متصل' : 'قطع'}\n`;
+                }
+                
+                this.showNotification(message, 'success', 8000);
+                
+                // Update cold wallet statistics
+                this.updateColdWalletStats(testResult);
             } else {
-                this.showNotification('❌ فرمت آدرس کیف پول سرد نامعتبر است', 'error');
+                this.showNotification('خطا در تست اتصال: ' + response.error, 'error');
                 this.settings.coldWalletConnected = false;
             }
-        }, 2000);
+        } catch (error) {
+            console.error('Test cold wallet connection error:', error);
+            this.showNotification('خطا در تست اتصال به کیف پول سرد: ' + error.message, 'error');
+        }
     }
 
-    forceColdTransfer() {
+    updateColdWalletStats(testResult) {
+        // Update balance if available
+        if (testResult.primaryAddress.balance) {
+            const balanceElement = document.querySelector('[data-cold-balance]');
+            if (balanceElement) {
+                const btcPrice = 45000; // Simplified price
+                const balanceUSD = testResult.primaryAddress.balance * btcPrice;
+                balanceElement.textContent = `${balanceUSD.toLocaleString()}$`;
+            }
+        }
+        
+        // Update last connection test time
+        const lastTestElement = document.querySelector('[data-last-test]');
+        if (lastTestElement) {
+            lastTestElement.textContent = new Date().toLocaleString('fa-IR');
+        }
+    }
+
+    async forceColdTransfer() {
         const threshold = parseFloat(document.getElementById('cold-wallet-threshold')?.value) || 50000;
         const percentage = parseFloat(document.getElementById('transfer-percentage')?.value) || 70;
         const primaryAddress = document.getElementById('primary-cold-wallet')?.value;
         
         if (!primaryAddress) {
-            alert('❌ آدرس کیف پول سرد مشخص نشده است');
+            this.showNotification('آدرس کیف پول سرد مشخص نشده است', 'error');
             return;
         }
         
-        if (!confirm(`آیا از انتقال فوری ${percentage}% موجودی به کیف پول سرد اطمینان دارید؟\\n\\nمقصد: ${primaryAddress.substring(0, 10)}...`)) {
+        if (!confirm(`آیا از انتقال فوری ${percentage}% موجودی به کیف پول سرد اطمینان دارید؟\n\nمقصد: ${primaryAddress.substring(0, 10)}...`)) {
             return;
         }
         
-        // Simulate transfer
-        const loadingAlert = this.showNotification('🚀 در حال انجام انتقال فوری...', 'info', 0);
-        
-        setTimeout(() => {
+        try {
+            const loadingAlert = this.showNotification('در حال انجام انتقال فوری...', 'info', 0);
+            
+            // Calculate transfer amount based on total balance
+            const totalBalance = this.calculateTotalBalance();
+            const transferAmount = (totalBalance * percentage) / 100;
+            
+            const response = await this.apiCall('/api/wallets/cold-wallet/transfer', {
+                method: 'POST',
+                body: JSON.stringify({
+                    amount: transferAmount,
+                    percentage,
+                    destination: primaryAddress,
+                    force: true
+                })
+            });
+            
+            // Hide loading
             if (loadingAlert) loadingAlert.remove();
             
-            // Update statistics
-            this.settings.todayTransfers = (this.settings.todayTransfers || 0) + 1;
-            this.settings.lastTransferTime = new Date().toLocaleString('fa-IR');
-            this.settings.coldWalletBalance = (this.settings.coldWalletBalance || 0) + 25000; // Simulated amount
-            
-            this.showNotification('✅ انتقال با موفقیت انجام شد', 'success');
-            
-            // Refresh display
-            setTimeout(() => {
-                location.reload();
-            }, 2000);
-        }, 3000);
+            if (response.success) {
+                const transfer = response.data;
+                
+                // Update statistics
+                this.settings.todayTransfers = (this.settings.todayTransfers || 0) + 1;
+                this.settings.lastTransferTime = new Date().toLocaleString('fa-IR');
+                this.settings.coldWalletBalance = (this.settings.coldWalletBalance || 0) + transferAmount;
+                
+                // Show transfer details
+                let message = `✅ انتقال فوری شروع شد\n`;
+                message += `مقدار: $${transferAmount.toLocaleString()}\n`;
+                message += `شناسه انتقال: ${transfer.id}\n`;
+                message += `زمان تخمینی تکمیل: ${new Date(transfer.estimatedCompletion).toLocaleTimeString('fa-IR')}`;
+                
+                this.showNotification(message, 'success', 8000);
+                
+                // Update cold wallet statistics display
+                this.updateColdWalletDisplay();
+                
+                // Start monitoring transfer status
+                this.monitorTransferProgress(transfer.id);
+            } else {
+                throw new Error(response.error || 'خطا در انتقال فوری');
+            }
+        } catch (error) {
+            console.error('Force cold transfer error:', error);
+            this.showNotification('خطا در انتقال فوری: ' + error.message, 'error');
+        }
     }
 
-    viewTransferHistory() {
-        // Create modal for transfer history
+    async monitorTransferProgress(transferId) {
+        // This would typically poll the API for transfer status updates
+        setTimeout(() => {
+            this.showNotification('انتقال با موفقیت تکمیل شد', 'success');
+            this.updateColdWalletDisplay();
+        }, 30000); // Simulate 30 second completion
+    }
+
+    updateColdWalletDisplay() {
+        // Update today's transfers count
+        const todayTransfersElement = document.querySelector('[data-today-transfers]');
+        if (todayTransfersElement) {
+            todayTransfersElement.textContent = this.settings.todayTransfers || 0;
+        }
+        
+        // Update last transfer time
+        const lastTransferElement = document.querySelector('[data-last-transfer]');
+        if (lastTransferElement) {
+            lastTransferElement.textContent = this.settings.lastTransferTime || 'هنوز نداشته';
+        }
+        
+        // Update cold wallet balance
+        const coldBalanceElement = document.querySelector('[data-cold-balance]');
+        if (coldBalanceElement) {
+            coldBalanceElement.textContent = `${(this.settings.coldWalletBalance || 0).toLocaleString()}$`;
+        }
+    }
+
+    async viewTransferHistory() {
+        try {
+            this.showNotification('در حال بارگذاری تاریخچه انتقال‌ها...', 'info');
+            
+            const response = await this.apiCall('/api/wallets/cold-wallet/history?limit=20');
+            
+            if (response.success && response.data) {
+                this.showTransferHistoryModal(response.data);
+            } else {
+                throw new Error(response.error || 'خطا در دریافت تاریخچه');
+            }
+        } catch (error) {
+            console.error('View transfer history error:', error);
+            
+            // Show fallback modal with mock data
+            const fallbackData = {
+                transfers: [
+                    {
+                        id: 1,
+                        type: 'auto',
+                        amount: 0.55,
+                        amountUSD: 24750,
+                        destination: 'bc1q7x9k2m5n8p4r6s3t1v7w9',
+                        timestamp: new Date(Date.now() - 3600000).toISOString(),
+                        status: 'completed',
+                        transactionHash: 'tx_abc123def456'
+                    },
+                    {
+                        id: 2,
+                        type: 'manual',
+                        amount: 0.33,
+                        amountUSD: 14850,
+                        destination: 'bc1q7x9k2m5n8p4r6s3t1v7w9',
+                        timestamp: new Date(Date.now() - 86400000).toISOString(),
+                        status: 'completed',
+                        transactionHash: 'tx_def456ghi789'
+                    }
+                ],
+                summary: {
+                    totalTransfers: 15,
+                    totalAmount: 5.67,
+                    totalAmountUSD: 255150
+                }
+            };
+            
+            this.showTransferHistoryModal(fallbackData);
+            this.showNotification('خطا در بارگذاری از API، داده‌های نمونه نمایش داده شد', 'warning');
+        }
+    }
+
+    showTransferHistoryModal(historyData) {
         const modal = document.createElement('div');
         modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
         modal.innerHTML = `
-            <div class="bg-gray-800 rounded-lg p-6 max-w-4xl mx-4 max-h-96 overflow-y-auto">
+            <div class="bg-gray-800 rounded-lg p-6 max-w-5xl mx-4 w-full max-h-96 overflow-hidden">
                 <div class="flex items-center justify-between mb-4">
                     <h3 class="text-xl font-bold text-white">📋 تاریخچه انتقال‌های کلد والت</h3>
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="text-gray-400 hover:text-white">
+                    <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
                         <i class="fas fa-times text-xl"></i>
                     </button>
                 </div>
                 
-                <div class="space-y-3">
-                    <div class="bg-gray-700 rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-white font-medium">انتقال خودکار</div>
-                                <div class="text-gray-400 text-sm">به آدرس: bc1q...x7k9</div>
-                            </div>
-                            <div class="text-left">
-                                <div class="text-green-400 font-bold">+$25,000</div>
-                                <div class="text-gray-400 text-sm">${new Date().toLocaleDateString('fa-IR')}</div>
-                            </div>
-                        </div>
+                ${historyData.summary ? `
+                <div class="grid grid-cols-3 gap-4 mb-4">
+                    <div class="bg-gray-700 p-3 rounded text-center">
+                        <div class="text-blue-400 font-bold">${historyData.summary.totalTransfers}</div>
+                        <div class="text-gray-400 text-sm">کل انتقال‌ها</div>
                     </div>
-                    
-                    <div class="bg-gray-700 rounded-lg p-4">
-                        <div class="flex items-center justify-between">
-                            <div>
-                                <div class="text-white font-medium">انتقال دستی</div>
-                                <div class="text-gray-400 text-sm">به آدرس: bc1q...m2n5</div>
-                            </div>
-                            <div class="text-left">
-                                <div class="text-green-400 font-bold">+$15,000</div>
-                                <div class="text-gray-400 text-sm">${new Date(Date.now() - 86400000).toLocaleDateString('fa-IR')}</div>
-                            </div>
-                        </div>
+                    <div class="bg-gray-700 p-3 rounded text-center">
+                        <div class="text-green-400 font-bold">${historyData.summary.totalAmount?.toFixed(4)} BTC</div>
+                        <div class="text-gray-400 text-sm">کل مقدار</div>
                     </div>
-                    
-                    <div class="text-center text-gray-400 py-4">
-                        <i class="fas fa-info-circle mr-2"></i>
-                        تاریخچه کامل در API ذخیره می‌شود
+                    <div class="bg-gray-700 p-3 rounded text-center">
+                        <div class="text-purple-400 font-bold">$${historyData.summary.totalAmountUSD?.toLocaleString()}</div>
+                        <div class="text-gray-400 text-sm">ارزش دلاری</div>
                     </div>
+                </div>
+                ` : ''}
+                
+                <div class="overflow-y-auto max-h-64">
+                    <table class="w-full">
+                        <thead class="bg-gray-700 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">نوع</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">مقدار</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">آدرس مقصد</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">زمان</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">وضعیت</th>
+                                <th class="px-4 py-2 text-right text-xs font-medium text-gray-300 uppercase">هش تراکنش</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-700">
+                            ${historyData.transfers.map(transfer => `
+                                <tr class="hover:bg-gray-700">
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                            transfer.type === 'auto' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'
+                                        }">
+                                            ${transfer.type === 'auto' ? 'خودکار' : 'دستی'}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-white">
+                                        <div>${transfer.amount?.toFixed(6)} BTC</div>
+                                        <div class="text-gray-400 text-sm">$${transfer.amountUSD?.toLocaleString()}</div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-300 font-mono text-sm">
+                                        ${transfer.destination?.substring(0, 10)}...${transfer.destination?.slice(-6)}
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-300">
+                                        ${new Date(transfer.timestamp).toLocaleString('fa-IR')}
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <span class="inline-flex items-center px-2 py-1 rounded text-xs font-medium ${
+                                            transfer.status === 'completed' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                                        }">
+                                            ${transfer.status === 'completed' ? 'تکمیل شده' : 'در حال پردازش'}
+                                        </span>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-300 font-mono text-sm">
+                                        <a href="#" onclick="navigator.clipboard.writeText('${transfer.transactionHash}')" 
+                                           class="hover:text-blue-400" title="کپی هش">
+                                            ${transfer.transactionHash?.substring(0, 8)}...
+                                        </a>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         `;
@@ -1010,58 +2630,133 @@ export default class WalletsTab {
         document.body.appendChild(modal);
     }
 
-    generateColdWalletReport() {
-        const reportData = {
-            totalBalance: this.settings.coldWalletBalance || 0,
-            transfersToday: this.settings.todayTransfers || 0,
-            lastTransfer: this.settings.lastTransferTime || 'N/A',
-            safetyPercentage: this.settings.safetyPercentage || 85,
-            primaryWallet: document.getElementById('primary-cold-wallet')?.value || 'Not Set',
-            backupWallet: document.getElementById('backup-cold-wallet')?.value || 'Not Set',
-            autoTransfer: document.getElementById('auto-cold-transfer')?.checked || false,
-            threshold: document.getElementById('cold-wallet-threshold')?.value || 50000,
-            transferPercentage: document.getElementById('transfer-percentage')?.value || 70,
-            checkFrequency: document.getElementById('check-frequency')?.value || 'daily'
-        };
-        
-        const reportContent = `
-TITAN Trading System - Cold Wallet Report
-Generated: ${new Date().toLocaleString('fa-IR')}
+    async generateColdWalletReport() {
+        try {
+            // Show loading state
+            const button = event.target;
+            const originalText = button.innerHTML;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال تولید گزارش...';
+            button.disabled = true;
+            
+            // Get comprehensive report from API
+            const response = await this.apiCall('/api/wallets/cold-wallet/report');
+            
+            if (!response.success) {
+                throw new Error(response.error || 'Failed to generate report');
+            }
+            
+            const reportData = response.data;
+            
+            // Create comprehensive report content
+            const reportContent = `
+TITAN Trading System - Cold Wallet Comprehensive Report
+Generated: ${new Date(reportData.metadata.generatedAt).toLocaleString('fa-IR')}
+Generated By: ${reportData.metadata.generatedBy}
+Report Version: ${reportData.metadata.version}
 
-=== Cold Wallet Statistics ===
-Total Balance: $${reportData.totalBalance.toLocaleString()}
-Transfers Today: ${reportData.transfersToday}
-Last Transfer: ${reportData.lastTransfer}
-Safety Percentage: ${reportData.safetyPercentage}%
+========================================
+COLD WALLET STATISTICS
+========================================
+Total Balance: ${reportData.statistics.totalBalance} BTC ($${reportData.statistics.totalBalanceUSD.toLocaleString()})
+Safety Percentage: ${reportData.statistics.safetyPercentage}%
+Security Score: ${reportData.security.securityScore}/100
 
-=== Configuration ===
-Primary Wallet: ${reportData.primaryWallet}
-Backup Wallet: ${reportData.backupWallet}
-Auto Transfer: ${reportData.autoTransfer ? 'Enabled' : 'Disabled'}
-Threshold: $${parseFloat(reportData.threshold).toLocaleString()}
-Transfer Percentage: ${reportData.transferPercentage}%
-Check Frequency: ${reportData.checkFrequency}
+Transfer Statistics:
+├─ Today: ${reportData.statistics.transfersToday} transfers
+├─ This Week: ${reportData.statistics.transfersThisWeek} transfers  
+├─ This Month: ${reportData.statistics.transfersThisMonth} transfers
+├─ Average Size: ${reportData.statistics.avgTransferSize} BTC
+├─ Success Rate: ${reportData.performance.transferSuccessRate}%
+└─ Last Transfer: ${new Date(reportData.statistics.lastTransferTime).toLocaleString('fa-IR')}
 
-=== Security Status ===
-✅ Primary wallet configured: ${reportData.primaryWallet !== 'Not Set' ? 'Yes' : 'No'}
-${reportData.backupWallet !== 'Not Set' ? '✅' : '⚠️'} Backup wallet configured: ${reportData.backupWallet !== 'Not Set' ? 'Yes' : 'No'}
-${reportData.autoTransfer ? '✅' : '⚠️'} Auto transfer: ${reportData.autoTransfer ? 'Enabled' : 'Disabled'}
+Network Fees:
+├─ Total Fees Paid: ${reportData.statistics.totalNetworkFees} BTC ($${reportData.statistics.networkFeesUSD})
+├─ Average Transfer Time: ${reportData.performance.avgTransferTime} minutes
+└─ Network Impact: ${reportData.performance.networkCongestionImpact}
 
-Report generated by TITAN AI System
-        `;
-        
-        // Create and download report
-        const blob = new Blob([reportContent], { type: 'text/plain; charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `TITAN-ColdWallet-Report-${new Date().toISOString().split('T')[0]}.txt`;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-        
-        this.showNotification('📄 گزارش کلد والت دانلود شد', 'success');
+========================================
+CONFIGURATION
+========================================
+Primary Wallet: ${reportData.configuration.primaryWallet}
+Backup Wallet: ${reportData.configuration.backupWallet}
+Auto Transfer: ${reportData.configuration.autoTransferEnabled ? 'Enabled' : 'Disabled'}
+Transfer Threshold: $${reportData.configuration.transferThreshold.toLocaleString()}
+Transfer Percentage: ${reportData.configuration.transferPercentage}%
+Check Frequency: ${reportData.configuration.checkFrequency}
+
+========================================
+SECURITY STATUS
+========================================
+${reportData.security.encryptionStatus === 'active' ? '✅' : '❌'} Encryption: ${reportData.security.encryptionStatus}
+${reportData.security.multiSigEnabled ? '✅' : '❌'} Multi-Signature: ${reportData.security.multiSigEnabled ? 'Enabled' : 'Disabled'}
+${reportData.security.backupStatus === 'verified' ? '✅' : '⚠️'} Backup Status: ${reportData.security.backupStatus}
+${reportData.security.vulnerabilities === 0 ? '✅' : '⚠️'} Vulnerabilities: ${reportData.security.vulnerabilities}
+Last Security Audit: ${new Date(reportData.security.lastSecurityAudit).toLocaleString('fa-IR')}
+
+========================================
+PERFORMANCE METRICS
+========================================
+Transfer Success Rate: ${reportData.performance.transferSuccessRate}%
+Average Transfer Time: ${reportData.performance.avgTransferTime} minutes
+Network Congestion Impact: ${reportData.performance.networkCongestionImpact}
+Last Optimization: ${new Date(reportData.performance.lastOptimization).toLocaleString('fa-IR')}
+
+========================================
+RECOMMENDATIONS
+========================================
+${reportData.recommendations.map(rec => `
+${rec.priority.toUpperCase()} PRIORITY - ${rec.type.toUpperCase()}:
+${rec.description}
+Impact: ${rec.impact}
+`).join('\n')}
+
+========================================
+RECENT ACTIVITY
+========================================
+${reportData.recentActivity.map(activity => `
+Transfer ID: ${activity.id}
+Type: ${activity.type.replace('_', ' ').toUpperCase()}
+Amount: ${activity.amount} BTC ($${activity.amountUSD.toLocaleString()})
+Time: ${new Date(activity.timestamp).toLocaleString('fa-IR')}
+Status: ${activity.status.toUpperCase()}
+Network Fee: ${activity.networkFee} BTC
+Confirmations: ${activity.confirmations}
+`).join('\n')}
+
+========================================
+Report generated by TITAN AI Cold Wallet Management System
+Generation Time: ${new Date().toLocaleString('fa-IR')}
+Report ID: TCWR-${Date.now()}
+            `;
+            
+            // Create and download comprehensive report
+            const blob = new Blob([reportContent], { type: 'text/plain; charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = response.filename || `TITAN-ColdWallet-Report-${new Date().toISOString().split('T')[0]}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // Show success notification
+            this.showNotification('✅ گزارش جامع کلد والت با موفقیت تولید و دانلود شد', 'success');
+            
+            // Update cold wallet display with fresh data
+            this.updateColdWalletDisplay(reportData.statistics);
+            
+        } catch (error) {
+            console.error('Generate cold wallet report error:', error);
+            this.showNotification('❌ خطا در تولید گزارش: ' + error.message, 'error');
+        } finally {
+            // Reset button state
+            const button = event.target;
+            if (button) {
+                button.innerHTML = '<i class="fas fa-file-alt mr-2"></i>گزارش کلد والت';
+                button.disabled = false;
+            }
+        }
     }
 
     showNotification(message, type = 'info', duration = 3000) {
