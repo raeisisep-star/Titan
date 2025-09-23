@@ -5,6 +5,7 @@
 
 import { v4 as uuidv4 } from 'uuid'
 import { d1db } from '../lib/database-d1-adapter'
+import { SecurityService } from './security-service'
 
 // =============================================================================
 // INTERFACES
@@ -223,6 +224,11 @@ const JWT_SECRET = 'titan_jwt_secret_2024_secure_key_production'
 
 export class AuthService {
   private static instance: AuthService
+  private securityService: SecurityService
+
+  constructor() {
+    this.securityService = SecurityService.getInstance()
+  }
 
   public static getInstance(): AuthService {
     if (!AuthService.instance) {
@@ -294,19 +300,25 @@ export class AuthService {
       // Find user by email or username
       let user = null
       if (credentials.email) {
+        console.log('🔍 Finding user by email:', credentials.email)
         user = await this.findUserByEmail(credentials.email)
+        console.log('🔍 Found user:', user ? user.email : 'null')
       } else if (credentials.username) {
         user = await this.findUserByUsername(credentials.username)
       }
       
       if (!user) {
+        console.log('❌ User not found for email:', credentials.email)
         return { success: false, error: 'Invalid credentials' }
       }
 
       // Verify password
-      const isPasswordValid = await verifyPassword(credentials.password, user.password_hash)
+      console.log('🔑 Verifying password for user:', user.email)
+      console.log('🔑 Stored hash:', user.password_hash)
+      const isPasswordValid = await this.securityService.verifyPassword(credentials.password, user.password_hash || '')
+      console.log('🔑 Password valid:', isPasswordValid)
       if (!isPasswordValid) {
-        return { success: false, error: 'Invalid email or password' }
+        return { success: false, error: 'Invalid credentials' }
       }
 
       // Create session
@@ -431,7 +443,7 @@ export class AuthService {
       return false
     }
 
-    return verifyPassword(password, result.rows[0].password_hash)
+    return this.securityService.verifyPassword(password, result.rows[0].password_hash)
   }
 
   // =============================================================================

@@ -208,20 +208,31 @@ export default class GeneralTab {
         return {
             theme: document.getElementById('theme')?.value || 'dark',
             language: document.getElementById('language')?.value || 'fa',
-            rtl: document.getElementById('rtl-mode')?.checked || true,
+            rtlMode: document.getElementById('rtl-mode')?.checked || true,
             timezone: document.getElementById('timezone')?.value || 'Asia/Tehran',
             currency: document.getElementById('currency')?.value || 'USD',
             dateFormat: document.getElementById('date-format')?.value || 'jYYYY/jMM/jDD',
-            numberFormat: document.getElementById('number-format')?.value || 'fa-IR'
+            timeFormat: '24h', // Add missing field
+            numberFormat: document.getElementById('number-format')?.value || 'fa-IR',
+            fullscreen: document.getElementById('fullscreen-mode')?.checked || false,
+            animations: document.getElementById('animations')?.checked !== false,
+            soundEnabled: document.getElementById('sound-enabled')?.checked !== false,
+            notificationsEnabled: document.getElementById('notifications-enabled')?.checked !== false,
+            autoSave: true, // Default to true
+            sessionTimeout: 30, // Default session timeout
+            advancedMode: document.getElementById('advanced-mode')?.checked || false
         };
     }
 
     // Initialize tab functionality
-    initialize() {
+    async initialize() {
         console.log('🔧 General tab initialized');
         
         // Set up global instance
         window.generalTab = this;
+        
+        // Load settings from backend
+        await this.loadSettings();
         
         // Setup theme change listener
         const themeSelect = document.getElementById('theme');
@@ -237,6 +248,28 @@ export default class GeneralTab {
             languageSelect.addEventListener('change', (e) => {
                 this.previewLanguage(e.target.value);
             });
+        }
+
+        // Setup file import for configuration
+        const importInput = document.createElement('input');
+        importInput.type = 'file';
+        importInput.accept = '.json';
+        importInput.style.display = 'none';
+        importInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                this.importConfig(e.target.files[0]);
+            }
+        });
+        document.body.appendChild(importInput);
+        
+        // Store reference for import function
+        this.importInput = importInput;
+    }
+
+    // Trigger file import dialog
+    triggerImport() {
+        if (this.importInput) {
+            this.importInput.click();
         }
     }
 
@@ -259,40 +292,242 @@ export default class GeneralTab {
         this.showNotification(`تم ${theme} اعمال شد`, 'success');
     }
 
-    // Reset to defaults
-    resetDefaults() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید تنظیمات عمومی را به حالت پیش‌فرض بازگردانید؟')) {
-            // Reset form values to defaults
-            document.getElementById('theme').value = 'dark';
-            document.getElementById('language').value = 'fa';
-            document.getElementById('rtl-mode').checked = true;
-            document.getElementById('timezone').value = 'Asia/Tehran';
-            document.getElementById('currency').value = 'USD';
-            document.getElementById('date-format').value = 'jYYYY/jMM/jDD';
-            document.getElementById('number-format').value = 'fa-IR';
+    // Save settings (called by settings-unified.js)
+    async saveSettings() {
+        try {
+            console.log('💾 Saving general settings...');
             
-            this.showNotification('تنظیمات عمومی به حالت پیش‌فرض بازگردانده شد', 'success');
+            const settings = this.collectData();
+            
+            const response = await fetch('/api/general/settings', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settings)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification(result.message, 'success');
+                return { success: true, data: result.data };
+            } else {
+                this.showNotification(result.error, 'error');
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Save general settings error:', error);
+            this.showNotification('خطا در ذخیره تنظیمات عمومی', 'error');
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Load settings from backend
+    async loadSettings() {
+        try {
+            console.log('📋 Loading general settings...');
+            
+            const response = await fetch('/api/general/settings');
+            const result = await response.json();
+            
+            if (result.success) {
+                this.applySettingsToForm(result.data);
+                return { success: true, data: result.data };
+            } else {
+                this.showNotification('خطا در بارگذاری تنظیمات', 'error');
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Load general settings error:', error);
+            this.showNotification('خطا در بارگذاری تنظیمات عمومی', 'error');
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Apply settings to form elements
+    applySettingsToForm(settings) {
+        if (settings.theme) document.getElementById('theme').value = settings.theme;
+        if (settings.language) document.getElementById('language').value = settings.language;
+        if (settings.rtlMode !== undefined) document.getElementById('rtl-mode').checked = settings.rtlMode;
+        if (settings.timezone) document.getElementById('timezone').value = settings.timezone;
+        if (settings.currency) document.getElementById('currency').value = settings.currency;
+        if (settings.dateFormat) document.getElementById('date-format').value = settings.dateFormat;
+        if (settings.numberFormat) document.getElementById('number-format').value = settings.numberFormat;
+        
+        // Handle optional checkboxes with safe checks
+        const fullscreenEl = document.getElementById('fullscreen-mode');
+        if (fullscreenEl && settings.fullscreen !== undefined) fullscreenEl.checked = settings.fullscreen;
+        
+        const animationsEl = document.getElementById('animations');
+        if (animationsEl && settings.animations !== undefined) animationsEl.checked = settings.animations;
+        
+        const soundEl = document.getElementById('sound-enabled');
+        if (soundEl && settings.soundEnabled !== undefined) soundEl.checked = settings.soundEnabled;
+        
+        const notificationsEl = document.getElementById('notifications-enabled');
+        if (notificationsEl && settings.notificationsEnabled !== undefined) notificationsEl.checked = settings.notificationsEnabled;
+        
+        const advancedEl = document.getElementById('advanced-mode');
+        if (advancedEl && settings.advancedMode !== undefined) advancedEl.checked = settings.advancedMode;
+        
+        console.log('✅ Applied settings to form');
+    }
+
+    // Reset to defaults
+    async resetDefaults() {
+        if (confirm('آیا مطمئن هستید که می‌خواهید تنظیمات عمومی را به حالت پیش‌فرض بازگردانید؟')) {
+            try {
+                const response = await fetch('/api/general/reset', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    this.applySettingsToForm(result.data);
+                    this.showNotification(result.message, 'success');
+                } else {
+                    this.showNotification(result.error, 'error');
+                }
+            } catch (error) {
+                console.error('Reset settings error:', error);
+                this.showNotification('خطا در بازنشانی تنظیمات', 'error');
+            }
         }
     }
 
     // Export configuration
-    exportConfig() {
-        const config = this.collectData();
-        const dataStr = JSON.stringify(config, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `titan-general-settings-${new Date().toISOString().split('T')[0]}.json`;
-        link.click();
-        
-        URL.revokeObjectURL(url);
-        this.showNotification('تنظیمات عمومی صادر شد', 'success');
+    async exportConfig() {
+        try {
+            console.log('📤 Exporting general settings...');
+            
+            const response = await fetch('/api/general/export');
+            const result = await response.json();
+            
+            if (result.success) {
+                const dataStr = JSON.stringify(result.data, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = result.filename;
+                link.click();
+                
+                URL.revokeObjectURL(url);
+                this.showNotification('تنظیمات عمومی صادر شد', 'success');
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Export settings error:', error);
+            this.showNotification('خطا در صادر کردن تنظیمات', 'error');
+        }
+    }
+
+    // Import configuration
+    async importConfig(file) {
+        try {
+            console.log('📥 Importing general settings...');
+            
+            const text = await file.text();
+            const importData = JSON.parse(text);
+            
+            const response = await fetch('/api/general/import', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(importData)
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.applySettingsToForm(result.data.applied);
+                this.showNotification(result.message, 'success');
+            } else {
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('Import settings error:', error);
+            this.showNotification('خطا در وارد کردن تنظیمات', 'error');
+        }
     }
 
     showNotification(message, type = 'info') {
-        // Simple notification - would integrate with main notification system
+        // Console log for debugging
         console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Create visual notification
+        this.createToast(message, type);
+        
+        // Also try to integrate with global notification system if available
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        }
+    }
+
+    createToast(message, type) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.general-settings-toast');
+        existingToasts.forEach(toast => toast.remove());
+
+        // Create new toast
+        const toast = document.createElement('div');
+        toast.className = `general-settings-toast fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform`;
+        
+        // Style based on type
+        const styles = {
+            success: 'bg-green-600 text-white border-l-4 border-green-400',
+            error: 'bg-red-600 text-white border-l-4 border-red-400', 
+            info: 'bg-blue-600 text-white border-l-4 border-blue-400',
+            warning: 'bg-yellow-600 text-white border-l-4 border-yellow-400'
+        };
+        
+        toast.className += ` ${styles[type] || styles.info}`;
+        
+        // Add icon based on type
+        const icons = {
+            success: '✅',
+            error: '❌', 
+            info: 'ℹ️',
+            warning: '⚠️'
+        };
+        
+        toast.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <span class="text-xl">${icons[type] || icons.info}</span>
+                <span class="font-medium">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200 transition-colors">
+                    ×
+                </button>
+            </div>
+        `;
+        
+        // Add to document
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.transform = 'translateX(100%)';
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
     }
 }

@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Trading Tab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white" dir="rtl">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Test Trading Tab Direct</h1>
+        
+        <!-- Login Section -->
+        <div id="login-section" class="bg-gray-800 p-6 rounded-lg mb-4">
+            <h2 class="text-xl mb-4">Login First</h2>
+            <button onclick="loginDemo()" class="px-4 py-2 bg-blue-600 text-white rounded">Login as Demo User</button>
+            <div id="login-status" class="mt-2"></div>
+        </div>
+        
+        <!-- Trading Tab Content -->
+        <div id="trading-content" class="bg-gray-800 p-6 rounded-lg">
+            <div id="trading-tab-content">Loading trading tab...</div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = null;
+        
+        async function loginDemo() {
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    email: 'demo@titan.dev',
+                    password: 'admin123'
+                });
+                
+                if (response.data.success) {
+                    authToken = response.data.session.accessToken;
+                    document.getElementById('login-status').innerHTML = '✅ Logged in successfully!';
+                    localStorage.setItem('token', authToken);
+                    await loadTradingTab();
+                } else {
+                    document.getElementById('login-status').innerHTML = '❌ Login failed: ' + response.data.error;
+                }
+            } catch (error) {
+                document.getElementById('login-status').innerHTML = '❌ Login error: ' + error.message;
+                console.error('Login error:', error);
+            }
+        }
+        
+        async function loadTradingTab() {
+            try {
+                console.log('Loading trading tab module...');
+                
+                // Import TradingTab class directly
+                const module = await import('/static/modules/settings/tabs/trading-tab.js');
+                console.log('Trading tab module loaded:', module);
+                
+                // Create instance with settings
+                const settings = {
+                    trading: {
+                        risk_management: {
+                            max_risk_per_trade: 2.0,
+                            max_daily_loss: 5.0,
+                            max_positions: 10,
+                            max_amount_per_trade: 1000
+                        },
+                        auto_trading: {
+                            enabled: false,
+                            strategies: {
+                                momentum: true,
+                                mean_reversion: false,
+                                dca: true,
+                                grid: false
+                            }
+                        }
+                    }
+                };
+                
+                const tradingTab = new module.default(settings);
+                console.log('Trading tab instance created:', tradingTab);
+                
+                // Render the tab
+                document.getElementById('trading-tab-content').innerHTML = tradingTab.render();
+                console.log('Trading tab rendered');
+                
+                // Initialize functionality
+                tradingTab.initialize();
+                console.log('Trading tab initialized');
+                
+            } catch (error) {
+                console.error('Error loading trading tab:', error);
+                document.getElementById('trading-tab-content').innerHTML = `
+                    <div class="text-red-400">
+                        Error loading trading tab: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        // Test individual buttons
+        window.testStartAutopilot = async function() {
+            if (window.tradingTab) {
+                await window.tradingTab.startAutopilot();
+            } else {
+                alert('Trading tab not loaded yet');
+            }
+        }
+        
+        window.testEmergencyStop = async function() {
+            if (window.tradingTab) {
+                await window.tradingTab.emergencyStop();
+            } else {
+                alert('Trading tab not loaded yet');
+            }
+        }
+        
+        // Add test buttons 
+        setTimeout(() => {
+            const testButtonsDiv = document.createElement('div');
+            testButtonsDiv.className = 'mt-4 space-x-2 space-x-reverse';
+            testButtonsDiv.innerHTML = `
+                <button onclick="testStartAutopilot()" class="px-4 py-2 bg-green-600 text-white rounded">Test Start Autopilot</button>
+                <button onclick="testEmergencyStop()" class="px-4 py-2 bg-red-600 text-white rounded">Test Emergency Stop</button>
+                <button onclick="window.tradingTab && window.tradingTab.viewDetailedStats()" class="px-4 py-2 bg-blue-600 text-white rounded">Test Detailed Stats</button>
+            `;
+            document.getElementById('trading-content').appendChild(testButtonsDiv);
+        }, 3000);
+        
+        // Auto-login for testing
+        setTimeout(() => {
+            loginDemo();
+        }, 1000);
+    </script>
+</body>
+</html>

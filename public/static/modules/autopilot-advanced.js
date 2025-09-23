@@ -385,29 +385,123 @@ class AutopilotAdvancedModule {
 
     async loadConfiguration() {
         try {
-            const response = await axios.get('/api/autopilot/config');
-            if (response.data.success) {
-                this.config = response.data.config;
-                this.updateUI();
-                this.updatePerformanceMetrics(response.data.systemStatus);
+            console.log('📊 Loading autopilot configuration from API...');
+            
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
             }
+
+            // Fetch autopilot dashboard data
+            const response = await fetch('/api/trading/autopilot/dashboard', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                const apiData = result.data;
+                
+                // Map API response to expected config structure
+                this.config = {
+                    name: apiData.name,
+                    status: apiData.status,
+                    performance: apiData.performance,
+                    configuration: apiData.configuration,
+                    recentSignals: apiData.recentSignals || [],
+                    activeStrategies: apiData.activeStrategies || []
+                };
+                
+                console.log('✅ Autopilot configuration loaded:', this.config);
+                
+                // Update UI with loaded data
+                this.updateUI();
+                this.updatePerformanceMetrics(apiData);
+                
+            } else {
+                throw new Error(result.error || 'Failed to load autopilot configuration');
+            }
+            
         } catch (error) {
-            console.error('Error loading autopilot configuration:', error);
-            this.showNotification('خطا در بارگیری تنظیمات', 'error');
+            console.error('❌ Error loading autopilot configuration:', error);
+            this.showNotification('خطا در بارگیری تنظیمات - استفاده از داده‌های نمونه', 'warning');
+            
+            // Fallback to mock data
+            this.config = {
+                name: 'Conservative Growth',
+                status: 'inactive',
+                performance: {
+                    totalPerformance: 7.2,
+                    dailyProfit: 2847.65,
+                    totalTrades: 156,
+                    successRate: 78.2,
+                    maxDrawdown: 5.2,
+                    sharpeRatio: 2.8
+                },
+                configuration: {
+                    maxRiskPerTrade: 2,
+                    maxDailyLoss: 5,
+                    maxPositions: 5,
+                    currentPositions: 3
+                },
+                recentSignals: [],
+                activeStrategies: []
+            };
         }
     }
 
     async loadStrategies() {
         try {
-            const response = await axios.get('/api/autopilot/strategies/performance');
-            if (response.data.success) {
-                this.strategies = response.data.strategies;
+            console.log('🧠 Loading autopilot strategies from API...');
+            
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            // Fetch strategies from backend API
+            const response = await fetch('/api/trading/strategies', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.strategies = result.data.strategies || [];
+                
+                console.log('✅ Strategies loaded:', this.strategies.length, 'strategies');
+                
                 this.renderStrategies();
                 this.updateActiveStrategiesCount();
+                
+            } else {
+                throw new Error(result.error || 'Failed to load strategies');
             }
+            
         } catch (error) {
-            console.error('Error loading strategies:', error);
-            this.showNotification('خطا در بارگیری استراتژی‌ها', 'error');
+            console.error('❌ Error loading strategies:', error);
+            this.showNotification('خطا در بارگیری استراتژی‌ها', 'warning');
+            
+            // Fallback to empty strategies
+            this.strategies = [];
         }
     }
 
@@ -531,17 +625,56 @@ class AutopilotAdvancedModule {
 
     async toggleAutopilot() {
         try {
-            const action = this.config?.enabled ? 'stop' : 'start';
-            const response = await axios.post('/api/autopilot/toggle', { action });
+            console.log('🔄 Toggling autopilot status...');
             
-            if (response.data.success) {
-                this.config = response.data.config;
-                this.updateUI();
-                this.showNotification(response.data.message, 'success');
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
             }
+
+            // Determine action based on current status
+            const isActive = this.config?.status === 'active';
+            const action = isActive ? 'stop' : 'start';
+            
+            console.log(`📤 Sending ${action} command to autopilot API`);
+
+            // Send control command to backend
+            const response = await fetch('/api/trading/autopilot/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action: action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update config with response data
+                this.config.status = result.data.status;
+                
+                // Update UI to reflect new status
+                this.updateUI();
+                
+                // Show success message
+                const statusText = result.data.status === 'active' ? 'فعال' : 'غیرفعال';
+                this.showNotification(`اتوپایلوت ${statusText} شد`, 'success');
+                
+                console.log('✅ Autopilot status changed to:', result.data.status);
+                
+            } else {
+                throw new Error(result.error || 'Failed to toggle autopilot');
+            }
+            
         } catch (error) {
-            console.error('Error toggling autopilot:', error);
-            this.showNotification('خطا در تغییر وضعیت اتوپایلوت', 'error');
+            console.error('❌ Error toggling autopilot:', error);
+            this.showNotification(`خطا در تغییر وضعیت اتوپایلوت: ${error.message}`, 'error');
         }
     }
 

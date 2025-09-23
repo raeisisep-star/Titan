@@ -310,7 +310,12 @@ export class SecurityService {
 
   async verifyPassword(password: string, hash: string): Promise<boolean> {
     const hashedInput = await this.hashPassword(password)
-    return hashedInput === hash
+    console.log('🔐 SecurityService: Input password:', password)
+    console.log('🔐 SecurityService: Calculated hash:', hashedInput)
+    console.log('🔐 SecurityService: Expected hash:', hash)
+    const isValid = hashedInput === hash
+    console.log('🔐 SecurityService: Match result:', isValid)
+    return isValid
   }
 
   // Permission System

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Exchange Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">🏦 Exchange Management Test</h1>
+        
+        <div class="grid gap-6">
+            <!-- Login Test -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl mb-4">1️⃣ Login Test</h2>
+                <button onclick="testLogin()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg">Test Login</button>
+                <div id="login-result" class="mt-4 p-3 rounded-lg bg-gray-700"></div>
+            </div>
+            
+            <!-- Exchange APIs Test -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl mb-4">2️⃣ Exchange APIs Test</h2>
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <button onclick="testExchangeConnection('binance')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg">🟡 Binance</button>
+                    <button onclick="testExchangeConnection('mexc')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">🔵 MEXC</button>
+                    <button onclick="testExchangeConnection('okx')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg">⚫ OKX</button>
+                    <button onclick="testExchangeConnection('coinbase')" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg">🔷 Coinbase</button>
+                    <button onclick="testExchangeConnection('kucoin')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg">🟢 KuCoin</button>
+                </div>
+                <div id="exchange-result" class="mt-4 p-3 rounded-lg bg-gray-700"></div>
+            </div>
+            
+            <!-- Balance Tests -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl mb-4">3️⃣ Balance Tests</h2>
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <button onclick="testExchangeBalance('binance')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg">💰 Binance</button>
+                    <button onclick="testExchangeBalance('mexc')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">💰 MEXC</button>
+                    <button onclick="testExchangeBalance('okx')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg">💰 OKX</button>
+                    <button onclick="testExchangeBalance('coinbase')" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg">💰 Coinbase</button>
+                    <button onclick="testExchangeBalance('kucoin')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg">💰 KuCoin</button>
+                </div>
+                <div id="balance-result" class="mt-4 p-3 rounded-lg bg-gray-700"></div>
+            </div>
+            
+            <!-- Settings Save Tests -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl mb-4">4️⃣ Settings Save Tests</h2>
+                <div class="flex flex-wrap gap-3 mb-4">
+                    <button onclick="testExchangeSettings('binance')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg">💾 Binance</button>
+                    <button onclick="testExchangeSettings('mexc')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">💾 MEXC</button>
+                    <button onclick="testExchangeSettings('okx')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg">💾 OKX</button>
+                    <button onclick="testExchangeSettings('coinbase')" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg">💾 Coinbase</button>
+                    <button onclick="testExchangeSettings('kucoin')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg">💾 KuCoin</button>
+                </div>
+                <div id="settings-result" class="mt-4 p-3 rounded-lg bg-gray-700"></div>
+            </div>
+            
+            <!-- Complete Test -->
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h2 class="text-xl mb-4">5️⃣ Complete Test All</h2>
+                <button onclick="testAll()" class="bg-purple-600 hover:bg-purple-700 px-8 py-3 rounded-lg text-lg">🚀 Test All Exchanges</button>
+                <div id="complete-result" class="mt-4 p-3 rounded-lg bg-gray-700 max-h-96 overflow-y-auto"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let token = null;
+        
+        async function testLogin() {
+            const resultDiv = document.getElementById('login-result');
+            
+            try {
+                resultDiv.innerHTML = '🔄 Logging in...';
+                
+                const response = await axios.post('/api/login', {
+                    username: 'demo_user',
+                    password: 'demo123'
+                });
+                
+                if (response.data.success) {
+                    token = response.data.session.accessToken;
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    resultDiv.innerHTML = `<div class="text-green-400">✅ Login Success</div>
+                                          <div class="text-sm text-gray-300 mt-2">Token: ${token.substring(0, 20)}...</div>`;
+                } else {
+                    resultDiv.innerHTML = '<div class="text-red-400">❌ Login Failed</div>';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-400">❌ Login Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testExchangeConnection(exchange) {
+            const resultDiv = document.getElementById('exchange-result');
+            
+            try {
+                resultDiv.innerHTML += `<div class="text-blue-400">🔄 Testing ${exchange} connection...</div>`;
+                
+                const response = await axios.post('/api/exchanges/test', {
+                    exchange: exchange,
+                    apiKey: 'test_key',
+                    apiSecret: 'test_secret',
+                    testnet: true
+                });
+                
+                const status = response.data.success ? 'Success' : 'Failed';
+                const color = response.data.success ? 'text-green-400' : 'text-yellow-400';
+                const message = response.data.message || response.data.error || 'No message';
+                
+                resultDiv.innerHTML += `<div class="${color}">✅ ${exchange}: ${status} - ${message}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="text-red-400">❌ ${exchange}: Error - ${error.response?.data?.error || error.message}</div>`;
+            }
+        }
+        
+        async function testExchangeBalance(exchange) {
+            const resultDiv = document.getElementById('balance-result');
+            
+            try {
+                resultDiv.innerHTML += `<div class="text-blue-400">🔄 Getting ${exchange} balance...</div>`;
+                
+                const response = await axios.get(`/api/exchanges/balances/${exchange}`);
+                
+                if (response.data.success) {
+                    const assets = response.data.data.length;
+                    resultDiv.innerHTML += `<div class="text-green-400">✅ ${exchange}: ${assets} assets found</div>`;
+                } else {
+                    resultDiv.innerHTML += `<div class="text-yellow-400">⚠️ ${exchange}: No balance data</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="text-red-400">❌ ${exchange}: ${error.response?.data?.error || error.message}</div>`;
+            }
+        }
+        
+        async function testExchangeSettings(exchange) {
+            const resultDiv = document.getElementById('settings-result');
+            
+            try {
+                resultDiv.innerHTML += `<div class="text-blue-400">🔄 Saving ${exchange} settings...</div>`;
+                
+                const response = await axios.post('/api/exchanges/settings', {
+                    exchange: exchange,
+                    apiKey: 'new_test_key',
+                    apiSecret: 'new_test_secret',
+                    testnet: true
+                });
+                
+                const status = response.data.success ? 'Saved' : 'Failed';
+                const color = response.data.success ? 'text-green-400' : 'text-yellow-400';
+                
+                resultDiv.innerHTML += `<div class="${color}">✅ ${exchange}: Settings ${status}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML += `<div class="text-red-400">❌ ${exchange}: ${error.response?.data?.error || error.message}</div>`;
+            }
+        }
+        
+        async function testAll() {
+            const resultDiv = document.getElementById('complete-result');
+            resultDiv.innerHTML = '<div class="text-yellow-400 text-lg mb-4">🚀 Starting Complete Test...</div>';
+            
+            // Login first
+            await testLogin();
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            
+            const exchanges = ['binance', 'mexc', 'okx', 'coinbase', 'kucoin'];
+            
+            for (let exchange of exchanges) {
+                resultDiv.innerHTML += `<div class="text-blue-400 font-bold mt-4">🔄 Testing ${exchange.toUpperCase()}...</div>`;
+                
+                // Test connection
+                try {
+                    const connResponse = await axios.post('/api/exchanges/test', {
+                        exchange: exchange,
+                        apiKey: 'test_key',
+                        apiSecret: 'test_secret',
+                        testnet: true
+                    });
+                    const connStatus = connResponse.data.success ? '✅' : '⚠️';
+                    resultDiv.innerHTML += `<div class="ml-4">${connStatus} Connection: ${connResponse.data.success ? 'OK' : 'Failed'}</div>`;
+                } catch (error) {
+                    resultDiv.innerHTML += `<div class="ml-4 text-red-400">❌ Connection: Error</div>`;
+                }
+                
+                // Test balance
+                try {
+                    const balResponse = await axios.get(`/api/exchanges/balances/${exchange}`);
+                    const balStatus = balResponse.data.success ? '✅' : '⚠️';
+                    const assets = balResponse.data.data?.length || 0;
+                    resultDiv.innerHTML += `<div class="ml-4">${balStatus} Balance: ${assets} assets</div>`;
+                } catch (error) {
+                    resultDiv.innerHTML += `<div class="ml-4 text-red-400">❌ Balance: Error</div>`;
+                }
+                
+                // Test settings
+                try {
+                    const setResponse = await axios.post('/api/exchanges/settings', {
+                        exchange: exchange,
+                        apiKey: 'test_key',
+                        apiSecret: 'test_secret',
+                        testnet: true
+                    });
+                    const setStatus = setResponse.data.success ? '✅' : '⚠️';
+                    resultDiv.innerHTML += `<div class="ml-4">${setStatus} Settings: ${setResponse.data.success ? 'Saved' : 'Failed'}</div>`;
+                } catch (error) {
+                    resultDiv.innerHTML += `<div class="ml-4 text-red-400">❌ Settings: Error</div>`;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            
+            resultDiv.innerHTML += '<div class="text-green-400 text-lg font-bold mt-6">🏁 Complete Test Finished!</div>';
+        }
+        
+        // Auto login on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(testLogin, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Simple Trading Tab Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-2xl mb-4">Simple Trading Tab Test</h1>
+    
+    <div>
+        <button id="testBtn" onclick="testTradingTab()" class="px-4 py-2 bg-blue-600 rounded">Test Trading Tab Direct</button>
+        <div id="result" class="mt-4"></div>
+    </div>
+
+    <script type="module">
+        window.testTradingTab = async function() {
+            console.log('Testing trading tab...');
+            document.getElementById('result').innerHTML = 'Loading...';
+            
+            try {
+                // Test import directly
+                console.log('Importing module...');
+                const module = await import('/static/modules/settings/tabs/trading-tab.js');
+                console.log('Module imported:', module);
+                
+                const TradingTab = module.default;
+                console.log('TradingTab class:', TradingTab);
+                
+                const settings = {
+                    trading: {
+                        risk_management: { max_risk_per_trade: 2.0 },
+                        auto_trading: { enabled: false, strategies: { momentum: true } }
+                    }
+                };
+                
+                const instance = new TradingTab(settings);
+                console.log('Instance created:', instance);
+                
+                const html = instance.render();
+                console.log('HTML rendered, length:', html.length);
+                
+                document.getElementById('result').innerHTML = html;
+                
+                // Initialize
+                instance.initialize();
+                console.log('Instance initialized');
+                
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('result').innerHTML = `<div class="text-red-400">Error: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

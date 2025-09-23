@@ -510,14 +510,73 @@ class ManualTradingAdvancedModule {
         
         console.log(`🎯 Executing ${side} trade:`, { amount, sl, tp });
         
-        // Close modal
-        document.querySelectorAll('.modal-overlay').forEach(modal => modal.remove());
-        
-        // Show success
-        this.showNotification(`معامله ${side === 'buy' ? 'خرید' : 'فروش'} $${amount} با موفقیت ثبت شد! 🎉`, 'success');
-        
-        // Update UI with new trade
-        this.updateTradesList(side, amount, sl, tp);
+        try {
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            // Prepare order data
+            const orderData = {
+                symbol: this.selectedSymbol || 'BTCUSDT',
+                side: side, // 'buy' or 'sell'
+                type: 'market', // market order for quick execution
+                quantity_usd: parseFloat(amount),
+                stop_loss_percent: parseFloat(sl),
+                take_profit_percent: parseFloat(tp)
+            };
+
+            console.log('📤 Sending order to API:', orderData);
+            
+            // Send order to backend
+            const response = await fetch('/api/trading/manual/order', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(orderData)
+            });
+
+            if (!response.ok) {
+                throw new Error(`Order request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Close modal
+                document.querySelectorAll('.modal-overlay').forEach(modal => modal.remove());
+                
+                // Show success with order details
+                const orderInfo = result.data;
+                this.showNotification(
+                    `✅ ${side === 'buy' ? 'خرید' : 'فروش'} موفق! سفارش ${orderInfo.order_id} ثبت شد`, 
+                    'success'
+                );
+                
+                // Refresh portfolio data
+                await this.loadPortfolioData();
+                
+                console.log('✅ Trade executed successfully:', orderInfo);
+                
+            } else {
+                throw new Error(result.error || 'Order execution failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error executing trade:', error);
+            
+            // Close modal on error too
+            document.querySelectorAll('.modal-overlay').forEach(modal => modal.remove());
+            
+            // Show error message
+            this.showNotification(
+                `❌ خطا در انجام معامله: ${error.message}`, 
+                'error'
+            );
+        }
     }
 
     async openStrategyManager() {
@@ -610,26 +669,109 @@ class ManualTradingAdvancedModule {
 
     // Helper Methods
     async loadPortfolioData() {
-        // Simulate portfolio data loading
-        this.portfolioData = {
-            totalBalance: 12450.00,
-            dailyPnL: 245.67,
-            winRate: 78.4,
-            activeTrades: 8,
-            tradingVolume: 45200,
-            bestTrade: 12.3,
-            sharpeRatio: 2.47
-        };
+        try {
+            console.log('📊 Loading portfolio data from API...');
+            
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            // Fetch data from backend API
+            const response = await fetch('/api/trading/manual/dashboard', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Map API response to portfolio data
+                const apiData = result.data;
+                this.portfolioData = {
+                    totalBalance: apiData.performance.totalBalance || 0,
+                    dailyPnL: apiData.performance.dailyPnL || 0,
+                    dailyPnLPercent: apiData.performance.dailyPnLPercent || 0,
+                    winRate: apiData.performance.winRate || 0,
+                    activeTrades: apiData.performance.activeTrades || 0,
+                    tradingVolume: apiData.performance.tradingVolume24h || 0,
+                    bestTrade: apiData.performance.bestTrade?.return_percent || 0,
+                    sharpeRatio: apiData.performance.sharpeRatio || 0,
+                    totalUnrealizedPnL: apiData.performance.totalUnrealizedPnL || 0
+                };
+                
+                // Store additional data for use in other methods
+                this.balances = apiData.balances || {};
+                this.positions = apiData.positions || [];
+                this.recentOrders = apiData.recentOrders || [];
+                
+                console.log('✅ Portfolio data loaded successfully:', this.portfolioData);
+                this.updatePortfolioUI();
+                
+            } else {
+                throw new Error(result.error || 'Failed to load portfolio data');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error loading portfolio data:', error);
+            
+            // Fallback to mock data if API fails
+            this.portfolioData = {
+                totalBalance: 12450.00,
+                dailyPnL: 245.67,
+                winRate: 78.4,
+                activeTrades: 8,
+                tradingVolume: 45200,
+                bestTrade: 12.3,
+                sharpeRatio: 2.47
+            };
+            
+            this.showNotification('استفاده از داده‌های نمونه - اتصال API ناموفق', 'warning');
+        }
+    }
+
+    updatePortfolioUI() {
+        try {
+            // Update header KPIs
+            const totalBalanceEl = document.getElementById('total-balance');
+            if (totalBalanceEl) {
+                totalBalanceEl.textContent = `$${this.portfolioData.totalBalance.toLocaleString()}`;
+            }
+
+            const dailyPnLEl = document.getElementById('daily-pnl');
+            if (dailyPnLEl) {
+                const pnl = this.portfolioData.dailyPnL;
+                dailyPnLEl.textContent = `${pnl >= 0 ? '+' : ''}$${pnl.toFixed(2)}`;
+                dailyPnLEl.className = pnl >= 0 ? 'text-lg font-bold text-green-300' : 'text-lg font-bold text-red-300';
+            }
+
+            const winRateEl = document.getElementById('win-rate');
+            if (winRateEl) {
+                winRateEl.textContent = `${this.portfolioData.winRate.toFixed(1)}%`;
+            }
+
+            console.log('✅ Portfolio UI updated successfully');
+        } catch (error) {
+            console.error('❌ Error updating portfolio UI:', error);
+        }
     }
 
     async loadPerformanceMetrics() {
-        // Simulate performance metrics loading
+        // Performance metrics are now loaded as part of portfolio data
         this.performanceMetrics = {
-            totalReturn: 23.7,
-            totalTrades: 127,
-            maxDrawdown: -5.2,
-            avgWin: 4.2,
-            avgLoss: -2.1
+            totalReturn: this.portfolioData.dailyPnLPercent || 0,
+            totalTrades: this.positions?.length || 0,
+            maxDrawdown: -5.2, // TODO: Calculate from API data
+            avgWin: 4.2, // TODO: Calculate from API data
+            avgLoss: -2.1 // TODO: Calculate from API data
         };
     }
 
@@ -1018,26 +1160,23 @@ class ManualTradingAdvancedModule {
     }
 
     startRealTimeUpdates() {
-        // Update data every 10 seconds
-        this.refreshInterval = setInterval(() => {
-            this.updateRealTimeData();
-        }, 10000);
+        // Update data every 30 seconds
+        this.refreshInterval = setInterval(async () => {
+            await this.updateRealTimeData();
+        }, 30000);
+        
+        console.log('⏰ Real-time updates started (30s interval)');
     }
 
-    updateRealTimeData() {
-        // Update live data
-        const elements = {
-            'current-price': `$${(43000 + Math.random() * 1000).toFixed(2)}`,
-            'price-change': `${(Math.random() * 5 - 2.5).toFixed(2)}% (24h)`,
-            'market-sentiment': `${Math.random() > 0.5 ? 'مثبت' : 'منفی'} ${(Math.random() * 100).toFixed(0)}%`
-        };
-
-        Object.keys(elements).forEach(id => {
-            const element = document.getElementById(id);
-            if (element) {
-                element.textContent = elements[id];
-            }
-        });
+    async updateRealTimeData() {
+        try {
+            // Refresh portfolio data periodically
+            await this.loadPortfolioData();
+            
+            console.log('🔄 Real-time data updated');
+        } catch (error) {
+            console.error('❌ Error updating real-time data:', error);
+        }
     }
 
     // Utility Methods

@@ -308,27 +308,67 @@ class UnifiedSettingsModule {
         this.showToast('در حال ذخیره تنظیمات...', 'info');
         
         try {
-            // Collect all form data
-            const formData = new FormData();
-            const inputs = document.querySelectorAll('#unified-settings-content input, #unified-settings-content select, #unified-settings-content textarea');
+            // Save settings based on current active tab
+            let result = null;
             
-            inputs.forEach(input => {
-                if (input.type === 'checkbox') {
-                    formData.append(input.name || input.id, input.checked);
-                } else if (input.type === 'radio' && input.checked) {
-                    formData.append(input.name, input.value);
-                } else if (input.type !== 'radio') {
-                    formData.append(input.name || input.id, input.value);
-                }
-            });
-
-            // Save via API
-            const response = await axios.post('/api/settings/save', formData);
+            switch (this.currentTab) {
+                case 'general':
+                    if (window.generalTab && typeof window.generalTab.saveSettings === 'function') {
+                        result = await window.generalTab.saveSettings();
+                    } else {
+                        throw new Error('تب تنظیمات عمومی در دسترس نیست');
+                    }
+                    break;
+                    
+                case 'exchanges':
+                    if (window.exchangesTab && typeof window.exchangesTab.saveSettings === 'function') {
+                        result = await window.exchangesTab.saveSettings();
+                    } else {
+                        throw new Error('تب صرافی‌ها در دسترس نیست');
+                    }
+                    break;
+                    
+                case 'notifications':
+                    if (window.notificationsTab && typeof window.notificationsTab.saveSettings === 'function') {
+                        result = await window.notificationsTab.saveSettings();
+                    } else {
+                        throw new Error('تب اعلان‌ها در دسترس نیست');
+                    }
+                    break;
+                    
+                case 'security':
+                    if (window.securityTab && typeof window.securityTab.saveSettings === 'function') {
+                        result = await window.securityTab.saveSettings();
+                    } else {
+                        throw new Error('تب امنیت در دسترس نیست');
+                    }
+                    break;
+                    
+                case 'advanced':
+                    if (window.advancedTab && typeof window.advancedTab.saveSettings === 'function') {
+                        result = await window.advancedTab.saveSettings();
+                    } else {
+                        throw new Error('تب پیشرفته در دسترس نیست');
+                    }
+                    break;
+                    
+                case 'ai':
+                    if (window.aiTabInstance && typeof window.aiTabInstance.saveSettings === 'function') {
+                        result = await window.aiTabInstance.saveSettings();
+                    } else {
+                        throw new Error('تب هوش مصنوعی در دسترس نیست');
+                    }
+                    break;
+                    
+                default:
+                    throw new Error(`تب ${this.currentTab} پشتیبانی نمی‌شود`);
+            }
             
-            if (response.data.success) {
+            // Check result from tab-specific save method
+            if (result && result.success) {
                 this.showToast('✅ تنظیمات با موفقیت ذخیره شد', 'success');
             } else {
-                throw new Error(response.data.message || 'خطا در ذخیره');
+                throw new Error(result?.error || 'خطا در ذخیره تنظیمات');
             }
         } catch (error) {
             console.error('خطا در ذخیره تنظیمات:', error);

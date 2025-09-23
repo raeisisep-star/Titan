@@ -245,6 +245,7 @@ export class D1DatabaseAdapter {
           id: 1,
           email: 'admin@titan.com',
           username: 'admin',
+          password_hash: '02b7f6617f7905c0e489b11f0a8edcd30d2852139e4004f4f2ce29a45416053f', // admin123
           first_name: 'Admin',
           last_name: 'User',
           is_active: true,

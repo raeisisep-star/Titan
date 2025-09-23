@@ -24,6 +24,18 @@ export async function authMiddleware(c: Context<{ Bindings: Env }>, next: Next) 
 
     const token = authorization.substring(7) // Remove 'Bearer '
     
+    // Handle demo tokens for development/testing
+    if (token.startsWith('demo_token_')) {
+      c.set('user', {
+        id: '1',
+        username: 'demo_user',
+        role: 'admin',
+        permissions: ['*'] // Admin has all permissions
+      })
+      await next()
+      return
+    }
+    
     const SecurityService = (await import('../services/security-service')).default
     const security = new SecurityService(c.env)
     

@@ -277,15 +277,39 @@ class StrategiesAdvancedModule {
 
     async loadStrategiesData() {
         try {
-            // Try to load synchronized strategies from API
-            const response = await axios.get('/api/autopilot/strategies/sync');
-            if (response.data.success && response.data.data.strategies.length > 0) {
-                this.strategies = response.data.data.strategies;
-                console.log('✅ Loaded synchronized strategies from API:', this.strategies.length);
-                return;
+            console.log('🧠 Loading strategies data from API...');
+            
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
             }
+
+            // Try to load strategies from API
+            const response = await fetch('/api/trading/strategies', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success && result.data.strategies.length > 0) {
+                this.strategies = result.data.strategies;
+                console.log('✅ Loaded strategies from API:', this.strategies.length);
+                return;
+            } else {
+                throw new Error('No strategies data received from API');
+            }
+            
         } catch (error) {
-            console.warn('⚠️ Could not load synchronized strategies, using local data:', error);
+            console.warn('⚠️ Could not load strategies from API, using fallback data:', error);
         }
 
         // Fallback to realistic strategy data
@@ -940,24 +964,57 @@ class StrategiesAdvancedModule {
         if (!strategy) return;
         
         try {
-            // Update status locally first for immediate UI response
-            const newStatus = strategy.status === 'active' ? 'inactive' : 'active';
-            strategy.status = newStatus;
-            strategy.lastUpdate = new Date().toISOString();
+            console.log('🔄 Toggling strategy:', strategyId);
             
-            // Update UI immediately
-            this.renderStrategiesList();
-            if (this.selectedStrategyId === strategyId) {
-                this.showStrategyDetails(strategy);
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
             }
+
+            // Determine new status
+            const newStatus = strategy.status === 'active' ? 'inactive' : 'active';
             
-            // Sync with API for cross-tab synchronization
-            await this.syncStrategyWithAPI(strategy);
+            // Send toggle request to API
+            const response = await fetch(`/api/trading/strategies/${strategyId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ 
+                    status: newStatus,
+                    enabled: newStatus === 'active'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
             
-            this.showNotification(
-                `🔄 استراتژی "${strategy.name}" ${strategy.status === 'active' ? 'فعال' : 'غیرفعال'} شد و در همه تب‌ها همگام‌سازی شد`, 
-                'success'
-            );
+            if (result.success) {
+                // Update strategy status from API response
+                strategy.status = result.data.status;
+                strategy.lastUpdate = new Date().toISOString();
+                
+                // Update UI
+                this.renderStrategiesList();
+                if (this.selectedStrategyId === strategyId) {
+                    this.showStrategyDetails(strategy);
+                }
+                
+                this.showNotification(
+                    `✅ استراتژی "${strategy.name}" ${strategy.status === 'active' ? 'فعال' : 'غیرفعال'} شد`, 
+                    'success'
+                );
+                
+                console.log('✅ Strategy status updated:', strategy.status);
+                
+            } else {
+                throw new Error(result.error || 'Failed to toggle strategy');
+            }
         } catch (error) {
             console.error('Error syncing strategy:', error);
             this.showNotification('خطا در همگام‌سازی استراتژی', 'error');
@@ -980,14 +1037,47 @@ class StrategiesAdvancedModule {
 
     async syncNewStrategyWithAPI(strategy) {
         try {
-            // Add new strategy to API for cross-tab sync
-            const response = await axios.post('/api/autopilot/strategies/add', strategy);
+            console.log('📤 Syncing new strategy with API:', strategy.name);
             
-            if (response.data.success) {
-                console.log('✅ New strategy synced across all tabs:', strategy.name);
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
             }
+
+            // Send new strategy to backend
+            const response = await fetch('/api/trading/strategies', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: strategy.name,
+                    description: strategy.description || 'استراتژی تولید شده توسط سیستم',
+                    category: strategy.category || 'ai',
+                    configuration: strategy.configuration || {},
+                    aiGenerated: true
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Update strategy with API-assigned ID
+                strategy.id = result.data.id || strategy.id;
+                console.log('✅ New strategy synced successfully:', strategy.name);
+            } else {
+                throw new Error(result.error || 'Failed to sync strategy');
+            }
+            
         } catch (error) {
             console.warn('⚠️ New strategy API sync failed:', error);
+            // Strategy will still work locally even if sync fails
         }
     }
 
@@ -1427,41 +1517,120 @@ class StrategiesAdvancedModule {
     }
 
     async executeAIGeneration(button) {
-        // Disable button and show processing
-        button.disabled = true;
-        button.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block mr-2"></div>در حال پردازش...';
-        
-        // Get user preferences
-        const analysisType = document.getElementById('ai-analysis-type')?.value || 'performance_optimized';
-        const riskLevel = parseInt(document.getElementById('ai-risk-level')?.value || '5');
-        const minReturn = parseFloat(document.getElementById('ai-min-return')?.value || '25');
-        
-        // Simulate AI processing steps
-        await this.simulateAIProcessing();
-        
-        // Generate intelligent strategy based on existing data
-        const aiStrategy = await this.generateIntelligentStrategy(analysisType, riskLevel, minReturn);
-        
-        // Add to strategies list
-        this.strategies.push(aiStrategy);
-        this.renderStrategiesList();
-        
-        // Sync with API for cross-tab integration
-        await this.syncNewStrategyWithAPI(aiStrategy);
-        
-        // Close modal
-        document.querySelector('.modal-overlay')?.remove();
-        
-        // Show success notification
-        this.showNotification(`🎉 استراتژی هوشمند "${aiStrategy.name}" با موفقیت تولید و در همه تب‌ها همگام‌سازی شد! پیش‌بینی بازده: +${aiStrategy.performance.roi}%`, 'success');
-        
-        // Auto-activate if high confidence
-        if (aiStrategy.performance.winRate > 85) {
-            setTimeout(() => {
-                this.showNotification(`🚀 استراتژی "${aiStrategy.name}" به دلیل اطمینان بالا (${aiStrategy.performance.winRate}%) خودکار فعال شد!`, 'info');
-                aiStrategy.status = 'active';
+        try {
+            // Disable button and show processing
+            button.disabled = true;
+            button.innerHTML = '<div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full inline-block mr-2"></div>در حال پردازش...';
+            
+            // Get user preferences
+            const analysisType = document.getElementById('ai-analysis-type')?.value || 'performance_optimized';
+            const riskLevel = parseInt(document.getElementById('ai-risk-level')?.value || '5');
+            const minReturn = parseFloat(document.getElementById('ai-min-return')?.value || '25');
+            
+            console.log('🧠 Starting AI strategy generation with params:', { analysisType, riskLevel, minReturn });
+            
+            // Simulate AI processing steps for UI
+            await this.simulateAIProcessing();
+            
+            // Get auth token
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                throw new Error('Authentication token not found');
+            }
+
+            // Call AI strategy generation API
+            const response = await fetch('/api/trading/strategies/ai-generate', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    analysisType: analysisType,
+                    riskLevel: riskLevel,
+                    minReturn: minReturn,
+                    marketConditions: 'current', // Can be enhanced later
+                    existingStrategies: this.strategies.map(s => ({
+                        id: s.id,
+                        category: s.category,
+                        performance: s.performance
+                    }))
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`AI API request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                const aiStrategy = result.data;
+                
+                // Add to strategies list
+                this.strategies.push(aiStrategy);
                 this.renderStrategiesList();
-            }, 2000);
+                
+                console.log('✅ AI Strategy generated successfully:', aiStrategy.name);
+                
+                // Close modal
+                document.querySelector('.modal-overlay')?.remove();
+                
+                // Show success notification
+                this.showNotification(
+                    `🎉 استراتژی هوشمند "${aiStrategy.name}" با موفقیت تولید شد! پیش‌بینی بازده: +${aiStrategy.performance.totalReturn}%`, 
+                    'success'
+                );
+                
+                // Auto-activate if high confidence
+                if (aiStrategy.performance.winRate > 85) {
+                    setTimeout(() => {
+                        this.showNotification(
+                            `🚀 استراتژی "${aiStrategy.name}" به دلیل اطمینان بالا (${aiStrategy.performance.winRate}%) خودکار فعال شد!`, 
+                            'info'
+                        );
+                        aiStrategy.status = 'active';
+                        this.renderStrategiesList();
+                    }, 2000);
+                }
+                
+            } else {
+                throw new Error(result.error || 'AI strategy generation failed');
+            }
+            
+        } catch (error) {
+            console.error('❌ Error generating AI strategy:', error);
+            
+            // Re-enable button
+            button.disabled = false;
+            button.innerHTML = '🚀 شروع تولید هوشمند';
+            
+            // Show error notification
+            this.showNotification(`❌ خطا در تولید استراتژی هوشمند: ${error.message}`, 'error');
+            
+            // Fallback to local generation
+            console.log('🔄 Falling back to local AI strategy generation...');
+            
+            // Get user preferences again
+            const analysisType = document.getElementById('ai-analysis-type')?.value || 'performance_optimized';
+            const riskLevel = parseInt(document.getElementById('ai-risk-level')?.value || '5');
+            const minReturn = parseFloat(document.getElementById('ai-min-return')?.value || '25');
+            
+            // Generate using local method
+            const aiStrategy = await this.generateIntelligentStrategy(analysisType, riskLevel, minReturn);
+            
+            // Add to strategies list
+            this.strategies.push(aiStrategy);
+            this.renderStrategiesList();
+            
+            // Close modal
+            document.querySelector('.modal-overlay')?.remove();
+            
+            // Show fallback success notification
+            this.showNotification(
+                `🎉 استراتژی محلی "${aiStrategy.name}" تولید شد (بدون اتصال API)`, 
+                'warning'
+            );
         }
     }
 

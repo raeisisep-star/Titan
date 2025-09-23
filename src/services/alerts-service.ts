@@ -502,25 +502,51 @@ export class AlertsService {
    */
   async getUserNotificationSettings(userId: string): Promise<NotificationSettings> {
     try {
-      // Mock implementation - replace with database query
-      return {
-        userId: userId,
-        emailNotifications: true,
-        pushNotifications: true,
-        smsNotifications: false,
-        telegramNotifications: false,
-        quietHoursStart: '22:00',
-        quietHoursEnd: '08:00',
-        timezone: 'Asia/Tehran',
-        maxAlertsPerDay: 20,
-        maxAlertsPerHour: 5,
-        emailAddress: 'user@example.com',
-        phoneNumber: undefined,
-        telegramChatId: undefined
-      };
+      console.log('📖 Getting notification settings for user:', userId);
+
+      // Create table if it doesn't exist
+      await d1db.execute(`
+        CREATE TABLE IF NOT EXISTS user_notification_settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          settings_json TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
+
+      // Query user settings
+      const query = `SELECT settings_json FROM user_notification_settings WHERE user_id = ?`;
+      const result = await d1db.query(query, [parseInt(userId)]);
+
+      if (result.results && result.results.length > 0) {
+        // Return stored settings
+        const settingsData = JSON.parse(result.results[0].settings_json as string);
+        console.log('✅ Found stored settings:', settingsData);
+        return settingsData;
+      } else {
+        // Return default settings for new users
+        const defaultSettings = {
+          userId: userId,
+          emailNotifications: true,
+          pushNotifications: true,
+          smsNotifications: false,
+          telegramNotifications: false,
+          quietHoursStart: '22:00',
+          quietHoursEnd: '08:00',
+          timezone: 'Asia/Tehran',
+          maxAlertsPerDay: 20,
+          maxAlertsPerHour: 5,
+          emailAddress: 'user@example.com',
+          phoneNumber: undefined,
+          telegramChatId: undefined
+        };
+        console.log('📝 Using default settings for new user');
+        return defaultSettings;
+      }
 
     } catch (error) {
-      console.error('Error getting notification settings:', error);
+      console.error('❌ Error getting notification settings:', error);
       throw error;
     }
   }
@@ -629,16 +655,56 @@ export class AlertsService {
    */
   async updateNotificationSettings(userId: string, settings: Partial<NotificationSettings>): Promise<NotificationSettings> {
     try {
-      const currentSettings = await this.getNotificationSettings(userId);
-      const updatedSettings = { ...currentSettings, ...settings };
+      console.log('📝 Updating notification settings for user:', userId, settings);
 
-      console.log('Updating notification settings:', updatedSettings);
+      // Create user_notification_settings table if it doesn't exist
+      await d1db.execute(`
+        CREATE TABLE IF NOT EXISTS user_notification_settings (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          user_id INTEGER NOT NULL,
+          settings_json TEXT NOT NULL,
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+          updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        )
+      `);
 
-      // Mock implementation - replace with database update
+      // Get current settings
+      const currentSettings = await this.getUserNotificationSettings(userId);
+      const updatedSettings = { 
+        ...currentSettings, 
+        ...settings,
+        userId: userId 
+      };
+
+      console.log('💾 Saving updated settings:', updatedSettings);
+
+      // Update or insert settings
+      const existingQuery = `SELECT id FROM user_notification_settings WHERE user_id = ?`;
+      const existingResult = await d1db.query(existingQuery, [parseInt(userId)]);
+
+      if (existingResult.results && existingResult.results.length > 0) {
+        // Update existing settings
+        const updateQuery = `
+          UPDATE user_notification_settings 
+          SET settings_json = ?, updated_at = CURRENT_TIMESTAMP 
+          WHERE user_id = ?
+        `;
+        await d1db.execute(updateQuery, [JSON.stringify(updatedSettings), parseInt(userId)]);
+        console.log('✅ Settings updated successfully');
+      } else {
+        // Insert new settings
+        const insertQuery = `
+          INSERT INTO user_notification_settings (user_id, settings_json) 
+          VALUES (?, ?)
+        `;
+        await d1db.execute(insertQuery, [parseInt(userId), JSON.stringify(updatedSettings)]);
+        console.log('✅ New settings created successfully');
+      }
+
       return updatedSettings;
 
     } catch (error) {
-      console.error('Error updating notification settings:', error);
+      console.error('❌ Error updating notification settings:', error);
       throw error;
     }
   }

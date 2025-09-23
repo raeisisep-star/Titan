@@ -482,9 +482,49 @@ export default class SecurityTab {
             if (element) {
                 element.addEventListener('change', () => {
                     this.updateSecurityStatus();
+                    this.saveSecuritySettings();
                 });
             }
         });
+
+        // Add event listeners for input fields
+        const inputs = [
+            'session-timeout', 'max-login-attempts', 'account-lockout',
+            'min-password-length', 'password-expiry', 'password-history',
+            'encryption-type', 'api-key-expiry', 'rate-limit',
+            'log-retention', 'log-level', 'backup-retention-count', 'backup-time'
+        ];
+
+        inputs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.addEventListener('change', () => {
+                    this.saveSecuritySettings();
+                });
+            }
+        });
+    }
+
+    async saveSecuritySettings() {
+        try {
+            const settings = this.collectData();
+            
+            const response = await fetch('/api/security/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify(settings)
+            });
+
+            if (!response.ok) {
+                const data = await response.json();
+                console.error('Failed to save security settings:', data.message);
+            }
+        } catch (error) {
+            console.error('Error saving security settings:', error);
+        }
     }
 
     updateSecurityStatus() {
@@ -516,77 +556,315 @@ export default class SecurityTab {
     }
 
     // Authentication methods
-    setup2FA() {
-        alert('راه‌اندازی احراز هویت دو مرحله‌ای در حال پیاده‌سازی...');
-    }
+    async setup2FA() {
+        try {
+            const loadingModal = this.showLoadingModal('در حال راه‌اندازی 2FA...');
+            
+            const response = await fetch('/api/security/setup-2fa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
 
-    testBiometric() {
-        if ('credentials' in navigator) {
-            alert('تست بیومتریک در حال اجرا...');
-        } else {
-            alert('مرورگر شما از احراز هویت بیومتریک پشتیبانی نمی‌کند');
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در راه‌اندازی 2FA');
+            }
+
+            this.show2FASetupModal(data.qrCode, data.secret);
+        } catch (error) {
+            console.error('Setup 2FA error:', error);
+            this.showErrorModal('خطا در راه‌اندازی 2FA', error.message);
         }
     }
 
-    testPasswordStrength() {
-        const testPassword = prompt('رمز عبور را برای تست وارد کنید:');
-        if (testPassword) {
-            // Simple password strength test
-            let strength = 0;
-            if (testPassword.length >= 8) strength++;
-            if (/[A-Z]/.test(testPassword)) strength++;
-            if (/[0-9]/.test(testPassword)) strength++;
-            if (/[^A-Za-z0-9]/.test(testPassword)) strength++;
-
-            const strengthText = ['بسیار ضعیف', 'ضعیف', 'متوسط', 'قوی', 'بسیار قوی'][strength];
-            alert(`قدرت رمز عبور: ${strengthText} (${strength}/4)`);
+    async testBiometric() {
+        if (!('credentials' in navigator)) {
+            this.showErrorModal('عدم پشتیبانی', 'مرورگر شما از احراز هویت بیومتریک پشتیبانی نمی‌کند');
+            return;
         }
+
+        try {
+            const loadingModal = this.showLoadingModal('در حال تست بیومتریک...');
+            
+            const response = await fetch('/api/security/test-biometric', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در تست بیومتریک');
+            }
+
+            this.showSuccessModal('تست بیومتریک موفق', 'احراز هویت بیومتریک با موفقیت تست شد');
+        } catch (error) {
+            console.error('Biometric test error:', error);
+            this.showErrorModal('خطا در تست بیومتریک', error.message);
+        }
+    }
+
+    async testPasswordStrength() {
+        const passwordModal = this.showPasswordTestModal();
+        
+        passwordModal.querySelector('.test-password-btn').addEventListener('click', async () => {
+            const password = passwordModal.querySelector('#test-password').value;
+            if (!password) {
+                this.showErrorModal('خطا', 'لطفاً رمز عبور را وارد کنید');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/security/test-password-strength', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                    },
+                    body: JSON.stringify({ password })
+                });
+
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    throw new Error(data.message || 'خطا در تست رمز عبور');
+                }
+
+                passwordModal.remove();
+                this.showPasswordStrengthResult(data.strength, data.score, data.feedback);
+            } catch (error) {
+                console.error('Password test error:', error);
+                this.showErrorModal('خطا در تست رمز عبور', error.message);
+            }
+        });
     }
 
     // API Security methods
-    generateApiKey() {
-        const newKey = 'sk_' + Math.random().toString(36).substr(2, 40);
-        alert(`API Key جدید تولید شد:\\n${newKey}\\n\\nاین کلید را در مکان امن نگهداری کنید.`);
+    async generateApiKey() {
+        const confirmation = await this.showConfirmModal(
+            'تولید API Key جدید', 
+            'آیا مطمئن هستید که می‌خواهید API Key جدید تولید کنید؟\nکلید فعلی باطل خواهد شد.'
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal('در حال تولید API Key جدید...');
+            
+            const response = await fetch('/api/security/generate-api-key', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در تولید API Key');
+            }
+
+            this.showApiKeyModal(data.apiKey, data.expiresAt);
+        } catch (error) {
+            console.error('Generate API Key error:', error);
+            this.showErrorModal('خطا در تولید API Key', error.message);
+        }
     }
 
-    rotateEncryptionKeys() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید کلیدهای رمزنگاری را بچرخانید؟\\nاین عمل ممکن است نیاز به اعمال مجدد تنظیمات داشته باشد.')) {
-            alert('چرخش کلیدهای رمزنگاری شروع شد...');
+    async rotateEncryptionKeys() {
+        const confirmation = await this.showConfirmModal(
+            'چرخش کلیدهای رمزنگاری', 
+            'آیا مطمئن هستید که می‌خواهید کلیدهای رمزنگاری را بچرخانید؟\nاین عمل ممکن است نیاز به اعمال مجدد تنظیمات داشته باشد.'
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal('در حال چرخش کلیدهای رمزنگاری...');
+            
+            const response = await fetch('/api/security/rotate-encryption', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در چرخش کلیدها');
+            }
+
+            this.showSuccessModal('چرخش کلیدها موفق', 'کلیدهای رمزنگاری با موفقیت به‌روزرسانی شدند');
+        } catch (error) {
+            console.error('Rotate encryption keys error:', error);
+            this.showErrorModal('خطا در چرخش کلیدها', error.message);
         }
     }
 
     // IP Management methods
-    addWhitelistIP() {
+    async addWhitelistIP() {
         const ipInput = document.getElementById('new-whitelist-ip');
         const ip = ipInput?.value?.trim();
-        if (ip && this.isValidIP(ip)) {
-            alert(`IP ${ip} به لیست سفید اضافه شد`);
+        
+        if (!ip || !this.isValidIP(ip)) {
+            this.showErrorModal('خطا در ورودی', 'لطفاً یک IP معتبر وارد کنید');
+            return;
+        }
+
+        try {
+            const loadingModal = this.showLoadingModal(`در حال اضافه IP ${ip} به لیست سفید...`);
+            
+            const response = await fetch('/api/security/ip-whitelist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ ip, action: 'add' })
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در اضافه IP');
+            }
+
             ipInput.value = '';
-        } else {
-            alert('لطفاً یک IP معتبر وارد کنید');
+            this.showSuccessModal('IP اضافه شد', `IP ${ip} به لیست سفید اضافه شد`);
+            
+            // Refresh the IP list
+            this.loadIPLists();
+        } catch (error) {
+            console.error('Add whitelist IP error:', error);
+            this.showErrorModal('خطا در اضافه IP', error.message);
         }
     }
 
-    addBlacklistIP() {
+    async addBlacklistIP() {
         const ipInput = document.getElementById('new-blacklist-ip');
         const ip = ipInput?.value?.trim();
-        if (ip && this.isValidIP(ip)) {
-            alert(`IP ${ip} مسدود شد`);
+        
+        if (!ip || !this.isValidIP(ip)) {
+            this.showErrorModal('خطا در ورودی', 'لطفاً یک IP معتبر وارد کنید');
+            return;
+        }
+
+        try {
+            const loadingModal = this.showLoadingModal(`در حال مسدود کردن IP ${ip}...`);
+            
+            const response = await fetch('/api/security/ip-blacklist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ ip, action: 'add' })
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در مسدود کردن IP');
+            }
+
             ipInput.value = '';
-        } else {
-            alert('لطفاً یک IP معتبر وارد کنید');
+            this.showSuccessModal('IP مسدود شد', `IP ${ip} به لیست سیاه اضافه شد`);
+            
+            // Refresh the IP list
+            this.loadIPLists();
+        } catch (error) {
+            console.error('Add blacklist IP error:', error);
+            this.showErrorModal('خطا در مسدود کردن IP', error.message);
         }
     }
 
-    removeIP(ip) {
-        if (confirm(`آیا مطمئن هستید که می‌خواهید IP ${ip} را حذف کنید؟`)) {
-            alert(`IP ${ip} از لیست حذف شد`);
+    async removeIP(ip) {
+        const confirmation = await this.showConfirmModal(
+            'حذف IP', 
+            `آیا مطمئن هستید که می‌خواهید IP ${ip} را از لیست سفید حذف کنید؟`
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal(`در حال حذف IP ${ip}...`);
+            
+            const response = await fetch('/api/security/ip-whitelist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ ip, action: 'remove' })
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در حذف IP');
+            }
+
+            this.showSuccessModal('IP حذف شد', `IP ${ip} از لیست سفید حذف شد`);
+            
+            // Refresh the IP list
+            this.loadIPLists();
+        } catch (error) {
+            console.error('Remove IP error:', error);
+            this.showErrorModal('خطا در حذف IP', error.message);
         }
     }
 
-    removeBlockedIP(ip) {
-        if (confirm(`آیا مطمئن هستید که می‌خواهید IP ${ip} را از حالت مسدود خارج کنید؟`)) {
-            alert(`IP ${ip} آزاد شد`);
+    async removeBlockedIP(ip) {
+        const confirmation = await this.showConfirmModal(
+            'آزاد کردن IP', 
+            `آیا مطمئن هستید که می‌خواهید IP ${ip} را از لیست سیاه حذف کنید؟`
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal(`در حال آزاد کردن IP ${ip}...`);
+            
+            const response = await fetch('/api/security/ip-blacklist', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ ip, action: 'remove' })
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در آزاد کردن IP');
+            }
+
+            this.showSuccessModal('IP آزاد شد', `IP ${ip} از لیست سیاه حذف شد`);
+            
+            // Refresh the IP list
+            this.loadIPLists();
+        } catch (error) {
+            console.error('Remove blocked IP error:', error);
+            this.showErrorModal('خطا در آزاد کردن IP', error.message);
         }
     }
 
@@ -597,34 +875,197 @@ export default class SecurityTab {
     }
 
     // Security monitoring methods
-    viewSecurityLogs() {
-        alert('نمایش لاگ‌های امنیتی در حال پیاده‌سازی...');
+    async viewSecurityLogs() {
+        try {
+            const loadingModal = this.showLoadingModal('در حال بارگیری لاگ‌های امنیتی...');
+            
+            const response = await fetch('/api/security/logs', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در بارگیری لاگ‌ها');
+            }
+
+            this.showSecurityLogsModal(data.logs);
+        } catch (error) {
+            console.error('View security logs error:', error);
+            this.showErrorModal('خطا در بارگیری لاگ‌ها', error.message);
+        }
     }
 
-    exportSecurityReport() {
-        alert('صادرات گزارش امنیتی در حال پیاده‌سازی...');
+    async exportSecurityReport() {
+        try {
+            const loadingModal = this.showLoadingModal('در حال تهیه گزارش امنیتی...');
+            
+            const response = await fetch('/api/security/report', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در تهیه گزارش');
+            }
+
+            // Download the report
+            const blob = new Blob([JSON.stringify(data.report, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `security-report-${new Date().toISOString().slice(0, 10)}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+
+            this.showSuccessModal('گزارش آماده شد', 'گزارش امنیتی با موفقیت دانلود شد');
+        } catch (error) {
+            console.error('Export security report error:', error);
+            this.showErrorModal('خطا در صادرات گزارش', error.message);
+        }
     }
 
-    runSecurityScan() {
-        alert('اسکن امنیتی شروع شد...\\nنتایج پس از اتمام ارسال خواهد شد.');
+    async runSecurityScan() {
+        try {
+            const loadingModal = this.showLoadingModal('در حال اجرای اسکن امنیتی...');
+            
+            const response = await fetch('/api/security/scan', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در اجرای اسکن');
+            }
+
+            this.showSecurityScanResults(data.scanResults);
+        } catch (error) {
+            console.error('Security scan error:', error);
+            this.showErrorModal('خطا در اسکن امنیتی', error.message);
+        }
     }
 
-    clearSecurityAlerts() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید همه هشدارهای امنیتی را پاک کنید؟')) {
-            alert('هشدارهای امنیتی پاک شدند');
+    async clearSecurityAlerts() {
+        const confirmation = await this.showConfirmModal(
+            'پاک کردن هشدارها', 
+            'آیا مطمئن هستید که می‌خواهید همه هشدارهای امنیتی را پاک کنید؟'
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal('در حال پاک کردن هشدارها...');
+            
+            const response = await fetch('/api/security/clear-alerts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در پاک کردن هشدارها');
+            }
+
+            this.showSuccessModal('هشدارها پاک شد', 'تمام هشدارهای امنیتی با موفقیت پاک شدند');
+        } catch (error) {
+            console.error('Clear security alerts error:', error);
+            this.showErrorModal('خطا در پاک کردن', error.message);
         }
     }
 
     // Backup and recovery methods
-    createManualBackup() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید پشتیبان دستی ایجاد کنید؟')) {
-            alert('پشتیبان‌گیری شروع شد...\\nشما پس از اتمام مطلع خواهید شد.');
+    async createManualBackup() {
+        const confirmation = await this.showConfirmModal(
+            'ایجاد پشتیبان', 
+            'آیا مطمئن هستید که می‌خواهید پشتیبان دستی ایجاد کنید؟'
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal('در حال ایجاد پشتیبان...');
+            
+            const response = await fetch('/api/security/backup/create', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در ایجاد پشتیبان');
+            }
+
+            this.showSuccessModal('پشتیبان ایجاد شد', `پشتیبان ${data.backupId} با موفقیت ایجاد شد`);
+            
+            // Refresh backup list
+            this.loadBackupList();
+        } catch (error) {
+            console.error('Create backup error:', error);
+            this.showErrorModal('خطا در ایجاد پشتیبان', error.message);
         }
     }
 
-    restoreBackup(backupId) {
-        if (confirm(`آیا مطمئن هستید که می‌خواهید سیستم را به پشتیبان ${backupId} بازگردانید؟\\n\\n⚠️ هشدار: تمام تغییرات فعلی از دست خواهد رفت!`)) {
-            alert('بازیابی از پشتیبان شروع شد...\\nسیستم پس از اتمام مجدداً راه‌اندازی خواهد شد.');
+    async restoreBackup(backupId) {
+        const confirmation = await this.showConfirmModal(
+            'بازیابی پشتیبان', 
+            `آیا مطمئن هستید که می‌خواهید سیستم را به پشتیبان ${backupId} بازگردانید؟\n\n⚠️ هشدار: تمام تغییرات فعلی از دست خواهد رفت!`
+        );
+        
+        if (!confirmation) return;
+
+        try {
+            const loadingModal = this.showLoadingModal(`در حال بازیابی از پشتیبان ${backupId}...`);
+            
+            const response = await fetch('/api/security/backup/restore', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ backupId })
+            });
+
+            const data = await response.json();
+            loadingModal.remove();
+
+            if (!response.ok) {
+                throw new Error(data.message || 'خطا در بازیابی');
+            }
+
+            this.showSuccessModal('بازیابی موفق', 'بازیابی از پشتیبان با موفقیت انجام شد. سیستم مجدداً راه‌اندازی خواهد شد.');
+            
+            // Reload the page after restore
+            setTimeout(() => window.location.reload(), 2000);
+        } catch (error) {
+            console.error('Restore backup error:', error);
+            this.showErrorModal('خطا در بازیابی', error.message);
         }
     }
 
@@ -673,5 +1114,473 @@ export default class SecurityTab {
             backupRetentionCount: parseInt(document.getElementById('backup-retention-count')?.value) || 7,
             backupTime: document.getElementById('backup-time')?.value || '02:00'
         };
+    }
+
+    // Utility and modal methods
+    showLoadingModal(message) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                <div class="flex items-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 ml-4"></div>
+                    <span class="text-white text-lg">${message}</span>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    showErrorModal(title, message) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-red-500">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-exclamation-circle text-red-500 text-2xl ml-3"></i>
+                    <h3 class="text-xl font-bold text-white">${title}</h3>
+                </div>
+                <p class="text-gray-300 mb-4">${message}</p>
+                <button class="w-full px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors close-modal">
+                    بستن
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    showSuccessModal(title, message) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-green-500">
+                <div class="flex items-center mb-4">
+                    <i class="fas fa-check-circle text-green-500 text-2xl ml-3"></i>
+                    <h3 class="text-xl font-bold text-white">${title}</h3>
+                </div>
+                <p class="text-gray-300 mb-4">${message}</p>
+                <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors close-modal">
+                    بستن
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) modal.remove();
+        });
+        
+        document.body.appendChild(modal);
+        
+        // Auto close after 3 seconds
+        setTimeout(() => {
+            if (document.body.contains(modal)) {
+                modal.remove();
+            }
+        }, 3000);
+        
+        return modal;
+    }
+
+    async showConfirmModal(title, message) {
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4 border border-yellow-500">
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-question-circle text-yellow-500 text-2xl ml-3"></i>
+                        <h3 class="text-xl font-bold text-white">${title}</h3>
+                    </div>
+                    <p class="text-gray-300 mb-6">${message}</p>
+                    <div class="flex gap-3">
+                        <button class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors cancel-btn">
+                            انصراف
+                        </button>
+                        <button class="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors confirm-btn">
+                            تأیید
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            modal.querySelector('.confirm-btn').addEventListener('click', () => {
+                modal.remove();
+                resolve(true);
+            });
+            
+            modal.querySelector('.cancel-btn').addEventListener('click', () => {
+                modal.remove();
+                resolve(false);
+            });
+            
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+            
+            document.body.appendChild(modal);
+        });
+    }
+
+    show2FASetupModal(qrCode, secret) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-mobile-alt text-green-500 ml-3"></i>
+                    راه‌اندازی احراز هویت دو مرحله‌ای
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="bg-white p-4 rounded-lg inline-block mb-4">
+                            <img src="${qrCode}" alt="QR Code" class="w-48 h-48">
+                        </div>
+                        <p class="text-gray-300 text-sm">با برنامه Google Authenticator یا مشابه کد QR را اسکن کنید</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-2">یا این کد را دستی وارد کنید:</label>
+                        <div class="flex items-center bg-gray-700 rounded-lg p-3">
+                            <span class="flex-1 font-mono text-green-400">${secret}</span>
+                            <button class="text-blue-400 hover:text-blue-300 copy-secret" data-secret="${secret}">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-2">کد 6 رقمی را وارد کنید:</label>
+                        <input type="text" id="verification-code" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white text-center text-lg tracking-widest" maxlength="6" placeholder="123456">
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors cancel-btn">
+                        انصراف
+                    </button>
+                    <button class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors verify-btn">
+                        تأیید و فعال‌سازی
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.querySelector('.copy-secret').addEventListener('click', (e) => {
+            navigator.clipboard.writeText(e.target.dataset.secret);
+            this.showSuccessModal('کپی شد', 'کد به کلیپ‌بورد کپی شد');
+        });
+        
+        modal.querySelector('.cancel-btn').addEventListener('click', () => modal.remove());
+        modal.querySelector('.verify-btn').addEventListener('click', () => this.verify2FASetup(modal));
+        
+        document.body.appendChild(modal);
+    }
+
+    async verify2FASetup(modal) {
+        const code = modal.querySelector('#verification-code').value;
+        if (!code || code.length !== 6) {
+            this.showErrorModal('خطا', 'لطفاً کد 6 رقمی معتبر وارد کنید');
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/security/verify-2fa', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                },
+                body: JSON.stringify({ code })
+            });
+
+            const data = await response.json();
+            
+            if (!response.ok) {
+                throw new Error(data.message || 'کد نامعتبر است');
+            }
+
+            modal.remove();
+            this.showSuccessModal('2FA فعال شد', 'احراز هویت دو مرحله‌ای با موفقیت فعال شد');
+            
+            // Update UI
+            document.getElementById('two-factor-auth').checked = true;
+            this.updateSecurityStatus();
+        } catch (error) {
+            this.showErrorModal('خطا در فعال‌سازی', error.message);
+        }
+    }
+
+    showPasswordTestModal() {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-shield-alt text-purple-500 ml-3"></i>
+                    تست قدرت رمز عبور
+                </h3>
+                
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-2">رمز عبور مورد نظر:</label>
+                        <input type="password" id="test-password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white" placeholder="رمز عبور را وارد کنید">
+                    </div>
+                </div>
+                
+                <div class="flex gap-3 mt-6">
+                    <button class="flex-1 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors cancel-btn">
+                        انصراف
+                    </button>
+                    <button class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors test-password-btn">
+                        تست کن
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        modal.querySelector('.cancel-btn').addEventListener('click', () => modal.remove());
+        
+        document.body.appendChild(modal);
+        return modal;
+    }
+
+    showPasswordStrengthResult(strength, score, feedback) {
+        const strengthColors = {
+            'بسیار ضعیف': 'text-red-500',
+            'ضعیف': 'text-orange-500',
+            'متوسط': 'text-yellow-500',
+            'قوی': 'text-green-500',
+            'بسیار قوی': 'text-green-400'
+        };
+        
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-chart-bar text-purple-500 ml-3"></i>
+                    نتیجه تست رمز عبور
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="text-center">
+                        <div class="text-3xl font-bold ${strengthColors[strength]} mb-2">${score}/4</div>
+                        <div class="text-lg ${strengthColors[strength]}">${strength}</div>
+                    </div>
+                    
+                    <div class="space-y-2">
+                        <h4 class="text-white font-semibold">بازخورد:</h4>
+                        ${feedback.map(item => `<div class="text-gray-300 text-sm">• ${item}</div>`).join('')}
+                    </div>
+                </div>
+                
+                <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mt-6 close-modal">
+                    بستن
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        document.body.appendChild(modal);
+    }
+
+    showApiKeyModal(apiKey, expiresAt) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-lg w-full mx-4 border border-green-500">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-key text-green-500 ml-3"></i>
+                    API Key جدید تولید شد
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                        <div class="flex items-center mb-2">
+                            <i class="fas fa-exclamation-triangle text-red-400 ml-2"></i>
+                            <span class="text-red-400 font-semibold">هشدار امنیتی</span>
+                        </div>
+                        <p class="text-red-300 text-sm">این کلید فقط یک بار نمایش داده می‌شود. لطفاً آن را در مکان امن ذخیره کنید.</p>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-gray-300 text-sm mb-2">API Key:</label>
+                        <div class="flex items-center bg-gray-700 rounded-lg p-3">
+                            <span class="flex-1 font-mono text-green-400 text-sm break-all">${apiKey}</span>
+                            <button class="text-blue-400 hover:text-blue-300 mr-2 copy-key" data-key="${apiKey}">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="text-gray-300 text-sm">
+                        <strong>تاریخ انقضا:</strong> ${new Date(expiresAt).toLocaleDateString('fa-IR')}
+                    </div>
+                </div>
+                
+                <button class="w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors mt-6 close-modal">
+                    متوجه شدم
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.copy-key').addEventListener('click', (e) => {
+            navigator.clipboard.writeText(e.target.dataset.key);
+            this.showSuccessModal('کپی شد', 'API Key به کلیپ‌بورد کپی شد');
+        });
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        document.body.appendChild(modal);
+    }
+
+    // Additional utility methods for loading data
+    async loadIPLists() {
+        try {
+            const response = await fetch('/api/security/ip-lists', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Update IP lists in UI
+                console.log('IP lists loaded:', data);
+            }
+        } catch (error) {
+            console.error('Failed to load IP lists:', error);
+        }
+    }
+
+    async loadBackupList() {
+        try {
+            const response = await fetch('/api/security/backups', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                // Update backup list in UI
+                console.log('Backup list loaded:', data);
+            }
+        } catch (error) {
+            console.error('Failed to load backup list:', error);
+        }
+    }
+
+    showSecurityLogsModal(logs) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 h-3/4 overflow-hidden">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-list text-blue-500 ml-3"></i>
+                    لاگ‌های امنیتی
+                </h3>
+                
+                <div class="h-full overflow-y-auto">
+                    <table class="w-full text-sm text-gray-300">
+                        <thead class="bg-gray-700 sticky top-0">
+                            <tr>
+                                <th class="p-3 text-right">زمان</th>
+                                <th class="p-3 text-right">سطح</th>
+                                <th class="p-3 text-right">رویداد</th>
+                                <th class="p-3 text-right">جزئیات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${logs.map(log => `
+                                <tr class="border-b border-gray-600">
+                                    <td class="p-3">${new Date(log.timestamp).toLocaleString('fa-IR')}</td>
+                                    <td class="p-3">
+                                        <span class="px-2 py-1 rounded text-xs ${log.level === 'ERROR' ? 'bg-red-600' : log.level === 'WARN' ? 'bg-yellow-600' : 'bg-blue-600'}">
+                                            ${log.level}
+                                        </span>
+                                    </td>
+                                    <td class="p-3">${log.event}</td>
+                                    <td class="p-3">${log.details}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <button class="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors mt-4 close-modal">
+                    بستن
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        document.body.appendChild(modal);
+    }
+
+    showSecurityScanResults(scanResults) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4">
+                <h3 class="text-xl font-bold text-white mb-4 flex items-center">
+                    <i class="fas fa-search text-purple-500 ml-3"></i>
+                    نتایج اسکن امنیتی
+                </h3>
+                
+                <div class="space-y-4">
+                    <div class="grid grid-cols-3 gap-4 text-center">
+                        <div class="bg-green-900/20 border border-green-500/30 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-green-400">${scanResults.passed}</div>
+                            <div class="text-green-300 text-sm">تست موفق</div>
+                        </div>
+                        <div class="bg-yellow-900/20 border border-yellow-500/30 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-yellow-400">${scanResults.warnings}</div>
+                            <div class="text-yellow-300 text-sm">هشدار</div>
+                        </div>
+                        <div class="bg-red-900/20 border border-red-500/30 rounded-lg p-4">
+                            <div class="text-2xl font-bold text-red-400">${scanResults.failed}</div>
+                            <div class="text-red-300 text-sm">خطا</div>
+                        </div>
+                    </div>
+                    
+                    <div class="max-h-64 overflow-y-auto space-y-2">
+                        ${scanResults.details.map(item => `
+                            <div class="flex items-center p-3 rounded-lg ${
+                                item.status === 'pass' ? 'bg-green-900/20 border border-green-500/30' :
+                                item.status === 'warn' ? 'bg-yellow-900/20 border border-yellow-500/30' :
+                                'bg-red-900/20 border border-red-500/30'
+                            }">
+                                <i class="fas fa-${item.status === 'pass' ? 'check' : item.status === 'warn' ? 'exclamation-triangle' : 'times'} 
+                                   text-${item.status === 'pass' ? 'green' : item.status === 'warn' ? 'yellow' : 'red'}-400 ml-3"></i>
+                                <div class="flex-1">
+                                    <div class="font-semibold text-white">${item.test}</div>
+                                    <div class="text-gray-300 text-sm">${item.description}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                
+                <button class="w-full px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors mt-6 close-modal">
+                    بستن
+                </button>
+            </div>
+        `;
+        
+        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+        document.body.appendChild(modal);
     }
 }

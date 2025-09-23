@@ -67,7 +67,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.testEmailConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <button onclick="notificationsTab.testEmailConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fas fa-paper-plane mr-2"></i>
                             تست ارسال ایمیل
                         </button>
@@ -115,7 +115,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.testTelegramConnection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button onclick="notificationsTab.testTelegramConnection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                             <i class="fab fa-telegram mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -160,7 +160,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.testWhatsAppConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <button onclick="notificationsTab.testWhatsAppConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fab fa-whatsapp mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -207,7 +207,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.testSMSConnection()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <button onclick="notificationsTab.testSMSConnection()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-sms mr-2"></i>
                             تست ارسال پیامک
                         </button>
@@ -246,7 +246,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.testDiscordConnection()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <button onclick="notificationsTab.testDiscordConnection()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                             <i class="fab fa-discord mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -287,7 +287,7 @@ export default class NotificationsTab {
                         </div>
                         
                         <div class="flex items-center justify-center">
-                            <button onclick="this.requestDesktopPermission()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm">
+                            <button onclick="notificationsTab.requestDesktopPermission()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-controls text-sm">
                                 <i class="fas fa-desktop mr-2"></i>
                                 مجوز دسکتاپ
                             </button>
@@ -356,15 +356,7 @@ export default class NotificationsTab {
         `;
     }
 
-    initialize() {
-        // Set up toggle functionality for notification services
-        this.setupToggleHandlers();
-        
-        // Request desktop notification permission if enabled
-        if (this.settings.inapp?.desktop && Notification.permission === 'default') {
-            this.requestDesktopPermission();
-        }
-    }
+
 
     setupToggleHandlers() {
         const services = ['email', 'telegram', 'whatsapp', 'sms', 'discord', 'inapp'];
@@ -387,33 +379,186 @@ export default class NotificationsTab {
     }
 
     async testEmailConnection() {
-        const data = this.collectEmailData();
-        // Test email connection logic here
-        alert('تست اتصال ایمیل در حال پیاده‌سازی...');
+        try {
+            const data = this.collectEmailData();
+            
+            if (!data.enabled) {
+                this.showNotification('ابتدا سرویس ایمیل را فعال کنید', 'warning');
+                return;
+            }
+
+            if (!data.smtp_host || !data.smtp_user || !data.smtp_pass) {
+                this.showNotification('لطفاً تمام فیلدهای اجباری را پر کنید', 'warning');
+                return;
+            }
+
+            this.showNotification('در حال تست اتصال ایمیل...', 'info');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await fetch('/api/notifications/test-email', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('✅ تست ایمیل موفق! پیام ارسال شد', 'success');
+            } else {
+                this.showNotification(`❌ خطا در تست ایمیل: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Email test error:', error);
+            this.showNotification('❌ خطا در تست اتصال ایمیل', 'error');
+        }
     }
 
     async testTelegramConnection() {
-        const data = this.collectTelegramData();
-        // Test Telegram connection logic here
-        alert('تست اتصال تلگرام در حال پیاده‌سازی...');
+        try {
+            console.log('🔍 Starting Telegram test...');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد سیستم شوید', 'warning');
+                return;
+            }
+            
+            const data = this.collectTelegramData();
+            console.log('📊 Telegram data collected:', data);
+            
+            if (!data.enabled) {
+                this.showNotification('ابتدا سرویس تلگرام را فعال کنید', 'warning');
+                return;
+            }
+
+            if (!data.bot_token || !data.chat_id) {
+                this.showNotification('لطفاً Bot Token و Chat ID را وارد کنید', 'warning');
+                return;
+            }
+
+            this.showNotification('در حال تست اتصال تلگرام...', 'info');
+            console.log('🌐 Sending request to backend...');
+            
+            const response = await fetch('/api/notifications/test-telegram', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            console.log('📡 Response status:', response.status);
+            const result = await response.json();
+            console.log('📄 Response data:', result);
+            
+            if (result.success) {
+                this.showNotification('✅ تست تلگرام موفق! پیام ارسال شد', 'success');
+                console.log('✅ Telegram test successful');
+            } else {
+                this.showNotification(`❌ خطا در تست تلگرام: ${result.error}`, 'error');
+                console.error('❌ Telegram test failed:', result.error);
+            }
+        } catch (error) {
+            console.error('Telegram test error:', error);
+            this.showNotification('❌ خطا در تست اتصال تلگرام', 'error');
+        }
     }
 
     async testWhatsAppConnection() {
-        const data = this.collectWhatsAppData();
-        // Test WhatsApp connection logic here
-        alert('تست اتصال واتس‌اپ در حال پیاده‌سازی...');
+        try {
+            const data = this.collectWhatsAppData();
+            
+            if (!data.enabled) {
+                this.showNotification('ابتدا سرویس واتس‌اپ را فعال کنید', 'warning');
+                return;
+            }
+
+            if (!data.api_token || !data.phone_number) {
+                this.showNotification('لطفاً API Token و شماره تلفن را وارد کنید', 'warning');
+                return;
+            }
+
+            this.showNotification('در حال تست اتصال واتس‌اپ...', 'info');
+            
+            // For now, simulate WhatsApp test (real implementation would need WhatsApp Business API)
+            setTimeout(() => {
+                this.showNotification('✅ تست واتس‌اپ موفق! (شبیه‌سازی)', 'success');
+            }, 2000);
+        } catch (error) {
+            console.error('WhatsApp test error:', error);
+            this.showNotification('❌ خطا در تست اتصال واتس‌اپ', 'error');
+        }
     }
 
     async testSMSConnection() {
-        const data = this.collectSMSData();
-        // Test SMS connection logic here
-        alert('تست اتصال پیامک در حال پیاده‌سازی...');
+        try {
+            const data = this.collectSMSData();
+            
+            if (!data.enabled) {
+                this.showNotification('ابتدا سرویس پیامک را فعال کنید', 'warning');
+                return;
+            }
+
+            if (!data.api_key) {
+                this.showNotification('لطفاً API Key را وارد کنید', 'warning');
+                return;
+            }
+
+            this.showNotification('در حال تست اتصال پیامک...', 'info');
+            
+            // For now, simulate SMS test (real implementation would integrate with SMS providers)
+            setTimeout(() => {
+                this.showNotification('✅ تست پیامک موفق! (شبیه‌سازی)', 'success');
+            }, 2000);
+        } catch (error) {
+            console.error('SMS test error:', error);
+            this.showNotification('❌ خطا در تست اتصال پیامک', 'error');
+        }
     }
 
     async testDiscordConnection() {
-        const data = this.collectDiscordData();
-        // Test Discord connection logic here
-        alert('تست اتصال دیسکورد در حال پیاده‌سازی...');
+        try {
+            const data = this.collectDiscordData();
+            
+            if (!data.enabled) {
+                this.showNotification('ابتدا سرویس دیسکورد را فعال کنید', 'warning');
+                return;
+            }
+
+            if (!data.webhook_url) {
+                this.showNotification('لطفاً Webhook URL را وارد کنید', 'warning');
+                return;
+            }
+
+            this.showNotification('در حال تست اتصال دیسکورد...', 'info');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await fetch('/api/notifications/test-discord', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('✅ تست دیسکورد موفق! پیام ارسال شد', 'success');
+            } else {
+                this.showNotification(`❌ خطا در تست دیسکورد: ${result.error}`, 'error');
+            }
+        } catch (error) {
+            console.error('Discord test error:', error);
+            this.showNotification('❌ خطا در تست اتصال دیسکورد', 'error');
+        }
     }
 
     async requestDesktopPermission() {
@@ -497,5 +642,231 @@ export default class NotificationsTab {
             types: Array.from(document.querySelectorAll('.notification-type:checked'))
                       .map(cb => cb.getAttribute('data-type'))
         };
+    }
+
+    // ===================================================================
+    // BACKEND INTEGRATION METHODS
+    // ===================================================================
+
+    // Save settings (called by settings-unified.js)
+    async saveSettings() {
+        try {
+            console.log('💾 Saving notification settings...');
+            
+            const settings = this.collectData();
+            const token = localStorage.getItem('titan_auth_token');
+            
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد سیستم شوید', 'warning');
+                return { success: false, error: 'No authentication token' };
+            }
+
+            const response = await fetch('/api/alerts/settings', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(settings)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showNotification(result.message || 'تنظیمات اطلاعیه‌ها با موفقیت ذخیره شد', 'success');
+                return { success: true, data: result.data };
+            } else {
+                this.showNotification(result.error || 'خطا در ذخیره تنظیمات', 'error');
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Save notification settings error:', error);
+            this.showNotification('خطا در ذخیره تنظیمات اطلاعیه‌ها', 'error');
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Load settings from backend
+    async loadSettings() {
+        try {
+            console.log('📋 Loading notification settings...');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            
+            if (!token) {
+                console.warn('No auth token found, using defaults');
+                return { success: true, data: {} };
+            }
+
+            const response = await fetch('/api/alerts/settings', {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.applySettingsToForm(result.data);
+                return { success: true, data: result.data };
+            } else {
+                console.warn('Failed to load settings:', result.error);
+                return { success: false, error: result.error };
+            }
+        } catch (error) {
+            console.error('Load notification settings error:', error);
+            return { success: false, error: error.message };
+        }
+    }
+
+    // Apply settings to form elements
+    applySettingsToForm(settings) {
+        if (!settings) return;
+
+        // Apply email settings
+        if (settings.email) {
+            const emailEnabled = document.getElementById('email-enabled');
+            if (emailEnabled) emailEnabled.checked = settings.email.enabled || false;
+            
+            if (settings.email.smtp_host) document.getElementById('smtp-host').value = settings.email.smtp_host;
+            if (settings.email.smtp_port) document.getElementById('smtp-port').value = settings.email.smtp_port;
+            if (settings.email.smtp_user) document.getElementById('smtp-user').value = settings.email.smtp_user;
+            if (settings.email.smtp_pass) document.getElementById('smtp-pass').value = settings.email.smtp_pass;
+            if (settings.email.from_email) document.getElementById('from-email').value = settings.email.from_email;
+            if (settings.email.from_name) document.getElementById('from-name').value = settings.email.from_name;
+        }
+
+        // Apply Telegram settings
+        if (settings.telegram) {
+            const telegramEnabled = document.getElementById('telegram-enabled');
+            if (telegramEnabled) telegramEnabled.checked = settings.telegram.enabled || false;
+            
+            if (settings.telegram.bot_token) document.getElementById('telegram-bot-token').value = settings.telegram.bot_token;
+            if (settings.telegram.chat_id) document.getElementById('telegram-chat-id').value = settings.telegram.chat_id;
+            if (settings.telegram.parse_mode) document.getElementById('telegram-parse-mode').value = settings.telegram.parse_mode;
+        }
+
+        // Apply other services settings...
+        if (settings.whatsapp) {
+            const whatsappEnabled = document.getElementById('whatsapp-enabled');
+            if (whatsappEnabled) whatsappEnabled.checked = settings.whatsapp.enabled || false;
+        }
+
+        if (settings.sms) {
+            const smsEnabled = document.getElementById('sms-enabled');
+            if (smsEnabled) smsEnabled.checked = settings.sms.enabled || false;
+        }
+
+        if (settings.discord) {
+            const discordEnabled = document.getElementById('discord-enabled');
+            if (discordEnabled) discordEnabled.checked = settings.discord.enabled || false;
+        }
+
+        if (settings.inapp) {
+            const inappEnabled = document.getElementById('inapp-enabled');
+            if (inappEnabled) inappEnabled.checked = settings.inapp.enabled !== false;
+            
+            const inappSound = document.getElementById('inapp-sound');
+            if (inappSound) inappSound.checked = settings.inapp.sound !== false;
+            
+            const inappDesktop = document.getElementById('inapp-desktop');
+            if (inappDesktop) inappDesktop.checked = settings.inapp.desktop !== false;
+        }
+
+        // Update toggle states
+        this.setupToggleHandlers();
+        
+        console.log('✅ Applied notification settings to form');
+    }
+
+    // Initialize tab functionality (updated)
+    async initialize() {
+        console.log('🔔 Notifications tab initialized');
+        
+        // Set up global instance
+        window.notificationsTab = this;
+        
+        // Load settings from backend
+        await this.loadSettings();
+        
+        // Set up toggle functionality for notification services
+        this.setupToggleHandlers();
+        
+        // Request desktop notification permission if enabled
+        if (this.settings.inapp?.desktop && Notification.permission === 'default') {
+            this.requestDesktopPermission();
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Console log for debugging
+        console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Create visual notification
+        this.createToast(message, type);
+        
+        // Also try to integrate with global notification system if available
+        if (window.showNotification) {
+            window.showNotification(message, type);
+        }
+    }
+
+    createToast(message, type) {
+        // Remove existing toasts
+        const existingToasts = document.querySelectorAll('.notifications-settings-toast');
+        existingToasts.forEach(toast => toast.remove());
+
+        // Create new toast
+        const toast = document.createElement('div');
+        toast.className = `notifications-settings-toast fixed top-4 right-4 z-50 px-6 py-4 rounded-lg shadow-lg transition-all duration-300 transform`;
+        
+        // Style based on type
+        const styles = {
+            success: 'bg-green-600 text-white border-l-4 border-green-400',
+            error: 'bg-red-600 text-white border-l-4 border-red-400', 
+            info: 'bg-blue-600 text-white border-l-4 border-blue-400',
+            warning: 'bg-yellow-600 text-white border-l-4 border-yellow-400'
+        };
+        
+        toast.className += ` ${styles[type] || styles.info}`;
+        
+        // Add icon based on type
+        const icons = {
+            success: '✅',
+            error: '❌', 
+            info: 'ℹ️',
+            warning: '⚠️'
+        };
+        
+        toast.innerHTML = `
+            <div class="flex items-center space-x-3">
+                <span class="text-xl">${icons[type] || icons.info}</span>
+                <span class="font-medium">${message}</span>
+                <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-white hover:text-gray-200 transition-colors">
+                    ×
+                </button>
+            </div>
+        `;
+        
+        // Add to document
+        document.body.appendChild(toast);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            if (toast.parentNode) {
+                toast.style.transform = 'translateX(100%)';
+                toast.style.opacity = '0';
+                setTimeout(() => {
+                    if (toast.parentNode) {
+                        toast.remove();
+                    }
+                }, 300);
+            }
+        }, 5000);
+        
+        // Animate in
+        setTimeout(() => {
+            toast.style.transform = 'translateX(0)';
+        }, 100);
     }
 }

@@ -320,6 +320,9 @@ export default class TradingTab {
         // Set up event listeners
         this.setupEventListeners();
         
+        // Load current trading settings
+        this.loadTradingSettings();
+        
         // Set up global instance
         window.tradingTab = this;
     }
@@ -331,7 +334,7 @@ export default class TradingTab {
             riskInput.addEventListener('change', (e) => {
                 const value = parseFloat(e.target.value);
                 if (value > 5) {
-                    alert('⚠️ هشدار: ریسک بالای 5% توصیه نمی‌شود');
+                    this.showNotification('⚠️ هشدار: ریسک بالای 5% توصیه نمی‌شود', 'warning');
                 }
             });
         }
@@ -344,47 +347,443 @@ export default class TradingTab {
                 // Update display (could add a label)
             });
         }
+
+        // Auto-save settings when changed
+        const settingsInputs = document.querySelectorAll('#max-risk-per-trade, #max-daily-loss, #max-positions, #max-amount-per-trade, #auto-trading-enabled, #analysis-interval, #ai-confidence, #base-currency');
+        settingsInputs.forEach(input => {
+            input.addEventListener('change', () => {
+                this.saveTradingSettings();
+            });
+        });
+
+        // Strategy checkboxes
+        const strategyCheckboxes = document.querySelectorAll('input[id^="strategy-"]');
+        strategyCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('change', () => {
+                this.saveTradingSettings();
+            });
+        });
+    }
+
+    // Load trading settings from backend
+    async loadTradingSettings() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/trading/settings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success && result.data) {
+                this.updateUI(result.data);
+                console.log('✅ Trading settings loaded:', result.data);
+            } else {
+                console.error('❌ Failed to load trading settings:', result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading trading settings:', error);
+        }
+    }
+
+    // Save trading settings to backend
+    async saveTradingSettings() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) return;
+
+            const settingsData = this.collectData();
+            
+            const response = await fetch('/api/trading/settings', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(settingsData)
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('✅ Trading settings saved');
+            } else {
+                console.error('❌ Failed to save trading settings:', result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error saving trading settings:', error);
+        }
+    }
+
+    // Update UI with loaded settings
+    updateUI(settings) {
+        const risk = settings.riskManagement || {};
+        const auto = settings.autoTrading || {};
+        const strategies = auto.strategies || {};
+
+        // Update risk management inputs
+        const maxRiskInput = document.getElementById('max-risk-per-trade');
+        if (maxRiskInput) maxRiskInput.value = risk.maxRiskPerTrade || 2.0;
+
+        const maxLossInput = document.getElementById('max-daily-loss');
+        if (maxLossInput) maxLossInput.value = risk.maxDailyLoss || 5.0;
+
+        const maxPositionsInput = document.getElementById('max-positions');
+        if (maxPositionsInput) maxPositionsInput.value = risk.maxPositions || 10;
+
+        const maxAmountInput = document.getElementById('max-amount-per-trade');
+        if (maxAmountInput) maxAmountInput.value = risk.maxAmountPerTrade || 1000;
+
+        // Update auto trading settings
+        const autoEnabledInput = document.getElementById('auto-trading-enabled');
+        if (autoEnabledInput) autoEnabledInput.checked = auto.enabled || false;
+
+        const analysisIntervalInput = document.getElementById('analysis-interval');
+        if (analysisIntervalInput) analysisIntervalInput.value = auto.analysisInterval || 60;
+
+        const aiConfidenceInput = document.getElementById('ai-confidence');
+        if (aiConfidenceInput) aiConfidenceInput.value = auto.aiConfidence || 75;
+
+        const baseCurrencyInput = document.getElementById('base-currency');
+        if (baseCurrencyInput) baseCurrencyInput.value = auto.baseCurrency || 'USDT';
+
+        // Update strategy checkboxes
+        const momentumInput = document.getElementById('strategy-momentum');
+        if (momentumInput) momentumInput.checked = strategies.momentum || false;
+
+        const meanReversionInput = document.getElementById('strategy-mean-reversion');
+        if (meanReversionInput) meanReversionInput.checked = strategies.meanReversion || false;
+
+        const dcaInput = document.getElementById('strategy-dca');
+        if (dcaInput) dcaInput.checked = strategies.dca || false;
+
+        const gridInput = document.getElementById('strategy-grid');
+        if (gridInput) gridInput.checked = strategies.grid || false;
     }
 
     // Action methods
-    startAutopilot() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید سیستم معاملات خودکار را شروع کنید؟')) {
-            console.log('🚀 Starting autopilot...');
-            this.showNotification('سیستم خودپیلوت فعال شد', 'success');
+    async startAutopilot() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید سیستم معاملات خودکار را شروع کنید؟')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            // Get selected strategies
+            const strategies = [];
+            if (document.getElementById('strategy-momentum')?.checked) strategies.push('momentum');
+            if (document.getElementById('strategy-mean-reversion')?.checked) strategies.push('meanReversion');
+            if (document.getElementById('strategy-dca')?.checked) strategies.push('dca');
+            if (document.getElementById('strategy-grid')?.checked) strategies.push('grid');
+
+            if (strategies.length === 0) {
+                this.showNotification('لطفاً حداقل یک استراتژی انتخاب کنید', 'warning');
+                return;
+            }
+
+            const response = await fetch('/api/trading/settings/autopilot/start', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    strategies: strategies,
+                    riskLevel: 'medium'
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('🚀 Autopilot started:', result.data);
+                this.showNotification(result.message, 'success');
+                this.updateAutopilotStatus(result.data);
+            } else {
+                console.error('❌ Failed to start autopilot:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error starting autopilot:', error);
+            this.showNotification('خطا در شروع سیستم خودکار', 'error');
         }
     }
 
-    stopAutopilot() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید معاملات خودکار را متوقف کنید؟')) {
-            console.log('⏹️ Stopping autopilot...');
-            this.showNotification('سیستم خودپیلوت متوقف شد', 'warning');
+    async stopAutopilot() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید معاملات خودکار را متوقف کنید؟')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/trading/settings/autopilot/stop', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('⏹️ Autopilot stopped:', result.data);
+                this.showNotification(result.message, 'warning');
+            } else {
+                console.error('❌ Failed to stop autopilot:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error stopping autopilot:', error);
+            this.showNotification('خطا در توقف سیستم خودکار', 'error');
         }
     }
 
-    testStrategy() {
-        console.log('🧪 Testing strategy...');
-        this.showNotification('تست استراتژی شروع شد', 'info');
-    }
+    async testStrategy() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
 
-    emergencyStop() {
-        if (confirm('⚠️ توقف اضطراری تمام معاملات؟ این عمل قابل بازگشت نیست!')) {
-            console.log('🚨 EMERGENCY STOP activated');
-            this.showNotification('توقف اضطراری فعال شد', 'error');
+            // Get selected strategy for testing
+            let strategyName = 'momentum'; // Default
+            if (document.getElementById('strategy-dca')?.checked) strategyName = 'dca';
+            if (document.getElementById('strategy-grid')?.checked) strategyName = 'grid';
+            if (document.getElementById('strategy-mean-reversion')?.checked) strategyName = 'meanReversion';
+
+            const response = await fetch('/api/trading/settings/strategy/test', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    strategyName: strategyName,
+                    testDuration: '1h',
+                    testAmount: 100
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('🧪 Strategy test started:', result.data);
+                this.showNotification(result.message, 'info');
+            } else {
+                console.error('❌ Failed to start strategy test:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error testing strategy:', error);
+            this.showNotification('خطا در تست استراتژی', 'error');
         }
     }
 
-    viewDetailedStats() {
-        // Would open a detailed statistics modal
-        this.showNotification('آمار تفصیلی در حال بارگذاری...', 'info');
+    async emergencyStop() {
+        if (!confirm('⚠️ توقف اضطراری تمام معاملات؟ این عمل قابل بازگشت نیست!')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            const response = await fetch('/api/trading/settings/emergency-stop', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('🚨 EMERGENCY STOP activated:', result.data);
+                this.showNotification(result.message, 'error');
+            } else {
+                console.error('❌ Failed to activate emergency stop:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error activating emergency stop:', error);
+            this.showNotification('خطا در فعال‌سازی توقف اضطراری', 'error');
+        }
     }
 
-    exportPerformance() {
-        // Would generate and download a performance report
-        this.showNotification('گزارش عملکرد صادر شد', 'success');
+    async viewDetailedStats() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            this.showNotification('در حال دریافت آمار تفصیلی...', 'info');
+
+            const response = await fetch('/api/trading/settings/stats/detailed?timeframe=7d', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('📊 Detailed stats received:', result.data);
+                this.showDetailedStatsModal(result.data);
+                this.showNotification(result.message, 'success');
+            } else {
+                console.error('❌ Failed to get detailed stats:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error getting detailed stats:', error);
+            this.showNotification('خطا در دریافت آمار تفصیلی', 'error');
+        }
+    }
+
+    async exportPerformance() {
+        try {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+
+            this.showNotification('در حال تولید گزارش عملکرد...', 'info');
+
+            const response = await fetch('/api/trading/settings/export/performance?format=json', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                console.log('📄 Performance report generated:', result.data);
+                this.downloadReport(result.data);
+                this.showNotification(result.message, 'success');
+            } else {
+                console.error('❌ Failed to export performance:', result.error);
+                this.showNotification(result.error, 'error');
+            }
+        } catch (error) {
+            console.error('❌ Error exporting performance:', error);
+            this.showNotification('خطا در صادرات گزارش عملکرد', 'error');
+        }
+    }
+
+    // Helper methods
+    updateAutopilotStatus(data) {
+        // Update UI to show autopilot is running
+        // Could add a status indicator or update button text
+        console.log('Autopilot status updated:', data);
+    }
+
+    showDetailedStatsModal(statsData) {
+        // Create and show a modal with detailed statistics
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-900 rounded-lg p-6 max-w-4xl max-h-96 overflow-y-auto m-4">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">📊 آمار تفصیلی معاملات</h3>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-white">
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">📈 عملکرد کلی</h4>
+                        <p>تعداد کل معاملات: ${statsData.overview.totalTrades}</p>
+                        <p>نرخ موفقیت: ${statsData.overview.winRate}%</p>
+                        <p>سود و زیان کل: $${statsData.overview.totalPnL}</p>
+                        <p>ضریب سود: ${statsData.overview.profitFactor}</p>
+                    </div>
+                    <div class="bg-gray-800 p-4 rounded-lg">
+                        <h4 class="font-semibold mb-2">📊 متریک‌های ریسک</h4>
+                        <p>نسبت شارپ: ${statsData.performance.sharpeRatio}</p>
+                        <p>حداکثر کاهش: ${statsData.performance.maximumDrawdown}%</p>
+                        <p>نوسانات: ${statsData.riskMetrics.volatility}%</p>
+                        <p>همبستگی با BTC: ${statsData.riskMetrics.correlationBTC}</p>
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    downloadReport(reportData) {
+        // Create and download the performance report
+        const dataStr = JSON.stringify(reportData, null, 2);
+        const dataBlob = new Blob([dataStr], {type: 'application/json'});
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `trading-performance-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
     }
 
     showNotification(message, type = 'info') {
-        // Simple notification - would integrate with main notification system
+        // Enhanced notification system
         console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Create notification element
+        const notification = document.createElement('div');
+        const bgColor = {
+            'success': 'bg-green-600',
+            'error': 'bg-red-600', 
+            'warning': 'bg-yellow-600',
+            'info': 'bg-blue-600'
+        }[type] || 'bg-gray-600';
+        
+        notification.className = `fixed top-4 right-4 ${bgColor} text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-all duration-300`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            notification.style.opacity = '0';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    document.body.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
     }
 }

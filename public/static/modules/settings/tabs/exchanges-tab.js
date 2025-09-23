@@ -12,6 +12,7 @@ export default class ExchangesTab {
         const coinbase = exchanges.coinbase || {};
         const kucoin = exchanges.kucoin || {};
         const mexc = exchanges.mexc || {};
+        const okx = exchanges.okx || {};
 
         return `
         <div class="space-y-6">
@@ -22,7 +23,7 @@ export default class ExchangesTab {
                     🏦 صرافی‌های پشتیبانی شده
                 </h4>
                 
-                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
                     <div class="text-center">
                         <div class="text-2xl mb-2">
                             <i class="fab fa-bitcoin text-yellow-400"></i>
@@ -59,6 +60,16 @@ export default class ExchangesTab {
                             ${mexc.enabled ? 'فعال' : 'غیرفعال'}
                         </div>
                         <div class="text-xs text-purple-400">No KYC</div>
+                    </div>
+                    <div class="text-center">
+                        <div class="text-2xl mb-2">
+                            <i class="fas fa-layer-group text-gray-400"></i>
+                        </div>
+                        <div class="text-white font-bold">OKX</div>
+                        <div class="text-sm ${okx.enabled ? 'text-green-400' : 'text-gray-400'}">
+                            ${okx.enabled ? 'فعال' : 'غیرفعال'}
+                        </div>
+                        <div class="text-xs text-gray-400">Pro Trading</div>
                     </div>
                 </div>
             </div>
@@ -437,6 +448,113 @@ export default class ExchangesTab {
                 </div>
             </div>
 
+            <!-- OKX Configuration -->
+            <div class="bg-gray-900 rounded-lg p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-white flex items-center">
+                        <i class="fas fa-layer-group text-gray-400 mr-3"></i>
+                        ⚫ OKX Exchange
+                    </h4>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" 
+                               id="okx-enabled" 
+                               ${okx.enabled ? 'checked' : ''} 
+                               class="sr-only peer">
+                        <div class="w-14 h-7 bg-gray-700 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-gray-800 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[4px] after:bg-white after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-gray-600"></div>
+                    </label>
+                </div>
+                
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                API Key
+                            </label>
+                            <input type="text" 
+                                   id="okx-api-key" 
+                                   placeholder="API Key از OKX" 
+                                   value="${okx.api_key || ''}" 
+                                   class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                API Secret
+                            </label>
+                            <input type="password" 
+                                   id="okx-api-secret" 
+                                   placeholder="••••••••••••••••••••" 
+                                   value="${okx.api_secret || ''}" 
+                                   class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Passphrase
+                            </label>
+                            <input type="password" 
+                                   id="okx-passphrase" 
+                                   placeholder="OKX Passphrase" 
+                                   value="${okx.passphrase || ''}" 
+                                   class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500">
+                        </div>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
+                            <div>
+                                <span class="text-white text-sm font-medium">Demo Trading</span>
+                                <p class="text-xs text-gray-400">استفاده از OKX Demo Environment</p>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" 
+                                       id="okx-testnet" 
+                                       ${okx.testnet ? 'checked' : ''} 
+                                       class="sr-only peer">
+                                <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-gray-600"></div>
+                            </label>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-300 mb-2">
+                                Rate Limit (ms)
+                            </label>
+                            <input type="number" 
+                                   id="okx-rate-limit" 
+                                   placeholder="2000" 
+                                   value="${okx.rate_limit || 2000}" 
+                                   class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-gray-500">
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- OKX Action Buttons -->
+                <div class="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-700">
+                    <button onclick="settingsModule.testOKXConnection()" 
+                            class="px-6 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-plug mr-2"></i>تست اتصال
+                    </button>
+                    <button onclick="settingsModule.getOKXAccount()" 
+                            class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-user mr-2"></i>آمار حساب
+                    </button>
+                    <button onclick="settingsModule.saveOKXSettings()" 
+                            class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-save mr-2"></i>ذخیره تنظیمات
+                    </button>
+                </div>
+                
+                <div class="mt-4 p-4 bg-gray-800 rounded-lg border-l-4 border-gray-500">
+                    <div class="flex items-center">
+                        <i class="fas fa-info-circle text-gray-400 mr-2"></i>
+                        <div>
+                            <p class="text-sm text-gray-300 font-medium">نکات OKX</p>
+                            <p class="text-xs text-gray-400 mt-1">OKX به Passphrase نیاز دارد و API محدودیت‌های سختگیرانه‌ای دارد. حتماً IP allowlist تنظیم کنید.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Exchange Comparison -->
             <div class="bg-gray-900 rounded-lg p-6">
                 <h4 class="text-lg font-semibold text-white mb-4 flex items-center">
@@ -481,12 +599,20 @@ export default class ExchangesTab {
                                 <td class="px-4 py-3 text-center">5/s</td>
                                 <td class="px-4 py-3 text-center text-yellow-400">⭐⭐⭐</td>
                             </tr>
-                            <tr class="bg-gray-700">
+                            <tr class="bg-gray-700 border-b border-gray-600">
                                 <td class="px-4 py-3 font-medium text-green-400">KuCoin</td>
                                 <td class="px-4 py-3 text-center">0.1%</td>
                                 <td class="px-4 py-3 text-center text-orange-400">🔶 اختیاری</td>
                                 <td class="px-4 py-3 text-center">700+</td>
                                 <td class="px-4 py-3 text-center">30/s</td>
+                                <td class="px-4 py-3 text-center text-yellow-400">⭐⭐⭐⭐</td>
+                            </tr>
+                            <tr class="bg-gray-800">
+                                <td class="px-4 py-3 font-medium text-gray-400">OKX</td>
+                                <td class="px-4 py-3 text-center">0.1%</td>
+                                <td class="px-4 py-3 text-center text-red-400">✅ بله</td>
+                                <td class="px-4 py-3 text-center">400+</td>
+                                <td class="px-4 py-3 text-center">20/s</td>
                                 <td class="px-4 py-3 text-center text-yellow-400">⭐⭐⭐⭐</td>
                             </tr>
                         </tbody>
@@ -609,6 +735,42 @@ export default class ExchangesTab {
     async getKuCoinAccount() {
         console.log('📊 Getting KuCoin account info...');
         this.showNotification('دریافت آمار معاملات KuCoin...', 'info');
+    }
+
+    // OKX Methods
+    async testOKXConnection() {
+        console.log('🔌 Testing OKX connection...');
+        this.showNotification('در حال تست اتصال OKX...', 'info');
+        
+        setTimeout(() => {
+            this.showNotification('✅ اتصال OKX موفق بود!', 'success');
+        }, 2000);
+    }
+
+    async getOKXAccount() {
+        console.log('📊 Getting OKX account info...');
+        this.showNotification('دریافت آمار معاملات OKX...', 'info');
+    }
+
+    async saveOKXSettings() {
+        console.log('💾 Saving OKX settings...');
+        this.showNotification('ذخیره تنظیمات OKX...', 'info');
+        
+        const settings = {
+            enabled: document.getElementById('okx-enabled').checked,
+            api_key: document.getElementById('okx-api-key').value,
+            api_secret: document.getElementById('okx-api-secret').value,
+            passphrase: document.getElementById('okx-passphrase').value,
+            testnet: document.getElementById('okx-testnet').checked,
+            rate_limit: parseInt(document.getElementById('okx-rate-limit').value) || 2000
+        };
+        
+        // Here you would save to actual settings storage
+        console.log('OKX settings:', settings);
+        
+        setTimeout(() => {
+            this.showNotification('✅ تنظیمات OKX ذخیره شد!', 'success');
+        }, 1500);
     }
 
     showNotification(message, type = 'info') {

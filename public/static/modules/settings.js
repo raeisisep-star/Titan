@@ -1047,51 +1047,95 @@ class SettingsModule {
     }
 
     getExchangesTab() {
-        const exchanges = ['binance', 'coinbase', 'kucoin'];
+        const exchanges = [
+            { key: 'binance', name: '🟡 Binance', description: 'بزرگترین صرافی جهان' },
+            { key: 'mexc', name: '🔵 MEXC', description: 'صرافی بدون KYC - راه‌اندازی آسان' },
+            { key: 'okx', name: '⚫ OKX', description: 'صرافی حرفه‌ای با ابزارهای پیشرفته' },
+            { key: 'coinbase', name: '🔷 Coinbase Pro', description: 'صرافی حرفه‌ای آمریکایی' },
+            { key: 'kucoin', name: '🟢 KuCoin', description: 'صرافی با تنوع کوین‌های بالا' }
+        ];
         let content = '<div class="space-y-6">';
         
         exchanges.forEach(exchange => {
-            const config = this.settings.exchanges[exchange];
-            const status = this.exchangeStatus[exchange] || 'disconnected';
+            const config = this.settings.exchanges[exchange.key] || {};
+            const status = this.exchangeStatus[exchange.key] || 'disconnected';
             const statusColor = status === 'connected' ? 'green' : status === 'error' ? 'red' : 'gray';
+            const statusText = status === 'connected' ? 'متصل' : status === 'error' ? 'خطا' : 'قطع شده';
             
             content += `
-            <div class="bg-gray-900 rounded-lg p-4">
+            <div class="bg-gray-900 rounded-lg p-6">
                 <div class="flex items-center justify-between mb-4">
                     <div class="flex items-center gap-3">
-                        <h4 class="text-lg font-semibold text-white capitalize">${exchange}</h4>
-                        <div class="w-3 h-3 bg-${statusColor}-400 rounded-full"></div>
-                        <span class="text-sm text-gray-400">${status}</span>
+                        <h4 class="text-xl font-semibold text-white">${exchange.name}</h4>
+                        <div class="w-3 h-3 bg-${statusColor}-400 rounded-full animate-pulse"></div>
+                        <span class="text-sm text-gray-400">${statusText}</span>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="${exchange}-enabled" class="sr-only peer" ${config.enabled ? 'checked' : ''}>
+                        <input type="checkbox" id="${exchange.key}-enabled" class="sr-only peer" ${config.enabled ? 'checked' : ''}>
                         <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                     </label>
                 </div>
+                
+                <!-- Exchange Description -->
+                <div class="mb-4">
+                    <p class="text-sm text-gray-400">${exchange.description}</p>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                        <input type="password" id="${exchange}-api-key" placeholder="••••••••••••••••" value="${config.api_key}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-300 mb-2">API Secret</label>
-                        <input type="password" id="${exchange}-api-secret" placeholder="••••••••••••••••" value="${config.api_secret}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
-                    </div>
-                    ${exchange === 'coinbase' ? 
-                    '<div><label class="block text-sm font-medium text-gray-300 mb-2">Passphrase</label><input type="password" id="' + exchange + '-passphrase" placeholder="••••••••" value="' + (config.passphrase || '') + '" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white"></div>' : ''}
-                    <div>
-                        <label class="flex items-center gap-2">
-                            <input type="checkbox" id="${exchange}-testnet" ${config.testnet ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded">
-                            <span class="text-gray-300">حالت تست (${exchange === 'binance' ? 'Testnet' : 'Sandbox'})</span>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-key mr-2"></i>API Key
                         </label>
+                        <input type="password" id="${exchange.key}-api-key" placeholder="کلید API صرافی را وارد کنید..." value="${config.api_key || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-lock mr-2"></i>API Secret
+                        </label>
+                        <input type="password" id="${exchange.key}-api-secret" placeholder="کلید مخفی API را وارد کنید..." value="${config.api_secret || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    ${(exchange.key === 'coinbase' || exchange.key === 'okx' || exchange.key === 'kucoin') ? 
+                    `<div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">
+                            <i class="fas fa-shield-alt mr-2"></i>Passphrase
+                        </label>
+                        <input type="password" id="${exchange.key}-passphrase" placeholder="${exchange.key === 'okx' ? 'OKX Passphrase' : exchange.key === 'kucoin' ? 'KuCoin Passphrase' : 'Coinbase Passphrase'}" value="${config.passphrase || ''}" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-blue-500">
+                    </div>` : ''}
+                    <div class="flex flex-col gap-3">
+                        <label class="flex items-center gap-2">
+                            <input type="checkbox" id="${exchange.key}-testnet" ${config.testnet || config.sandbox ? 'checked' : ''} class="w-5 h-5 text-blue-600 bg-gray-700 border-gray-600 rounded focus:ring-2 focus:ring-blue-500">
+                            <span class="text-gray-300">
+                                <i class="fas fa-flask mr-1"></i>
+                                حالت تست (${this.getTestnetLabel(exchange.key)})
+                            </span>
+                        </label>
+                        ${exchange.key === 'mexc' ? 
+                        `<div class="bg-green-900/30 border border-green-600 rounded-lg p-3">
+                            <div class="flex items-center gap-2 text-green-400 text-sm">
+                                <i class="fas fa-info-circle"></i>
+                                <span>بدون نیاز به KYC - راه‌اندازی سریع</span>
+                            </div>
+                        </div>` : ''}
+                        ${exchange.key === 'binance' ? 
+                        `<div class="bg-yellow-900/30 border border-yellow-600 rounded-lg p-3">
+                            <div class="flex items-center gap-2 text-yellow-400 text-sm">
+                                <i class="fas fa-exclamation-triangle"></i>
+                                <span>نیاز به KYC برای حجم‌های بالا</span>
+                            </div>
+                        </div>` : ''}
                     </div>
                 </div>
-                <div class="mt-4 flex gap-3">
-                    <button onclick="settingsModule.testExchange('${exchange}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                <div class="mt-6 flex flex-wrap gap-3">
+                    <button onclick="settingsModule.testExchange('${exchange.key}')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm transition-all duration-200 hover:scale-105">
                         <i class="fas fa-plug mr-2"></i>تست اتصال
                     </button>
-                    <button onclick="settingsModule.exchangeBalances('${exchange}')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm">
+                    <button onclick="settingsModule.exchangeBalances('${exchange.key}')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg text-white text-sm transition-all duration-200 hover:scale-105">
                         <i class="fas fa-coins mr-2"></i>مشاهده موجودی
+                    </button>
+                    <button onclick="settingsModule.saveExchangeSettings('${exchange.key}')" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg text-white text-sm transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-save mr-2"></i>ذخیره تنظیمات
+                    </button>
+                    <button onclick="settingsModule.showExchangeGuide('${exchange.key}')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white text-sm transition-all duration-200 hover:scale-105">
+                        <i class="fas fa-book mr-2"></i>راهنمای راه‌اندازی
                     </button>
                 </div>
             </div>`;
@@ -8006,6 +8050,354 @@ TITAN Trading System - Log Export
             this.showNotification(`🔄 تنظیمات ${agentKey} بازنشانی شد`, 'info');
             this.closeModal();
         }
+    }
+
+    // =============================================================================
+    // EXCHANGE MANAGEMENT METHODS
+    // =============================================================================
+
+    getTestnetLabel(exchange) {
+        const labels = {
+            binance: 'Testnet',
+            mexc: 'Testnet',
+            okx: 'Demo Trading',
+            coinbase: 'Sandbox',
+            kucoin: 'Sandbox'
+        };
+        return labels[exchange] || 'Test Mode';
+    }
+
+    async testExchange(exchange) {
+        console.log(`🔍 Testing ${exchange} connection...`);
+        
+        const apiKey = document.getElementById(`${exchange}-api-key`).value;
+        const apiSecret = document.getElementById(`${exchange}-api-secret`).value;
+        const passphraseEl = document.getElementById(`${exchange}-passphrase`);
+        const passphrase = passphraseEl ? passphraseEl.value : '';
+        const testnet = document.getElementById(`${exchange}-testnet`).checked;
+
+        if (!apiKey || !apiSecret) {
+            this.showNotification('❌ لطفاً API Key و Secret را وارد کنید', 'error');
+            return;
+        }
+
+        try {
+            const response = await axios.post('/api/exchanges/test', {
+                exchange,
+                apiKey,
+                apiSecret,
+                passphrase,
+                testnet
+            });
+
+            if (response.data.success) {
+                this.exchangeStatus[exchange] = 'connected';
+                this.showNotification(`✅ اتصال ${exchange} موفقیت‌آمیز بود!`, 'success');
+                // Update status indicator
+                this.updateExchangeStatus(exchange, 'connected');
+            } else {
+                this.exchangeStatus[exchange] = 'error';
+                this.showNotification(`❌ خطا در اتصال ${exchange}: ${response.data.error}`, 'error');
+                this.updateExchangeStatus(exchange, 'error');
+            }
+        } catch (error) {
+            console.error(`Exchange test error:`, error);
+            this.exchangeStatus[exchange] = 'error';
+            this.showNotification(`❌ خطا در اتصال ${exchange}: ${error.response?.data?.error || error.message}`, 'error');
+            this.updateExchangeStatus(exchange, 'error');
+        }
+    }
+
+    async exchangeBalances(exchange) {
+        console.log(`💰 Getting ${exchange} balances...`);
+        
+        if (this.exchangeStatus[exchange] !== 'connected') {
+            this.showNotification(`❌ ابتدا اتصال ${exchange} را تست کنید`, 'error');
+            return;
+        }
+
+        try {
+            const response = await axios.get(`/api/exchanges/balances/${exchange}`);
+
+            if (response.data.success) {
+                this.showExchangeBalances(exchange, response.data.data);
+            } else {
+                this.showNotification(`❌ خطا در دریافت موجودی ${exchange}: ${response.data.error}`, 'error');
+            }
+        } catch (error) {
+            console.error(`Exchange balances error:`, error);
+            this.showNotification(`❌ خطا در دریافت موجودی ${exchange}`, 'error');
+        }
+    }
+
+    async saveExchangeSettings(exchange) {
+        console.log(`💾 Saving ${exchange} settings...`);
+        
+        const apiKey = document.getElementById(`${exchange}-api-key`).value;
+        const apiSecret = document.getElementById(`${exchange}-api-secret`).value;
+        const passphraseEl = document.getElementById(`${exchange}-passphrase`);
+        const passphrase = passphraseEl ? passphraseEl.value : '';
+        const enabled = document.getElementById(`${exchange}-enabled`).checked;
+        const testnet = document.getElementById(`${exchange}-testnet`).checked;
+
+        if (!apiKey || !apiSecret) {
+            this.showNotification('❌ لطفاً تمام فیلدهای الزامی را پر کنید', 'error');
+            return;
+        }
+
+        // Update local settings
+        this.settings.exchanges[exchange] = {
+            enabled,
+            api_key: apiKey,
+            api_secret: apiSecret,
+            passphrase,
+            testnet,
+            sandbox: testnet
+        };
+
+        try {
+            const response = await axios.post('/api/exchanges/settings', {
+                exchange,
+                settings: this.settings.exchanges[exchange]
+            });
+
+            if (response.data.success) {
+                this.showNotification(`✅ تنظیمات ${exchange} ذخیره شد`, 'success');
+                // Test connection after saving
+                if (enabled) {
+                    setTimeout(() => this.testExchange(exchange), 1000);
+                }
+            } else {
+                this.showNotification(`❌ خطا در ذخیره تنظیمات: ${response.data.error}`, 'error');
+            }
+        } catch (error) {
+            console.error(`Save settings error:`, error);
+            this.showNotification(`❌ خطا در ذخیره تنظیمات`, 'error');
+        }
+    }
+
+    showExchangeGuide(exchange) {
+        const guides = {
+            binance: {
+                title: '🟡 راهنمای راه‌اندازی Binance',
+                steps: [
+                    '1️⃣ وارد حساب Binance خود شوید',
+                    '2️⃣ به بخش API Management بروید', 
+                    '3️⃣ روی "Create API" کلیک کنید',
+                    '4️⃣ نام API را وارد کنید (مثل TITAN-Trading)',
+                    '5️⃣ مجوزهای "Enable Spot & Margin Trading" و "Enable Reading" را فعال کنید',
+                    '6️⃣ IP محدودیت را تنظیم کنید (اختیاری)',
+                    '7️⃣ API Key و Secret Key را کپی کرده و در سیستم وارد کنید',
+                    '8️⃣ برای تست، ابتدا Testnet را فعال کنید'
+                ],
+                tips: 'نکته: برای امنیت بیشتر، IP محدودیت تنظیم کنید و فقط مجوزهای لازم را فعال کنید.'
+            },
+            mexc: {
+                title: '🔵 راهنمای راه‌اندازی MEXC',
+                steps: [
+                    '1️⃣ در MEXC ثبت‌نام کنید (بدون نیاز به KYC)',
+                    '2️⃣ به Account -> API Management بروید',
+                    '3️⃣ Create API Key را انتخاب کنید',
+                    '4️⃣ نام API (TITAN) و رمز عبور را وارد کنید',
+                    '5️⃣ مجوزهای Spot Trading و Read را فعال کنید',
+                    '6️⃣ تایید دو مرحله‌ای را انجام دهید',
+                    '7️⃣ API Key و Secret را کپی کنید',
+                    '8️⃣ در سیستم وارد کرده و تست کنید'
+                ],
+                tips: 'مزیت: MEXC نیاز به KYC ندارد و راه‌اندازی سریع دارد.'
+            },
+            okx: {
+                title: '⚫ راهنمای راه‌اندازی OKX',
+                steps: [
+                    '1️⃣ در OKX حساب باز کنید',
+                    '2️⃣ کامل کردن KYC (الزامی)',
+                    '3️⃣ به Profile -> API بروید',
+                    '4️⃣ Create API Key را کلیک کنید',
+                    '5️⃣ نام API و Passphrase قوی انتخاب کنید',
+                    '6️⃣ مجوزهای Trading و Read Only را فعال کنید',
+                    '7️⃣ IP Whitelist تنظیم کنید',
+                    '8️⃣ API Key, Secret و Passphrase را ذخیره کنید'
+                ],
+                tips: 'نکته: OKX نیاز به Passphrase دارد. آن را فراموش نکنید!'
+            },
+            coinbase: {
+                title: '🔷 راهنمای راه‌اندازی Coinbase Pro',
+                steps: [
+                    '1️⃣ حساب Coinbase Pro بسازید',
+                    '2️⃣ تایید هویت انجام دهید',
+                    '3️⃣ به API بخش بروید',
+                    '4️⃣ Create a Key کلیک کنید',
+                    '5️⃣ نام API و Passphrase انتخاب کنید',
+                    '6️⃣ مجوزهای View و Trade را فعال کنید',
+                    '7️⃣ IP محدودیت اضافه کنید',
+                    '8️⃣ تمام اطلاعات را ذخیره کنید'
+                ],
+                tips: 'توجه: Coinbase Pro به Passphrase نیاز دارد و IP محدودیت توصیه می‌شود.'
+            },
+            kucoin: {
+                title: '🟢 راهنمای راه‌اندازی KuCoin',
+                steps: [
+                    '1️⃣ در KuCoin ثبت‌نام کنید',
+                    '2️⃣ تایید شماره تلفن انجام دهید',
+                    '3️⃣ به API Management بروید',
+                    '4️⃣ Create API کلیک کنید',
+                    '5️⃣ API Name و Passphrase قوی وارد کنید',
+                    '6️⃣ مجوزهای General و Trade را انتخاب کنید',
+                    '7️⃣ IP Restriction اضافه کنید (اختیاری)',
+                    '8️⃣ API Key, Secret و Passphrase را یادداشت کنید'
+                ],
+                tips: 'نکته: KuCoin تنوع کوین‌های زیادی دارد و فیس کم دارد.'
+            }
+        };
+
+        const guide = guides[exchange];
+        if (!guide) return;
+
+        this.showModal(`
+            <div class="bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto max-h-[80vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white">${guide.title}</h2>
+                    <button onclick="settingsModule.closeModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="text-lg font-semibold text-white mb-3">مراحل راه‌اندازی:</h3>
+                        <div class="space-y-2">
+                            ${guide.steps.map(step => `
+                                <div class="flex items-start gap-3 text-gray-300">
+                                    <span class="text-sm">${step}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-900/50 border border-blue-600 rounded-lg p-4">
+                        <div class="flex items-center gap-2 text-blue-300 mb-2">
+                            <i class="fas fa-lightbulb"></i>
+                            <span class="font-medium">نکته مهم</span>
+                        </div>
+                        <p class="text-sm text-blue-200">${guide.tips}</p>
+                    </div>
+                    
+                    <div class="flex gap-3 pt-4">
+                        <button onclick="settingsModule.closeModal()" class="flex-1 bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg text-white text-sm">
+                            <i class="fas fa-check mr-2"></i>متوجه شدم
+                        </button>
+                        <button onclick="window.open('${this.getExchangeUrl(exchange)}', '_blank')" class="flex-1 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white text-sm">
+                            <i class="fas fa-external-link-alt mr-2"></i>باز کردن ${exchange}
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `);
+    }
+
+    getExchangeUrl(exchange) {
+        const urls = {
+            binance: 'https://www.binance.com/en/my/settings/api-management',
+            mexc: 'https://www.mexc.com/account/api',
+            okx: 'https://www.okx.com/account/my-api',
+            coinbase: 'https://pro.coinbase.com/profile/api',
+            kucoin: 'https://www.kucoin.com/account/api'
+        };
+        return urls[exchange] || '#';
+    }
+
+    showExchangeBalances(exchange, balances) {
+        this.showModal(`
+            <div class="bg-gray-800 rounded-lg p-6 max-w-lg mx-auto">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-white">
+                        <i class="fas fa-coins mr-2"></i>موجودی ${exchange}
+                    </h2>
+                    <button onclick="settingsModule.closeModal()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times text-xl"></i>
+                    </button>
+                </div>
+                
+                <div class="space-y-3">
+                    ${balances.map(balance => `
+                        <div class="flex items-center justify-between bg-gray-700 rounded-lg p-3">
+                            <span class="text-white font-medium">${balance.asset}</span>
+                            <div class="text-right">
+                                <div class="text-white">${parseFloat(balance.free).toFixed(8)}</div>
+                                <div class="text-xs text-gray-400">در قفل: ${parseFloat(balance.locked).toFixed(8)}</div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+                
+                <div class="mt-6">
+                    <button onclick="settingsModule.closeModal()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg text-white">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `);
+    }
+
+    updateExchangeStatus(exchange, status) {
+        // Update the status indicator on the page
+        const statusElements = document.querySelectorAll(`[data-exchange="${exchange}"]`);
+        statusElements.forEach(el => {
+            const statusDot = el.querySelector('.w-3.h-3');
+            const statusText = el.querySelector('.text-gray-400');
+            
+            if (statusDot) {
+                statusDot.className = `w-3 h-3 bg-${status === 'connected' ? 'green' : status === 'error' ? 'red' : 'gray'}-400 rounded-full animate-pulse`;
+            }
+            
+            if (statusText) {
+                statusText.textContent = status === 'connected' ? 'متصل' : status === 'error' ? 'خطا' : 'قطع شده';
+            }
+        });
+        
+        // Refresh the tab to update the status
+        setTimeout(() => {
+            if (this.currentTab === 'exchanges') {
+                this.showTab('exchanges');
+            }
+        }, 1000);
+    }
+    
+    // Modal functionality
+    showModal(content) {
+        // Remove existing modal if any
+        this.closeModal();
+        
+        // Create modal backdrop
+        const modalBackdrop = document.createElement('div');
+        modalBackdrop.id = 'settings-modal-backdrop';
+        modalBackdrop.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modalBackdrop.onclick = (e) => {
+            if (e.target === modalBackdrop) {
+                this.closeModal();
+            }
+        };
+        
+        // Create modal container
+        const modalContainer = document.createElement('div');
+        modalContainer.innerHTML = content;
+        modalBackdrop.appendChild(modalContainer);
+        
+        // Add to page
+        document.body.appendChild(modalBackdrop);
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+    
+    closeModal() {
+        const modalBackdrop = document.getElementById('settings-modal-backdrop');
+        if (modalBackdrop) {
+            modalBackdrop.remove();
+        }
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
     }
 }
 
