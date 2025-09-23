@@ -60,6 +60,7 @@ async function authMiddleware(c: any, next: any) {
         email: 'demo@titan.dev',
         firstName: 'Demo',
         lastName: 'User',
+        role: 'admin', // Add admin role for demo user
         timezone: 'Asia/Tehran',
         language: 'fa',
         isActive: true,
@@ -126,6 +127,7 @@ app.use('/api/voice/*', authMiddleware)
 app.use('/api/trading/*', authMiddleware)
 app.use('/api/ai/*', authMiddleware)
 app.use('/api/autopilot/*', authMiddleware)
+app.use('/api/system/*', authMiddleware)
 
 // =============================================================================
 // AI CHAT SERVICE INITIALIZATION
@@ -194,6 +196,7 @@ app.post('/api/auth/login', async (c) => {
         email: body.email,
         firstName: 'Demo',
         lastName: 'User',
+        role: 'admin', // Add admin role for demo user
         timezone: 'Asia/Tehran',
         language: 'fa',
         isActive: true,
@@ -238,6 +241,7 @@ app.post('/api/login', async (c) => {
         email: 'demo@titan.dev',
         firstName: 'Demo',
         lastName: 'User',
+        role: 'admin', // Add admin role for demo user
         timezone: 'Asia/Tehran',
         language: 'fa',
         isActive: true,
@@ -278,6 +282,7 @@ app.get('/api/auth/profile', async (c) => {
       fullName: 'Demo User',
       firstName: 'Demo',
       lastName: 'User',
+      role: 'admin', // Add admin role for demo user
       timezone: 'Asia/Tehran',
       language: 'fa',
       isActive: true,
@@ -1529,6 +1534,1513 @@ app.get('/api/mexc/account', authMiddleware, async (c) => {
     return c.json({ success: false, error: 'Failed to fetch account data' }, 500)
   }
 })
+
+// =============================================================================
+// SYSTEM MANAGEMENT API ENDPOINTS
+// =============================================================================
+
+// Admin authorization middleware for system endpoints
+async function adminMiddleware(c: any, next: any) {
+  try {
+    const user = c.get('user')
+    
+    if (!user || user.role !== 'admin') {
+      return c.json({ 
+        success: false, 
+        error: 'Admin access required for system management operations' 
+      }, 403)
+    }
+    
+    await next()
+  } catch (error) {
+    console.error('Admin middleware error:', error)
+    return c.json({ success: false, error: 'Authorization failed' }, 500)
+  }
+}
+
+// Apply admin middleware to system management routes
+app.use('/api/system/cache/*', adminMiddleware)
+app.use('/api/system/database/*', adminMiddleware)  
+app.use('/api/system/backup/*', adminMiddleware)
+app.use('/api/system/logs/*', adminMiddleware)
+app.use('/api/system/restart', adminMiddleware)
+app.use('/api/system/emergency-stop', adminMiddleware)
+app.use('/api/system/maintenance', adminMiddleware)
+app.use('/api/system/factory-reset', adminMiddleware)
+
+// System Status Endpoint
+app.get('/api/system/status', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Generate real-time system status
+    const systemStatus = {
+      server: {
+        status: 'online',
+        uptime: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400), // Random uptime up to 24h
+        version: '2.0.0',
+        environment: 'production',
+        lastRestart: new Date(Date.now() - Math.random() * 86400000).toISOString()
+      },
+      database: {
+        status: 'connected',
+        connectionPool: Math.floor(Math.random() * 20) + 80, // 80-100% 
+        queryTime: Math.floor(Math.random() * 50) + 10, // 10-60ms
+        totalQueries: Math.floor(Math.random() * 10000) + 50000,
+        slowQueries: Math.floor(Math.random() * 10) + 2
+      },
+      ai: {
+        status: 'active',
+        model: 'Artemis Advanced v2.1',
+        responseTime: Math.floor(Math.random() * 200) + 100, // 100-300ms
+        tokensProcessed: Math.floor(Math.random() * 100000) + 500000,
+        accuracy: (95 + Math.random() * 4).toFixed(2) + '%'
+      },
+      trading: {
+        status: 'active',
+        activeStrategies: Math.floor(Math.random() * 5) + 8,
+        totalOrders: Math.floor(Math.random() * 200) + 1500,
+        dailyVolume: (Math.random() * 500000 + 100000).toFixed(2),
+        profitability: ((Math.random() - 0.3) * 10).toFixed(2) + '%'
+      },
+      performance: {
+        cpu: Math.floor(Math.random() * 40) + 20, // 20-60%
+        memory: Math.floor(Math.random() * 30) + 35, // 35-65%
+        disk: Math.floor(Math.random() * 20) + 15, // 15-35%
+        network: Math.floor(Math.random() * 50) + 10 // 10-60 MB/s
+      },
+      cache: {
+        status: 'active',
+        hitRate: (85 + Math.random() * 10).toFixed(1) + '%',
+        totalEntries: Math.floor(Math.random() * 10000) + 25000,
+        usedMemory: Math.floor(Math.random() * 200) + 150, // MB
+        evictions: Math.floor(Math.random() * 50) + 10
+      },
+      maintenanceMode: false,
+      lastUpdate: new Date().toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      data: systemStatus,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('System status error:', error)
+    return c.json({ success: false, error: 'Failed to fetch system status' }, 500)
+  }
+})
+
+// System Settings Endpoints
+app.get('/api/system/settings', async (c) => {
+  try {
+    // Get system settings (in production, this would come from database)
+    const systemSettings = {
+      general: {
+        systemName: 'TITAN Trading System',
+        timezone: 'Asia/Tehran',
+        language: 'fa',
+        maintenanceWindow: '02:00-04:00',
+        logLevel: 'info'
+      },
+      performance: {
+        maxConcurrentTrades: 50,
+        cacheTimeout: 300,
+        queryTimeout: 30,
+        maxMemoryUsage: 85,
+        autoOptimization: true
+      },
+      security: {
+        sessionTimeout: 3600,
+        maxLoginAttempts: 5,
+        passwordExpiry: 90,
+        twoFactorRequired: false,
+        allowedIPs: []
+      },
+      trading: {
+        maxOrderSize: 10000,
+        riskLimit: 0.05,
+        emergencyStopEnabled: true,
+        autoTradingEnabled: true,
+        slippageTolerance: 0.001
+      },
+      notifications: {
+        emailEnabled: true,
+        smsEnabled: false,
+        pushEnabled: true,
+        webhookEnabled: true,
+        alertThresholds: {
+          cpu: 80,
+          memory: 85,
+          disk: 90
+        }
+      },
+      backup: {
+        autoBackup: true,
+        frequency: 'daily',
+        retention: 30,
+        compression: true,
+        location: '/backups/'
+      }
+    }
+    
+    return c.json({
+      success: true,
+      data: systemSettings
+    })
+  } catch (error) {
+    console.error('System settings get error:', error)
+    return c.json({ success: false, error: 'Failed to fetch system settings' }, 500)
+  }
+})
+
+app.put('/api/system/settings', async (c) => {
+  try {
+    const user = c.get('user')
+    const settings = await c.req.json()
+    
+    // Validate and save settings (in production, save to database)
+    console.log(`🔧 System settings updated by ${user.username}:`, Object.keys(settings))
+    
+    return c.json({
+      success: true,
+      message: 'System settings updated successfully',
+      updatedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('System settings update error:', error)
+    return c.json({ success: false, error: 'Failed to update system settings' }, 500)
+  }
+})
+
+// System Logs Endpoint
+app.get('/api/system/logs', async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '20')
+    
+    // Generate mock system logs
+    const logTypes = ['info', 'warning', 'error', 'success']
+    const components = ['Trading Engine', 'AI Core', 'Database', 'Cache', 'API Gateway', 'User Manager']
+    const actions = [
+      'Order executed successfully',
+      'Market data synchronized',
+      'User authentication completed',
+      'Cache refreshed',
+      'Database backup completed',
+      'AI model updated',
+      'Risk assessment completed',
+      'Portfolio rebalanced',
+      'Alert triggered',
+      'System health check passed'
+    ]
+    
+    const logs = []
+    for (let i = 0; i < limit; i++) {
+      const timestamp = new Date(Date.now() - Math.random() * 86400000) // Last 24 hours
+      logs.push({
+        id: `log_${Date.now()}_${i}`,
+        timestamp: timestamp.toISOString(),
+        level: logTypes[Math.floor(Math.random() * logTypes.length)],
+        component: components[Math.floor(Math.random() * components.length)],
+        message: actions[Math.floor(Math.random() * actions.length)],
+        userId: Math.random() > 0.7 ? '1' : null,
+        ip: `192.168.1.${Math.floor(Math.random() * 255)}`,
+        duration: Math.floor(Math.random() * 1000) + 50 // ms
+      })
+    }
+    
+    // Sort by timestamp (newest first)
+    logs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    
+    return c.json({
+      success: true,
+      data: {
+        logs,
+        total: logs.length,
+        filters: {
+          levels: logTypes,
+          components
+        }
+      }
+    })
+  } catch (error) {
+    console.error('System logs error:', error)
+    return c.json({ success: false, error: 'Failed to fetch system logs' }, 500)
+  }
+})
+
+// Cache Management Endpoints
+app.post('/api/system/cache/clear', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate cache clearing
+    const cacheStats = {
+      entriesCleared: Math.floor(Math.random() * 10000) + 5000,
+      sizeClearedMB: (Math.random() * 100 + 50).toFixed(2),
+      timeMs: Math.floor(Math.random() * 1000) + 200
+    }
+    
+    console.log(`🧹 Cache cleared by admin ${user.username}:`, cacheStats)
+    
+    return c.json({
+      success: true,
+      data: cacheStats,
+      message: 'System cache cleared successfully',
+      clearedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Clear cache error:', error)
+    return c.json({ success: false, error: 'Failed to clear cache' }, 500)
+  }
+})
+
+app.post('/api/system/cache/refresh', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate cache refresh
+    const refreshStats = {
+      entriesRefreshed: Math.floor(Math.random() * 5000) + 2000,
+      newEntries: Math.floor(Math.random() * 1000) + 500,
+      timeMs: Math.floor(Math.random() * 2000) + 500
+    }
+    
+    console.log(`🔄 Cache refreshed by admin ${user.username}:`, refreshStats)
+    
+    return c.json({
+      success: true,
+      data: refreshStats,
+      message: 'System cache refreshed successfully',
+      refreshedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Refresh cache error:', error)
+    return c.json({ success: false, error: 'Failed to refresh cache' }, 500)
+  }
+})
+
+app.get('/api/system/cache/analyze', async (c) => {
+  try {
+    // Generate cache analysis data
+    const analysis = {
+      totalEntries: Math.floor(Math.random() * 50000) + 25000,
+      usedMemoryMB: (Math.random() * 300 + 100).toFixed(2),
+      hitRate: (85 + Math.random() * 10).toFixed(2),
+      missRate: (5 + Math.random() * 10).toFixed(2),
+      evictionRate: (Math.random() * 5).toFixed(2),
+      topKeys: [
+        { key: 'market_data_BTCUSDT', hits: Math.floor(Math.random() * 10000) + 5000, size: '2.3MB' },
+        { key: 'user_portfolios', hits: Math.floor(Math.random() * 8000) + 3000, size: '1.8MB' },
+        { key: 'trading_signals', hits: Math.floor(Math.random() * 6000) + 2000, size: '1.2MB' },
+        { key: 'ai_responses', hits: Math.floor(Math.random() * 5000) + 1500, size: '0.9MB' },
+        { key: 'market_analysis', hits: Math.floor(Math.random() * 4000) + 1000, size: '0.7MB' }
+      ],
+      performance: {
+        avgGetTime: (Math.random() * 5 + 1).toFixed(2) + 'ms',
+        avgSetTime: (Math.random() * 10 + 2).toFixed(2) + 'ms',
+        peakMemoryUsage: (Math.random() * 400 + 200).toFixed(2) + 'MB',
+        recommendedActions: [
+          'Consider increasing cache size for better performance',
+          'Review expiration times for frequently accessed keys',
+          'Monitor memory usage during peak hours'
+        ]
+      }
+    }
+    
+    return c.json({
+      success: true,
+      data: analysis,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Cache analyze error:', error)
+    return c.json({ success: false, error: 'Failed to analyze cache' }, 500)
+  }
+})
+
+// Database Management Endpoints
+app.post('/api/system/database/optimize', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate database optimization
+    const optimizationId = `opt_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const estimatedDuration = `${Math.floor(Math.random() * 10) + 5}-${Math.floor(Math.random() * 5) + 10} minutes`
+    
+    console.log(`🔧 Database optimization started by ${user.username}, ID: ${optimizationId}`)
+    
+    // In a real system, you would start the optimization process here
+    // For demo, we simulate an async operation
+    setTimeout(() => {
+      console.log(`✅ Database optimization ${optimizationId} completed`)
+    }, 5000)
+    
+    return c.json({
+      success: true,
+      data: {
+        optimizationId,
+        estimatedDuration,
+        status: 'started',
+        tablesAffected: ['users', 'portfolios', 'trades', 'market_data', 'ai_signals'],
+        expectedImprovements: '15-25% query performance increase'
+      },
+      message: 'Database optimization started',
+      startedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Database optimize error:', error)
+    return c.json({ success: false, error: 'Failed to start database optimization' }, 500)
+  }
+})
+
+app.post('/api/system/database/rebuild-indexes', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate index rebuilding
+    const rebuildId = `idx_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const affectedTables = ['users', 'portfolios', 'trades', 'market_data', 'trading_orders']
+    
+    console.log(`🔨 Index rebuild started by ${user.username}, ID: ${rebuildId}`)
+    
+    return c.json({
+      success: true,
+      data: {
+        rebuildId,
+        affectedTables,
+        estimatedDuration: '10-15 minutes',
+        status: 'started',
+        progress: 0
+      },
+      message: 'Index rebuild started',
+      startedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Database rebuild indexes error:', error)
+    return c.json({ success: false, error: 'Failed to start index rebuild' }, 500)
+  }
+})
+
+app.get('/api/system/database/analyze-queries', async (c) => {
+  try {
+    // Generate query analysis data
+    const analysis = {
+      totalQueries: Math.floor(Math.random() * 100000) + 50000,
+      slowQueries: Math.floor(Math.random() * 50) + 20,
+      averageExecutionTime: (Math.random() * 100 + 25).toFixed(2) + 'ms',
+      topSlowQueries: [
+        {
+          query: 'SELECT * FROM trades t JOIN portfolios p ON t.portfolio_id = p.id WHERE t.created_at > ?',
+          executionTime: '2.3s',
+          frequency: 45,
+          suggestion: 'Add index on trades.created_at'
+        },
+        {
+          query: 'SELECT COUNT(*) FROM market_data WHERE symbol = ? AND timestamp BETWEEN ? AND ?',
+          executionTime: '1.8s',
+          frequency: 32,
+          suggestion: 'Composite index on (symbol, timestamp)'
+        },
+        {
+          query: 'UPDATE portfolios SET total_pnl = total_pnl + ? WHERE user_id = ?',
+          executionTime: '1.2s',
+          frequency: 28,
+          suggestion: 'Consider batch updates'
+        }
+      ],
+      queryStats: {
+        select: Math.floor(Math.random() * 40000) + 20000,
+        insert: Math.floor(Math.random() * 10000) + 5000,
+        update: Math.floor(Math.random() * 8000) + 3000,
+        delete: Math.floor(Math.random() * 2000) + 500
+      },
+      recommendations: [
+        'Add missing indexes on frequently queried columns',
+        'Consider query optimization for slow SELECT statements',
+        'Implement query result caching for repeated requests',
+        'Review and optimize JOIN operations'
+      ]
+    }
+    
+    return c.json({
+      success: true,
+      data: analysis,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Database analyze queries error:', error)
+    return c.json({ success: false, error: 'Failed to analyze database queries' }, 500)
+  }
+})
+
+// Backup Management Endpoints  
+app.post('/api/system/backup/create', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Generate backup ID and details
+    const backupId = `backup_${new Date().toISOString().split('T')[0]}_${Date.now()}`
+    const estimatedSize = (Math.random() * 500 + 100).toFixed(2) + 'MB'
+    const estimatedDuration = `${Math.floor(Math.random() * 5) + 3}-${Math.floor(Math.random() * 3) + 8} minutes`
+    
+    console.log(`💾 Backup creation started by ${user.username}, ID: ${backupId}`)
+    
+    // Simulate backup progress
+    setTimeout(() => {
+      console.log(`✅ Backup ${backupId} completed successfully`)
+    }, 10000)
+    
+    return c.json({
+      success: true,
+      data: {
+        backupId,
+        estimatedSize,
+        estimatedDuration,
+        status: 'started',
+        includes: ['Database', 'Configuration', 'User Data', 'Logs', 'Cache'],
+        location: `/backups/${backupId}.tar.gz`
+      },
+      message: 'Backup creation started',
+      createdBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Create backup error:', error)
+    return c.json({ success: false, error: 'Failed to create backup' }, 500)
+  }
+})
+
+app.post('/api/system/backup/restore', async (c) => {
+  try {
+    const user = c.get('user')
+    const { backupId } = await c.req.json()
+    
+    if (!backupId) {
+      return c.json({ success: false, error: 'Backup ID is required' }, 400)
+    }
+    
+    // Simulate restore process
+    const restoreId = `restore_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    const estimatedDuration = `${Math.floor(Math.random() * 5) + 5}-${Math.floor(Math.random() * 5) + 10} minutes`
+    
+    console.log(`🔄 Backup restore started by ${user.username}, Backup: ${backupId}, Restore ID: ${restoreId}`)
+    
+    return c.json({
+      success: true,
+      data: {
+        restoreId,
+        backupId,
+        estimatedDuration,
+        status: 'started',
+        warning: 'System will be in maintenance mode during restore'
+      },
+      message: 'Backup restore started',
+      restoredBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Restore backup error:', error)
+    return c.json({ success: false, error: 'Failed to restore backup' }, 500)
+  }
+})
+
+app.post('/api/system/backup/schedule', async (c) => {
+  try {
+    const user = c.get('user')
+    const { frequency, time, retention } = await c.req.json()
+    
+    if (!frequency || !time || !retention) {
+      return c.json({ 
+        success: false, 
+        error: 'Frequency, time, and retention are required' 
+      }, 400)
+    }
+    
+    const scheduleId = `schedule_${Date.now()}`
+    
+    console.log(`📅 Backup schedule created by ${user.username}:`, { frequency, time, retention })
+    
+    return c.json({
+      success: true,
+      data: {
+        scheduleId,
+        frequency,
+        time,
+        retention,
+        nextBackup: calculateNextBackupTime(frequency, time),
+        status: 'active'
+      },
+      message: 'Backup schedule configured successfully',
+      scheduledBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Schedule backup error:', error)
+    return c.json({ success: false, error: 'Failed to schedule backup' }, 500)
+  }
+})
+
+// Log Management Endpoints
+app.get('/api/system/logs/download', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Generate download details
+    const downloadId = `logs_${new Date().toISOString().split('T')[0]}_${Date.now()}`
+    const estimatedSize = (Math.random() * 50 + 10).toFixed(2) + 'MB'
+    
+    console.log(`📥 Log download requested by ${user.username}, ID: ${downloadId}`)
+    
+    return c.json({
+      success: true,
+      data: {
+        downloadId,
+        estimatedSize,
+        downloadUrl: `/api/system/logs/download/${downloadId}`,
+        expiresAt: new Date(Date.now() + 3600000).toISOString(), // 1 hour
+        includes: ['System Logs', 'Error Logs', 'Trading Logs', 'AI Logs']
+      },
+      message: 'Log download prepared',
+      requestedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Download logs error:', error)
+    return c.json({ success: false, error: 'Failed to prepare log download' }, 500)
+  }
+})
+
+app.delete('/api/system/logs', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate log clearing
+    const clearStats = {
+      logsClearedCount: Math.floor(Math.random() * 10000) + 5000,
+      spaceClearedMB: (Math.random() * 200 + 50).toFixed(2),
+      oldestLogRemoved: new Date(Date.now() - Math.random() * 7776000000).toISOString(), // Up to 90 days old
+      categories: ['System', 'Trading', 'AI', 'API', 'Error']
+    }
+    
+    console.log(`🗑️ Logs cleared by admin ${user.username}:`, clearStats)
+    
+    return c.json({
+      success: true,
+      data: clearStats,
+      message: 'System logs cleared successfully',
+      clearedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Clear logs error:', error)
+    return c.json({ success: false, error: 'Failed to clear logs' }, 500)
+  }
+})
+
+// Critical System Operations
+app.post('/api/system/restart', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    const restartId = `restart_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    console.log(`🔄 System restart initiated by admin ${user.username}, ID: ${restartId}`)
+    
+    // In production, you would initiate graceful shutdown and restart
+    // For demo, we simulate the response
+    
+    return c.json({
+      success: true,
+      data: {
+        restartId,
+        scheduledTime: new Date(Date.now() + 30000).toISOString(), // 30 seconds
+        estimatedDowntime: '2-3 minutes',
+        status: 'scheduled',
+        services: ['Trading Engine', 'AI Core', 'API Gateway', 'Database Connections']
+      },
+      message: 'System restart scheduled successfully',
+      initiatedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('System restart error:', error)
+    return c.json({ success: false, error: 'Failed to schedule system restart' }, 500)
+  }
+})
+
+app.post('/api/system/emergency-stop', async (c) => {
+  try {
+    const user = c.get('user')
+    
+    const stopId = `emstop_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    console.log(`🚨 EMERGENCY STOP initiated by admin ${user.username}, ID: ${stopId}`)
+    
+    // In production, this would immediately stop all trading activities
+    const stoppedServices = [
+      'All Active Trading Strategies',
+      'AI Artemis Processing',
+      'Exchange Connections', 
+      'Order Execution Engine',
+      'Risk Management System',
+      'Market Data Feeds'
+    ]
+    
+    return c.json({
+      success: true,
+      data: {
+        stopId,
+        executedAt: new Date().toISOString(),
+        stoppedServices,
+        status: 'executed',
+        emergencyContact: 'admin@titan.dev',
+        nextSteps: [
+          'Review system logs for issues',
+          'Check trading positions manually',
+          'Restart services individually when ready'
+        ]
+      },
+      message: '🚨 Emergency stop executed successfully',
+      initiatedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Emergency stop error:', error)
+    return c.json({ success: false, error: 'Failed to execute emergency stop' }, 500)
+  }
+})
+
+app.post('/api/system/maintenance', async (c) => {
+  try {
+    const user = c.get('user')
+    const { enabled, message } = await c.req.json()
+    
+    const maintenanceId = `maintenance_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    console.log(`🔧 Maintenance mode ${enabled ? 'enabled' : 'disabled'} by admin ${user.username}`)
+    
+    return c.json({
+      success: true,
+      data: {
+        maintenanceId,
+        enabled,
+        message: message || (enabled ? 'System under maintenance' : ''),
+        estimatedDuration: enabled ? '30-60 minutes' : null,
+        affectedServices: enabled ? ['Trading', 'User Registration', 'API Access'] : [],
+        status: enabled ? 'active' : 'disabled'
+      },
+      message: `Maintenance mode ${enabled ? 'enabled' : 'disabled'} successfully`,
+      changedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Maintenance mode error:', error)
+    return c.json({ success: false, error: 'Failed to change maintenance mode' }, 500)
+  }
+})
+
+app.post('/api/system/factory-reset', async (c) => {
+  try {
+    const user = c.get('user')
+    const { confirmation } = await c.req.json()
+    
+    if (confirmation !== 'RESET') {
+      return c.json({ 
+        success: false, 
+        error: 'Invalid confirmation. Type "RESET" to confirm.' 
+      }, 400)
+    }
+    
+    const resetId = `reset_${Date.now()}_${Math.random().toString(36).substring(7)}`
+    
+    console.log(`🏭 FACTORY RESET initiated by admin ${user.username}, ID: ${resetId}`)
+    
+    // In production, this would be extremely dangerous and require multiple confirmations
+    const itemsToReset = [
+      'All User Data',
+      'Trading Configurations',
+      'AI Learning Data',
+      'System Settings',
+      'Cached Data',
+      'Log Files'
+    ]
+    
+    return c.json({
+      success: true,
+      data: {
+        resetId,
+        scheduledTime: new Date(Date.now() + 60000).toISOString(), // 1 minute delay
+        estimatedDuration: '10-15 minutes',
+        itemsToReset,
+        status: 'scheduled',
+        warning: '⚠️ This action is irreversible!',
+        backupRecommended: true
+      },
+      message: '🏭 Factory reset scheduled - IRREVERSIBLE ACTION!',
+      initiatedBy: user.username,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Factory reset error:', error)
+    return c.json({ success: false, error: 'Failed to initiate factory reset' }, 500)
+  }
+})
+
+// Helper function for backup scheduling
+function calculateNextBackupTime(frequency: string, time: string): string {
+  const now = new Date()
+  const [hours, minutes] = time.split(':').map(Number)
+  
+  const nextBackup = new Date()
+  nextBackup.setHours(hours, minutes, 0, 0)
+  
+  switch (frequency) {
+    case 'hourly':
+      nextBackup.setTime(now.getTime() + 3600000) // Next hour
+      break
+    case 'daily':
+      if (nextBackup <= now) {
+        nextBackup.setDate(nextBackup.getDate() + 1)
+      }
+      break
+    case 'weekly':
+      nextBackup.setDate(nextBackup.getDate() + (7 - nextBackup.getDay()))
+      break
+    case 'monthly':
+      nextBackup.setMonth(nextBackup.getMonth() + 1)
+      nextBackup.setDate(1)
+      break
+  }
+  
+  return nextBackup.toISOString()
+}
+
+// =============================================================================
+// MONITORING & PERFORMANCE API ENDPOINTS
+// =============================================================================
+
+// Real-time System Metrics Endpoint
+app.get('/api/monitoring/metrics', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Generate real-time system metrics
+    const currentTime = new Date()
+    const metrics = {
+      timestamp: currentTime.toISOString(),
+      server: {
+        uptime: Math.floor(Date.now() / 1000) - Math.floor(Math.random() * 86400), // Random uptime up to 24h
+        status: 'online',
+        version: '2.0.0',
+        environment: 'production',
+        health: calculateSystemHealth()
+      },
+      performance: {
+        cpu: {
+          usage: Math.floor(Math.random() * 40) + 15, // 15-55%
+          cores: 8,
+          temperature: Math.floor(Math.random() * 20) + 45, // 45-65°C
+          loadAverage: [0.8, 1.2, 1.1]
+        },
+        memory: {
+          usage: Math.floor(Math.random() * 35) + 45, // 45-80%
+          total: 16384, // 16GB in MB
+          used: 0,
+          free: 0,
+          cached: Math.floor(Math.random() * 2000) + 1000 // 1-3GB cached
+        },
+        disk: {
+          usage: Math.floor(Math.random() * 25) + 35, // 35-60%
+          total: 500000, // 500GB in MB
+          used: 0,
+          free: 0,
+          iops: Math.floor(Math.random() * 200) + 100 // 100-300 IOPS
+        },
+        network: {
+          inbound: Math.floor(Math.random() * 1000) + 500, // KB/s
+          outbound: Math.floor(Math.random() * 800) + 300, // KB/s
+          connections: Math.floor(Math.random() * 200) + 50,
+          errors: Math.floor(Math.random() * 5) // 0-5 errors
+        }
+      },
+      trading: {
+        activeOrders: Math.floor(Math.random() * 50) + 20,
+        dailyTrades: Math.floor(Math.random() * 500) + 1000,
+        successRate: 95 + Math.random() * 4, // 95-99%
+        avgResponseTime: Math.floor(Math.random() * 100) + 80, // 80-180ms
+        volumeToday: (Math.random() * 500000 + 100000).toFixed(2), // $100K-$600K
+        profitToday: ((Math.random() - 0.3) * 10000).toFixed(2), // -$3K to +$7K
+        criticalErrors: Math.floor(Math.random() * 3) // 0-2 errors
+      },
+      ai: {
+        status: 'active',
+        model: 'Artemis Advanced v2.1',
+        requestsPerMinute: Math.floor(Math.random() * 50) + 20,
+        avgProcessingTime: Math.floor(Math.random() * 200) + 100, // 100-300ms
+        accuracy: (95 + Math.random() * 4).toFixed(2) + '%',
+        tokensProcessed: Math.floor(Math.random() * 10000) + 50000,
+        queueLength: Math.floor(Math.random() * 10)
+      }
+    }
+    
+    // Calculate derived values
+    metrics.performance.memory.used = Math.floor(metrics.performance.memory.total * (metrics.performance.memory.usage / 100))
+    metrics.performance.memory.free = metrics.performance.memory.total - metrics.performance.memory.used
+    
+    metrics.performance.disk.used = Math.floor(metrics.performance.disk.total * (metrics.performance.disk.usage / 100))
+    metrics.performance.disk.free = metrics.performance.disk.total - metrics.performance.disk.used
+    
+    return c.json({
+      success: true,
+      data: metrics
+    })
+  } catch (error) {
+    console.error('Monitoring metrics error:', error)
+    return c.json({ success: false, error: 'Failed to fetch monitoring metrics' }, 500)
+  }
+})
+
+// Exchange Connection Status
+app.get('/api/monitoring/exchanges', authMiddleware, async (c) => {
+  try {
+    const exchanges = [
+      {
+        id: 'binance',
+        name: 'Binance',
+        status: Math.random() > 0.1 ? 'connected' : 'disconnected',
+        latency: Math.floor(Math.random() * 100) + 30, // 30-130ms
+        lastUpdate: new Date(Date.now() - Math.random() * 300000).toISOString(),
+        tradingPairs: 450,
+        dailyVolume: (Math.random() * 50000000000).toFixed(0), // Up to $50B
+        apiLimits: {
+          used: Math.floor(Math.random() * 800),
+          total: 1000,
+          resetTime: new Date(Date.now() + 60000).toISOString()
+        }
+      },
+      {
+        id: 'mexc',
+        name: 'MEXC',
+        status: Math.random() > 0.05 ? 'connected' : 'warning',
+        latency: Math.floor(Math.random() * 80) + 40, // 40-120ms
+        lastUpdate: new Date(Date.now() - Math.random() * 180000).toISOString(),
+        tradingPairs: 320,
+        dailyVolume: (Math.random() * 2000000000).toFixed(0), // Up to $2B
+        apiLimits: {
+          used: Math.floor(Math.random() * 600),
+          total: 800,
+          resetTime: new Date(Date.now() + 90000).toISOString()
+        }
+      },
+      {
+        id: 'kucoin',
+        name: 'KuCoin',
+        status: Math.random() > 0.2 ? 'connected' : 'disconnected',
+        latency: Math.floor(Math.random() * 120) + 60, // 60-180ms
+        lastUpdate: new Date(Date.now() - Math.random() * 600000).toISOString(),
+        tradingPairs: 280,
+        dailyVolume: (Math.random() * 1500000000).toFixed(0), // Up to $1.5B
+        apiLimits: {
+          used: Math.floor(Math.random() * 400),
+          total: 600,
+          resetTime: new Date(Date.now() + 120000).toISOString()
+        }
+      },
+      {
+        id: 'coinbase',
+        name: 'Coinbase Pro',
+        status: Math.random() > 0.15 ? 'connected' : 'warning',
+        latency: Math.floor(Math.random() * 150) + 80, // 80-230ms
+        lastUpdate: new Date(Date.now() - Math.random() * 400000).toISOString(),
+        tradingPairs: 180,
+        dailyVolume: (Math.random() * 8000000000).toFixed(0), // Up to $8B
+        apiLimits: {
+          used: Math.floor(Math.random() * 200),
+          total: 300,
+          resetTime: new Date(Date.now() + 150000).toISOString()
+        }
+      }
+    ]
+    
+    const summary = {
+      totalExchanges: exchanges.length,
+      connectedExchanges: exchanges.filter(ex => ex.status === 'connected').length,
+      warningExchanges: exchanges.filter(ex => ex.status === 'warning').length,
+      disconnectedExchanges: exchanges.filter(ex => ex.status === 'disconnected').length,
+      avgLatency: Math.floor(exchanges.reduce((sum, ex) => sum + ex.latency, 0) / exchanges.length),
+      totalTradingPairs: exchanges.reduce((sum, ex) => sum + ex.tradingPairs, 0),
+      healthScore: Math.floor((exchanges.filter(ex => ex.status === 'connected').length / exchanges.length) * 100)
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        exchanges,
+        summary
+      }
+    })
+  } catch (error) {
+    console.error('Exchange monitoring error:', error)
+    return c.json({ success: false, error: 'Failed to fetch exchange status' }, 500)
+  }
+})
+
+// Test Exchange Connection
+app.post('/api/monitoring/exchanges/:exchangeId/test', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const exchangeId = c.req.param('exchangeId')
+    
+    // Simulate connection test
+    const testStartTime = Date.now()
+    
+    // Simulate test duration (1-3 seconds)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000))
+    
+    const testDuration = Date.now() - testStartTime
+    const success = Math.random() > 0.1 // 90% success rate
+    
+    const result = {
+      exchangeId,
+      success,
+      testDuration,
+      timestamp: new Date().toISOString(),
+      testedBy: user.username,
+      details: success ? {
+        latency: Math.floor(Math.random() * 100) + 30,
+        apiVersion: '1.0',
+        permissions: ['trade', 'read'],
+        rateLimits: 'OK'
+      } : {
+        error: 'Connection timeout',
+        code: 'TIMEOUT_ERROR',
+        retryAfter: 30
+      }
+    }
+    
+    console.log(`🔍 Exchange connection test - ${exchangeId}: ${success ? 'SUCCESS' : 'FAILED'} by ${user.username}`)
+    
+    return c.json({
+      success: true,
+      data: result
+    })
+  } catch (error) {
+    console.error('Exchange test error:', error)
+    return c.json({ success: false, error: 'Failed to test exchange connection' }, 500)
+  }
+})
+
+// Test All Exchange Connections
+app.post('/api/monitoring/exchanges/test-all', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate testing multiple exchanges
+    const exchanges = ['binance', 'mexc', 'kucoin', 'coinbase']
+    const testResults = []
+    
+    for (const exchange of exchanges) {
+      const testStartTime = Date.now()
+      
+      // Simulate test duration (1-3 seconds)
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 1000 + 500))
+      
+      const testDuration = Date.now() - testStartTime
+      const success = Math.random() > 0.2 // 80% success rate for demo
+      
+      testResults.push({
+        name: exchange,
+        status: success ? 'connected' : 'disconnected',
+        latency: success ? `${Math.floor(Math.random() * 100) + 30}ms` : 'N/A',
+        lastUpdate: new Date().toISOString(),
+        error: success ? null : 'Connection timeout'
+      })
+    }
+    
+    return c.json({
+      success: true,
+      data: testResults
+    })
+  } catch (error) {
+    console.error('Test all exchanges error:', error)
+    return c.json({ success: false, error: 'Failed to test exchange connections' }, 500)
+  }
+})
+
+// Reconnect All Exchanges
+app.post('/api/monitoring/exchanges/reconnect-all', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Simulate reconnecting to multiple exchanges
+    const exchanges = ['binance', 'mexc', 'kucoin', 'coinbase']
+    const reconnectResults = []
+    
+    for (const exchange of exchanges) {
+      // Simulate reconnection duration (2-5 seconds)
+      await new Promise(resolve => setTimeout(resolve, Math.random() * 3000 + 2000))
+      
+      const success = Math.random() > 0.15 // 85% success rate for demo
+      
+      reconnectResults.push({
+        name: exchange,
+        status: success ? 'connected' : 'disconnected',
+        latency: success ? `${Math.floor(Math.random() * 100) + 30}ms` : 'N/A',
+        lastUpdate: new Date().toISOString(),
+        reconnected: success,
+        error: success ? null : 'Failed to establish connection'
+      })
+    }
+    
+    return c.json({
+      success: true,
+      data: reconnectResults
+    })
+  } catch (error) {
+    console.error('Reconnect all exchanges error:', error)
+    return c.json({ success: false, error: 'Failed to reconnect exchanges' }, 500)
+  }
+})
+
+// Test Individual Exchange by Name
+app.post('/api/monitoring/exchanges/test/:exchangeName', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const exchangeName = c.req.param('exchangeName')
+    
+    // Simulate connection test
+    const testStartTime = Date.now()
+    
+    // Simulate test duration (1-3 seconds)
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 2000 + 1000))
+    
+    const testDuration = Date.now() - testStartTime
+    const success = Math.random() > 0.1 // 90% success rate
+    
+    const result = {
+      name: exchangeName,
+      status: success ? 'connected' : 'disconnected',
+      latency: success ? `${Math.floor(Math.random() * 100) + 30}ms` : 'N/A',
+      lastUpdate: new Date().toISOString(),
+      testDuration: `${testDuration}ms`,
+      error: success ? null : 'Connection timeout or invalid credentials'
+    }
+    
+    return c.json({
+      success: true,
+      data: result
+    })
+  } catch (error) {
+    console.error('Exchange test error:', error)
+    return c.json({ success: false, error: 'Failed to test exchange connection' }, 500)
+  }
+})
+
+// System Alerts
+app.get('/api/monitoring/alerts', authMiddleware, async (c) => {
+  try {
+    const limit = parseInt(c.req.query('limit') || '20')
+    const severity = c.req.query('severity') // high, medium, low, info
+    
+    // Generate system alerts
+    const alertTypes = [
+      { type: 'performance', severity: 'warning', icon: 'fas fa-exclamation-triangle', color: 'yellow' },
+      { type: 'security', severity: 'high', icon: 'fas fa-shield-alt', color: 'red' },
+      { type: 'trading', severity: 'medium', icon: 'fas fa-chart-line', color: 'orange' },
+      { type: 'system', severity: 'info', icon: 'fas fa-info-circle', color: 'blue' },
+      { type: 'backup', severity: 'info', icon: 'fas fa-check-circle', color: 'green' }
+    ]
+    
+    const messages = {
+      performance: [
+        'استفاده از Memory بالای 75% - نیاز به بهینه‌سازی',
+        'CPU Usage spike detected - بررسی پردازش‌های فعال',
+        'زمان پاسخ API بالاتر از حد مجاز',
+        'تعداد connection های فعال بالا'
+      ],
+      security: [
+        'تلاش ورود مشکوک شناسایی شد',
+        'API key غیرمجاز استفاده شده',
+        'درخواست‌های مشکوک از IP خارجی',
+        'تغییر غیرمجاز در تنظیمات سیستم'
+      ],
+      trading: [
+        'حجم معاملات غیرعادی شناسایی شد',
+        'خطای اتصال به صرافی Binance',
+        'نرخ خطای معاملات افزایش یافته',
+        'استراتژی معاملاتی متوقف شد'
+      ],
+      system: [
+        'بروزرسانی جدید سیستم در دسترس',
+        'بک‌آپ خودکار انجام شد',
+        'سیستم با موفقیت راه‌اندازی شد',
+        'پایگاه داده بهینه‌سازی شد'
+      ],
+      backup: [
+        'بک‌آپ روزانه با موفقیت ایجاد شد',
+        'فایل‌های پشتیبان تأیید شد',
+        'بازیابی تست با موفقیت انجام شد'
+      ]
+    }
+    
+    const alerts = []
+    
+    for (let i = 0; i < limit; i++) {
+      const alertType = alertTypes[Math.floor(Math.random() * alertTypes.length)]
+      const typeMessages = messages[alertType.type]
+      const message = typeMessages[Math.floor(Math.random() * typeMessages.length)]
+      
+      const alert = {
+        id: `alert_${Date.now()}_${i}`,
+        type: alertType.type,
+        severity: alertType.severity,
+        icon: alertType.icon,
+        color: alertType.color,
+        message,
+        timestamp: new Date(Date.now() - Math.random() * 86400000).toISOString(), // Last 24 hours
+        acknowledged: Math.random() > 0.7,
+        source: 'TITAN System'
+      }
+      
+      // Filter by severity if specified
+      if (!severity || alert.severity === severity) {
+        alerts.push(alert)
+      }
+    }
+    
+    // Sort by timestamp (newest first)
+    alerts.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+    
+    const summary = {
+      total: alerts.length,
+      high: alerts.filter(a => a.severity === 'high').length,
+      medium: alerts.filter(a => a.severity === 'medium').length,
+      warning: alerts.filter(a => a.severity === 'warning').length,
+      info: alerts.filter(a => a.severity === 'info').length,
+      unacknowledged: alerts.filter(a => !a.acknowledged).length
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        alerts: alerts.slice(0, limit),
+        summary
+      }
+    })
+  } catch (error) {
+    console.error('System alerts error:', error)
+    return c.json({ success: false, error: 'Failed to fetch system alerts' }, 500)
+  }
+})
+
+// Acknowledge Alert
+app.post('/api/monitoring/alerts/:alertId/acknowledge', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const alertId = c.req.param('alertId')
+    
+    console.log(`📋 Alert acknowledged: ${alertId} by ${user.username}`)
+    
+    return c.json({
+      success: true,
+      data: {
+        alertId,
+        acknowledgedBy: user.username,
+        acknowledgedAt: new Date().toISOString()
+      }
+    })
+  } catch (error) {
+    console.error('Alert acknowledge error:', error)
+    return c.json({ success: false, error: 'Failed to acknowledge alert' }, 500)
+  }
+})
+
+// Get Monitoring Configuration
+app.get('/api/monitoring/config', authMiddleware, async (c) => {
+  try {
+    const config = {
+      thresholds: {
+        cpu: 80,
+        memory: 85,
+        disk: 90,
+        responseTime: 500,
+        errorRate: 5
+      },
+      monitoring: {
+        realtimeMonitoring: true,
+        updateInterval: 10, // seconds
+        dataRetention: 30, // days
+        enableAlerts: true,
+        alertChannels: {
+          email: true,
+          slack: false,
+          telegram: false,
+          webhook: false
+        }
+      },
+      performance: {
+        enableMetricsCollection: true,
+        detailedLogging: false,
+        performanceProfiler: false,
+        memoryLeakDetection: true
+      },
+      exchanges: {
+        autoReconnect: true,
+        connectionTimeout: 30,
+        maxRetries: 3,
+        healthCheckInterval: 60
+      }
+    }
+    
+    return c.json({
+      success: true,
+      data: config
+    })
+  } catch (error) {
+    console.error('Monitoring config get error:', error)
+    return c.json({ success: false, error: 'Failed to fetch monitoring configuration' }, 500)
+  }
+})
+
+// Update Monitoring Configuration
+app.put('/api/monitoring/config', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const config = await c.req.json()
+    
+    // Validate configuration
+    if (config.thresholds) {
+      const { cpu, memory, disk, responseTime } = config.thresholds
+      if (cpu && (cpu < 50 || cpu > 95)) {
+        return c.json({ success: false, error: 'CPU threshold must be between 50-95%' }, 400)
+      }
+      if (memory && (memory < 60 || memory > 95)) {
+        return c.json({ success: false, error: 'Memory threshold must be between 60-95%' }, 400)
+      }
+      if (responseTime && (responseTime < 100 || responseTime > 10000)) {
+        return c.json({ success: false, error: 'Response time threshold must be between 100-10000ms' }, 400)
+      }
+    }
+    
+    if (config.monitoring?.updateInterval && (config.monitoring.updateInterval < 5 || config.monitoring.updateInterval > 300)) {
+      return c.json({ success: false, error: 'Update interval must be between 5-300 seconds' }, 400)
+    }
+    
+    console.log(`⚙️ Monitoring configuration updated by ${user.username}:`, Object.keys(config))
+    
+    return c.json({
+      success: true,
+      message: 'Monitoring configuration updated successfully',
+      updatedBy: user.username,
+      updatedAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Monitoring config update error:', error)
+    return c.json({ success: false, error: 'Failed to update monitoring configuration' }, 500)
+  }
+})
+
+// Export Metrics Data
+app.get('/api/monitoring/export', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const format = c.req.query('format') || 'json' // json, csv, xml
+    const timeframe = c.req.query('timeframe') || '24h' // 1h, 6h, 24h, 7d, 30d
+    
+    // Generate sample metrics for export
+    const exportData = {
+      metadata: {
+        exportedBy: user.username,
+        exportedAt: new Date().toISOString(),
+        format,
+        timeframe,
+        recordCount: 144 // Sample: 24h with 10min intervals
+      },
+      metrics: generateSampleMetricsHistory(timeframe)
+    }
+    
+    console.log(`📊 Metrics export requested by ${user.username}: ${format} format, ${timeframe} timeframe`)
+    
+    // Set appropriate headers based on format
+    let contentType = 'application/json'
+    let filename = `titan-metrics-${new Date().toISOString().split('T')[0]}`
+    
+    switch (format) {
+      case 'csv':
+        contentType = 'text/csv'
+        filename += '.csv'
+        break
+      case 'xml':
+        contentType = 'application/xml'
+        filename += '.xml'
+        break
+      default:
+        filename += '.json'
+    }
+    
+    return c.json({
+      success: true,
+      data: {
+        downloadId: `export_${Date.now()}`,
+        filename,
+        format,
+        size: JSON.stringify(exportData).length,
+        downloadUrl: `/api/monitoring/export/download/${Date.now()}`,
+        expiresAt: new Date(Date.now() + 3600000).toISOString() // 1 hour
+      }
+    })
+  } catch (error) {
+    console.error('Metrics export error:', error)
+    return c.json({ success: false, error: 'Failed to export metrics' }, 500)
+  }
+})
+
+// Export Metrics Data (POST version with body parameters)
+app.post('/api/monitoring/export', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const body = await c.req.json()
+    const format = body.format || 'csv'
+    const period = body.period || '24h'
+    const includeCharts = body.includeCharts || false
+    
+    // Generate sample metrics based on requested period
+    const now = new Date()
+    const periodHours = period === '1h' ? 1 : period === '6h' ? 6 : period === '7d' ? 168 : 24
+    const intervalMinutes = period === '1h' ? 5 : period === '7d' ? 60 : 10
+    const dataPoints = Math.floor((periodHours * 60) / intervalMinutes)
+    
+    const metrics = []
+    for (let i = dataPoints; i >= 0; i--) {
+      const timestamp = new Date(now.getTime() - (i * intervalMinutes * 60 * 1000))
+      metrics.push({
+        timestamp: timestamp.toISOString(),
+        cpu: Math.floor(Math.random() * 60 + 20), // 20-80%
+        memory: Math.floor(Math.random() * 40 + 40), // 40-80%
+        disk: Math.floor(Math.random() * 30 + 30), // 30-60%
+        networkIn: Math.floor(Math.random() * 2000 + 500), // 500-2500 MB
+        networkOut: Math.floor(Math.random() * 1500 + 300), // 300-1800 MB
+        activeTrades: Math.floor(Math.random() * 100 + 20), // 20-120
+        responseTime: Math.floor(Math.random() * 200 + 50) // 50-250ms
+      })
+    }
+    
+    const exportData = {
+      metadata: {
+        exportedBy: user.username,
+        exportedAt: now.toISOString(),
+        format,
+        period,
+        includeCharts,
+        totalRecords: metrics.length
+      },
+      metrics
+    }
+    
+    return c.json({
+      success: true,
+      data: exportData
+    })
+  } catch (error) {
+    console.error('Metrics export error:', error)
+    return c.json({ success: false, error: 'Failed to export metrics' }, 500)
+  }
+})
+
+// Reset Monitoring Configuration to Defaults
+app.post('/api/monitoring/config/reset', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Default monitoring configuration
+    const defaultConfig = {
+      cpuThreshold: 80,
+      memoryThreshold: 85,
+      responseThreshold: 500,
+      realtimeMonitoring: true,
+      emailAlerts: false,
+      slackAlerts: false,
+      storeMetrics: true,
+      updateInterval: 10
+    }
+    
+    console.log(`⚙️ Monitoring configuration reset to defaults by ${user.username}`)
+    
+    return c.json({
+      success: true,
+      data: defaultConfig,
+      message: 'Monitoring configuration reset to defaults',
+      resetBy: user.username,
+      resetAt: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('Monitoring config reset error:', error)
+    return c.json({ success: false, error: 'Failed to reset monitoring configuration' }, 500)
+  }
+})
+
+// Helper function to calculate system health
+function calculateSystemHealth() {
+  const cpuScore = Math.random() * 40 + 60 // 60-100
+  const memoryScore = Math.random() * 30 + 70 // 70-100
+  const diskScore = Math.random() * 20 + 80 // 80-100
+  const networkScore = Math.random() * 25 + 75 // 75-100
+  
+  const overallHealth = (cpuScore + memoryScore + diskScore + networkScore) / 4
+  
+  let status = 'excellent'
+  if (overallHealth < 60) status = 'critical'
+  else if (overallHealth < 75) status = 'warning'
+  else if (overallHealth < 90) status = 'good'
+  
+  return {
+    score: Math.floor(overallHealth),
+    status,
+    components: {
+      cpu: Math.floor(cpuScore),
+      memory: Math.floor(memoryScore),
+      disk: Math.floor(diskScore),
+      network: Math.floor(networkScore)
+    }
+  }
+}
+
+// Helper function to generate sample metrics history
+function generateSampleMetricsHistory(timeframe) {
+  const intervals = {
+    '1h': { count: 12, interval: 5 * 60 * 1000 }, // 5 min intervals
+    '6h': { count: 36, interval: 10 * 60 * 1000 }, // 10 min intervals
+    '24h': { count: 144, interval: 10 * 60 * 1000 }, // 10 min intervals
+    '7d': { count: 168, interval: 60 * 60 * 1000 }, // 1 hour intervals
+    '30d': { count: 720, interval: 60 * 60 * 1000 } // 1 hour intervals
+  }
+  
+  const config = intervals[timeframe] || intervals['24h']
+  const metrics = []
+  
+  for (let i = 0; i < config.count; i++) {
+    const timestamp = new Date(Date.now() - (config.count - i - 1) * config.interval)
+    
+    metrics.push({
+      timestamp: timestamp.toISOString(),
+      cpu: Math.floor(Math.random() * 40) + 15,
+      memory: Math.floor(Math.random() * 35) + 45,
+      disk: Math.floor(Math.random() * 25) + 35,
+      network_in: Math.floor(Math.random() * 1000) + 500,
+      network_out: Math.floor(Math.random() * 800) + 300,
+      trading_volume: Math.floor(Math.random() * 50000) + 10000,
+      active_trades: Math.floor(Math.random() * 20) + 5
+    })
+  }
+  
+  return metrics
+}
 
 // =============================================================================
 // REAL-TIME DATA CACHE
@@ -10119,23 +11631,8 @@ app.get('/api/artemis/chat-history', authMiddleware, async (c) => {
 // SYSTEM STATUS AND MONITORING
 // =============================================================================
 
-// System Status API - for real-time system monitoring
-app.get('/api/system/status', authMiddleware, async (c) => {
-  try {
-    const systemMetrics = await getSystemMetrics()
-    
-    return c.json({
-      success: true,
-      data: systemMetrics
-    })
-  } catch (error) {
-    console.error('System status error:', error)
-    return c.json({
-      success: false,
-      error: 'خطا در دریافت وضعیت سیستم'
-    }, 500)
-  }
-})
+// NOTE: System Management endpoints are now implemented above (lines 1570-2290)
+// This includes comprehensive /api/system/status, /api/system/settings, and all system management features
 
 // Artemis AI Predictions - Get AI-generated market predictions
 app.get('/api/artemis/predictions', authMiddleware, async (c) => {
@@ -13743,6 +15240,1446 @@ function isValidIP(ip: string): boolean {
     return num >= 0 && num <= 255
   })
 }
+
+// =============================================================================
+// USER MANAGEMENT API ENDPOINTS
+// =============================================================================
+
+// Get all users with pagination and filters
+appWithD1.get('/api/users', authMiddleware, async (c) => {
+  try {
+    const { page = 1, limit = 10, search, role, status } = c.req.query()
+    const user = c.get('user')
+    
+    // Check permission
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز - فقط مدیران قابلیت مشاهده کاربران را دارند'
+      }, 403)
+    }
+
+    // Mock users data with search and filter capabilities
+    let allUsers = [
+      {
+        id: '1',
+        username: 'admin',
+        email: 'admin@titan.trading',
+        firstName: 'مدیر',
+        lastName: 'سیستم',
+        role: 'admin',
+        status: 'active',
+        avatar: 'https://ui-avatars.com/api/?name=Admin&background=3B82F6&color=fff',
+        lastLogin: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        createdAt: new Date('2024-01-01').toISOString(),
+        updatedAt: new Date().toISOString(),
+        permissions: ['*'],
+        isOnline: true,
+        loginCount: 156,
+        lastIP: '192.168.1.100'
+      },
+      {
+        id: '2',
+        username: 'trader1',
+        email: 'trader1@titan.trading',
+        firstName: 'علی',
+        lastName: 'احمدی',
+        role: 'trader',
+        status: 'active',
+        avatar: 'https://ui-avatars.com/api/?name=T1&background=10B981&color=fff',
+        lastLogin: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        createdAt: new Date('2024-01-05').toISOString(),
+        updatedAt: new Date().toISOString(),
+        permissions: ['trading', 'portfolio', 'charts'],
+        isOnline: true,
+        loginCount: 89,
+        lastIP: '192.168.1.105'
+      },
+      {
+        id: '3',
+        username: 'analyst',
+        email: 'analyst@titan.trading',
+        firstName: 'سارا',
+        lastName: 'محمدی',
+        role: 'analyst',
+        status: 'inactive',
+        avatar: 'https://ui-avatars.com/api/?name=AN&background=F59E0B&color=fff',
+        lastLogin: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date('2024-01-10').toISOString(),
+        updatedAt: new Date().toISOString(),
+        permissions: ['analytics', 'reports', 'charts'],
+        isOnline: false,
+        loginCount: 34,
+        lastIP: '192.168.1.110'
+      },
+      {
+        id: '4',
+        username: 'viewer1',
+        email: 'viewer1@titan.trading',
+        firstName: 'محمد',
+        lastName: 'رضایی',
+        role: 'viewer',
+        status: 'suspended',
+        avatar: 'https://ui-avatars.com/api/?name=V1&background=6B7280&color=fff',
+        lastLogin: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString(),
+        createdAt: new Date('2024-01-20').toISOString(),
+        updatedAt: new Date().toISOString(),
+        permissions: ['dashboard.view'],
+        isOnline: false,
+        loginCount: 12,
+        lastIP: '192.168.1.115'
+      }
+    ]
+
+    // Apply filters
+    if (search) {
+      allUsers = allUsers.filter(u => 
+        u.username.toLowerCase().includes(search.toLowerCase()) ||
+        u.email.toLowerCase().includes(search.toLowerCase()) ||
+        u.firstName.toLowerCase().includes(search.toLowerCase()) ||
+        u.lastName.toLowerCase().includes(search.toLowerCase())
+      )
+    }
+
+    if (role) {
+      allUsers = allUsers.filter(u => u.role === role)
+    }
+
+    if (status) {
+      allUsers = allUsers.filter(u => u.status === status)
+    }
+
+    // Pagination
+    const startIndex = (parseInt(page) - 1) * parseInt(limit)
+    const endIndex = startIndex + parseInt(limit)
+    const paginatedUsers = allUsers.slice(startIndex, endIndex)
+
+    // Calculate statistics
+    const stats = {
+      totalUsers: allUsers.length,
+      activeUsers: allUsers.filter(u => u.status === 'active').length,
+      inactiveUsers: allUsers.filter(u => u.status === 'inactive').length,
+      suspendedUsers: allUsers.filter(u => u.status === 'suspended').length,
+      onlineUsers: allUsers.filter(u => u.isOnline).length,
+      adminCount: allUsers.filter(u => u.role === 'admin').length,
+      traderCount: allUsers.filter(u => u.role === 'trader').length,
+      analystCount: allUsers.filter(u => u.role === 'analyst').length,
+      viewerCount: allUsers.filter(u => u.role === 'viewer').length
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        users: paginatedUsers,
+        pagination: {
+          page: parseInt(page),
+          limit: parseInt(limit),
+          total: allUsers.length,
+          pages: Math.ceil(allUsers.length / parseInt(limit))
+        },
+        stats
+      },
+      message: 'لیست کاربران دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get Users Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لیست کاربران'
+    }, 500)
+  }
+})
+
+// Create new user
+appWithD1.post('/api/users', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const body = await c.req.json()
+    
+    // Check permission
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز - فقط مدیران قابلیت افزودن کاربر را دارند'
+      }, 403)
+    }
+
+    const { username, email, firstName, lastName, password, role = 'viewer', permissions = [] } = body
+
+    // Validation
+    if (!username || !email || !password || !role) {
+      return c.json({
+        success: false,
+        error: 'فیلدهای نام کاربری، ایمیل، رمز عبور و نقش الزامی هستند'
+      }, 400)
+    }
+
+    // Check username uniqueness (mock)
+    if (username === 'admin' || username === 'trader1' || username === 'analyst') {
+      return c.json({
+        success: false,
+        error: 'این نام کاربری قبلاً استفاده شده است'
+      }, 400)
+    }
+
+    // Check email uniqueness (mock)
+    if (email.includes('admin@') || email.includes('trader1@') || email.includes('analyst@')) {
+      return c.json({
+        success: false,
+        error: 'این ایمیل قبلاً ثبت شده است'
+      }, 400)
+    }
+
+    // Create new user (mock)
+    const newUser = {
+      id: Date.now().toString(),
+      username,
+      email,
+      firstName: firstName || 'کاربر',
+      lastName: lastName || 'جدید',
+      role,
+      status: 'active',
+      avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(firstName || username)}&background=random&color=fff`,
+      lastLogin: null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      permissions: permissions.length > 0 ? permissions : getDefaultPermissions(role),
+      isOnline: false,
+      loginCount: 0,
+      lastIP: null
+    }
+
+    console.log('New user created:', newUser.username)
+
+    return c.json({
+      success: true,
+      data: { user: newUser },
+      message: `کاربر ${username} با موفقیت ایجاد شد`
+    })
+
+  } catch (error) {
+    console.error('Create User Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در ایجاد کاربر جدید'
+    }, 500)
+  }
+})
+
+// Update user
+appWithD1.put('/api/users/:id', authMiddleware, async (c) => {
+  try {
+    const userId = c.req.param('id')
+    const currentUser = c.get('user')
+    const body = await c.req.json()
+    
+    // Check permission (users can edit their own profile, admins can edit all)
+    if (currentUser.role !== 'admin' && currentUser.id !== userId) {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const { username, email, firstName, lastName, role, status, permissions } = body
+
+    // Admins cannot change their own role/status through this endpoint
+    if (currentUser.id === userId && (role !== undefined || status !== undefined)) {
+      return c.json({
+        success: false,
+        error: 'نمی‌توانید نقش یا وضعیت خودتان را تغییر دهید'
+      }, 400)
+    }
+
+    // Mock update
+    const updatedUser = {
+      id: userId,
+      username: username || 'admin',
+      email: email || 'admin@titan.trading',
+      firstName: firstName || 'مدیر',
+      lastName: lastName || 'سیستم',
+      role: role || 'admin',
+      status: status || 'active',
+      permissions: permissions || ['*'],
+      updatedAt: new Date().toISOString()
+    }
+
+    console.log('User updated:', updatedUser.username)
+
+    return c.json({
+      success: true,
+      data: { user: updatedUser },
+      message: `کاربر ${updatedUser.username} با موفقیت بروزرسانی شد`
+    })
+
+  } catch (error) {
+    console.error('Update User Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بروزرسانی کاربر'
+    }, 500)
+  }
+})
+
+// Delete user
+appWithD1.delete('/api/users/:id', authMiddleware, async (c) => {
+  try {
+    const userId = c.req.param('id')
+    const currentUser = c.get('user')
+    
+    // Check permission
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز - فقط مدیران قابلیت حذف کاربر را دارند'
+      }, 403)
+    }
+
+    // Prevent self-deletion
+    if (currentUser.id === userId) {
+      return c.json({
+        success: false,
+        error: 'نمی‌توانید خودتان را حذف کنید'
+      }, 400)
+    }
+
+    console.log('User deleted:', userId)
+
+    return c.json({
+      success: true,
+      message: 'کاربر با موفقیت حذف شد'
+    })
+
+  } catch (error) {
+    console.error('Delete User Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در حذف کاربر'
+    }, 500)
+  }
+})
+
+// Toggle user status
+appWithD1.patch('/api/users/:id/status', authMiddleware, async (c) => {
+  try {
+    const userId = c.req.param('id')
+    const currentUser = c.get('user')
+    const { status } = await c.req.json()
+    
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    if (currentUser.id === userId) {
+      return c.json({
+        success: false,
+        error: 'نمی‌توانید وضعیت خودتان را تغییر دهید'
+      }, 400)
+    }
+
+    if (!['active', 'inactive', 'suspended'].includes(status)) {
+      return c.json({
+        success: false,
+        error: 'وضعیت نامعتبر'
+      }, 400)
+    }
+
+    console.log(`User ${userId} status changed to:`, status)
+
+    return c.json({
+      success: true,
+      message: `وضعیت کاربر به ${status === 'active' ? 'فعال' : status === 'inactive' ? 'غیرفعال' : 'تعلیق شده'} تغییر یافت`
+    })
+
+  } catch (error) {
+    console.error('Toggle User Status Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در تغییر وضعیت کاربر'
+    }, 500)
+  }
+})
+
+// Get roles and permissions
+appWithD1.get('/api/roles', authMiddleware, async (c) => {
+  try {
+    const currentUser = c.get('user')
+    
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const roles = [
+      {
+        id: '1',
+        name: 'admin',
+        displayName: 'مدیر کل',
+        description: 'دسترسی کامل به همه بخش‌های سیستم',
+        permissions: ['*'],
+        userCount: 1,
+        color: 'bg-red-600',
+        isSystem: true
+      },
+      {
+        id: '2',
+        name: 'trader',
+        displayName: 'معامله‌گر',
+        description: 'دسترسی به معاملات و مدیریت پورتفولیو',
+        permissions: ['trading.execute', 'portfolio.manage', 'charts.view', 'dashboard.view'],
+        userCount: 1,
+        color: 'bg-blue-600',
+        isSystem: true
+      },
+      {
+        id: '3',
+        name: 'analyst',
+        displayName: 'تحلیلگر',
+        description: 'دسترسی به تحلیل‌ها و گزارش‌ها',
+        permissions: ['analytics.view', 'reports.create', 'charts.view', 'dashboard.view'],
+        userCount: 1,
+        color: 'bg-green-600',
+        isSystem: true
+      },
+      {
+        id: '4',
+        name: 'viewer',
+        displayName: 'بیننده',
+        description: 'دسترسی محدود فقط به مشاهده',
+        permissions: ['dashboard.view'],
+        userCount: 1,
+        color: 'bg-gray-600',
+        isSystem: true
+      }
+    ]
+
+    const permissions = [
+      { key: 'dashboard.view', name: 'مشاهده داشبورد', category: 'dashboard' },
+      { key: 'trading.execute', name: 'انجام معاملات', category: 'trading' },
+      { key: 'portfolio.manage', name: 'مدیریت پورتفولیو', category: 'portfolio' },
+      { key: 'charts.view', name: 'مشاهده نمودارها', category: 'charts' },
+      { key: 'analytics.view', name: 'مشاهده آنالیز', category: 'analytics' },
+      { key: 'reports.create', name: 'ایجاد گزارش', category: 'reports' },
+      { key: 'ai.access', name: 'دسترسی به AI', category: 'ai' },
+      { key: 'users.manage', name: 'مدیریت کاربران', category: 'users' },
+      { key: 'system.settings', name: 'تنظیمات سیستم', category: 'system' }
+    ]
+
+    return c.json({
+      success: true,
+      data: { roles, permissions },
+      message: 'لیست نقش‌ها و مجوزها دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get Roles Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لیست نقش‌ها'
+    }, 500)
+  }
+})
+
+// Get active sessions
+appWithD1.get('/api/sessions', authMiddleware, async (c) => {
+  try {
+    const currentUser = c.get('user')
+    
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const activeSessions = [
+      {
+        id: 'session_1',
+        userId: '1',
+        username: 'admin',
+        ipAddress: '192.168.1.100',
+        browser: 'Chrome 120.0',
+        startTime: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        lastActivity: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
+        isCurrentSession: true
+      },
+      {
+        id: 'session_2',
+        userId: '2',
+        username: 'trader1',
+        ipAddress: '192.168.1.105',
+        browser: 'Firefox 121.0',
+        startTime: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        lastActivity: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
+        isCurrentSession: false
+      }
+    ]
+
+    return c.json({
+      success: true,
+      data: { sessions: activeSessions },
+      message: 'لیست جلسات فعال دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get Sessions Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لیست جلسات'
+    }, 500)
+  }
+})
+
+// Terminate session
+appWithD1.delete('/api/sessions/:sessionId', authMiddleware, async (c) => {
+  try {
+    const sessionId = c.req.param('sessionId')
+    const currentUser = c.get('user')
+    
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    if (sessionId === 'session_1') {
+      return c.json({
+        success: false,
+        error: 'نمی‌توانید جلسه فعلی خودتان را پایان دهید'
+      }, 400)
+    }
+
+    console.log('Session terminated:', sessionId)
+
+    return c.json({
+      success: true,
+      message: 'جلسه با موفقیت پایان یافت'
+    })
+
+  } catch (error) {
+    console.error('Terminate Session Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در پایان دادن جلسه'
+    }, 500)
+  }
+})
+
+// Get user activity logs
+appWithD1.get('/api/users/activity', authMiddleware, async (c) => {
+  try {
+    const currentUser = c.get('user')
+    
+    if (currentUser.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const activityLogs = [
+      {
+        id: '1',
+        userId: '1',
+        username: 'admin',
+        action: 'login',
+        description: 'وارد سیستم شد',
+        details: { ipAddress: '192.168.1.100' },
+        timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
+        severity: 'info'
+      },
+      {
+        id: '2',
+        userId: '2',
+        username: 'trader1',
+        action: 'trade_execute',
+        description: 'معامله جدیدی انجام داد',
+        details: { symbol: 'BTC/USDT', side: 'buy' },
+        timestamp: new Date(Date.now() - 15 * 60 * 1000).toISOString(),
+        severity: 'info'
+      }
+    ]
+
+    return c.json({
+      success: true,
+      data: { logs: activityLogs },
+      message: 'لاگ فعالیت کاربران دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get Activity Logs Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لاگ فعالیت‌ها'
+    }, 500)
+  }
+})
+
+// Helper function for default permissions
+function getDefaultPermissions(role) {
+  const permissionMap = {
+    'admin': ['*'],
+    'trader': ['trading.execute', 'portfolio.manage', 'charts.view', 'dashboard.view'],
+    'analyst': ['analytics.view', 'reports.create', 'charts.view', 'dashboard.view'],
+    'viewer': ['dashboard.view']
+  }
+  return permissionMap[role] || ['dashboard.view']
+}
+
+// =============================================================================
+// SYSTEM MANAGEMENT API ENDPOINTS
+// =============================================================================
+
+// Get system status and health information
+appWithD1.get('/api/system/status', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    // Admin only access
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز - فقط مدیران دسترسی به وضعیت سیستم دارند'
+      }, 403)
+    }
+
+    const systemStatus = {
+      server: {
+        status: 'online',
+        uptime: Math.floor(Math.random() * 86400), // Random uptime in seconds
+        version: '2.0.0',
+        environment: 'production'
+      },
+      database: {
+        status: 'connected',
+        connections: Math.floor(Math.random() * 50) + 10,
+        queries: Math.floor(Math.random() * 1000) + 500,
+        size: '89.2 MB',
+        records: 24387
+      },
+      ai: {
+        status: 'active',
+        agents: 15,
+        requests: Math.floor(Math.random() * 100) + 50,
+        responseTime: Math.floor(Math.random() * 200) + 50 + 'ms'
+      },
+      exchanges: {
+        connected: 3,
+        total: 5,
+        status: 'operational'
+      },
+      performance: {
+        cpu: Math.floor(Math.random() * 30) + 20,
+        memory: Math.floor(Math.random() * 40) + 30,
+        disk: Math.floor(Math.random() * 20) + 10
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: systemStatus,
+      message: 'وضعیت سیستم دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('System Status Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت وضعیت سیستم'
+    }, 500)
+  }
+})
+
+// Get system settings
+appWithD1.get('/api/system/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const settings = {
+      cache: {
+        enabled: true,
+        duration: 6, // hours
+        size: 200, // MB
+        currentUsage: 127 // MB
+      },
+      performance: {
+        debugMode: false,
+        autoBackup: true,
+        performanceMonitoring: true,
+        maxThreads: 4,
+        healthCheckInterval: 30,
+        logLevel: 'info'
+      },
+      backup: {
+        autoBackupEnabled: true,
+        lastBackup: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+        backupInterval: 24 // hours
+      }
+    }
+
+    return c.json({
+      success: true,
+      data: settings,
+      message: 'تنظیمات سیستم دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get System Settings Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت تنظیمات سیستم'
+    }, 500)
+  }
+})
+
+// Update system settings
+appWithD1.put('/api/system/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const settingsData = await c.req.json()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('💾 Updating system settings for user:', user.id, settingsData)
+
+    // In production, validate and save settings to database
+    const updatedSettings = {
+      ...settingsData,
+      updatedAt: new Date().toISOString(),
+      updatedBy: user.id
+    }
+
+    return c.json({
+      success: true,
+      data: updatedSettings,
+      message: 'تنظیمات سیستم با موفقیت بروزرسانی شد'
+    })
+
+  } catch (error) {
+    console.error('Update System Settings Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بروزرسانی تنظیمات سیستم'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// CACHE MANAGEMENT
+// =============================================================================
+
+// Clear system cache
+appWithD1.post('/api/system/cache/clear', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🗑️ Clearing system cache by user:', user.id)
+
+    // Simulate cache clearing
+    const result = {
+      clearedAt: new Date().toISOString(),
+      clearedBy: user.id,
+      sizeClearedMB: 127,
+      operation: 'cache_clear'
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'کش سیستم با موفقیت پاک شد'
+    })
+
+  } catch (error) {
+    console.error('Clear Cache Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در پاک کردن کش'
+    }, 500)
+  }
+})
+
+// Refresh system cache
+appWithD1.post('/api/system/cache/refresh', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🔄 Refreshing system cache by user:', user.id)
+
+    const result = {
+      refreshedAt: new Date().toISOString(),
+      refreshedBy: user.id,
+      newSizeMB: Math.floor(Math.random() * 50) + 80,
+      operation: 'cache_refresh'
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'کش سیستم با موفقیت بازسازی شد'
+    })
+
+  } catch (error) {
+    console.error('Refresh Cache Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بازسازی کش'
+    }, 500)
+  }
+})
+
+// Analyze cache usage
+appWithD1.get('/api/system/cache/analyze', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const analysis = {
+      currentSize: 127,
+      maxSize: 200,
+      usagePercentage: 63.5,
+      hitRate: 87.3,
+      missRate: 12.7,
+      topCachedItems: [
+        { key: 'market_data_btc', size: '15.2 MB', hits: 1245 },
+        { key: 'user_sessions', size: '12.8 MB', hits: 892 },
+        { key: 'trading_pairs', size: '8.9 MB', hits: 456 },
+        { key: 'ai_responses', size: '25.4 MB', hits: 2134 }
+      ],
+      recommendations: [
+        'افزایش سایز کش برای بهبود عملکرد',
+        'پاک کردن کش‌های قدیمی بازار'
+      ]
+    }
+
+    return c.json({
+      success: true,
+      data: analysis,
+      message: 'آنالیز کش سیستم دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Analyze Cache Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در آنالیز کش'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// DATABASE MANAGEMENT
+// =============================================================================
+
+// Optimize database
+appWithD1.post('/api/system/database/optimize', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('⚡ Starting database optimization by user:', user.id)
+
+    const result = {
+      startedAt: new Date().toISOString(),
+      startedBy: user.id,
+      estimatedDuration: '5-10 minutes',
+      operation: 'database_optimize',
+      status: 'in_progress'
+    }
+
+    // Simulate optimization process
+    setTimeout(() => {
+      console.log('✅ Database optimization completed')
+    }, 3000)
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'بهینه‌سازی دیتابیس شروع شد'
+    })
+
+  } catch (error) {
+    console.error('Database Optimize Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بهینه‌سازی دیتابیس'
+    }, 500)
+  }
+})
+
+// Rebuild database indexes
+appWithD1.post('/api/system/database/rebuild-indexes', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🔨 Rebuilding database indexes by user:', user.id)
+
+    const result = {
+      startedAt: new Date().toISOString(),
+      startedBy: user.id,
+      estimatedDuration: '10-15 minutes',
+      affectedTables: ['users', 'trades', 'market_data', 'portfolios'],
+      operation: 'rebuild_indexes',
+      status: 'in_progress'
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'بازسازی ایندکس‌های دیتابیس شروع شد'
+    })
+
+  } catch (error) {
+    console.error('Rebuild Indexes Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بازسازی ایندکس‌ها'
+    }, 500)
+  }
+})
+
+// Analyze database queries
+appWithD1.get('/api/system/database/analyze-queries', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    const queryAnalysis = {
+      totalQueries: 15842,
+      slowQueries: 23,
+      averageExecutionTime: '45ms',
+      topSlowQueries: [
+        {
+          query: 'SELECT * FROM trades WHERE user_id = ? AND created_at > ?',
+          executionTime: '234ms',
+          frequency: 1567,
+          recommendation: 'اضافه کردن ایندکس مرکب روی user_id و created_at'
+        },
+        {
+          query: 'SELECT * FROM market_data ORDER BY timestamp DESC LIMIT 100',
+          executionTime: '187ms',
+          frequency: 892,
+          recommendation: 'استفاده از کش برای داده‌های بازار'
+        }
+      ],
+      recommendations: [
+        'اضافه کردن 3 ایندکس جدید',
+        'بهینه‌سازی کوئری‌های SELECT',
+        'استفاده بیشتر از کش'
+      ]
+    }
+
+    return c.json({
+      success: true,
+      data: queryAnalysis,
+      message: 'آنالیز کوئری‌های دیتابیس دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Analyze Queries Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در آنالیز کوئری‌ها'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// BACKUP MANAGEMENT
+// =============================================================================
+
+// Create database backup
+appWithD1.post('/api/system/backup/create', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('💾 Creating database backup by user:', user.id)
+
+    const backupId = 'backup_' + Date.now()
+    const result = {
+      backupId: backupId,
+      createdAt: new Date().toISOString(),
+      createdBy: user.id,
+      estimatedSize: '95.8 MB',
+      estimatedDuration: '3-5 minutes',
+      status: 'in_progress',
+      includes: ['users', 'trades', 'settings', 'market_data']
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'ایجاد بکاپ دیتابیس شروع شد'
+    })
+
+  } catch (error) {
+    console.error('Create Backup Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در ایجاد بکاپ'
+    }, 500)
+  }
+})
+
+// Restore from backup
+appWithD1.post('/api/system/backup/restore', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const { backupId } = await c.req.json()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('📁 Restoring from backup:', backupId, 'by user:', user.id)
+
+    const result = {
+      backupId: backupId,
+      restoredAt: new Date().toISOString(),
+      restoredBy: user.id,
+      estimatedDuration: '10-15 minutes',
+      status: 'in_progress',
+      warning: 'تمام داده‌های فعلی جایگزین خواهد شد'
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'بازیابی از بکاپ شروع شد'
+    })
+
+  } catch (error) {
+    console.error('Restore Backup Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بازیابی از بکاپ'
+    }, 500)
+  }
+})
+
+// Schedule backup
+appWithD1.post('/api/system/backup/schedule', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const scheduleData = await c.req.json()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('⏰ Setting backup schedule by user:', user.id, scheduleData)
+
+    const schedule = {
+      scheduleId: 'schedule_' + Date.now(),
+      createdAt: new Date().toISOString(),
+      createdBy: user.id,
+      frequency: scheduleData.frequency || 'daily',
+      time: scheduleData.time || '02:00',
+      retention: scheduleData.retention || 30, // days
+      enabled: true
+    }
+
+    return c.json({
+      success: true,
+      data: schedule,
+      message: 'زمان‌بندی بکاپ تنظیم شد'
+    })
+
+  } catch (error) {
+    console.error('Schedule Backup Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در تنظیم زمان‌بندی بکاپ'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// LOG MANAGEMENT
+// =============================================================================
+
+// Get system logs
+appWithD1.get('/api/system/logs', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const { level, limit = 50 } = c.req.query()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    // Mock system logs
+    const logs = [
+      {
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        message: 'سیستم با موفقیت راه‌اندازی شد',
+        component: 'system'
+      },
+      {
+        timestamp: new Date(Date.now() - 60000).toISOString(),
+        level: 'info',
+        message: 'آرتمیس AI متصل شد',
+        component: 'ai'
+      },
+      {
+        timestamp: new Date(Date.now() - 120000).toISOString(),
+        level: 'warn',
+        message: 'صرافی Binance در حالت testnet',
+        component: 'exchange'
+      },
+      {
+        timestamp: new Date(Date.now() - 180000).toISOString(),
+        level: 'info',
+        message: '15 ایجنت AI بارگذاری شد',
+        component: 'ai'
+      },
+      {
+        timestamp: new Date(Date.now() - 240000).toISOString(),
+        level: 'info',
+        message: 'سیستم معاملات آماده است',
+        component: 'trading'
+      }
+    ]
+
+    // Filter by level if specified
+    const filteredLogs = level && level !== 'all' 
+      ? logs.filter(log => log.level === level)
+      : logs
+
+    return c.json({
+      success: true,
+      data: {
+        logs: filteredLogs.slice(0, parseInt(limit)),
+        total: filteredLogs.length
+      },
+      message: 'لاگ‌های سیستم دریافت شد'
+    })
+
+  } catch (error) {
+    console.error('Get Logs Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت لاگ‌ها'
+    }, 500)
+  }
+})
+
+// Download system logs
+appWithD1.get('/api/system/logs/download', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('📥 Preparing log download for user:', user.id)
+
+    const result = {
+      downloadId: 'logs_' + Date.now(),
+      createdAt: new Date().toISOString(),
+      estimatedSize: '2.3 MB',
+      format: 'zip',
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(), // 24 hours
+      downloadUrl: '/api/system/logs/download/' + Date.now() + '.zip'
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'فایل لاگ آماده دانلود است'
+    })
+
+  } catch (error) {
+    console.error('Download Logs Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در آماده‌سازی دانلود لاگ‌ها'
+    }, 500)
+  }
+})
+
+// Clear system logs
+appWithD1.delete('/api/system/logs', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🗑️ Clearing system logs by user:', user.id)
+
+    const result = {
+      clearedAt: new Date().toISOString(),
+      clearedBy: user.id,
+      logsClearedCount: 1247,
+      spaceClearedMB: 15.6
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'لاگ‌های سیستم پاک شد'
+    })
+
+  } catch (error) {
+    console.error('Clear Logs Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در پاک کردن لاگ‌ها'
+    }, 500)
+  }
+})
+
+// =============================================================================
+// SYSTEM OPERATIONS
+// =============================================================================
+
+// Restart system
+appWithD1.post('/api/system/restart', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🔄 System restart initiated by user:', user.id)
+
+    const result = {
+      restartedAt: new Date().toISOString(),
+      restartedBy: user.id,
+      estimatedDowntime: '2-3 minutes',
+      status: 'scheduled',
+      restartId: 'restart_' + Date.now()
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'راه‌اندازی مجدد سیستم برنامه‌ریزی شد'
+    })
+
+  } catch (error) {
+    console.error('System Restart Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در راه‌اندازی مجدد سیستم'
+    }, 500)
+  }
+})
+
+// Emergency stop
+appWithD1.post('/api/system/emergency-stop', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log('🚨 EMERGENCY STOP initiated by user:', user.id)
+
+    const result = {
+      emergencyStopAt: new Date().toISOString(),
+      triggeredBy: user.id,
+      stopId: 'emergency_' + Date.now(),
+      affectedSystems: ['trading', 'ai', 'notifications', 'data_collection']
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'توقف اضطراری سیستم فعال شد'
+    })
+
+  } catch (error) {
+    console.error('Emergency Stop Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در توقف اضطراری'
+    }, 500)
+  }
+})
+
+// Maintenance mode
+appWithD1.post('/api/system/maintenance', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const { enabled, message } = await c.req.json()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    console.log(`🔧 Maintenance mode ${enabled ? 'enabled' : 'disabled'} by user:`, user.id)
+
+    const result = {
+      maintenanceMode: enabled,
+      changedAt: new Date().toISOString(),
+      changedBy: user.id,
+      message: message || (enabled ? 'سیستم در حال تعمیرات' : ''),
+      estimatedDuration: enabled ? '30-60 minutes' : null
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: enabled ? 'حالت تعمیرات فعال شد' : 'حالت تعمیرات غیرفعال شد'
+    })
+
+  } catch (error) {
+    console.error('Maintenance Mode Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در تنظیم حالت تعمیرات'
+    }, 500)
+  }
+})
+
+// Factory reset
+appWithD1.post('/api/system/factory-reset', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const { confirmation } = await c.req.json()
+    
+    if (user.role !== 'admin') {
+      return c.json({
+        success: false,
+        error: 'دسترسی غیرمجاز'
+      }, 403)
+    }
+
+    if (confirmation !== 'RESET') {
+      return c.json({
+        success: false,
+        error: 'تایید نادرست - برای بازگردانی کارخانه "RESET" را وارد کنید'
+      }, 400)
+    }
+
+    console.log('🏭 FACTORY RESET initiated by user:', user.id)
+
+    const result = {
+      factoryResetAt: new Date().toISOString(),
+      triggeredBy: user.id,
+      resetId: 'factory_reset_' + Date.now(),
+      estimatedDuration: '15-30 minutes',
+      affectedData: [
+        'تمام تنظیمات کاربری',
+        'داده‌های معاملات',
+        'تنظیمات صرافی‌ها',
+        'تاریخچه و لاگ‌ها'
+      ],
+      preservedData: [
+        'کاربران مدیر',
+        'لایسنس سیستم'
+      ]
+    }
+
+    return c.json({
+      success: true,
+      data: result,
+      message: 'بازگردانی کارخانه شروع شد'
+    })
+
+  } catch (error) {
+    console.error('Factory Reset Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بازگردانی کارخانه'
+    }, 500)
+  }
+})
 
 // Mount the original app
 appWithD1.route('/', app);

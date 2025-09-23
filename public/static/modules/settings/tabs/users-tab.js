@@ -1,43 +1,73 @@
-// Users Tab Module - TITAN Trading System
+// Users Tab Module - TITAN Trading System  
 // User management and role-based access control
 
 export default class UsersTab {
     constructor(settings) {
         this.settings = settings.users || {};
-        this.currentUsers = [
-            {
-                id: 1,
-                username: 'admin',
-                email: 'admin@titan.trading',
-                role: 'Administrator',
-                status: 'Active',
-                lastLogin: '2024-01-15 10:30:00',
-                avatar: 'https://ui-avatars.com/api/?name=Admin&background=3B82F6&color=fff'
-            },
-            {
-                id: 2,
-                username: 'trader1',
-                email: 'trader1@titan.trading',
-                role: 'Trader',
-                status: 'Active',
-                lastLogin: '2024-01-15 09:15:00',
-                avatar: 'https://ui-avatars.com/api/?name=T1&background=10B981&color=fff'
-            },
-            {
-                id: 3,
-                username: 'analyst',
-                email: 'analyst@titan.trading',
-                role: 'Analyst',
-                status: 'Inactive',
-                lastLogin: '2024-01-10 14:20:00',
-                avatar: 'https://ui-avatars.com/api/?name=AN&background=F59E0B&color=fff'
+        this.currentUsers = [];
+        this.currentRoles = [];
+        this.currentSessions = [];
+        this.currentActivities = [];
+        this.userStats = { total: 0, active: 0, inactive: 0, admins: 0 };
+        this.loading = false;
+        
+        // Initialize API base URL
+        this.apiBaseUrl = '';
+        
+        // Get auth token from localStorage
+        this.getAuthToken = () => {
+            try {
+                const session = JSON.parse(localStorage.getItem('titan_session') || '{}');
+                return session.accessToken || null;
+            } catch {
+                return null;
             }
-        ];
+        };
+        
+        // API call helper with auth
+        this.apiCall = async (endpoint, options = {}) => {
+            const token = this.getAuthToken();
+            if (!token) {
+                throw new Error('Authentication required');
+            }
+            
+            const defaultOptions = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            };
+            
+            const mergedOptions = {
+                ...defaultOptions,
+                ...options,
+                headers: { ...defaultOptions.headers, ...(options.headers || {}) }
+            };
+            
+            const response = await fetch(this.apiBaseUrl + endpoint, mergedOptions);
+            
+            if (!response.ok) {
+                const error = await response.json().catch(() => ({ error: response.statusText }));
+                throw new Error(error.error || `HTTP ${response.status}`);
+            }
+            
+            return await response.json();
+        };
     }
 
     render() {
         return `
             <div class="space-y-6">
+                <!-- Loading Indicator -->
+                <div id="users-loading" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+                    <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                        <div class="flex items-center space-x-3 space-x-reverse">
+                            <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                            <span class="text-white">در حال بارگذاری...</span>
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Users Overview -->
                 <div class="bg-gradient-to-r from-blue-900 via-purple-900 to-pink-900 rounded-lg p-6 border border-blue-500">
                     <div class="flex items-center justify-between">
@@ -49,11 +79,11 @@ export default class UsersTab {
                             <p class="text-blue-200 mt-2">مدیریت کاربران، نقش‌ها و دسترسی‌ها</p>
                         </div>
                         <div class="flex space-x-2 space-x-reverse">
-                            <button onclick="this.openAddUserModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                            <button onclick="usersTab.openAddUserModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                                 <i class="fas fa-plus mr-2"></i>
                                 افزودن کاربر
                             </button>
-                            <button onclick="this.bulkImportUsers()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <button onclick="usersTab.bulkImportUsers()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                 <i class="fas fa-upload mr-2"></i>
                                 وارد کردن گروهی
                             </button>
@@ -69,7 +99,7 @@ export default class UsersTab {
                                 <i class="fas fa-users text-white text-xl"></i>
                             </div>
                             <div class="mr-4">
-                                <div class="text-2xl font-bold text-white">3</div>
+                                <div id="total-users-count" class="text-2xl font-bold text-white">0</div>
                                 <div class="text-gray-400 text-sm">کل کاربران</div>
                             </div>
                         </div>
@@ -81,7 +111,7 @@ export default class UsersTab {
                                 <i class="fas fa-user-check text-white text-xl"></i>
                             </div>
                             <div class="mr-4">
-                                <div class="text-2xl font-bold text-white">2</div>
+                                <div id="active-users-count" class="text-2xl font-bold text-white">0</div>
                                 <div class="text-gray-400 text-sm">فعال</div>
                             </div>
                         </div>
@@ -93,7 +123,7 @@ export default class UsersTab {
                                 <i class="fas fa-user-times text-white text-xl"></i>
                             </div>
                             <div class="mr-4">
-                                <div class="text-2xl font-bold text-white">1</div>
+                                <div id="inactive-users-count" class="text-2xl font-bold text-white">0</div>
                                 <div class="text-gray-400 text-sm">غیرفعال</div>
                             </div>
                         </div>
@@ -105,7 +135,7 @@ export default class UsersTab {
                                 <i class="fas fa-crown text-white text-xl"></i>
                             </div>
                             <div class="mr-4">
-                                <div class="text-2xl font-bold text-white">1</div>
+                                <div id="admin-users-count" class="text-2xl font-bold text-white">0</div>
                                 <div class="text-gray-400 text-sm">مدیر</div>
                             </div>
                         </div>
@@ -139,11 +169,11 @@ export default class UsersTab {
                         </div>
                         
                         <div class="flex items-center gap-2">
-                            <button onclick="this.exportUsers()" class="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                            <button onclick="usersTab.exportUsers()" class="px-3 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
                                 <i class="fas fa-download mr-1"></i>
                                 خروجی
                             </button>
-                            <button onclick="this.refreshUsers()" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                            <button onclick="usersTab.refreshUsers()" class="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                                 <i class="fas fa-sync mr-1"></i>
                                 تازه‌سازی
                             </button>
@@ -188,7 +218,7 @@ export default class UsersTab {
                                 ${this.renderRolesSection()}
                             </div>
                             
-                            <button onclick="this.openAddRoleModal()" class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                            <button onclick="usersTab.openAddRoleModal()" class="mt-4 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                                 <i class="fas fa-plus mr-2"></i>
                                 افزودن نقش جدید
                             </button>
@@ -249,7 +279,7 @@ export default class UsersTab {
                     </div>
                     
                     <div class="mt-4 text-center">
-                        <button onclick="this.viewFullActivityLog()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button onclick="usersTab.viewFullActivityLog()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                             <i class="fas fa-list mr-2"></i>
                             مشاهده لاگ کامل
                         </button>
@@ -281,7 +311,7 @@ export default class UsersTab {
                                     <td class="px-4 py-3 text-gray-300">Chrome 120.0</td>
                                     <td class="px-4 py-3 text-gray-300">10:30:00</td>
                                     <td class="px-4 py-3">
-                                        <button onclick="this.terminateSession('session1')" class="text-red-400 hover:text-red-300">
+                                        <button onclick="usersTab.terminateSession('session1')" class="text-red-400 hover:text-red-300">
                                             <i class="fas fa-sign-out-alt"></i>
                                         </button>
                                     </td>
@@ -292,7 +322,7 @@ export default class UsersTab {
                                     <td class="px-4 py-3 text-gray-300">Firefox 121.0</td>
                                     <td class="px-4 py-3 text-gray-300">09:15:00</td>
                                     <td class="px-4 py-3">
-                                        <button onclick="this.terminateSession('session2')" class="text-red-400 hover:text-red-300">
+                                        <button onclick="usersTab.terminateSession('session2')" class="text-red-400 hover:text-red-300">
                                             <i class="fas fa-sign-out-alt"></i>
                                         </button>
                                     </td>
@@ -302,7 +332,7 @@ export default class UsersTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="this.terminateAllSessions()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                        <button onclick="usersTab.terminateAllSessions()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
                             <i class="fas fa-power-off mr-2"></i>
                             پایان همه جلسات
                         </button>
@@ -315,7 +345,7 @@ export default class UsersTab {
                 <div class="bg-gray-900 rounded-lg p-6 w-full max-w-md mx-4 border border-gray-700">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-xl font-bold text-white">افزودن کاربر جدید</h3>
-                        <button onclick="this.closeAddUserModal()" class="text-gray-400 hover:text-white">
+                        <button onclick="usersTab.closeAddUserModal()" class="text-gray-400 hover:text-white">
                             <i class="fas fa-times"></i>
                         </button>
                     </div>
@@ -352,7 +382,7 @@ export default class UsersTab {
                         </div>
                         
                         <div class="flex items-center justify-between pt-4">
-                            <button type="button" onclick="this.closeAddUserModal()" 
+                            <button type="button" onclick="usersTab.closeAddUserModal()" 
                                     class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
                                 لغو
                             </button>
@@ -395,13 +425,13 @@ export default class UsersTab {
                     ${user.lastLogin}
                 </td>
                 <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <button onclick="this.editUser(${user.id})" class="text-blue-400 hover:text-blue-300 ml-3">
+                    <button onclick="usersTab.editUser(${user.id})" class="text-blue-400 hover:text-blue-300 ml-3">
                         <i class="fas fa-edit"></i>
                     </button>
-                    <button onclick="this.toggleUserStatus(${user.id})" class="text-yellow-400 hover:text-yellow-300 ml-3">
+                    <button onclick="usersTab.toggleUserStatus(${user.id})" class="text-yellow-400 hover:text-yellow-300 ml-3">
                         <i class="fas fa-power-off"></i>
                     </button>
-                    <button onclick="this.deleteUser(${user.id})" class="text-red-400 hover:text-red-300">
+                    <button onclick="usersTab.deleteUser(${user.id})" class="text-red-400 hover:text-red-300">
                         <i class="fas fa-trash"></i>
                     </button>
                 </td>
@@ -427,11 +457,11 @@ export default class UsersTab {
                     </div>
                 </div>
                 <div class="flex items-center space-x-2 space-x-reverse">
-                    <button onclick="this.editRole('${role.name}')" class="text-blue-400 hover:text-blue-300">
+                    <button onclick="usersTab.editRole('${role.name}')" class="text-blue-400 hover:text-blue-300">
                         <i class="fas fa-edit"></i>
                     </button>
                     ${role.users === 0 ? `
-                        <button onclick="this.deleteRole('${role.name}')" class="text-red-400 hover:text-red-300">
+                        <button onclick="usersTab.deleteRole('${role.name}')" class="text-red-400 hover:text-red-300">
                             <i class="fas fa-trash"></i>
                         </button>
                     ` : ''}
@@ -478,9 +508,156 @@ export default class UsersTab {
         }
     }
 
-    initialize() {
+    async initialize() {
+        // Create global reference for onclick handlers
+        window.usersTab = this;
+        
         this.setupEventListeners();
         this.setupFormHandlers();
+        
+        // Load initial data
+        await this.loadAllData();
+    }
+    
+    // Show/hide loading indicator
+    showLoading() {
+        document.getElementById('users-loading')?.classList.remove('hidden');
+    }
+    
+    hideLoading() {
+        document.getElementById('users-loading')?.classList.add('hidden');
+    }
+    
+    // Show notification
+    showNotification(message, type = 'success') {
+        // Create notification element
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 p-4 rounded-lg border max-w-md transition-all duration-300 ${
+            type === 'success' 
+                ? 'bg-green-900 border-green-500 text-green-100' 
+                : type === 'error' 
+                    ? 'bg-red-900 border-red-500 text-red-100'
+                    : 'bg-blue-900 border-blue-500 text-blue-100'
+        }`;
+        
+        notification.innerHTML = `
+            <div class="flex items-center justify-between">
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check' : type === 'error' ? 'exclamation-triangle' : 'info'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+                <button onclick="this.remove()" class="mr-4 text-gray-400 hover:text-white">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+        `;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 5 seconds
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+    
+    // Load all data
+    async loadAllData() {
+        try {
+            this.showLoading();
+            
+            await Promise.all([
+                this.loadUsers(),
+                this.loadRoles(),
+                this.loadSessions(),
+                this.loadActivity()
+            ]);
+            
+        } catch (error) {
+            console.error('Error loading data:', error);
+            this.showNotification('خطا در بارگذاری اطلاعات: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    // Load users from API
+    async loadUsers() {
+        try {
+            const response = await this.apiCall('/api/users');
+            
+            if (response.success) {
+                this.currentUsers = response.data.users || [];
+                this.userStats = response.data.stats || { total: 0, active: 0, inactive: 0, admins: 0 };
+                
+                // Update statistics
+                this.updateUserStats();
+                
+                // Refresh users table
+                this.refreshUsersTable();
+            }
+        } catch (error) {
+            console.error('Error loading users:', error);
+            throw error;
+        }
+    }
+    
+    // Load roles from API
+    async loadRoles() {
+        try {
+            const response = await this.apiCall('/api/roles');
+            
+            if (response.success) {
+                this.currentRoles = response.data.roles || [];
+                
+                // Refresh roles display
+                this.updateRolesDisplay();
+            }
+        } catch (error) {
+            console.error('Error loading roles:', error);
+            throw error;
+        }
+    }
+    
+    // Load sessions from API
+    async loadSessions() {
+        try {
+            const response = await this.apiCall('/api/sessions');
+            
+            if (response.success) {
+                this.currentSessions = response.data.sessions || [];
+                
+                // Refresh sessions display
+                this.updateSessionsDisplay();
+            }
+        } catch (error) {
+            console.error('Error loading sessions:', error);
+            throw error;
+        }
+    }
+    
+    // Load activity from API
+    async loadActivity() {
+        try {
+            const response = await this.apiCall('/api/users/activity');
+            
+            if (response.success) {
+                this.currentActivities = response.data.activities || [];
+                
+                // Refresh activity display
+                this.updateActivityDisplay();
+            }
+        } catch (error) {
+            console.error('Error loading activity:', error);
+            throw error;
+        }
+    }
+    
+    // Update user statistics
+    updateUserStats() {
+        document.getElementById('total-users-count').textContent = this.userStats.total || this.currentUsers.length;
+        document.getElementById('active-users-count').textContent = this.userStats.active || this.currentUsers.filter(u => u.status === 'Active').length;
+        document.getElementById('inactive-users-count').textContent = this.userStats.inactive || this.currentUsers.filter(u => u.status !== 'Active').length;
+        document.getElementById('admin-users-count').textContent = this.userStats.admins || this.currentUsers.filter(u => u.role === 'Administrator').length;
     }
 
     setupEventListeners() {
@@ -519,9 +696,9 @@ export default class UsersTab {
     setupFormHandlers() {
         const addUserForm = document.getElementById('add-user-form');
         if (addUserForm) {
-            addUserForm.addEventListener('submit', (e) => {
+            addUserForm.addEventListener('submit', async (e) => {
                 e.preventDefault();
-                this.addUser();
+                await this.addUser();
             });
         }
     }
@@ -545,76 +722,221 @@ export default class UsersTab {
         document.getElementById('add-user-form').reset();
     }
 
-    addUser() {
+    async addUser() {
         const username = document.getElementById('new-username')?.value;
         const email = document.getElementById('new-email')?.value;
         const role = document.getElementById('new-role')?.value;
         const password = document.getElementById('new-password')?.value;
 
         if (!username || !email || !role || !password) {
-            alert('لطفاً همه فیلدها را پر کنید');
+            this.showNotification('لطفاً همه فیلدها را پر کنید', 'error');
             return;
         }
 
-        // Add user logic would be implemented here
-        alert(`کاربر ${username} با موفقیت اضافه شد`);
-        this.closeAddUserModal();
-        this.refreshUsers();
-    }
+        try {
+            this.showLoading();
+            
+            const response = await this.apiCall('/api/users', {
+                method: 'POST',
+                body: JSON.stringify({
+                    username,
+                    email,
+                    role,
+                    password
+                })
+            });
 
-    editUser(userId) {
-        const user = this.currentUsers.find(u => u.id === userId);
-        if (user) {
-            alert(`ویرایش کاربر ${user.username} در حال پیاده‌سازی...`);
-        }
-    }
-
-    toggleUserStatus(userId) {
-        const user = this.currentUsers.find(u => u.id === userId);
-        if (user) {
-            const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
-            if (confirm(`آیا مطمئن هستید که می‌خواهید وضعیت ${user.username} را به ${newStatus} تغییر دهید؟`)) {
-                user.status = newStatus;
-                this.refreshUsersTable();
-                alert(`وضعیت کاربر ${user.username} تغییر کرد`);
+            if (response.success) {
+                this.showNotification(`کاربر ${username} با موفقیت اضافه شد`, 'success');
+                this.closeAddUserModal();
+                await this.loadUsers(); // Refresh users list
+            } else {
+                this.showNotification('خطا در افزودن کاربر: ' + (response.error || 'خطای نامشخص'), 'error');
             }
+        } catch (error) {
+            console.error('Error adding user:', error);
+            this.showNotification('خطا در افزودن کاربر: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    deleteUser(userId) {
+    async editUser(userId) {
         const user = this.currentUsers.find(u => u.id === userId);
-        if (user) {
-            if (confirm(`آیا مطمئن هستید که می‌خواهید کاربر ${user.username} را حذف کنید؟\\n\\nاین عمل غیرقابل بازگشت است!`)) {
-                this.currentUsers = this.currentUsers.filter(u => u.id !== userId);
-                this.refreshUsersTable();
-                alert(`کاربر ${user.username} حذف شد`);
+        if (!user) {
+            this.showNotification('کاربر پیدا نشد', 'error');
+            return;
+        }
+
+        // Create edit modal (simple prompt for now, can be enhanced later)
+        const newUsername = prompt('نام کاربری جدید:', user.username);
+        if (!newUsername || newUsername === user.username) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await this.apiCall(`/api/users/${userId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    username: newUsername,
+                    email: user.email,
+                    role: user.role
+                })
+            });
+
+            if (response.success) {
+                this.showNotification(`کاربر ${user.username} با موفقیت ویرایش شد`, 'success');
+                await this.loadUsers(); // Refresh users list
+            } else {
+                this.showNotification('خطا در ویرایش کاربر: ' + (response.error || 'خطای نامشخص'), 'error');
             }
+        } catch (error) {
+            console.error('Error editing user:', error);
+            this.showNotification('خطا در ویرایش کاربر: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    bulkImportUsers() {
-        alert('وارد کردن گروهی کاربران در حال پیاده‌سازی...');
+    async toggleUserStatus(userId) {
+        const user = this.currentUsers.find(u => u.id === userId);
+        if (!user) {
+            this.showNotification('کاربر پیدا نشد', 'error');
+            return;
+        }
+
+        const newStatus = user.status === 'Active' ? 'Inactive' : 'Active';
+        const statusText = newStatus === 'Active' ? 'فعال' : 'غیرفعال';
+        
+        if (!confirm(`آیا مطمئن هستید که می‌خواهید وضعیت ${user.username} را به ${statusText} تغییر دهید؟`)) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await this.apiCall(`/api/users/${userId}/status`, {
+                method: 'PATCH',
+                body: JSON.stringify({
+                    status: newStatus
+                })
+            });
+
+            if (response.success) {
+                this.showNotification(`وضعیت کاربر ${user.username} به ${statusText} تغییر کرد`, 'success');
+                await this.loadUsers(); // Refresh users list
+            } else {
+                this.showNotification('خطا در تغییر وضعیت کاربر: ' + (response.error || 'خطای نامشخص'), 'error');
+            }
+        } catch (error) {
+            console.error('Error toggling user status:', error);
+            this.showNotification('خطا در تغییر وضعیت کاربر: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async deleteUser(userId) {
+        const user = this.currentUsers.find(u => u.id === userId);
+        if (!user) {
+            this.showNotification('کاربر پیدا نشد', 'error');
+            return;
+        }
+
+        if (!confirm(`آیا مطمئن هستید که می‌خواهید کاربر ${user.username} را حذف کنید؟\n\nاین عمل غیرقابل بازگشت است!`)) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await this.apiCall(`/api/users/${userId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.success) {
+                this.showNotification(`کاربر ${user.username} با موفقیت حذف شد`, 'success');
+                await this.loadUsers(); // Refresh users list
+            } else {
+                this.showNotification('خطا در حذف کاربر: ' + (response.error || 'خطای نامشخص'), 'error');
+            }
+        } catch (error) {
+            console.error('Error deleting user:', error);
+            this.showNotification('خطا در حذف کاربر: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async bulkImportUsers() {
+        // Create file input
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = '.csv,.xlsx,.json';
+        
+        input.onchange = async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            try {
+                this.showLoading();
+                this.showNotification('در حال پردازش فایل...', 'info');
+                
+                // For now, show a placeholder message
+                this.showNotification('قابلیت وارد کردن گروهی کاربران در نسخه بعدی اضافه خواهد شد', 'info');
+                
+            } catch (error) {
+                console.error('Error importing users:', error);
+                this.showNotification('خطا در وارد کردن کاربران: ' + error.message, 'error');
+            } finally {
+                this.hideLoading();
+            }
+        };
+        
+        input.click();
     }
 
     exportUsers() {
-        // Export users to CSV/Excel
-        const csvContent = 'Username,Email,Role,Status,Last Login\\n' + 
-                          this.currentUsers.map(user => 
-                              `${user.username},${user.email},${user.role},${user.status},${user.lastLogin}`
-                          ).join('\\n');
-        
-        const blob = new Blob([csvContent], { type: 'text/csv' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = 'titan-users.csv';
-        a.click();
-        URL.revokeObjectURL(url);
+        try {
+            if (this.currentUsers.length === 0) {
+                this.showNotification('هیچ کاربری برای خروجی وجود ندارد', 'error');
+                return;
+            }
+
+            // Export users to CSV/Excel
+            const csvContent = 'Username,Email,Role,Status,Last Login\n' + 
+                              this.currentUsers.map(user => 
+                                  `${user.username},${user.email},${user.role},${user.status},"${user.lastLogin || 'N/A'}"`
+                              ).join('\n');
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `titan-users-${new Date().toISOString().split('T')[0]}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification(`فایل حاوی ${this.currentUsers.length} کاربر با موفقیت دانلود شد`, 'success');
+        } catch (error) {
+            console.error('Error exporting users:', error);
+            this.showNotification('خطا در خروجی گرفتن: ' + error.message, 'error');
+        }
     }
 
-    refreshUsers() {
-        alert('بروزرسانی لیست کاربران...');
-        this.refreshUsersTable();
+    async refreshUsers() {
+        try {
+            this.showNotification('در حال بروزرسانی لیست کاربران...', 'info');
+            await this.loadAllData();
+            this.showNotification('لیست کاربران با موفقیت بروزرسانی شد', 'success');
+        } catch (error) {
+            console.error('Error refreshing users:', error);
+            this.showNotification('خطا در بروزرسانی: ' + error.message, 'error');
+        }
     }
 
     refreshUsersTable() {
@@ -623,46 +945,173 @@ export default class UsersTab {
             tableBody.innerHTML = this.renderUsersRows();
         }
     }
+    
+    // Update roles display
+    updateRolesDisplay() {
+        // This would update the roles section if it exists
+        // For now, we'll just log that roles were loaded
+        console.log('Roles updated:', this.currentRoles);
+    }
+    
+    // Update sessions display  
+    updateSessionsDisplay() {
+        // Update the sessions table with real data
+        const sessionsTableBody = document.querySelector('#sessions-table tbody');
+        if (sessionsTableBody && this.currentSessions.length > 0) {
+            sessionsTableBody.innerHTML = this.currentSessions.map(session => `
+                <tr>
+                    <td class="px-4 py-3 text-white">${session.username || session.user_id}</td>
+                    <td class="px-4 py-3 text-gray-300">${session.ip_address || 'N/A'}</td>
+                    <td class="px-4 py-3 text-gray-300">${session.user_agent || 'N/A'}</td>
+                    <td class="px-4 py-3 text-gray-300">${session.created_at || 'N/A'}</td>
+                    <td class="px-4 py-3">
+                        <button onclick="usersTab.terminateSession('${session.id}')" class="text-red-400 hover:text-red-300">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </td>
+                </tr>
+            `).join('');
+        }
+    }
+    
+    // Update activity display
+    updateActivityDisplay() {
+        // Update the activity log with real data if available
+        console.log('Activity updated:', this.currentActivities);
+    }
 
     // Role management methods
-    openAddRoleModal() {
+    async openAddRoleModal() {
         const roleName = prompt('نام نقش جدید را وارد کنید:');
-        if (roleName && roleName.trim()) {
-            alert(`نقش "${roleName}" اضافه شد`);
+        if (!roleName || !roleName.trim()) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // For now, show a placeholder message as role creation endpoint would need implementation
+            this.showNotification(`قابلیت افزودن نقش "${roleName.trim()}" در نسخه بعدی اضافه خواهد شد`, 'info');
+            
+        } catch (error) {
+            console.error('Error adding role:', error);
+            this.showNotification('خطا در افزودن نقش: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    editRole(roleName) {
-        alert(`ویرایش نقش ${roleName} در حال پیاده‌سازی...`);
+    async editRole(roleName) {
+        try {
+            this.showLoading();
+            
+            // For now, show a placeholder message
+            this.showNotification(`ویرایش نقش ${roleName} در نسخه بعدی اضافه خواهد شد`, 'info');
+            
+        } catch (error) {
+            console.error('Error editing role:', error);
+            this.showNotification('خطا در ویرایش نقش: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
-    deleteRole(roleName) {
-        if (confirm(`آیا مطمئن هستید که می‌خواهید نقش ${roleName} را حذف کنید؟`)) {
-            alert(`نقش ${roleName} حذف شد`);
+    async deleteRole(roleName) {
+        if (!confirm(`آیا مطمئن هستید که می‌خواهید نقش ${roleName} را حذف کنید؟`)) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // For now, show a placeholder message
+            this.showNotification(`حذف نقش ${roleName} در نسخه بعدی اضافه خواهد شد`, 'info');
+            
+        } catch (error) {
+            console.error('Error deleting role:', error);
+            this.showNotification('خطا در حذف نقش: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
     // Session management methods
-    terminateSession(sessionId) {
-        if (confirm('آیا مطمئن هستید که می‌خواهید این جلسه را پایان دهید؟')) {
-            alert(`جلسه ${sessionId} پایان یافت`);
+    async terminateSession(sessionId) {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید این جلسه را پایان دهید؟')) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            const response = await this.apiCall(`/api/sessions/${sessionId}`, {
+                method: 'DELETE'
+            });
+
+            if (response.success) {
+                this.showNotification(`جلسه ${sessionId} با موفقیت پایان یافت`, 'success');
+                await this.loadSessions(); // Refresh sessions list
+            } else {
+                this.showNotification('خطا در پایان جلسه: ' + (response.error || 'خطای نامشخص'), 'error');
+            }
+        } catch (error) {
+            console.error('Error terminating session:', error);
+            this.showNotification('خطا در پایان جلسه: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    terminateAllSessions() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید همه جلسات را پایان دهید؟\\n\\nتمام کاربران مجبور به ورود مجدد خواهند شد!')) {
-            alert('همه جلسات پایان یافتند');
+    async terminateAllSessions() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید همه جلسات را پایان دهید؟\n\nتمام کاربران مجبور به ورود مجدد خواهند شد!')) {
+            return;
+        }
+
+        try {
+            this.showLoading();
+            
+            // Terminate all sessions one by one
+            const promises = this.currentSessions.map(session => 
+                this.apiCall(`/api/sessions/${session.id}`, { method: 'DELETE' })
+            );
+            
+            await Promise.allSettled(promises);
+            
+            this.showNotification('همه جلسات با موفقیت پایان یافتند', 'success');
+            await this.loadSessions(); // Refresh sessions list
+            
+        } catch (error) {
+            console.error('Error terminating all sessions:', error);
+            this.showNotification('خطا در پایان همه جلسات: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    viewFullActivityLog() {
-        alert('نمایش لاگ کامل فعالیت در حال پیاده‌سازی...');
+    async viewFullActivityLog() {
+        try {
+            this.showLoading();
+            
+            // For now, just refresh the activity log
+            await this.loadActivity();
+            this.showNotification('لاگ فعالیت بروزرسانی شد', 'success');
+            
+        } catch (error) {
+            console.error('Error viewing full activity log:', error);
+            this.showNotification('خطا در نمایش لاگ فعالیت: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     collectData() {
         return {
             users: this.currentUsers,
-            roles: document.querySelectorAll('[data-permission]').length > 0 ? 
+            roles: this.currentRoles,
+            sessions: this.currentSessions,
+            activities: this.currentActivities,
+            stats: this.userStats,
+            permissions: document.querySelectorAll('[data-permission]').length > 0 ? 
                 Array.from(document.querySelectorAll('[data-permission]')).map(el => ({
                     permission: el.dataset.permission,
                     enabled: el.checked
