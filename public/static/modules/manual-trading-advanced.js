@@ -11,9 +11,18 @@ class ManualTradingAdvancedModule {
         this.version = '1.0.0';
         this.portfolioData = {};
         this.performanceMetrics = {};
-        this.activeStrategies = [];
+        this.activeStrategies = new Set();
+        this.activeIndicators = new Set();
         this.signals = [];
         this.refreshInterval = null;
+        this.aiAnalysisEnabled = false;
+        this.selectedSymbol = 'BTC/USDT';
+        this.selectedTimeframe = '1h';
+        
+        // Chart instances
+        this.advancedChart = null;
+        this.portfolioPieChart = null;
+        this.performanceChart = null;
         
         console.log(`📊 Manual Trading Advanced Module v${this.version} initialized`);
     }
@@ -1106,17 +1115,305 @@ class ManualTradingAdvancedModule {
         console.log('✅ Manual Trading Advanced module cleaned up');
     }
 
-    // Placeholder methods for UI interactions
-    async changeSymbol(symbol) { console.log('📊 Symbol changed:', symbol); }
-    async changeTimeframe(timeframe) { console.log('⏰ Timeframe changed:', timeframe); }
-    async toggleAIAnalysis() { console.log('🤖 AI Analysis toggled'); }
-    async toggleIndicator(indicator) { console.log('📈 Indicator toggled:', indicator); }
-    async setAmount(percent) { console.log('💰 Amount set:', percent + '%'); }
-    async toggleStrategy(strategy) { console.log('🧠 Strategy toggled:', strategy); }
+    // Advanced UI Interaction Methods
+    async changeSymbol(symbol) { 
+        console.log('📊 Symbol changed:', symbol); 
+        this.selectedSymbol = symbol;
+        await this.updateChartData();
+        this.showNotification(`نماد به ${symbol} تغییر یافت`, 'success');
+    }
+
+    async changeTimeframe(timeframe) { 
+        console.log('⏰ Timeframe changed:', timeframe); 
+        this.selectedTimeframe = timeframe;
+        await this.updateChartData();
+        this.showNotification(`بازه زمانی به ${timeframe} تغییر یافت`, 'info');
+    }
+
+    async toggleAIAnalysis() { 
+        console.log('🤖 AI Analysis toggled');
+        const btn = document.getElementById('ai-analysis-btn');
+        const overlay = document.getElementById('ai-signals-overlay');
+        
+        if (this.aiAnalysisEnabled) {
+            // Disable AI Analysis
+            this.aiAnalysisEnabled = false;
+            btn.classList.remove('bg-purple-600');
+            btn.classList.add('bg-gray-600');
+            btn.innerHTML = '🤖 تحلیل AI (غیرفعال)';
+            if (overlay) overlay.classList.add('hidden');
+            this.showNotification('تحلیل AI غیرفعال شد', 'info');
+        } else {
+            // Enable AI Analysis
+            this.aiAnalysisEnabled = true;
+            btn.classList.remove('bg-gray-600');
+            btn.classList.add('bg-purple-600');
+            btn.innerHTML = '🤖 تحلیل AI (فعال)';
+            if (overlay) overlay.classList.remove('hidden');
+            await this.loadAISignals();
+            this.showNotification('تحلیل AI فعال شد', 'success');
+        }
+    }
+
+    async toggleIndicator(indicator) { 
+        console.log('📈 Indicator toggled:', indicator);
+        
+        if (!this.activeIndicators) {
+            this.activeIndicators = new Set();
+        }
+        
+        const button = document.querySelector(`button[onclick*="${indicator}"]`);
+        
+        if (this.activeIndicators.has(indicator)) {
+            // Disable indicator
+            this.activeIndicators.delete(indicator);
+            button?.classList.remove('bg-blue-600', 'bg-green-600', 'bg-yellow-600');
+            button?.classList.add('bg-gray-600');
+            this.showNotification(`اندیکاتور ${indicator.toUpperCase()} غیرفعال شد`, 'info');
+        } else {
+            // Enable indicator
+            this.activeIndicators.add(indicator);
+            button?.classList.remove('bg-gray-600');
+            
+            // Set specific colors for each indicator
+            if (indicator === 'rsi') {
+                button?.classList.add('bg-blue-600');
+            } else if (indicator === 'macd') {
+                button?.classList.add('bg-green-600');
+            } else if (indicator === 'bb') {
+                button?.classList.add('bg-yellow-600');
+            }
+            
+            this.showNotification(`اندیکاتور ${indicator.toUpperCase()} فعال شد`, 'success');
+        }
+        
+        // Update chart with indicators
+        await this.updateChartIndicators();
+    }
+
+    async setAmount(percent) { 
+        console.log('💰 Amount set:', percent + '%'); 
+        const totalBalance = 12450; // Mock balance
+        const amount = (totalBalance * percent) / 100;
+        
+        // Update any amount input fields
+        const amountInputs = document.querySelectorAll('input[id*="amount"], input[id*="trade-amount"]');
+        amountInputs.forEach(input => {
+            input.value = amount.toFixed(2);
+        });
+        
+        this.showNotification(`مقدار معامله: $${amount.toLocaleString()} (${percent}%)`, 'info');
+    }
+
+    async toggleStrategy(strategy) { 
+        console.log('🧠 Strategy toggled:', strategy);
+        
+        if (!this.activeStrategies) {
+            this.activeStrategies = new Set();
+        }
+        
+        const button = document.querySelector(`button[onclick*="toggleStrategy('${strategy}')"]`);
+        
+        if (this.activeStrategies.has(strategy)) {
+            // Disable strategy
+            this.activeStrategies.delete(strategy);
+            button?.classList.remove('bg-green-600');
+            button?.classList.add('bg-gray-600');
+            button.innerHTML = 'OFF';
+            this.showNotification(`استراتژی ${strategy} غیرفعال شد`, 'warning');
+        } else {
+            // Enable strategy  
+            this.activeStrategies.add(strategy);
+            button?.classList.remove('bg-gray-600');
+            button?.classList.add('bg-green-600');
+            button.innerHTML = 'ON';
+            this.showNotification(`استراتژی ${strategy} فعال شد`, 'success');
+        }
+    }
+
     async createStrategy(type) { 
         console.log('✨ Creating strategy:', type);
-        this.showNotification(`استراتژی ${type} ایجاد شد!`, 'success');
+        
+        // Close modal first
         document.querySelectorAll('.modal-overlay').forEach(modal => modal.remove());
+        
+        // Simulate strategy creation process
+        this.showNotification(`در حال ایجاد استراتژی ${type}...`, 'info');
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Add to active strategies
+        if (!this.activeStrategies) {
+            this.activeStrategies = new Set();
+        }
+        this.activeStrategies.add(type);
+        
+        this.showNotification(`✅ استراتژی ${type} با موفقیت ایجاد شد!`, 'success');
+        
+        // Update strategy display if needed
+        this.updateStrategyDisplay();
+    }
+
+    // New helper methods for enhanced functionality
+    async updateChartData() {
+        if (!this.advancedChart) return;
+        
+        try {
+            // Generate new data based on selected symbol and timeframe
+            const newData = this.generateCandlestickData();
+            
+            // Update chart
+            this.advancedChart.data.labels = newData.labels;
+            this.advancedChart.data.datasets[0].data = newData.prices;
+            this.advancedChart.data.datasets[1].data = newData.volumes;
+            
+            // Update chart title
+            this.advancedChart.data.datasets[0].label = `قیمت ${this.selectedSymbol || 'BTC/USDT'}`;
+            
+            this.advancedChart.update();
+            
+            console.log('✅ Chart data updated successfully');
+        } catch (error) {
+            console.error('❌ Error updating chart data:', error);
+        }
+    }
+
+    async updateChartIndicators() {
+        if (!this.advancedChart || !this.activeIndicators) return;
+        
+        try {
+            // Remove existing indicator datasets
+            const baseDatasets = this.advancedChart.data.datasets.slice(0, 2); // Keep price and volume
+            
+            // Add indicator datasets
+            if (this.activeIndicators.has('rsi')) {
+                const rsiData = this.generateRSIData();
+                baseDatasets.push({
+                    label: 'RSI',
+                    data: rsiData,
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    yAxisID: 'rsiAxis'
+                });
+            }
+            
+            if (this.activeIndicators.has('macd')) {
+                const macdData = this.generateMACDData();
+                baseDatasets.push({
+                    label: 'MACD',
+                    data: macdData,
+                    borderColor: '#10B981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: false,
+                    yAxisID: 'macdAxis'
+                });
+            }
+            
+            if (this.activeIndicators.has('bb')) {
+                const bbData = this.generateBollingerData();
+                baseDatasets.push({
+                    label: 'Bollinger Upper',
+                    data: bbData.upper,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 1,
+                    fill: false
+                }, {
+                    label: 'Bollinger Lower', 
+                    data: bbData.lower,
+                    borderColor: '#F59E0B',
+                    backgroundColor: 'rgba(245, 158, 11, 0.1)',
+                    borderWidth: 1,
+                    fill: '-1' // Fill between upper and lower
+                });
+            }
+            
+            // Update chart datasets
+            this.advancedChart.data.datasets = baseDatasets;
+            this.advancedChart.update();
+            
+            console.log('✅ Chart indicators updated');
+        } catch (error) {
+            console.error('❌ Error updating indicators:', error);
+        }
+    }
+
+    async loadAISignals() {
+        const overlay = document.getElementById('ai-signals-overlay');
+        if (!overlay) return;
+        
+        // Generate mock AI signals
+        const signals = [
+            {
+                type: 'buy',
+                confidence: 85,
+                price: 43250,
+                reason: 'تحلیل RSI نشان‌دهنده oversold'
+            },
+            {
+                type: 'sell',
+                confidence: 72,
+                price: 44100,
+                reason: 'مقاومت قوی در این سطح'
+            }
+        ];
+        
+        const signalsHTML = signals.map(signal => `
+            <div class="bg-${signal.type === 'buy' ? 'green' : 'red'}-900 bg-opacity-50 border border-${signal.type === 'buy' ? 'green' : 'red'}-500 rounded p-2 text-xs">
+                <div class="flex items-center">
+                    <span class="text-${signal.type === 'buy' ? 'green' : 'red'}-400 font-bold">
+                        ${signal.type === 'buy' ? '🟢 خرید' : '🔴 فروش'}
+                    </span>
+                    <span class="text-white ml-2">${signal.confidence}%</span>
+                </div>
+                <div class="text-gray-300 mt-1">$${signal.price.toLocaleString()}</div>
+                <div class="text-gray-400 text-xs">${signal.reason}</div>
+            </div>
+        `).join('');
+        
+        overlay.innerHTML = signalsHTML;
+    }
+
+    generateRSIData() {
+        // Generate mock RSI data (0-100 range)
+        const data = [];
+        for (let i = 0; i < 24; i++) {
+            data.push(Math.random() * 100);
+        }
+        return data;
+    }
+
+    generateMACDData() {
+        // Generate mock MACD data
+        const data = [];
+        for (let i = 0; i < 24; i++) {
+            data.push((Math.random() - 0.5) * 100);
+        }
+        return data;
+    }
+
+    generateBollingerData() {
+        // Generate mock Bollinger Bands data
+        const upper = [];
+        const lower = [];
+        let basePrice = 43000;
+        
+        for (let i = 0; i < 24; i++) {
+            basePrice += (Math.random() - 0.5) * 1000;
+            upper.push(basePrice + 1000);
+            lower.push(basePrice - 1000);
+        }
+        
+        return { upper, lower };
+    }
+
+    updateStrategyDisplay() {
+        // Update strategy display in UI if needed
+        console.log('🧠 Updated strategy display');
     }
 }
 
