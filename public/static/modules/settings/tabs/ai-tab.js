@@ -740,21 +740,15 @@ export default class AITab {
                     <!-- Charts would go here -->
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h3 class="text-lg font-bold text-white mb-4">روند عملکرد</h3>
-                        <div class="h-64 flex items-center justify-center text-gray-400">
-                            <div class="text-center">
-                                <i class="fas fa-chart-line text-4xl mb-2"></i>
-                                <div>نمودار عملکرد در حال توسعه</div>
-                            </div>
+                        <div class="h-64 bg-gray-900 rounded-lg p-4">
+                            <canvas id="ai-performance-chart" width="400" height="200"></canvas>
                         </div>
                     </div>
                     
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <h3 class="text-lg font-bold text-white mb-4">توزیع دقت</h3>
-                        <div class="h-64 flex items-center justify-center text-gray-400">
-                            <div class="text-center">
-                                <i class="fas fa-chart-pie text-4xl mb-2"></i>
-                                <div>نمودار توزیع در حال توسعه</div>
-                            </div>
+                        <div class="h-64 bg-gray-900 rounded-lg p-4">
+                            <canvas id="ai-accuracy-chart" width="400" height="200"></canvas>
                         </div>
                     </div>
                 </div>

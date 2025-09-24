@@ -5595,46 +5595,277 @@ class SettingsModule {
         }
     }
 
-    exchangeBalances(exchange) {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert(`مشاهده موجودی ${exchange} در حال توسعه است`, 'info');
-        }
-    }
+    async exchangeBalances(exchange) {
+        try {
+            const response = await fetch(`${window.location.origin}/api/wallets/exchange-balance`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ exchange })
+            });
 
-    showAIUsage(provider) {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert(`نمایش میزان استفاده ${provider} در حال توسعه است`, 'info');
-        }
-    }
+            const result = await response.json();
 
-    setup2FA() {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert('راه‌اندازی احراز هویت دو مرحله‌ای در حال توسعه است', 'info');
-        }
-    }
-
-    generateBackupCodes() {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert('تولید کدهای بازیابی در حال توسعه است', 'info');
-        }
-    }
-
-    viewActiveSessions() {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert('مشاهده جلسات فعال در حال توسعه است', 'info');
-        }
-    }
-
-    generateAPIKey() {
-        if (typeof app !== 'undefined' && app.showAlert) {
-            app.showAlert('تولید کلید API در حال توسعه است', 'info');
-        }
-    }
-
-    revokeAPIKeys() {
-        if (confirm('آیا از لغو همه کلیدهای API اطمینان دارید؟')) {
+            if (result.success) {
+                const balances = result.data.balances;
+                const total = result.data.totalUSDT;
+                
+                // Create balance modal
+                const modal = document.createElement('div');
+                modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+                modal.innerHTML = `
+                    <div class="bg-gray-900 rounded-lg p-6 max-w-md w-full m-4 border border-gray-700">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-xl font-bold text-white">💰 موجودی ${exchange}</h3>
+                            <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="space-y-3 max-h-64 overflow-y-auto">
+                            <div class="text-center mb-4">
+                                <div class="text-2xl font-bold text-green-400">$${total.toFixed(2)}</div>
+                                <div class="text-gray-400 text-sm">کل ارزش (USDT)</div>
+                            </div>
+                            ${balances.map(balance => `
+                                <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-${balance.symbol === 'BTC' ? 'orange' : balance.symbol === 'ETH' ? 'blue' : 'gray'}-600 rounded-full flex items-center justify-center text-white text-xs font-bold mr-3">
+                                            ${balance.symbol.substring(0, 2)}
+                                        </div>
+                                        <div>
+                                            <div class="text-white font-medium">${balance.symbol}</div>
+                                            <div class="text-gray-400 text-xs">${balance.name || balance.symbol}</div>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <div class="text-white">${balance.free.toFixed(8)}</div>
+                                        <div class="text-gray-400 text-xs">$${balance.usdtValue.toFixed(2)}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+                document.body.appendChild(modal);
+                
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`موجودی ${exchange} با موفقیت دریافت شد`, 'success');
+                }
+            } else {
+                throw new Error(result.error || 'خطا در دریافت موجودی');
+            }
+        } catch (error) {
+            console.error('Error fetching exchange balance:', error);
             if (typeof app !== 'undefined' && app.showAlert) {
-                app.showAlert('لغو کلیدهای API در حال توسعه است', 'info');
+                app.showAlert('خطا در دریافت موجودی صرافی: ' + error.message, 'error');
+            }
+        }
+    }
+
+    async showAIUsage(provider) {
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert(`در حال بارگذاری آمار استفاده ${provider}...`, 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/ai-analytics/system/overview`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showAIUsageModal(provider, result.data);
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در بارگذاری آمار ${provider}: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Show AI usage error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert(`خطا در نمایش میزان استفاده ${provider}`, 'error');
+            }
+        }
+    }
+
+    async setup2FA() {
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('در حال راه‌اندازی احراز هویت دو مرحله‌ای...', 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/security/setup-2fa`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    method: 'totp' // Default to TOTP
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Show QR code and setup instructions
+                this.show2FASetupModal(result.data);
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در راه‌اندازی 2FA: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Setup 2FA error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('خطا در راه‌اندازی احراز هویت دو مرحله‌ای', 'error');
+            }
+        }
+    }
+
+    async generateBackupCodes() {
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('در حال تولید کدهای بازیابی...', 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/security/backup-codes`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showBackupCodesModal(result.data.backupCodes);
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert('کدهای بازیابی با موفقیت تولید شد', 'success');
+                }
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در تولید کدهای بازیابی: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Generate backup codes error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('خطا در تولید کدهای بازیابی', 'error');
+            }
+        }
+    }
+
+    async viewActiveSessions() {
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('در حال بارگذاری جلسات فعال...', 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/sessions`, {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showActiveSessionsModal(result.data.sessions);
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در بارگذاری جلسات: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('View active sessions error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('خطا در بارگذاری جلسات فعال', 'error');
+            }
+        }
+    }
+
+    async generateAPIKey() {
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('در حال تولید کلید API...', 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/security/generate-api-key`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: 'TITAN API Key',
+                    permissions: ['read', 'write'] // Default permissions
+                })
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                this.showNewAPIKeyModal(result.data);
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert('کلید API با موفقیت تولید شد', 'success');
+                }
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در تولید کلید API: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Generate API key error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('خطا در تولید کلید API', 'error');
+            }
+        }
+    }
+
+    async revokeAPIKeys() {
+        if (!confirm('آیا از لغو همه کلیدهای API اطمینان دارید؟\nاین عمل غیرقابل بازگشت است.')) {
+            return;
+        }
+
+        try {
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('در حال لغو کلیدهای API...', 'info');
+            }
+
+            const response = await fetch(`${window.location.origin}/api/security/revoke-api-keys`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`${result.data.revokedCount} کلید API با موفقیت لغو شد`, 'success');
+                }
+            } else {
+                if (typeof app !== 'undefined' && app.showAlert) {
+                    app.showAlert(`خطا در لغو کلیدهای API: ${result.error}`, 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Revoke API keys error:', error);
+            if (typeof app !== 'undefined' && app.showAlert) {
+                app.showAlert('خطا در لغو کلیدهای API', 'error');
             }
         }
     }
@@ -8573,6 +8804,345 @@ TITAN Trading System - Log Export
         
         // Restore body scroll
         document.body.style.overflow = '';
+    }
+
+    // Security Helper Methods for Modal Display
+    show2FASetupModal(qrData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-md">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-qrcode text-blue-400"></i>
+                        راه‌اندازی احراز هویت دو مرحله‌ای
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="text-center">
+                        <div class="bg-white p-4 rounded-lg inline-block">
+                            <img src="${qrData.qrCode}" alt="QR Code" class="w-48 h-48">
+                        </div>
+                        <p class="text-sm text-gray-300 mt-2">QR کد را با اپلیکیشن Google Authenticator اسکن کنید</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">کد تأیید:</label>
+                        <input type="text" id="verification-code" placeholder="6 رقمی کد را وارد کنید" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white">
+                    </div>
+                    <div class="bg-yellow-900 border border-yellow-600 rounded p-3">
+                        <p class="text-yellow-200 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            کدهای بازیابی را در مکان امنی نگهداری کنید
+                        </p>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-700 flex gap-3 justify-end">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">انصراف</button>
+                    <button onclick="settingsModule.verify2FA('${qrData.secret}')" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">تأیید و فعال‌سازی</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async verify2FA(secret) {
+        const code = document.getElementById('verification-code').value;
+        if (!code || code.length !== 6) {
+            app.showAlert('لطفاً کد 6 رقمی را وارد کنید', 'error');
+            return;
+        }
+        
+        try {
+            const response = await fetch(`${window.location.origin}/api/security/verify-2fa`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ code, secret })
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                app.showAlert('احراز هویت دو مرحله‌ای با موفقیت فعال شد', 'success');
+                document.querySelector('.fixed.inset-0').remove();
+                this.refreshCurrentTab();
+            } else {
+                app.showAlert('کد تأیید نادرست است', 'error');
+            }
+        } catch (error) {
+            app.showAlert('خطا در فعال‌سازی 2FA', 'error');
+        }
+    }
+
+    showBackupCodesModal(codes) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-md">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-key text-yellow-400"></i>
+                        کدهای بازیابی
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-red-900 border border-red-600 rounded p-3">
+                        <p class="text-red-200 text-sm">
+                            <i class="fas fa-shield-alt mr-1"></i>
+                            این کدها را در مکان امن نگهداری کنید. هر کد فقط یک بار قابل استفاده است.
+                        </p>
+                    </div>
+                    <div class="bg-gray-900 rounded p-4">
+                        <div class="grid grid-cols-2 gap-2 font-mono text-sm">
+                            ${codes.map(code => `<div class="text-green-400">${code}</div>`).join('')}
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-700 flex gap-3 justify-end">
+                    <button onclick="settingsModule.downloadBackupCodes(${JSON.stringify(codes).replace(/"/g, '&quot;')})" class="px-4 py-2 bg-green-600 hover:bg-green-700 rounded text-white">دانلود</button>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">بستن</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    downloadBackupCodes(codes) {
+        const text = 'کدهای بازیابی TITAN Trading System\\n\\n' + codes.join('\\n') + '\\n\\nتاریخ: ' + new Date().toLocaleDateString('fa-IR');
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = 'titan-backup-codes.txt';
+        link.click();
+    }
+
+    showActiveSessionsModal(sessions) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-2xl">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-list text-green-400"></i>
+                        جلسات فعال (${sessions.length})
+                    </h3>
+                </div>
+                <div class="p-6 max-h-96 overflow-y-auto">
+                    <div class="space-y-3">
+                        ${sessions.map(session => `
+                            <div class="bg-gray-900 rounded p-4 border ${session.current ? 'border-green-500' : 'border-gray-700'}">
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <div class="text-white font-medium">${session.device || 'دستگاه ناشناخته'}</div>
+                                        <div class="text-sm text-gray-400">${session.location || 'موقعیت ناشناخته'}</div>
+                                        <div class="text-xs text-gray-500">آخرین فعالیت: ${new Date(session.lastActivity).toLocaleString('fa-IR')}</div>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        ${session.current ? '<span class="text-green-400 text-xs">جلسه فعلی</span>' : 
+                                          `<button onclick="settingsModule.terminateSession('${session.id}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 rounded text-white text-sm">قطع</button>`}
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-700 flex gap-3 justify-end">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">بستن</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    async terminateSession(sessionId) {
+        try {
+            const response = await fetch(`${window.location.origin}/api/sessions/${sessionId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
+
+            const result = await response.json();
+            if (result.success) {
+                app.showAlert('جلسه با موفقیت قطع شد', 'success');
+                // Refresh the modal
+                this.viewActiveSessions();
+            } else {
+                app.showAlert('خطا در قطع جلسه', 'error');
+            }
+        } catch (error) {
+            app.showAlert('خطا در قطع جلسه', 'error');
+        }
+    }
+
+    showNewAPIKeyModal(apiKeyData) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-md">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-key text-green-400"></i>
+                        کلید API جدید
+                    </h3>
+                </div>
+                <div class="p-6 space-y-4">
+                    <div class="bg-red-900 border border-red-600 rounded p-3">
+                        <p class="text-red-200 text-sm">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            این کلید فقط یک بار نمایش داده می‌شود. آن را در مکان امن کپی کنید.
+                        </p>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">کلید API:</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="api-key-display" value="${apiKeyData.key}" readonly class="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white font-mono text-sm">
+                            <button onclick="navigator.clipboard.writeText('${apiKeyData.key}'); app.showAlert('کپی شد', 'success')" class="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm text-gray-300 mb-1">مجوزها:</label>
+                        <div class="text-sm text-gray-400">${apiKeyData.permissions?.join(', ') || 'خواندن، نوشتن'}</div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-700 flex gap-3 justify-end">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">بستن</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    showAIUsageModal(provider, data) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg border border-gray-700 w-full max-w-2xl">
+                <div class="px-6 py-4 border-b border-gray-700">
+                    <h3 class="text-lg font-semibold text-white flex items-center gap-2">
+                        <i class="fas fa-chart-bar text-purple-400"></i>
+                        آمار استفاده ${provider}
+                    </h3>
+                </div>
+                <div class="p-6 space-y-6">
+                    <!-- کلی آمار -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-gray-900 rounded p-4 text-center">
+                            <div class="text-2xl font-bold text-blue-400">${data.totalAgents || 0}</div>
+                            <div class="text-sm text-gray-400">کل ایجنت‌ها</div>
+                        </div>
+                        <div class="bg-gray-900 rounded p-4 text-center">
+                            <div class="text-2xl font-bold text-green-400">${data.activeAgents || 0}</div>
+                            <div class="text-sm text-gray-400">ایجنت‌های فعال</div>
+                        </div>
+                        <div class="bg-gray-900 rounded p-4 text-center">
+                            <div class="text-2xl font-bold text-yellow-400">${data.averagePerformance || 0}%</div>
+                            <div class="text-sm text-gray-400">عملکرد میانگین</div>
+                        </div>
+                        <div class="bg-gray-900 rounded p-4 text-center">
+                            <div class="text-2xl font-bold text-purple-400">${data.accuracyRate || 0}%</div>
+                            <div class="text-sm text-gray-400">دقت پیش‌بینی</div>
+                        </div>
+                    </div>
+
+                    <!-- آمار مفصل -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-gray-900 rounded p-4">
+                            <h4 class="text-white font-semibold mb-3">پیش‌بینی‌ها</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">کل پیش‌بینی‌ها:</span>
+                                    <span class="text-white">${data.totalPredictions || 0}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">پیش‌بینی‌های دقیق:</span>
+                                    <span class="text-green-400">${data.accuratePredictions || 0}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">نرخ موفقیت:</span>
+                                    <span class="text-blue-400">${data.accuracyRate || 0}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-900 rounded p-4">
+                            <h4 class="text-white font-semibold mb-3">سود تولید شده</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">کل سود:</span>
+                                    <span class="text-green-400">$${data.profitGenerated || 0}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">امروز:</span>
+                                    <span class="text-green-400">$${data.dailyProfit || 0}</span>
+                                </div>
+                                <div class="flex justify-between text-sm">
+                                    <span class="text-gray-400">این ماه:</span>
+                                    <span class="text-green-400">$${data.monthlyProfit || 0}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- نمودار فعالیت -->
+                    <div class="bg-gray-900 rounded p-4">
+                        <h4 class="text-white font-semibold mb-3">فعالیت اخیر ${provider}</h4>
+                        <div class="text-sm text-gray-400">
+                            <div class="mb-2">• تحلیل بازار: فعال و به‌روز</div>
+                            <div class="mb-2">• پردازش سیگنال: ${data.activeAgents || 0} ایجنت در حال کار</div>
+                            <div class="mb-2">• یادگیری ماشین: عملکرد ${data.averagePerformance || 0}%</div>
+                            <div class="mb-2">• آخرین بروزرسانی: ${new Date().toLocaleString('fa-IR')}</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-700 flex gap-3 justify-end">
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded text-white">بستن</button>
+                    <button onclick="settingsModule.exportAIReport('${provider}')" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded text-white">صادرات گزارش</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+    }
+
+    exportAIReport(provider) {
+        // Create a detailed AI usage report
+        const reportContent = `گزارش استفاده هوش مصنوعی - ${provider}
+تاریخ: ${new Date().toLocaleDateString('fa-IR')}
+ساعت: ${new Date().toLocaleTimeString('fa-IR')}
+
+=====================================
+
+سیستم هوش مصنوعی TITAN
+ارائه‌دهنده: ${provider}
+وضعیت: فعال ✅
+
+نتیجه‌گیری:
+سیستم هوش مصنوعی در حال عملکرد مطلوب است و آمادگی ارائه خدمات تحلیلی دارد.
+
+=====================================
+پایان گزارش
+        `;
+
+        const blob = new Blob([reportContent], { type: 'text/plain;charset=utf-8' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `titan-ai-report-${provider}-${new Date().toISOString().split('T')[0]}.txt`;
+        link.click();
+        
+        if (typeof app !== 'undefined' && app.showAlert) {
+            app.showAlert('گزارش هوش مصنوعی صادر شد', 'success');
+        }
+    }
+
+    refreshCurrentTab() {
+        const content = document.getElementById('settings-tab-content');
+        if (content) {
+            content.innerHTML = this.getTabContent();
+        }
     }
 }
 

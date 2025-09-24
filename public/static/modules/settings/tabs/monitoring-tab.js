@@ -494,6 +494,92 @@ export default class MonitoringTab {
         }
     }
 
+    // New helper methods for API integration
+    showLoading() {
+        const loadingElement = document.getElementById('users-loading') || document.getElementById('monitoring-loading');
+        if (loadingElement) {
+            loadingElement.classList.remove('hidden');
+        } else {
+            // Create temporary loading indicator
+            const loading = document.createElement('div');
+            loading.id = 'monitoring-loading';
+            loading.className = 'fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center';
+            loading.innerHTML = `
+                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
+                    <div class="flex items-center space-x-3 space-x-reverse">
+                        <div class="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
+                        <span class="text-white">در حال پردازش...</span>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(loading);
+        }
+    }
+
+    hideLoading() {
+        const loadingElement = document.getElementById('users-loading') || document.getElementById('monitoring-loading');
+        if (loadingElement) {
+            loadingElement.classList.add('hidden');
+            if (loadingElement.id === 'monitoring-loading') {
+                loadingElement.remove();
+            }
+        }
+    }
+
+    showConnectionTestModal(data) {
+        // Create and show detailed connection test results modal
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-900 rounded-lg p-6 max-w-4xl max-h-96 overflow-y-auto m-4 border border-gray-700">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">🔍 نتایج تست اتصالات</h3>
+                    <button onclick="this.parentElement.parentElement.parentElement.remove()" class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
+                        <div class="bg-green-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-white">${data.successful}</div>
+                            <div class="text-green-200">موفق</div>
+                        </div>
+                        <div class="bg-red-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-white">${data.failed}</div>
+                            <div class="text-red-200">ناموفق</div>
+                        </div>
+                        <div class="bg-blue-800 p-4 rounded-lg">
+                            <div class="text-2xl font-bold text-white">${data.total}</div>
+                            <div class="text-blue-200">کل</div>
+                        </div>
+                    </div>
+                    <div class="space-y-2">
+                        <h4 class="text-lg font-semibold text-white">جزئیات صرافی‌ها:</h4>
+                        ${data.exchanges.map(exchange => `
+                            <div class="flex justify-between items-center p-3 bg-gray-800 rounded-lg">
+                                <span class="text-white font-medium">${exchange.name}</span>
+                                <div class="flex items-center space-x-2 space-x-reverse">
+                                    <span class="text-${exchange.status === 'connected' ? 'green' : 'red'}-400">
+                                        ${exchange.status === 'connected' ? 'متصل' : 'قطع'}
+                                    </span>
+                                    <span class="text-gray-300">${exchange.latency || 'N/A'}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(modal);
+        
+        // Auto remove after 15 seconds
+        setTimeout(() => {
+            if (modal.parentElement) {
+                modal.remove();
+            }
+        }, 15000);
+    }
+
     initializeCharts() {
         // Initialize Chart.js charts
         if (typeof Chart !== 'undefined') {
@@ -708,24 +794,134 @@ export default class MonitoringTab {
         alert('نمودارها بروزرسانی شدند');
     }
 
-    testAllConnections() {
-        alert('🔍 در حال تست همه اتصالات صرافی...');
-    }
-
-    reconnectAll() {
-        if (confirm('آیا مطمئن هستید که می‌خواهید همه اتصالات را مجدداً برقرار کنید؟')) {
-            alert('🔄 اتصال مجدد همه صرافی‌ها شروع شد...');
+    async testAllConnections() {
+        try {
+            this.showLoading();
+            this.showNotification('در حال تست همه اتصالات صرافی...', 'info');
+            
+            const response = await this.apiCall('/api/system/test-connections', {
+                method: 'GET'
+            });
+            
+            if (response.success) {
+                const { data } = response;
+                this.showNotification(`تست اتصالات کامل شد - موفق: ${data.successful}، ناموفق: ${data.failed}`, 'success');
+                
+                // Update UI with connection results
+                this.updateExchangeStatusDisplay(data.exchanges);
+                
+                // Show detailed results modal
+                this.showConnectionTestModal(data);
+            } else {
+                throw new Error(response.message || 'خطا در تست اتصالات');
+            }
+        } catch (error) {
+            console.error('Error testing connections:', error);
+            this.showNotification('خطا در تست اتصالات: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
         }
     }
 
-    testExchangeConnection(exchangeName) {
-        alert(`🔍 در حال تست اتصال ${exchangeName}...`);
+    async reconnectAll() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید همه اتصالات را مجدداً برقرار کنید؟')) {
+            return;
+        }
+        
+        try {
+            this.showLoading();
+            this.showNotification('در حال اتصال مجدد همه صرافی‌ها...', 'info');
+            
+            const response = await this.apiCall('/api/system/connections/refresh', {
+                method: 'POST',
+                body: JSON.stringify({
+                    forceReconnect: true,
+                    timeout: 30000
+                })
+            });
+            
+            if (response.success) {
+                const { data } = response;
+                this.showNotification(`اتصال مجدد کامل شد - موفق: ${data.reconnected}، خطا: ${data.errors}`, 
+                    data.errors > 0 ? 'warning' : 'success');
+                
+                // Refresh connection status display
+                this.updateExchangeStatusDisplay(data.exchanges);
+                await this.updateMetrics();
+            } else {
+                throw new Error(response.message || 'خطا در اتصال مجدد');
+            }
+        } catch (error) {
+            console.error('Error reconnecting:', error);
+            this.showNotification('خطا در اتصال مجدد: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
-    saveMonitoringConfig() {
-        const config = this.collectData();
-        alert('✅ تنظیمات مانیتورینگ ذخیره شد');
-        console.log('Monitoring config saved:', config);
+    async testExchangeConnection(exchangeName) {
+        try {
+            this.showLoading();
+            this.showNotification(`در حال تست اتصال ${exchangeName}...`, 'info');
+            
+            const response = await this.apiCall(`/api/system/test-connections/${encodeURIComponent(exchangeName)}`, {
+                method: 'GET'
+            });
+            
+            if (response.success) {
+                const { data } = response;
+                const statusText = data.status === 'connected' ? 'موفق' : 'ناموفق';
+                const notificationType = data.status === 'connected' ? 'success' : 'error';
+                
+                this.showNotification(
+                    `تست اتصال ${exchangeName}: ${statusText}${data.latency ? ` (${data.latency})` : ''}`,
+                    notificationType
+                );
+                
+                // Update individual exchange status
+                this.updateSingleExchangeStatus(exchangeName, data);
+            } else {
+                throw new Error(response.message || 'خطا در تست اتصال');
+            }
+        } catch (error) {
+            console.error(`Error testing ${exchangeName} connection:`, error);
+            this.showNotification(`خطا در تست اتصال ${exchangeName}: ` + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
+    }
+
+    async saveMonitoringConfig() {
+        try {
+            this.showLoading();
+            
+            const config = this.collectData();
+            
+            const response = await this.apiCall('/api/monitoring/config', {
+                method: 'PUT',
+                body: JSON.stringify(config)
+            });
+            
+            if (response.success) {
+                this.showNotification('تنظیمات مانیتورینگ با موفقیت ذخیره شد', 'success');
+                
+                // Update settings object
+                this.settings = { ...this.settings, ...config };
+                
+                // Restart monitoring with new settings if needed
+                if (config.realtimeMonitoring) {
+                    this.clearIntervals();
+                    this.setupRealTimeUpdates();
+                }
+            } else {
+                throw new Error(response.message || 'خطا در ذخیره تنظیمات');
+            }
+        } catch (error) {
+            console.error('Error saving monitoring config:', error);
+            this.showNotification('خطا در ذخیره تنظیمات: ' + error.message, 'error');
+        } finally {
+            this.hideLoading();
+        }
     }
 
     resetToDefaults() {
