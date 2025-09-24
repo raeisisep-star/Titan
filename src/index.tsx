@@ -10774,6 +10774,18 @@ app.get('/', (c) => {
                 }
             });
         </script>
+        <!-- Load AI Agents -->
+        <script src="/static/modules/ai-agents/agent-01-technical-analysis.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-02-risk-management.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-05-market-making.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-07-news-analysis.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-08-hft.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js?v=${Date.now()}"></script>
+        <script src="/static/modules/ai-agents/agent-10-macro-analysis.js?v=${Date.now()}"></script>
+        
         <!-- Load ModuleLoader before main app -->
         <script src="/static/modules/module-loader.js?v=${Date.now()}"></script>
         <script src="/static/app.js?v=1758207583"></script>

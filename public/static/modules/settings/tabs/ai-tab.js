@@ -169,7 +169,7 @@ export default class AITab {
     // Generate mock agents for demonstration
     generateMockAgents() {
         const specializations = [
-            'تحلیل تکنیکال', 'مدیریت ریسک', 'تحلیل احساسات', 'شناسایی الگو',
+            'تحلیل تکنیکال پیشرفته', 'مدیریت ریسک و بهینه‌سازی پرتفولیو', 'تحلیل احساسات', 'شناسایی الگو',
             'پیش‌بینی قیمت', 'آربیتراژ', 'تحلیل نقدینگی', 'مدیریت پورتفولیو',
             'تشخیص ترندها', 'بهینه‌سازی', 'مدیریت سفارشات', 'آنالیز فاندامنتال',
             'هوش بازار', 'تحلیل حجم', 'تایم‌بندی معاملات'
@@ -183,33 +183,57 @@ export default class AITab {
 
         const agents = [];
         for (let i = 1; i <= 15; i++) {
-            const accuracy = 75 + Math.random() * 20;
-            const successRate = 70 + Math.random() * 25;
-            const experienceLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
-            const statuses = ['active', 'training', 'offline'];
+            let accuracy, successRate, status, experienceLevel;
+            
+            // Special configuration for implemented agents
+            if (i === 1) {
+                // Agent 01: Technical Analysis - Real implementation
+                accuracy = 85 + Math.random() * 10; // Higher accuracy for real agent
+                successRate = 80 + Math.random() * 15;
+                status = 'active';
+                experienceLevel = 'expert';
+            } else if (i === 2) {
+                // Agent 02: Risk Management - Real implementation
+                accuracy = 87 + Math.random() * 8; // Higher accuracy for real agent
+                successRate = 82 + Math.random() * 13;
+                status = 'active';
+                experienceLevel = 'expert';
+            } else {
+                // Mock agents
+                accuracy = 75 + Math.random() * 20;
+                successRate = 70 + Math.random() * 25;
+                const statuses = ['active', 'training', 'offline'];
+                status = statuses[Math.floor(Math.random() * 3)];
+                const experienceLevels = ['beginner', 'intermediate', 'advanced', 'expert'];
+                experienceLevel = experienceLevels[Math.floor(Math.random() * 4)];
+            }
             
             agents.push({
                 id: `agent_${i.toString().padStart(2, '0')}`,
                 name: `ایجنت AI ${i}`,
                 specialization: specializations[i - 1],
-                status: statuses[Math.floor(Math.random() * 3)],
+                status: status,
                 performance: {
                     accuracy: accuracy,
                     successRate: successRate,
-                    trainingProgress: Math.floor(Math.random() * 100),
-                    totalDecisions: Math.floor(1000 + Math.random() * 50000),
-                    experienceLevel: experienceLevels[Math.floor(Math.random() * 4)],
+                    trainingProgress: i <= 2 ? 95 + Math.random() * 5 : Math.floor(Math.random() * 100), // Higher training progress for real agents
+                    totalDecisions: i <= 2 ? Math.floor(5000 + Math.random() * 45000) : Math.floor(1000 + Math.random() * 50000), // More decisions for real agents
+                    experienceLevel: experienceLevel,
                     createdAt: new Date(Date.now() - Math.random() * 365 * 24 * 60 * 60 * 1000).toISOString(),
                     lastTraining: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString(),
                     lastUpdate: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
                 },
                 learning: {
-                    currentlyLearning: Math.random() > 0.7,
-                    hoursLearned: Math.floor(100 + Math.random() * 2000),
-                    knowledgeBase: Math.floor(512 + Math.random() * 4096) * 1024, // in KB
-                    totalSessions: Math.floor(50 + Math.random() * 200)
+                    currentlyLearning: i <= 2 ? false : Math.random() > 0.7, // Real agents aren't currently learning (they're operational)
+                    hoursLearned: i <= 2 ? Math.floor(1500 + Math.random() * 1000) : Math.floor(100 + Math.random() * 2000), // More training for real agents
+                    knowledgeBase: i <= 2 ? Math.floor(2048 + Math.random() * 2048) * 1024 : Math.floor(512 + Math.random() * 4096) * 1024, // Larger knowledge base for real agents
+                    totalSessions: i <= 2 ? Math.floor(200 + Math.random() * 300) : Math.floor(50 + Math.random() * 200) // More sessions for real agents
                 },
-                capabilities: capabilities.sort(() => 0.5 - Math.random()).slice(0, 3 + Math.floor(Math.random() * 4))
+                capabilities: i === 1 ? 
+                    ['تحلیل چارت', 'شناسایی سیگنال', 'یادگیری ماشین', 'پیش‌بینی', 'آنالیز تکنیکال', 'تشخیص الگو'] :
+                    i === 2 ?
+                    ['محاسبه ریسک', 'بهینه‌سازی پرتفولیو', 'مدیریت زمان', 'تصمیم‌گیری', 'یادگیری ماشین', 'آنالیز ریسک'] :
+                    capabilities.sort(() => 0.5 - Math.random()).slice(0, 3 + Math.floor(Math.random() * 4))
             });
         }
         return agents;
@@ -1221,11 +1245,36 @@ export default class AITab {
             const agent = this.state.agents.find(a => a.id === agentId);
             const newStatus = agent.status === 'active' ? 'offline' : 'active';
             
+            // Handle real agents (01, 02) differently
+            if (agentId === 'agent_01') {
+                // Technical Analysis Agent
+                if (typeof window.TechnicalAnalysisAgent !== 'undefined') {
+                    if (newStatus === 'active') {
+                        console.log('🎯 Activating Technical Analysis Agent...');
+                        // Agent is already loaded and initialized
+                    } else {
+                        console.log('⏸️ Deactivating Technical Analysis Agent...');
+                    }
+                }
+            } else if (agentId === 'agent_02') {
+                // Risk Management Agent
+                if (typeof window.RiskManagementAgent !== 'undefined') {
+                    if (newStatus === 'active') {
+                        console.log('⚡ Activating Risk Management Agent...');
+                        // Agent is already loaded and initialized
+                    } else {
+                        console.log('⏸️ Deactivating Risk Management Agent...');
+                    }
+                }
+            }
+            
             // Update local state
             agent.status = newStatus;
             this.updateCurrentView();
             
-            alert(`ایجنت ${agent.name} ${newStatus === 'active' ? 'فعال' : 'غیرفعال'} شد`);
+            const statusText = newStatus === 'active' ? 'فعال' : 'غیرفعال';
+            alert(`ایجنت ${agent.name} ${statusText} شد`);
+            
         } catch (error) {
             console.error('Error toggling agent status:', error);
             alert('خطا در تغییر وضعیت ایجنت');
@@ -1235,10 +1284,38 @@ export default class AITab {
     async startAgentTraining(agentId) {
         try {
             const agent = this.state.agents.find(a => a.id === agentId);
+            
+            // Handle real agents training
+            if (agentId === 'agent_01') {
+                // Technical Analysis Agent Training
+                if (typeof window.TechnicalAnalysisAgent !== 'undefined') {
+                    console.log('📊 Starting Technical Analysis Agent training...');
+                    // In real implementation, would call agent.startTraining()
+                }
+            } else if (agentId === 'agent_02') {
+                // Risk Management Agent Training
+                if (typeof window.RiskManagementAgent !== 'undefined') {
+                    console.log('⚖️ Starting Risk Management Agent training...');
+                    // In real implementation, would call agent.startTraining()
+                }
+            }
+            
             agent.status = 'training';
             this.updateCurrentView();
             
             alert(`آموزش ایجنت ${agent.name} شروع شد`);
+            
+            // Simulate training completion after 5 seconds for real agents
+            if (agentId === 'agent_01' || agentId === 'agent_02') {
+                setTimeout(() => {
+                    agent.status = 'active';
+                    agent.performance.trainingProgress = Math.min(100, agent.performance.trainingProgress + 2);
+                    agent.performance.accuracy = Math.min(95, agent.performance.accuracy + 0.5);
+                    this.updateCurrentView();
+                    console.log(`✅ Agent ${agentId} training completed`);
+                }, 5000);
+            }
+            
         } catch (error) {
             console.error('Error starting agent training:', error);
             alert('خطا در شروع آموزش');
