@@ -3699,80 +3699,9 @@ class SettingsModule {
                 </div>
             `;
         }
-            hotWalletsList.innerHTML = `
-                <!-- MetaMask -->
-                <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <img src="https://metamask.io/favicon.ico" alt="MetaMask" class="w-8 h-8 rounded">
-                        <div>
-                            <div class="font-medium text-white">MetaMask</div>
-                            <div class="text-xs text-gray-400">0x1234...5678</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <div class="text-sm font-medium text-white">$23,456</div>
-                            <div class="text-xs text-orange-400">ETH, USDT, BNB</div>
-                        </div>
-                        <div class="w-2 h-2 bg-green-400 rounded-full" title="متصل"></div>
-                    </div>
-                </div>
-
-                <!-- Trust Wallet -->
-                <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <img src="https://trustwallet.com/favicon.ico" alt="Trust Wallet" class="w-8 h-8 rounded">
-                        <div>
-                            <div class="font-medium text-white">Trust Wallet</div>
-                            <div class="text-xs text-gray-400">0x9876...4321</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <div class="text-sm font-medium text-white">$18,942</div>
-                            <div class="text-xs text-blue-400">BTC, ETH, ADA</div>
-                        </div>
-                        <div class="w-2 h-2 bg-green-400 rounded-full" title="متصل"></div>
-                    </div>
-                </div>
-
-                <!-- Binance Wallet -->
-                <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <img src="https://binance.com/favicon.ico" alt="Binance" class="w-8 h-8 rounded">
-                        <div>
-                            <div class="font-medium text-white">Binance Wallet</div>
-                            <div class="text-xs text-gray-400">0x5555...7777</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <div class="text-sm font-medium text-white">$8,341</div>
-                            <div class="text-xs text-yellow-400">BNB, BUSD, CAKE</div>
-                        </div>
-                        <div class="w-2 h-2 bg-green-400 rounded-full" title="متصل"></div>
-                    </div>
-                </div>
-
-                <!-- Coinbase Wallet -->
-                <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                    <div class="flex items-center gap-3">
-                        <img src="https://coinbase.com/favicon.ico" alt="Coinbase" class="w-8 h-8 rounded">
-                        <div>
-                            <div class="font-medium text-white">Coinbase Wallet</div>
-                            <div class="text-xs text-gray-400">0x3333...9999</div>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                        <div class="text-right">
-                            <div class="text-sm font-medium text-white">$2,823</div>
-                            <div class="text-xs text-purple-400">USDC, ETH</div>
-                        </div>
-                        <div class="w-2 h-2 bg-yellow-400 rounded-full" title="در حال اتصال"></div>
-                    </div>
-                </div>
-            `;
-            
+        
+        // Simulate loading delay and update UI
+        setTimeout(() => {
             this.showToast('موجودی کیف پول‌های هات بروزرسانی شد', 'success');
         }, 1500);
     }
@@ -4427,6 +4356,14 @@ class SettingsModule {
                 </div>
             `;
             document.body.appendChild(modal);
+            }
+        } catch (error) {
+            console.error('Error testing cold wallets:', error);
+            this.showToast('خطا در تست اتصال کلد والت‌ها', 'error');
+        }
+        
+        setTimeout(() => {
+            // Additional processing if needed
         }, 1500);
     }
 
