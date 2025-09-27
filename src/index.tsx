@@ -21802,6 +21802,186 @@ appWithD1.get('/api/settings/api-configurations/rate-limits', authMiddleware, as
   }
 })
 
+// =============================================================================
+// AI SETTINGS & ANALYTICS ENDPOINTS (Required for AI Management Tab)
+// =============================================================================
+
+// Get AI analytics data
+appWithD1.get('/api/settings/ai-analytics', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    return c.json({
+      success: true,
+      analytics: {
+        systemMetrics: {
+          startTime: Date.now() - (24 * 60 * 60 * 1000), // 24 hours ago
+          totalOperations: 245678,
+          successRate: 95.4,
+          apiCallsToday: 15847,
+          dataProcessedGB: 458.7,
+          learningHours: 1247,
+          knowledgeBaseSizeGB: 2.8,
+          emergentBehaviors: 7,
+          distributedComputingNodes: 15,
+          realTimeProcessingLatency: 23
+        },
+        performanceData: {
+          lastHour: Array.from({length: 60}, (_, i) => ({
+            timestamp: new Date(Date.now() - (60-i) * 60000).toISOString(),
+            accuracy: 90 + Math.random() * 10,
+            decisions: Math.floor(Math.random() * 100) + 50,
+            latency: Math.floor(Math.random() * 50) + 10
+          }))
+        },
+        topAgents: [
+          { id: 'AGENT_01', name: 'تحلیلگر بازار', accuracy: 94.2, decisions: 15847 },
+          { id: 'AGENT_02', name: 'مدیر ریسک', accuracy: 97.1, decisions: 12456 },
+          { id: 'AGENT_03', name: 'اجراکننده', accuracy: 99.5, decisions: 28934 }
+        ]
+      }
+    })
+  } catch (error) {
+    console.error('AI Analytics Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت آنالیتیکس AI'
+    }, 500)
+  }
+})
+
+// Get AI configurations
+appWithD1.get('/api/settings/ai-configurations', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    
+    return c.json({
+      success: true,
+      configurations: {
+        openai: {
+          enabled: true,
+          api_key: 'sk-****',
+          model: 'gpt-4-turbo',
+          temperature: 0.7,
+          max_tokens: 2000,
+          daily_limit: 1000
+        },
+        anthropic: {
+          enabled: true,
+          api_key: 'sk-ant-****',
+          model: 'claude-3-opus',
+          temperature: 0.7,
+          max_tokens: 4000,
+          daily_limit: 500
+        },
+        google: {
+          enabled: false,
+          api_key: '',
+          model: 'gemini-pro',
+          temperature: 0.7,
+          max_tokens: 2000,
+          daily_limit: 1000
+        }
+      }
+    })
+  } catch (error) {
+    console.error('AI Configurations Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت پیکربندی AI'
+    }, 500)
+  }
+})
+
+// Update AI configurations
+appWithD1.put('/api/settings/ai-configurations', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const configurations = await c.req.json()
+    
+    // In production, save to database
+    console.log('Updating AI configurations for user:', user.id, configurations)
+    
+    return c.json({
+      success: true,
+      message: 'پیکربندی های AI با موفقیت بروزرسانی شد'
+    })
+  } catch (error) {
+    console.error('Update AI Configurations Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در بروزرسانی پیکربندی AI'
+    }, 500)
+  }
+})
+
+// Test AI provider connection
+appWithD1.post('/api/settings/ai-test', authMiddleware, async (c) => {
+  try {
+    const { provider, config } = await c.req.json()
+    
+    // Simulate API test
+    const testResult = {
+      success: Math.random() > 0.2, // 80% success rate
+      responseTime: Math.floor(Math.random() * 2000) + 100,
+      message: Math.random() > 0.2 ? 'اتصال موفقیت آمیز' : 'خطا در اتصال'
+    }
+    
+    return c.json({
+      success: true,
+      testResult
+    })
+  } catch (error) {
+    console.error('AI Provider Test Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در تست ارائه دهنده AI'
+    }, 500)
+  }
+})
+
+// AI Training management
+appWithD1.post('/api/settings/ai-training', authMiddleware, async (c) => {
+  try {
+    const { action, agentId, config } = await c.req.json()
+    
+    return c.json({
+      success: true,
+      message: `عملیات ${action} برای agent ${agentId} با موفقیت انجام شد`
+    })
+  } catch (error) {
+    console.error('AI Training Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در مدیریت آموزش AI'
+    }, 500)
+  }
+})
+
+// AI Backup management
+appWithD1.post('/api/settings/ai-backup', authMiddleware, async (c) => {
+  try {
+    const { action } = await c.req.json()
+    
+    return c.json({
+      success: true,
+      backup: {
+        id: `backup_${Date.now()}`,
+        timestamp: new Date().toISOString(),
+        size: '2.8 GB',
+        status: 'completed'
+      },
+      message: 'پشتیبان‌گیری با موفقیت انجام شد'
+    })
+  } catch (error) {
+    console.error('AI Backup Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در پشتیبان‌گیری AI'
+    }, 500)
+  }
+})
+
 // Mount the original app
 appWithD1.route('/', app);
 

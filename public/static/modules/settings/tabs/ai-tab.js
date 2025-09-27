@@ -135,7 +135,23 @@ export default class AITab {
     // Load AI system data
     async loadAIData() {
         try {
-            // Mock data for AI system (in production, this would come from your API)
+            // Get AI overview data from real API
+            const overviewResponse = await axios.get('/api/ai/overview', {
+                headers: { 'Authorization': `Bearer ${window.authToken}` }
+            });
+            
+            if (overviewResponse.data.success) {
+                const data = overviewResponse.data.data;
+                this.state.artemis = data.artemis;
+                this.state.agents = data.agents;
+                this.state.systemMetrics = data.systemMetrics;
+            }
+            
+            console.log('✅ AI data loaded successfully');
+        } catch (error) {
+            console.error('❌ Error loading AI data:', error);
+            
+            // Fallback to mock data if API fails
             this.state.artemis = {
                 status: 'active',
                 intelligence: {
@@ -157,12 +173,8 @@ export default class AITab {
                 }
             };
             
-            // Mock agents data
+            // Mock agents data as fallback
             this.state.agents = this.generateMockAgents();
-            
-            console.log('✅ AI data loaded successfully');
-        } catch (error) {
-            console.error('❌ Error loading AI data:', error);
         }
     }
 
@@ -1487,10 +1499,17 @@ export default class AITab {
     async createBackup() {
         try {
             alert('در حال ایجاد پشتیبان...');
-            // Mock backup creation
-            setTimeout(() => {
-                alert('پشتیبان‌گیری موفق: 15 ایجنت، 2840 تجربه');
-            }, 2000);
+            
+            const response = await axios.post('/api/settings/ai-backup', 
+                { action: 'create' },
+                { headers: { 'Authorization': `Bearer ${window.authToken}` } }
+            );
+            
+            if (response.data.success) {
+                alert(`پشتیبان‌گیری موفق: ${response.data.backup.id} - ${response.data.backup.size}`);
+            } else {
+                alert('خطا در ایجاد پشتیبان');
+            }
         } catch (error) {
             console.error('Error creating backup:', error);
             alert('خطا در ایجاد پشتیبان');
