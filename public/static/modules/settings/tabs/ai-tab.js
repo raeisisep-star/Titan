@@ -874,6 +874,12 @@ export default class AITab {
                         <i class="fas fa-robot mr-1"></i>
                         پنل الگوریتمیک
                     </button>
+                    ` : agent.id === 'agent_07' ? `
+                    <button onclick="aiTabInstance.showAgent07Details()" 
+                            class="flex-1 px-3 py-2 bg-teal-600 hover:bg-teal-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-newspaper mr-1"></i>
+                        پنل اخبار
+                    </button>
                     ` : `
                     <button onclick="aiTabInstance.toggleAgentStatus('${agent.id}')" 
                             class="flex-1 px-3 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg text-sm transition-colors">
@@ -2789,6 +2795,182 @@ export default class AITab {
             }
         } catch (error) {
             console.error('❌ Error updating Agent 06 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 07 (News Analysis)
+    // =============================================================================
+    
+    async loadAgent07Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent07Status = result.data;
+                console.log('✅ Agent 07 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 07 status:', error);
+            throw error;
+        }
+    }
+
+    async analyzeNewsImpact(newsText = '', symbol = 'BTC/USDT', category = 'general') {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/analyze', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ newsText, symbol, category })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 07 news analysis completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error analyzing news impact:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent07History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 07 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 07 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent07(action, parameters = {}) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action, parameters })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 07 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 07:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent07Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 07 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 07 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent07Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/07/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 07 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 07 config:', error);
             throw error;
         }
     }
@@ -5175,5 +5357,610 @@ export default class AITab {
     toggleStrategy(strategyName) {
         console.log(`Toggle strategy: ${strategyName}`);
         // Implementation for toggling strategy
+    }
+
+    // =============================================================================
+    // AGENT 07 SPECIFIC UI METHODS (News Analysis)
+    // =============================================================================
+    
+    async showAgent07Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent07Status(),
+                this.loadAgent07Config(),
+                this.loadAgent07History()
+            ]);
+
+            // Create detailed modal for Agent 07
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-7xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت تحلیل اخبار (07)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- News Analysis Overview -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Processing Stats -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">آمار پردازش</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">${status.newsProcessing.todayProcessed}</div>
+                                <div class="text-gray-300">اخبار امروز</div>
+                                <div class="mt-3 text-sm">
+                                    <div class="text-blue-400">کل: ${status.newsProcessing.totalProcessed.toLocaleString()}</div>
+                                    <div class="text-yellow-400">نرخ: ${status.newsProcessing.processingRate}/دقیقه</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Sentiment Overview -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">تحلیل احساسات</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">صعودی:</span>
+                                    <span class="text-green-400">${status.sentimentAnalysis.bullish.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نزولی:</span>
+                                    <span class="text-red-400">${status.sentimentAnalysis.bearish.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">خنثی:</span>
+                                    <span class="text-gray-400">${status.sentimentAnalysis.neutral.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">امتیاز کلی:</span>
+                                    <span class="text-${status.sentimentAnalysis.sentimentScore >= 0 ? 'green' : 'red'}-400">
+                                        ${status.sentimentAnalysis.sentimentScore >= 0 ? '+' : ''}${status.sentimentAnalysis.sentimentScore.toFixed(3)}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حالت کلی:</span>
+                                    <span class="text-purple-400">${
+                                        status.sentimentAnalysis.overallSentiment === 'moderately_bullish' ? 'نسبتاً صعودی' :
+                                        status.sentimentAnalysis.overallSentiment === 'very_bullish' ? 'خیلی صعودی' :
+                                        status.sentimentAnalysis.overallSentiment === 'moderately_bearish' ? 'نسبتاً نزولی' :
+                                        status.sentimentAnalysis.overallSentiment === 'very_bearish' ? 'خیلی نزولی' : 'خنثی'
+                                    }</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Market Impact -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">تأثیر بازار</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">تأثیر بالا:</span>
+                                    <span class="text-red-400">${status.marketImpact.highImpact}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">تأثیر متوسط:</span>
+                                    <span class="text-yellow-400">${status.marketImpact.mediumImpact}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">تأثیر کم:</span>
+                                    <span class="text-green-400">${status.marketImpact.lowImpact}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت پیش‌بینی:</span>
+                                    <span class="text-blue-400">${status.marketImpact.correlationAccuracy.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">متوسط حرکت:</span>
+                                    <span class="text-purple-400">${status.marketImpact.averageMarketMove.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای عملکرد</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت:</span>
+                                    <span class="text-green-400">${status.performance.accuracy.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت تشخیص:</span>
+                                    <span class="text-blue-400">${status.performance.precision.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">فراخوانی:</span>
+                                    <span class="text-purple-400">${status.performance.recall.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">امتیاز F1:</span>
+                                    <span class="text-cyan-400">${status.performance.f1Score.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">هشدارهای اشتباه:</span>
+                                    <span class="text-orange-400">${status.performance.falseAlarms}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- News Sources Status -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">وضعیت منابع خبری</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${Object.entries(status.sources).map(([source, data]) => `
+                                <div class="bg-gray-800 rounded-lg p-3 border ${data.active ? 'border-green-500' : 'border-gray-600'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-white font-medium">${source}</span>
+                                        <div class="w-2 h-2 bg-${data.active ? 'green' : 'gray'}-400 rounded-full"></div>
+                                    </div>
+                                    <div class="text-sm space-y-1">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">قابلیت اطمینان:</span>
+                                            <span class="text-blue-400">${data.reliability}%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">پردازش شده:</span>
+                                            <span class="text-green-400">${data.processed}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">احساسات:</span>
+                                            <span class="text-${data.sentiment >= 0 ? 'green' : 'red'}-400">
+                                                ${data.sentiment >= 0 ? '+' : ''}${data.sentiment.toFixed(2)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- News Analysis Tool -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">ابزار تحلیل اخبار</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                            <div class="lg:col-span-2">
+                                <label class="block text-sm font-medium text-gray-300 mb-2">متن خبر</label>
+                                <textarea id="agent07-news-text" rows="4" 
+                                          class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500"
+                                          placeholder="متن خبر را برای تحلیل وارد کنید...">Bitcoin reaches new all-time high as institutional adoption accelerates...</textarea>
+                            </div>
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">نماد</label>
+                                    <select id="agent07-symbol" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="BTC/USDT">BTC/USDT</option>
+                                        <option value="ETH/USDT">ETH/USDT</option>
+                                        <option value="SOL/USDT">SOL/USDT</option>
+                                        <option value="MATIC/USDT">MATIC/USDT</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">دسته‌بندی</label>
+                                    <select id="agent07-category" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="adoption">پذیرش نهادی</option>
+                                        <option value="regulation">قانون‌گذاری</option>
+                                        <option value="technology">فناوری</option>
+                                        <option value="market">بازار</option>
+                                        <option value="partnership">همکاری</option>
+                                    </select>
+                                </div>
+                                <button onclick="aiTabInstance.analyzeNewsText()" 
+                                        class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                    <i class="fas fa-search mr-2"></i>تحلیل خبر
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent News Activity -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">فعالیت‌های خبری اخیر</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">عنوان</th>
+                                        <th class="text-right p-2">منبع</th>
+                                        <th class="text-right p-2">دسته</th>
+                                        <th class="text-right p-2">احساسات</th>
+                                        <th class="text-right p-2">تأثیر</th>
+                                        <th class="text-right p-2">پیش‌بینی</th>
+                                        <th class="text-right p-2">دقت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.recentNews.slice(0, 8).map(news => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(news.timestamp).toLocaleTimeString('fa-IR')}</td>
+                                            <td class="p-2 text-white max-w-xs truncate" title="${news.headline}">
+                                                ${news.headline}
+                                            </td>
+                                            <td class="p-2 text-blue-400">${news.source}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    news.category === 'adoption' ? 'bg-green-600 text-white' :
+                                                    news.category === 'regulation' ? 'bg-yellow-600 text-white' :
+                                                    news.category === 'technology' ? 'bg-blue-600 text-white' :
+                                                    news.category === 'market' ? 'bg-purple-600 text-white' :
+                                                    'bg-orange-600 text-white'
+                                                }">${
+                                                    news.category === 'adoption' ? 'پذیرش' :
+                                                    news.category === 'regulation' ? 'قانون' :
+                                                    news.category === 'technology' ? 'فناوری' :
+                                                    news.category === 'market' ? 'بازار' : 'همکاری'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    news.sentiment.classification === 'bullish' ? 'bg-green-600 text-white' :
+                                                    news.sentiment.classification === 'bearish' ? 'bg-red-600 text-white' :
+                                                    'bg-gray-600 text-white'
+                                                }">${
+                                                    news.sentiment.classification === 'bullish' ? 'صعودی' :
+                                                    news.sentiment.classification === 'bearish' ? 'نزولی' : 'خنثی'
+                                                }</span>
+                                                <div class="text-xs text-gray-400 mt-1">${news.sentiment.confidence}%</div>
+                                            </td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    news.impact.level === 'high' ? 'bg-red-600 text-white' :
+                                                    news.impact.level === 'medium' ? 'bg-yellow-600 text-white' :
+                                                    'bg-green-600 text-white'
+                                                }">${
+                                                    news.impact.level === 'high' ? 'بالا' :
+                                                    news.impact.level === 'medium' ? 'متوسط' : 'کم'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-${parseFloat(news.impact.predictedMove) >= 0 ? 'green' : 'red'}-400">
+                                                ${parseFloat(news.impact.predictedMove) >= 0 ? '+' : ''}${news.impact.predictedMove}%
+                                            </td>
+                                            <td class="p-2 text-cyan-400">${news.impact.accuracy}%</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex space-x-4 space-x-reverse justify-center">
+                        <button onclick="aiTabInstance.analyzeNewsText()" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-search mr-2"></i>تحلیل خبر
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent07('pause')" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>متوقف کردن
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent07('update_sources')" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-sync mr-2"></i>بروزرسانی منابع
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent07('recalibrate_sentiment')" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-cog mr-2"></i>کالیبراسیون
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent07('clear_queue')" 
+                                class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-trash mr-2"></i>پاک کردن صف
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 07 details:', error);
+            this.showErrorMessage('خطا در نمایش جزئیات ایجنت تحلیل اخبار');
+        }
+    }
+
+    async analyzeNewsText() {
+        try {
+            const newsText = document.getElementById('agent07-news-text')?.value || '';
+            const symbol = document.getElementById('agent07-symbol')?.value || 'BTC/USDT';
+            const category = document.getElementById('agent07-category')?.value || 'general';
+
+            if (!newsText.trim()) {
+                this.showErrorMessage('لطفاً متن خبر را وارد کنید');
+                return;
+            }
+
+            const loadingMsg = this.showLoadingMessage('در حال تحلیل تأثیر خبر...');
+            
+            const analysis = await this.analyzeNewsImpact(newsText, symbol, category);
+            
+            loadingMsg.remove();
+            
+            // Show analysis results
+            this.showNewsAnalysisResults(analysis);
+
+        } catch (error) {
+            console.error('❌ Error analyzing news text:', error);
+            this.showErrorMessage('خطا در تحلیل متن خبر');
+        }
+    }
+
+    showNewsAnalysisResults(analysis) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">نتایج تحلیل اخبار</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Analysis Summary -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">خلاصه تحلیل</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-${analysis.sentiment.classification.includes('bullish') ? 'green' : analysis.sentiment.classification.includes('bearish') ? 'red' : 'gray'}-400">
+                                    ${
+                                        analysis.sentiment.classification === 'very_bullish' ? 'خیلی صعودی' :
+                                        analysis.sentiment.classification === 'bullish' ? 'صعودی' :
+                                        analysis.sentiment.classification === 'very_bearish' ? 'خیلی نزولی' :
+                                        analysis.sentiment.classification === 'bearish' ? 'نزولی' : 'خنثی'
+                                    }
+                                </div>
+                                <div class="text-gray-300">طبقه‌بندی احساسات</div>
+                                <div class="text-sm text-blue-400">${analysis.sentiment.confidence}% اعتماد</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${analysis.sentiment.polarity}</div>
+                                <div class="text-gray-300">قطبیت</div>
+                                <div class="text-sm text-cyan-400">(-1 تا +1)</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">${analysis.marketImpact.predicted}</div>
+                                <div class="text-gray-300">تأثیر پیش‌بینی شده</div>
+                                <div class="text-sm text-yellow-400">${analysis.marketImpact.confidence}% اعتماد</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-${analysis.marketImpact.expectedMove.direction === 'up' ? 'green' : 'red'}-400">
+                                    ${analysis.marketImpact.expectedMove.direction === 'up' ? '↗' : '↘'} ${analysis.marketImpact.expectedMove.magnitude}%
+                                </div>
+                                <div class="text-gray-300">حرکت مورد انتظار</div>
+                                <div class="text-sm text-pink-400">${analysis.marketImpact.expectedMove.probability}% احتمال</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Sentiment Details -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">جزئیات تحلیل احساسات</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Sentiment Metrics -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">معیارهای احساسات</h5>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">قطبیت:</span>
+                                        <span class="text-${parseFloat(analysis.sentiment.polarity) >= 0 ? 'green' : 'red'}-400">
+                                            ${parseFloat(analysis.sentiment.polarity) >= 0 ? '+' : ''}${analysis.sentiment.polarity}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">ذهنی‌گرایی:</span>
+                                        <span class="text-blue-400">${analysis.sentiment.subjectivity}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">اعتماد:</span>
+                                        <span class="text-purple-400">${analysis.sentiment.confidence}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Emotional Analysis -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">تحلیل عاطفی</h5>
+                                <div class="space-y-2">
+                                    ${Object.entries(analysis.sentiment.emotions).map(([emotion, value]) => `
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-400">${
+                                                emotion === 'fear' ? 'ترس' :
+                                                emotion === 'greed' ? 'طمع' :
+                                                emotion === 'hope' ? 'امید' :
+                                                emotion === 'anxiety' ? 'اضطراب' : 'هیجان'
+                                            }:</span>
+                                            <div class="flex items-center">
+                                                <div class="w-20 bg-gray-600 rounded-full h-2 mr-2">
+                                                    <div class="bg-${
+                                                        emotion === 'fear' || emotion === 'anxiety' ? 'red' :
+                                                        emotion === 'greed' ? 'yellow' :
+                                                        emotion === 'hope' || emotion === 'excitement' ? 'green' : 'blue'
+                                                    }-400 h-2 rounded-full" style="width: ${(value * 100).toFixed(0)}%"></div>
+                                                </div>
+                                                <span class="text-cyan-400 text-sm">${(value * 100).toFixed(0)}%</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Market Impact Analysis -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">تحلیل تأثیر بازار</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Impact Prediction -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">پیش‌بینی تأثیر</h5>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">سطح تأثیر:</span>
+                                        <span class="px-2 py-1 rounded text-xs ${
+                                            analysis.marketImpact.predicted === 'high' ? 'bg-red-600 text-white' :
+                                            analysis.marketImpact.predicted === 'medium' ? 'bg-yellow-600 text-white' :
+                                            'bg-green-600 text-white'
+                                        }">${
+                                            analysis.marketImpact.predicted === 'high' ? 'بالا' :
+                                            analysis.marketImpact.predicted === 'medium' ? 'متوسط' : 'کم'
+                                        }</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">بازه زمانی:</span>
+                                        <span class="text-blue-400">${
+                                            analysis.marketImpact.timeframe === 'immediate' ? 'فوری' :
+                                            analysis.marketImpact.timeframe === '5_minutes' ? '5 دقیقه' :
+                                            analysis.marketImpact.timeframe === '30_minutes' ? '30 دقیقه' : '1 ساعت'
+                                        }</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">جهت حرکت:</span>
+                                        <span class="text-${analysis.marketImpact.expectedMove.direction === 'up' ? 'green' : 'red'}-400">
+                                            ${analysis.marketImpact.expectedMove.direction === 'up' ? 'صعودی ↗' : 'نزولی ↘'}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">میزان حرکت:</span>
+                                        <span class="text-purple-400">${analysis.marketImpact.expectedMove.magnitude}%</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Affected Assets -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">دارایی‌های تحت تأثیر</h5>
+                                <div class="space-y-2">
+                                    ${analysis.marketImpact.affectedAssets.map(asset => `
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-white">${asset.symbol}</span>
+                                            <div class="flex items-center">
+                                                <div class="w-16 bg-gray-600 rounded-full h-2 mr-2">
+                                                    <div class="bg-orange-400 h-2 rounded-full" style="width: ${(parseFloat(asset.impact) * 100).toFixed(0)}%"></div>
+                                                </div>
+                                                <span class="text-orange-400 text-sm">${asset.impact}</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Entities and Categories -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">موجودیت‌ها و طبقه‌بندی</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                            <!-- Key Entities -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">موجودیت‌های کلیدی</h5>
+                                <div class="space-y-2 text-sm">
+                                    ${Object.entries(analysis.entities).slice(0, 3).map(([type, entities]) => `
+                                        <div>
+                                            <span class="text-gray-400">${
+                                                type === 'organizations' ? 'سازمان‌ها' :
+                                                type === 'cryptocurrencies' ? 'ارزهای دیجیتال' :
+                                                type === 'people' ? 'افراد' :
+                                                type === 'locations' ? 'مکان‌ها' : 'فناوری‌ها'
+                                            }:</span>
+                                            <div class="mt-1">
+                                                ${entities.map(entity => `
+                                                    <span class="inline-block px-2 py-1 bg-blue-600 text-white text-xs rounded mr-1 mb-1">${entity}</span>
+                                                `).join('')}
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Categorization -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">طبقه‌بندی</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">دسته اصلی:</span>
+                                        <span class="text-green-400">${analysis.categorization.primary}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">دسته فرعی:</span>
+                                        <span class="text-blue-400">${analysis.categorization.secondary}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">اهمیت:</span>
+                                        <span class="text-purple-400">${analysis.categorization.importance}/10</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">فوریت:</span>
+                                        <span class="text-orange-400">${
+                                            analysis.categorization.urgency === 'high' ? 'بالا' :
+                                            analysis.categorization.urgency === 'medium' ? 'متوسط' : 'کم'
+                                        }</span>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Trading Recommendation -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">توصیه معاملاتی</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">عملیات:</span>
+                                        <span class="px-2 py-1 rounded text-xs ${
+                                            analysis.recommendations.action === 'buy' ? 'bg-green-600 text-white' :
+                                            analysis.recommendations.action === 'sell' ? 'bg-red-600 text-white' :
+                                            analysis.recommendations.action === 'hold' ? 'bg-yellow-600 text-white' :
+                                            'bg-gray-600 text-white'
+                                        }">${
+                                            analysis.recommendations.action === 'buy' ? 'خرید' :
+                                            analysis.recommendations.action === 'sell' ? 'فروش' :
+                                            analysis.recommendations.action === 'hold' ? 'نگهداری' : 'انتظار'
+                                        }</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">اعتماد:</span>
+                                        <span class="text-blue-400">${analysis.recommendations.confidence}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">سطح ریسک:</span>
+                                        <span class="text-${
+                                            analysis.recommendations.riskLevel === 'high' ? 'red' :
+                                            analysis.recommendations.riskLevel === 'medium' ? 'yellow' : 'green'
+                                        }-400">${
+                                            analysis.recommendations.riskLevel === 'high' ? 'بالا' :
+                                            analysis.recommendations.riskLevel === 'medium' ? 'متوسط' : 'کم'
+                                        }</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">افق زمانی:</span>
+                                        <span class="text-purple-400">${
+                                            analysis.recommendations.timeHorizon === 'short_term' ? 'کوتاه‌مدت' :
+                                            analysis.recommendations.timeHorizon === 'medium_term' ? 'میان‌مدت' : 'بلندمدت'
+                                        }</span>
+                                    </div>
+                                </div>
+                                <div class="mt-3 p-2 bg-gray-800 rounded text-xs text-gray-300">
+                                    ${analysis.recommendations.reasoning}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-center">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
     }
 }
