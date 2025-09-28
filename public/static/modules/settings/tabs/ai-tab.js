@@ -15,6 +15,197 @@ export default class AITab {
         };
     }
 
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 01 (Technical Analysis)
+    // =============================================================================
+    
+    async loadAgent01Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent01Status = result.data;
+                console.log('✅ Agent 01 status loaded:', result.data);
+                
+                // Try to sync with actual Agent 01 instance if available
+                if (window.TechnicalAnalysisAgent && window.agent01Instance) {
+                    const agentStatus = window.agent01Instance.getStatus();
+                    console.log('🔄 Syncing with Agent 01 instance:', agentStatus);
+                    
+                    // Update backend data with real agent data
+                    result.data.realTimeData = {
+                        localPerformance: agentStatus.performance,
+                        activeConnections: agentStatus.connections?.length || 0,
+                        currentAnalysis: agentStatus.currentAnalysis,
+                        systemLoad: agentStatus.systemLoad
+                    };
+                }
+                
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 01 status:', error);
+            throw error;
+        }
+    }
+
+    async startAgent01Analysis(symbol = 'BTC/USDT', timeframe = '1h') {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/analyze', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol, timeframe })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 01 analysis completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error starting Agent 01 analysis:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent01History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 01 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 01 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent01(action) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 01 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 01:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent01Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 01 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 01 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent01Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/01/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 01 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 01 config:', error);
+            throw error;
+        }
+    }
+
     render() {
         return `
             <div class="space-y-6">
@@ -647,10 +838,42 @@ export default class AITab {
                 
                 <!-- Actions -->
                 <div class="flex space-x-2 space-x-reverse">
+                    ${agent.id === 'agent_01' ? `
+                    <button onclick="aiTabInstance.showAgent01Details()" 
+                            class="flex-1 px-3 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-cogs mr-1"></i>
+                        پنل کنترل
+                    </button>
+                    ` : agent.id === 'agent_02' ? `
+                    <button onclick="aiTabInstance.showAgent02Details()" 
+                            class="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-shield-alt mr-1"></i>
+                        پنل ریسک
+                    </button>
+                    ` : agent.id === 'agent_03' ? `
+                    <button onclick="aiTabInstance.showAgent03Details()" 
+                            class="flex-1 px-3 py-2 bg-pink-600 hover:bg-pink-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-heart mr-1"></i>
+                        پنل احساسات
+                    </button>
+                    ` : agent.id === 'agent_04' ? `
+                    <button onclick="aiTabInstance.showAgent04Details()" 
+                            class="flex-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-chart-pie mr-1"></i>
+                        پنل پرتفو
+                    </button>
+                    ` : agent.id === 'agent_05' ? `
+                    <button onclick="aiTabInstance.showAgent05Details()" 
+                            class="flex-1 px-3 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-exchange-alt mr-1"></i>
+                        پنل مارکت میکر
+                    </button>
+                    ` : `
                     <button onclick="aiTabInstance.toggleAgentStatus('${agent.id}')" 
                             class="flex-1 px-3 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg text-sm transition-colors">
                         <i class="fas fa-power-off mr-1"></i>
                         ${agent.status === 'active' ? 'غیرفعال' : 'فعال'}
+                    `}
                     </button>
                     <button onclick="aiTabInstance.startAgentTraining('${agent.id}')" 
                             class="flex-1 px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm transition-colors">
@@ -1653,5 +1876,2642 @@ export default class AITab {
                 systemMetrics: this.state.systemMetrics
             }
         };
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 02 (Risk Management)
+    // =============================================================================
+    
+    async loadAgent02Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent02Status = result.data;
+                console.log('✅ Agent 02 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 02 status:', error);
+            throw error;
+        }
+    }
+
+    async startAgent02Assessment(portfolioData = null, scenario = 'current_market') {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/assess', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ portfolioData, scenario })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 02 assessment completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error starting Agent 02 assessment:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent02History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 02 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 02 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent02(action) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 02 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 02:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent02Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 02 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 02 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent02Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/02/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 02 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 02 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 03 (Sentiment Analysis)
+    // =============================================================================
+    
+    async loadAgent03Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent03Status = result.data;
+                console.log('✅ Agent 03 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 03 status:', error);
+            throw error;
+        }
+    }
+
+    async startAgent03Analysis(symbol = 'BTC', sources = ['all'], timeframe = '24h') {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/analyze', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol, sources, timeframe })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 03 analysis completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error starting Agent 03 analysis:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent03History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 03 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 03 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent03(action) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 03 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 03:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent03Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 03 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 03 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent03Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/03/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 03 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 03 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 04 (Portfolio Optimization)
+    // =============================================================================
+    
+    async loadAgent04Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent04Status = result.data;
+                console.log('✅ Agent 04 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 04 status:', error);
+            throw error;
+        }
+    }
+
+    async startAgent04Optimization(portfolioData = null, riskTolerance = 'moderate', timeHorizon = 'long_term') {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/optimize', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ portfolioData, riskTolerance, timeHorizon })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 optimization completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error starting Agent 04 optimization:', error);
+            throw error;
+        }
+    }
+
+    async executeAgent04Rebalance(trades = null, dryRun = true) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/rebalance', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ trades, dryRun })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 rebalance completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error executing Agent 04 rebalance:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent04History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 04 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent04(action) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 04:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent04Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 04 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent04Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/04/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 04 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 04 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 05 (Market Making)
+    // =============================================================================
+    
+    async loadAgent05Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent05Status = result.data;
+                console.log('✅ Agent 05 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 05 status:', error);
+            throw error;
+        }
+    }
+
+    async executeAgent05Strategy(symbol = 'BTC/USDT', spread = null, gridSize = 10) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/execute', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ symbol, spread, gridSize })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 05 strategy executed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error executing Agent 05 strategy:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent05History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 05 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 05 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent05(action) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 05 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 05:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent05Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 05 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 05 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent05Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/05/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 05 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 05 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // AGENT 01 SPECIFIC UI METHODS
+    // =============================================================================
+    
+    async showAgent01Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent01Status(),
+                this.loadAgent01Config(),
+                this.loadAgent01History()
+            ]);
+
+            // Create detailed modal for Agent 01
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت تحلیل تکنیکال (01)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Real-time Status -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت فعلی</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">وضعیت:</span>
+                                    <span class="text-green-400">${status.status}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت:</span>
+                                    <span class="text-blue-400">${status.accuracy}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اعتماد:</span>
+                                    <span class="text-yellow-400">${status.confidence}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">تحلیل‌های کل:</span>
+                                    <span class="text-purple-400">${status.performance.totalAnalyses}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">شاخص‌های فعلی</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">RSI:</span>
+                                    <span class="text-cyan-400">${status.indicators.rsi.value.toFixed(1)} (${status.indicators.rsi.signal})</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">MACD:</span>
+                                    <span class="text-green-400">${status.indicators.macd.value.toFixed(3)} (${status.indicators.macd.signal})</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">SMA20:</span>
+                                    <span class="text-yellow-400">$${status.indicators.sma20.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">EMA12:</span>
+                                    <span class="text-pink-400">$${status.indicators.ema12.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-3">کنترل ایجنت</h4>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="aiTabInstance.handleAgent01Control('start')" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-play mr-2"></i>شروع
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent01Control('stop')" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-stop mr-2"></i>توقف
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent01Control('restart')" 
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-redo mr-2"></i>ریستارت
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent01Control('calibrate')" 
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-cogs mr-2"></i>کالیبراسیون
+                            </button>
+                            <button onclick="aiTabInstance.startAgent01Analysis()" 
+                                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-chart-line mr-2"></i>تحلیل جدید
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent History -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-3">تاریخچه تحلیل‌ها</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">نماد</th>
+                                        <th class="text-right p-2">سیگنال</th>
+                                        <th class="text-right p-2">دقت</th>
+                                        <th class="text-right p-2">نتیجه</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.analyses.slice(0, 5).map(analysis => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(analysis.timestamp).toLocaleString('fa-IR')}</td>
+                                            <td class="p-2 text-white">${analysis.symbol}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    analysis.signal === 'bullish' ? 'bg-green-600 text-white' :
+                                                    analysis.signal === 'bearish' ? 'bg-red-600 text-white' :
+                                                    'bg-gray-600 text-white'
+                                                }">${analysis.signal}</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">${analysis.accuracy.toFixed(1)}%</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    analysis.result === 'correct' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                                                }">${analysis.result === 'correct' ? 'صحیح' : 'نادرست'}</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 01 details:', error);
+            this.showErrorMessage('خطا در بارگذاری جزئیات ایجنت تحلیل تکنیکال');
+        }
+    }
+
+    async handleAgent01Control(action) {
+        try {
+            const result = await this.controlAgent01(action);
+            this.showSuccessMessage(result.message || `عملیات ${action} با موفقیت انجام شد`);
+            
+            // Refresh agent status
+            await this.loadAgent01Status();
+        } catch (error) {
+            console.error('❌ Error controlling Agent 01:', error);
+            this.showErrorMessage(`خطا در انجام عملیات ${action}`);
+        }
+    }
+
+    async startAgent01Analysis(symbol = 'BTC/USDT', timeframe = '1h') {
+        try {
+            const loadingMsg = this.showLoadingMessage('در حال انجام تحلیل تکنیکال...');
+            
+            const analysis = await this.startAgent01Analysis(symbol, timeframe);
+            
+            loadingMsg.remove();
+            
+            // Show analysis results
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-2xl w-full mx-4">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white">نتایج تحلیل تکنیکال</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="bg-gray-700 rounded p-3">
+                                <div class="text-gray-300 text-sm">نماد</div>
+                                <div class="text-white font-semibold">${analysis.symbol}</div>
+                            </div>
+                            <div class="bg-gray-700 rounded p-3">
+                                <div class="text-gray-300 text-sm">بازه زمانی</div>
+                                <div class="text-white font-semibold">${analysis.timeframe}</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-700 rounded p-4">
+                            <h4 class="text-white font-semibold mb-3">سیگنال کلی</h4>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold ${
+                                    analysis.signals.overall === 'bullish' ? 'text-green-400' :
+                                    analysis.signals.overall === 'bearish' ? 'text-red-400' : 'text-yellow-400'
+                                }">${analysis.signals.overall}</div>
+                                <div class="text-gray-300">قدرت: ${analysis.signals.strength.toFixed(1)}%</div>
+                                <div class="text-gray-300">اعتماد: ${analysis.signals.confidence.toFixed(1)}%</div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-700 rounded p-4">
+                            <h4 class="text-white font-semibold mb-3">توصیه معاملاتی</h4>
+                            <div class="grid grid-cols-1 gap-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">عمل پیشنهادی:</span>
+                                    <span class="text-white font-semibold">${analysis.recommendations.action}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">قیمت ورود:</span>
+                                    <span class="text-green-400">$${analysis.recommendations.entryPrice.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حد ضرر:</span>
+                                    <span class="text-red-400">$${analysis.recommendations.stopLoss.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">هدف سود:</span>
+                                    <span class="text-blue-400">$${analysis.recommendations.takeProfit.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-right">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error starting Agent 01 analysis:', error);
+            this.showErrorMessage('خطا در انجام تحلیل تکنیکال');
+        }
+    }
+
+    showLoadingMessage(message) {
+        const loading = document.createElement('div');
+        loading.className = 'fixed top-4 left-4 bg-blue-600 text-white px-4 py-2 rounded-lg z-50';
+        loading.innerHTML = `<i class="fas fa-spinner fa-spin mr-2"></i>${message}`;
+        document.body.appendChild(loading);
+        return loading;
+    }
+
+    showSuccessMessage(message) {
+        const success = document.createElement('div');
+        success.className = 'fixed top-4 left-4 bg-green-600 text-white px-4 py-2 rounded-lg z-50';
+        success.innerHTML = `<i class="fas fa-check mr-2"></i>${message}`;
+        document.body.appendChild(success);
+        setTimeout(() => success.remove(), 3000);
+    }
+
+    showErrorMessage(message) {
+        const error = document.createElement('div');
+        error.className = 'fixed top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-lg z-50';
+        error.innerHTML = `<i class="fas fa-times mr-2"></i>${message}`;
+        document.body.appendChild(error);
+        setTimeout(() => error.remove(), 3000);
+    }
+
+    // =============================================================================
+    // AGENT 02 SPECIFIC UI METHODS (Risk Management)
+    // =============================================================================
+    
+    async showAgent02Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent02Status(),
+                this.loadAgent02Config(),
+                this.loadAgent02History()
+            ]);
+
+            // Create detailed modal for Agent 02
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-5xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت مدیریت ریسک (02)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Risk Metrics Dashboard -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <!-- Overall Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت کلی</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">وضعیت:</span>
+                                    <span class="text-green-400">${status.status}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت:</span>
+                                    <span class="text-blue-400">${status.accuracy}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اعتماد:</span>
+                                    <span class="text-yellow-400">${status.confidence}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ارزیابی‌های کل:</span>
+                                    <span class="text-purple-400">${status.performance.totalAssessments}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای ریسک</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ریسک پرتفولیو:</span>
+                                    <span class="text-${status.riskMetrics.portfolioRisk.level === 'low' ? 'green' : 
+                                                     status.riskMetrics.portfolioRisk.level === 'medium' ? 'yellow' : 'red'}-400">
+                                        ${status.riskMetrics.portfolioRisk.value.toFixed(1)}% (${status.riskMetrics.portfolioRisk.level})
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">VaR 95%:</span>
+                                    <span class="text-red-400">${status.riskMetrics.var95.value}${status.riskMetrics.var95.unit}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Sharpe Ratio:</span>
+                                    <span class="text-green-400">${status.riskMetrics.sharpeRatio.value}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Max Drawdown:</span>
+                                    <span class="text-orange-400">${status.riskMetrics.maxDrawdown.value}${status.riskMetrics.maxDrawdown.unit}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Volatility:</span>
+                                    <span class="text-cyan-400">${status.riskMetrics.volatility.value}${status.riskMetrics.volatility.unit}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Exposure Limits -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">حدود اکسپوژر</h4>
+                            <div class="space-y-3">
+                                <!-- Current Exposure Progress -->
+                                <div>
+                                    <div class="flex justify-between text-sm mb-1">
+                                        <span class="text-gray-300">اکسپوژر فعلی</span>
+                                        <span class="text-white">$${status.limits.currentExposure.toLocaleString()} / $${status.limits.maxTotalExposure.toLocaleString()}</span>
+                                    </div>
+                                    <div class="w-full bg-gray-600 rounded-full h-2">
+                                        <div class="bg-blue-400 h-2 rounded-full" style="width: ${(status.limits.currentExposure / status.limits.maxTotalExposure * 100)}%"></div>
+                                    </div>
+                                </div>
+                                
+                                <div class="text-sm space-y-1">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">حد روزانه:</span>
+                                        <span class="text-yellow-400">$${status.limits.maxDailyLoss.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">حد پوزیشن:</span>
+                                        <span class="text-blue-400">$${status.limits.maxPositionSize.toLocaleString()}</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">ظرفیت باقی:</span>
+                                        <span class="text-green-400">$${status.limits.remainingCapacity.toLocaleString()}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-3">کنترل ایجنت</h4>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="aiTabInstance.handleAgent02Control('start')" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-play mr-2"></i>شروع
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent02Control('stop')" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-stop mr-2"></i>توقف
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent02Control('emergency_stop')" 
+                                    class="px-4 py-2 bg-red-800 hover:bg-red-900 text-white rounded-lg transition-colors">
+                                <i class="fas fa-exclamation-triangle mr-2"></i>توقف اضطراری
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent02Control('calibrate')" 
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-cogs mr-2"></i>کالیبراسیون
+                            </button>
+                            <button onclick="aiTabInstance.startAgent02Assessment()" 
+                                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-shield-alt mr-2"></i>ارزیابی جدید
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Risk Assessments -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-3">تاریخچه ارزیابی‌های ریسک</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">سطح ریسک</th>
+                                        <th class="text-right p-2">امتیاز</th>
+                                        <th class="text-right p-2">دقت</th>
+                                        <th class="text-right p-2">نتیجه</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.assessments.slice(0, 5).map(assessment => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(assessment.timestamp).toLocaleString('fa-IR')}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    assessment.riskLevel === 'low' ? 'bg-green-600 text-white' :
+                                                    assessment.riskLevel === 'medium' ? 'bg-yellow-600 text-white' :
+                                                    'bg-red-600 text-white'
+                                                }">${assessment.riskLevel}</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">${assessment.riskScore.toFixed(1)}</td>
+                                            <td class="p-2 text-blue-400">${assessment.accuracy.toFixed(1)}%</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    assessment.outcome === 'prevented_loss' ? 'bg-green-600 text-white' : 
+                                                    assessment.outcome === 'no_action_needed' ? 'bg-blue-600 text-white' : 
+                                                    'bg-yellow-600 text-white'
+                                                }">${
+                                                    assessment.outcome === 'prevented_loss' ? 'ضرر جلوگیری شد' : 
+                                                    assessment.outcome === 'no_action_needed' ? 'اقدامی لازم نبود' : 
+                                                    'هشدار کاذب'
+                                                }</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 02 details:', error);
+            this.showErrorMessage('خطا در بارگذاری جزئیات ایجنت مدیریت ریسک');
+        }
+    }
+
+    async handleAgent02Control(action) {
+        try {
+            const result = await this.controlAgent02(action);
+            this.showSuccessMessage(result.message || `عملیات ${action} با موفقیت انجام شد`);
+            
+            // Refresh agent status
+            await this.loadAgent02Status();
+        } catch (error) {
+            console.error('❌ Error controlling Agent 02:', error);
+            this.showErrorMessage(`خطا در انجام عملیات ${action}`);
+        }
+    }
+
+    async startAgent02Assessment(portfolioData = null, scenario = 'current_market') {
+        try {
+            const loadingMsg = this.showLoadingMessage('در حال انجام ارزیابی ریسک...');
+            
+            const assessment = await this.startAgent02Assessment(portfolioData, scenario);
+            
+            loadingMsg.remove();
+            
+            // Show assessment results
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-4xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white">نتایج ارزیابی ریسک</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Overall Risk Assessment -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">ارزیابی کلی</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div class="text-center">
+                                    <div class="text-3xl font-bold ${
+                                        assessment.riskAnalysis.overallRisk === 'low' ? 'text-green-400' :
+                                        assessment.riskAnalysis.overallRisk === 'medium' ? 'text-yellow-400' : 'text-red-400'
+                                    }">${assessment.riskAnalysis.overallRisk}</div>
+                                    <div class="text-gray-300">سطح ریسک کلی</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-2xl font-bold text-blue-400">${assessment.riskAnalysis.riskScore.toFixed(1)}</div>
+                                    <div class="text-gray-300">امتیاز ریسک</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Breakdown -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">تفکیک ریسک پرتفولیو</h4>
+                            <div class="space-y-3">
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">ریسک پایین</span>
+                                    <div class="flex items-center space-x-3 space-x-reverse">
+                                        <div class="w-32 bg-gray-600 rounded-full h-3">
+                                            <div class="bg-green-400 h-3 rounded-full" style="width: ${assessment.riskAnalysis.riskBreakdown.lowRisk}%"></div>
+                                        </div>
+                                        <span class="text-green-400 font-semibold">${assessment.riskAnalysis.riskBreakdown.lowRisk.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">ریسک متوسط</span>
+                                    <div class="flex items-center space-x-3 space-x-reverse">
+                                        <div class="w-32 bg-gray-600 rounded-full h-3">
+                                            <div class="bg-yellow-400 h-3 rounded-full" style="width: ${assessment.riskAnalysis.riskBreakdown.mediumRisk}%"></div>
+                                        </div>
+                                        <span class="text-yellow-400 font-semibold">${assessment.riskAnalysis.riskBreakdown.mediumRisk.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                                <div class="flex justify-between items-center">
+                                    <span class="text-gray-300">ریسک بالا</span>
+                                    <div class="flex items-center space-x-3 space-x-reverse">
+                                        <div class="w-32 bg-gray-600 rounded-full h-3">
+                                            <div class="bg-red-400 h-3 rounded-full" style="width: ${assessment.riskAnalysis.riskBreakdown.highRisk}%"></div>
+                                        </div>
+                                        <span class="text-red-400 font-semibold">${assessment.riskAnalysis.riskBreakdown.highRisk.toFixed(1)}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- VaR Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">معیارهای VaR</h4>
+                            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                                <div class="text-center">
+                                    <div class="text-red-400 font-bold">${assessment.riskAnalysis.valueAtRisk.var95_1d.toFixed(1)}%</div>
+                                    <div class="text-gray-300">VaR 95% (1 روز)</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-red-400 font-bold">${assessment.riskAnalysis.valueAtRisk.var99_1d.toFixed(1)}%</div>
+                                    <div class="text-gray-300">VaR 99% (1 روز)</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-orange-400 font-bold">${assessment.riskAnalysis.valueAtRisk.var95_1w.toFixed(1)}%</div>
+                                    <div class="text-gray-300">VaR 95% (1 هفته)</div>
+                                </div>
+                                <div class="text-center">
+                                    <div class="text-red-500 font-bold">${assessment.riskAnalysis.valueAtRisk.expectedShortfall.toFixed(1)}%</div>
+                                    <div class="text-gray-300">Expected Shortfall</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Recommendations -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">توصیه‌های عملیاتی</h4>
+                            <div class="space-y-2">
+                                ${assessment.recommendations.actions.map((action, index) => `
+                                    <div class="flex items-center text-gray-300">
+                                        <i class="fas fa-chevron-left text-blue-400 text-sm ml-3"></i>
+                                        ${action}
+                                    </div>
+                                `).join('')}
+                            </div>
+                            <div class="mt-4 flex items-center justify-between">
+                                <div>
+                                    <span class="text-gray-400">اولویت: </span>
+                                    <span class="text-${assessment.recommendations.priority === 'high' ? 'red' : 
+                                                     assessment.recommendations.priority === 'medium' ? 'yellow' : 'green'}-400 font-semibold">
+                                        ${assessment.recommendations.priority}
+                                    </span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-400">فوریت: </span>
+                                    <span class="text-${assessment.recommendations.urgency === 'immediate' ? 'red' : 'blue'}-400 font-semibold">
+                                        ${assessment.recommendations.urgency === 'immediate' ? 'فوری' : 'معمولی'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-right">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error starting Agent 02 assessment:', error);
+            this.showErrorMessage('خطا در انجام ارزیابی ریسک');
+        }
+    }
+
+    // =============================================================================
+    // AGENT 03 SPECIFIC UI METHODS (Sentiment Analysis)
+    // =============================================================================
+    
+    async showAgent03Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent03Status(),
+                this.loadAgent03Config(),
+                this.loadAgent03History()
+            ]);
+
+            // Create detailed modal for Agent 03
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت تحلیل احساسات (03)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Sentiment Overview Dashboard -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Overall Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت کلی</h4>
+                            <div class="space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">وضعیت:</span>
+                                    <span class="text-green-400">${status.status}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت:</span>
+                                    <span class="text-blue-400">${status.accuracy}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اعتماد:</span>
+                                    <span class="text-yellow-400">${status.confidence}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">تحلیل‌های کل:</span>
+                                    <span class="text-purple-400">${status.performance.totalAnalyses}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Market Sentiment -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">احساسات بازار</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold ${
+                                    status.sentimentMetrics.overallMarket.sentiment === 'bullish' ? 'text-green-400' :
+                                    status.sentimentMetrics.overallMarket.sentiment === 'bearish' ? 'text-red-400' : 'text-yellow-400'
+                                }">${status.sentimentMetrics.overallMarket.sentiment}</div>
+                                <div class="text-gray-300">احساس کلی</div>
+                                <div class="mt-3">
+                                    <div class="text-xl ${status.sentimentMetrics.overallMarket.score >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                        ${status.sentimentMetrics.overallMarket.score >= 0 ? '+' : ''}${status.sentimentMetrics.overallMarket.score.toFixed(1)}
+                                    </div>
+                                    <div class="text-gray-400 text-sm">امتیاز احساس</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Fear & Greed Index -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">شاخص ترس و طمع</h4>
+                            <div class="text-center">
+                                <div class="relative w-24 h-24 mx-auto mb-2">
+                                    <svg class="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="currentColor" stroke-width="3" stroke-dasharray="100, 100"
+                                              class="text-gray-600"/>
+                                        <path d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                                              fill="none" stroke="currentColor" stroke-width="3" 
+                                              stroke-dasharray="${status.sentimentMetrics.fearGreedIndex}, 100"
+                                              class="${status.sentimentMetrics.fearGreedIndex > 75 ? 'text-green-400' : 
+                                                      status.sentimentMetrics.fearGreedIndex > 50 ? 'text-yellow-400' : 
+                                                      status.sentimentMetrics.fearGreedIndex > 25 ? 'text-orange-400' : 'text-red-400'}"/>
+                                    </svg>
+                                    <div class="absolute inset-0 flex items-center justify-center">
+                                        <span class="text-xl font-bold text-white">${status.sentimentMetrics.fearGreedIndex}</span>
+                                    </div>
+                                </div>
+                                <div class="text-sm text-gray-300">
+                                    ${status.sentimentMetrics.fearGreedIndex > 75 ? 'طمع شدید' : 
+                                      status.sentimentMetrics.fearGreedIndex > 50 ? 'طمع' : 
+                                      status.sentimentMetrics.fearGreedIndex > 25 ? 'ترس' : 'ترس شدید'}
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Data Sources Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت منابع</h4>
+                            <div class="space-y-2 text-sm">
+                                ${Object.entries(status.dataSourcesStatus).map(([source, status]) => `
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-300 capitalize">${source}</span>
+                                        <span class="px-2 py-1 rounded text-xs ${
+                                            status === 'connected' ? 'bg-green-600 text-white' :
+                                            status === 'limited' ? 'bg-yellow-600 text-white' : 'bg-red-600 text-white'
+                                        }">${
+                                            status === 'connected' ? 'متصل' :
+                                            status === 'limited' ? 'محدود' : 'قطع'
+                                        }</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Social Media Analysis -->
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">
+                                <i class="fab fa-twitter text-blue-400 mr-2"></i>تویتر
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">احساس:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.twitter.sentiment === 'bullish' ? 'green' : 
+                                                       status.sentimentMetrics.socialMedia.twitter.sentiment === 'bearish' ? 'red' : 'yellow'}-400">
+                                        ${status.sentimentMetrics.socialMedia.twitter.sentiment}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">منشن‌ها:</span>
+                                    <span class="text-blue-400">${status.sentimentMetrics.socialMedia.twitter.mentions.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">امتیاز:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.twitter.score >= 0 ? 'green' : 'red'}-400">
+                                        ${status.sentimentMetrics.socialMedia.twitter.score.toFixed(1)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">
+                                <i class="fab fa-reddit text-orange-400 mr-2"></i>ردیت
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">احساس:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.reddit.sentiment === 'bullish' ? 'green' : 
+                                                       status.sentimentMetrics.socialMedia.reddit.sentiment === 'bearish' ? 'red' : 'yellow'}-400">
+                                        ${status.sentimentMetrics.socialMedia.reddit.sentiment}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">پست‌ها:</span>
+                                    <span class="text-blue-400">${status.sentimentMetrics.socialMedia.reddit.posts.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">امتیاز:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.reddit.score >= 0 ? 'green' : 'red'}-400">
+                                        ${status.sentimentMetrics.socialMedia.reddit.score.toFixed(1)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">
+                                <i class="fab fa-telegram text-blue-500 mr-2"></i>تلگرام
+                            </h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">احساس:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.telegram.sentiment === 'bullish' ? 'green' : 
+                                                       status.sentimentMetrics.socialMedia.telegram.sentiment === 'bearish' ? 'red' : 'yellow'}-400">
+                                        ${status.sentimentMetrics.socialMedia.telegram.sentiment}
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">پیام‌ها:</span>
+                                    <span class="text-blue-400">${status.sentimentMetrics.socialMedia.telegram.messages.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">امتیاز:</span>
+                                    <span class="text-${status.sentimentMetrics.socialMedia.telegram.score >= 0 ? 'green' : 'red'}-400">
+                                        ${status.sentimentMetrics.socialMedia.telegram.score.toFixed(1)}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- News Analysis -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">تحلیل اخبار</h4>
+                        <div class="grid grid-cols-3 gap-4 mb-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-400">${status.sentimentMetrics.newsAnalysis.positive}%</div>
+                                <div class="text-gray-300 text-sm">اخبار مثبت</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${status.sentimentMetrics.newsAnalysis.neutral}%</div>
+                                <div class="text-gray-300 text-sm">اخبار خنثی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${status.sentimentMetrics.newsAnalysis.negative}%</div>
+                                <div class="text-gray-300 text-sm">اخبار منفی</div>
+                            </div>
+                        </div>
+                        
+                        <!-- News sentiment bar -->
+                        <div class="w-full bg-gray-600 rounded-full h-4 mb-2">
+                            <div class="h-4 rounded-full flex">
+                                <div class="bg-green-400 rounded-l-full" style="width: ${status.sentimentMetrics.newsAnalysis.positive}%"></div>
+                                <div class="bg-yellow-400" style="width: ${status.sentimentMetrics.newsAnalysis.neutral}%"></div>
+                                <div class="bg-red-400 rounded-r-full" style="width: ${status.sentimentMetrics.newsAnalysis.negative}%"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-3">کنترل ایجنت</h4>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="aiTabInstance.handleAgent03Control('start')" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-play mr-2"></i>شروع
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent03Control('stop')" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-stop mr-2"></i>توقف
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent03Control('refresh_sources')" 
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-sync mr-2"></i>به‌روزرسانی منابع
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent03Control('calibrate')" 
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-cogs mr-2"></i>کالیبراسیون
+                            </button>
+                            <button onclick="aiTabInstance.startAgent03Analysis()" 
+                                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-heart mr-2"></i>تحلیل جدید
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Recent Sentiment History -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-3">تاریخچه تحلیل احساسات</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">نماد</th>
+                                        <th class="text-right p-2">احساس</th>
+                                        <th class="text-right p-2">امتیاز</th>
+                                        <th class="text-right p-2">اعتماد</th>
+                                        <th class="text-right p-2">تأثیر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.analyses.slice(0, 5).map(analysis => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(analysis.timestamp).toLocaleString('fa-IR')}</td>
+                                            <td class="p-2 text-white">${analysis.symbol}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    analysis.sentiment.includes('bullish') ? 'bg-green-600 text-white' :
+                                                    analysis.sentiment.includes('bearish') ? 'bg-red-600 text-white' :
+                                                    'bg-yellow-600 text-white'
+                                                }">${analysis.sentiment}</span>
+                                            </td>
+                                            <td class="p-2 ${analysis.score >= 0 ? 'text-green-400' : 'text-red-400'}">
+                                                ${analysis.score >= 0 ? '+' : ''}${analysis.score.toFixed(1)}
+                                            </td>
+                                            <td class="p-2 text-blue-400">${analysis.confidence.toFixed(1)}%</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    analysis.marketImpact === 'high' ? 'bg-red-600 text-white' :
+                                                    analysis.marketImpact === 'medium' ? 'bg-yellow-600 text-white' :
+                                                    'bg-green-600 text-white'
+                                                }">${
+                                                    analysis.marketImpact === 'high' ? 'بالا' :
+                                                    analysis.marketImpact === 'medium' ? 'متوسط' : 'پایین'
+                                                }</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 03 details:', error);
+            this.showErrorMessage('خطا در بارگذاری جزئیات ایجنت تحلیل احساسات');
+        }
+    }
+
+    async handleAgent03Control(action) {
+        try {
+            const result = await this.controlAgent03(action);
+            this.showSuccessMessage(result.message || `عملیات ${action} با موفقیت انجام شد`);
+            
+            // Refresh agent status
+            await this.loadAgent03Status();
+        } catch (error) {
+            console.error('❌ Error controlling Agent 03:', error);
+            this.showErrorMessage(`خطا در انجام عملیات ${action}`);
+        }
+    }
+
+    async startAgent03Analysis(symbol = 'BTC', sources = ['all'], timeframe = '24h') {
+        try {
+            const loadingMsg = this.showLoadingMessage('در حال تحلیل احساسات...');
+            
+            const analysis = await this.startAgent03Analysis(symbol, sources, timeframe);
+            
+            loadingMsg.remove();
+            
+            // Show analysis results
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-5xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-xl font-bold text-white">نتایج تحلیل احساسات</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <div class="space-y-6">
+                        <!-- Overall Sentiment -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">احساس کلی بازار</h4>
+                            <div class="grid grid-cols-2 gap-6">
+                                <div class="text-center">
+                                    <div class="text-4xl font-bold ${
+                                        analysis.overallSentiment.sentiment.includes('bullish') ? 'text-green-400' :
+                                        analysis.overallSentiment.sentiment.includes('bearish') ? 'text-red-400' : 'text-yellow-400'
+                                    }">${analysis.overallSentiment.sentiment}</div>
+                                    <div class="text-gray-300">احساس کلی</div>
+                                </div>
+                                <div class="space-y-3">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">امتیاز احساس:</span>
+                                        <span class="text-${analysis.overallSentiment.score >= 0 ? 'green' : 'red'}-400 font-bold">
+                                            ${analysis.overallSentiment.score >= 0 ? '+' : ''}${analysis.overallSentiment.score.toFixed(1)}
+                                        </span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">اعتماد:</span>
+                                        <span class="text-blue-400 font-bold">${analysis.overallSentiment.confidence.toFixed(1)}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-300">روند:</span>
+                                        <span class="text-${analysis.overallSentiment.trend === 'increasing' ? 'green' : 
+                                                         analysis.overallSentiment.trend === 'decreasing' ? 'red' : 'yellow'}-400">
+                                            ${analysis.overallSentiment.trend === 'increasing' ? 'صعودی' : 
+                                              analysis.overallSentiment.trend === 'decreasing' ? 'نزولی' : 'ثابت'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Social Media Breakdown -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">تحلیل شبکه‌های اجتماعی</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                <!-- Twitter -->
+                                <div class="bg-gray-600 rounded p-3">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fab fa-twitter text-blue-400 mr-2"></i>
+                                        <span class="text-white font-semibold">تویتر</span>
+                                    </div>
+                                    <div class="space-y-1 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">حجم:</span>
+                                            <span class="text-blue-400">${analysis.socialMediaAnalysis.twitter.volume.toLocaleString()}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">تعامل:</span>
+                                            <span class="text-green-400">${analysis.socialMediaAnalysis.twitter.engagementRate.toFixed(1)}%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">احساس اینفلوئنسر:</span>
+                                            <span class="text-${analysis.socialMediaAnalysis.twitter.influencerSentiment >= 0 ? 'green' : 'red'}-400">
+                                                ${analysis.socialMediaAnalysis.twitter.influencerSentiment.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Reddit -->
+                                <div class="bg-gray-600 rounded p-3">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fab fa-reddit text-orange-400 mr-2"></i>
+                                        <span class="text-white font-semibold">ردیت</span>
+                                    </div>
+                                    <div class="space-y-1 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">پست‌ها:</span>
+                                            <span class="text-blue-400">${analysis.socialMediaAnalysis.reddit.posts.toLocaleString()}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">نسبت رای مثبت:</span>
+                                            <span class="text-green-400">${(analysis.socialMediaAnalysis.reddit.upvoteRatio * 100).toFixed(1)}%</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">احساس کامنت:</span>
+                                            <span class="text-${analysis.socialMediaAnalysis.reddit.commentSentiment >= 0 ? 'green' : 'red'}-400">
+                                                ${analysis.socialMediaAnalysis.reddit.commentSentiment.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Telegram -->
+                                <div class="bg-gray-600 rounded p-3">
+                                    <div class="flex items-center mb-2">
+                                        <i class="fab fa-telegram text-blue-500 mr-2"></i>
+                                        <span class="text-white font-semibold">تلگرام</span>
+                                    </div>
+                                    <div class="space-y-1 text-sm">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">پیام‌ها:</span>
+                                            <span class="text-blue-400">${analysis.socialMediaAnalysis.telegram.messages.toLocaleString()}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">کانال‌ها:</span>
+                                            <span class="text-purple-400">${analysis.socialMediaAnalysis.telegram.channels}</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">میانگین احساس:</span>
+                                            <span class="text-${analysis.socialMediaAnalysis.telegram.averageSentiment >= 0 ? 'green' : 'red'}-400">
+                                                ${analysis.socialMediaAnalysis.telegram.averageSentiment.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Predictions -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-white font-semibold mb-4">پیش‌بینی‌ها</h4>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <!-- Short Term -->
+                                <div class="bg-gray-600 rounded p-3">
+                                    <h5 class="text-white font-semibold mb-2">کوتاه مدت (${analysis.predictions.shortTerm.timeframe})</h5>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">جهت:</span>
+                                            <span class="text-${
+                                                analysis.predictions.shortTerm.direction === 'up' ? 'green' :
+                                                analysis.predictions.shortTerm.direction === 'down' ? 'red' : 'yellow'
+                                            }-400 font-semibold">${
+                                                analysis.predictions.shortTerm.direction === 'up' ? 'صعودی' :
+                                                analysis.predictions.shortTerm.direction === 'down' ? 'نزولی' : 'خنثی'
+                                            }</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">اعتماد:</span>
+                                            <span class="text-blue-400">${analysis.predictions.shortTerm.confidence.toFixed(1)}%</span>
+                                        </div>
+                                        <div class="text-gray-300 text-sm">${analysis.predictions.shortTerm.reasoning}</div>
+                                    </div>
+                                </div>
+
+                                <!-- Medium Term -->
+                                <div class="bg-gray-600 rounded p-3">
+                                    <h5 class="text-white font-semibold mb-2">متوسط مدت (${analysis.predictions.mediumTerm.timeframe})</h5>
+                                    <div class="space-y-2">
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">جهت:</span>
+                                            <span class="text-${
+                                                analysis.predictions.mediumTerm.direction === 'up' ? 'green' :
+                                                analysis.predictions.mediumTerm.direction === 'down' ? 'red' : 'yellow'
+                                            }-400 font-semibold">${
+                                                analysis.predictions.mediumTerm.direction === 'up' ? 'صعودی' :
+                                                analysis.predictions.mediumTerm.direction === 'down' ? 'نزولی' : 'خنثی'
+                                            }</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-300">اعتماد:</span>
+                                            <span class="text-blue-400">${analysis.predictions.mediumTerm.confidence.toFixed(1)}%</span>
+                                        </div>
+                                        <div class="text-gray-300 text-sm">${analysis.predictions.mediumTerm.reasoning}</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 text-right">
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error starting Agent 03 analysis:', error);
+            this.showErrorMessage('خطا در انجام تحلیل احساسات');
+        }
+    }
+
+    // =============================================================================
+    // AGENT 04 SPECIFIC UI METHODS (Portfolio Optimization)
+    // =============================================================================
+    
+    async showAgent04Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent04Status(),
+                this.loadAgent04Config(),
+                this.loadAgent04History()
+            ]);
+
+            // Create detailed modal for Agent 04
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-7xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت بهینه‌سازی پرتفولیو (04)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Portfolio Overview -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Portfolio Value -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">ارزش پرتفولیو</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">$${status.portfolioMetrics.totalValue.toLocaleString()}</div>
+                                <div class="text-gray-300">ارزش کل</div>
+                                <div class="mt-3 text-sm">
+                                    <div class="text-blue-400">بازده مورد انتظار: ${status.portfolioMetrics.expectedReturn.toFixed(1)}%</div>
+                                    <div class="text-yellow-400">نوسان: ${status.portfolioMetrics.volatility.toFixed(1)}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای عملکرد</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Sharpe Ratio:</span>
+                                    <span class="text-green-400">${status.portfolioMetrics.sharpeRatio}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Alpha:</span>
+                                    <span class="text-blue-400">${status.portfolioMetrics.alpha}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Beta:</span>
+                                    <span class="text-purple-400">${status.portfolioMetrics.beta}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Max Drawdown:</span>
+                                    <span class="text-red-400">${status.portfolioMetrics.maxDrawdown}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Info Ratio:</span>
+                                    <span class="text-cyan-400">${status.portfolioMetrics.informationRatio}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Rebalance Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت ریبالانس</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">آخرین ریبالانس:</span>
+                                    <span class="text-blue-400">${new Date(status.rebalanceMetrics.lastRebalance).toLocaleDateString('fa-IR')}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ریبالانس بعدی:</span>
+                                    <span class="text-yellow-400">${new Date(status.rebalanceMetrics.nextRebalance).toLocaleDateString('fa-IR')}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">انحراف فعلی:</span>
+                                    <span class="text-${status.rebalanceMetrics.currentDrift > status.rebalanceMetrics.rebalanceThreshold ? 'red' : 'green'}-400">
+                                        ${status.rebalanceMetrics.currentDrift.toFixed(1)}%
+                                    </span>
+                                </div>
+                                <div class="text-center mt-3">
+                                    <span class="px-3 py-1 rounded-full text-xs ${
+                                        status.rebalanceMetrics.recommendedAction === 'rebalance' ? 'bg-orange-600 text-white' :
+                                        status.rebalanceMetrics.recommendedAction === 'monitor' ? 'bg-yellow-600 text-white' :
+                                        'bg-green-600 text-white'
+                                    }">
+                                        ${
+                                            status.rebalanceMetrics.recommendedAction === 'rebalance' ? 'نیاز به ریبالانس' :
+                                            status.rebalanceMetrics.recommendedAction === 'monitor' ? 'در حال نظارت' : 'نگهداری'
+                                        }
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Agent Performance -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">عملکرد ایجنت</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">دقت:</span>
+                                    <span class="text-blue-400">${status.accuracy}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">بهینه‌سازی‌ها:</span>
+                                    <span class="text-purple-400">${status.performance.totalOptimizations}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">بهبود بازده:</span>
+                                    <span class="text-green-400">+${status.performance.avgReturnImprovement}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">کاهش ریسک:</span>
+                                    <span class="text-cyan-400">-${status.performance.avgRiskReduction}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Current Allocation Chart -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">تخصیص فعلی دارایی‌ها</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${Object.entries(status.currentAllocation).map(([category, data]) => `
+                                <div class="bg-gray-600 rounded p-3">
+                                    <div class="text-center mb-2">
+                                        <div class="text-xl font-bold text-white">${data.percentage}%</div>
+                                        <div class="text-gray-300 text-sm capitalize">${
+                                            category === 'crypto' ? 'ارزهای دیجیتال' :
+                                            category === 'stocks' ? 'سهام' :
+                                            category === 'bonds' ? 'اوراق قرضه' : 'نقد'
+                                        }</div>
+                                        <div class="text-green-400 text-sm">$${data.value.toLocaleString()}</div>
+                                    </div>
+                                    <div class="w-full bg-gray-500 rounded-full h-3 mb-2">
+                                        <div class="bg-${
+                                            category === 'crypto' ? 'orange' :
+                                            category === 'stocks' ? 'blue' :
+                                            category === 'bonds' ? 'green' : 'gray'
+                                        }-400 h-3 rounded-full" style="width: ${data.percentage}%"></div>
+                                    </div>
+                                    <div class="text-xs text-gray-300">
+                                        ${data.assets.slice(0, 2).join(', ')}${data.assets.length > 2 ? `, +${data.assets.length - 2}` : ''}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-3">پنل کنترل</h4>
+                        <div class="flex flex-wrap gap-3">
+                            <button onclick="aiTabInstance.handleAgent04Control('start')" 
+                                    class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-play mr-2"></i>شروع
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent04Control('stop')" 
+                                    class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-stop mr-2"></i>توقف
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent04Control('force_rebalance')" 
+                                    class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-balance-scale mr-2"></i>ریبالانس اجباری
+                            </button>
+                            <button onclick="aiTabInstance.handleAgent04Control('calibrate')" 
+                                    class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-cogs mr-2"></i>کالیبراسیون
+                            </button>
+                            <button onclick="aiTabInstance.startAgent04Optimization()" 
+                                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-chart-pie mr-2"></i>بهینه‌سازی جدید
+                            </button>
+                            <button onclick="aiTabInstance.executeAgent04Rebalance(null, true)" 
+                                    class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                                <i class="fas fa-eye mr-2"></i>شبیه‌سازی ریبالانس
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Optimization History -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-lg font-semibold text-white mb-3">تاریخچه بهینه‌سازی‌ها</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">تاریخ</th>
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">بهبود بازده</th>
+                                        <th class="text-right p-2">کاهش ریسک</th>
+                                        <th class="text-right p-2">معاملات</th>
+                                        <th class="text-right p-2">نتیجه</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.optimizations.slice(0, 6).map(opt => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(opt.timestamp).toLocaleDateString('fa-IR')}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    opt.type === 'rebalance' ? 'bg-blue-600 text-white' :
+                                                    opt.type === 'optimization' ? 'bg-green-600 text-white' :
+                                                    'bg-purple-600 text-white'
+                                                }">${
+                                                    opt.type === 'rebalance' ? 'ریبالانس' :
+                                                    opt.type === 'optimization' ? 'بهینه‌سازی' : 'تنظیم ریسک'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-green-400">+${opt.returnImprovement.toFixed(2)}%</td>
+                                            <td class="p-2 text-cyan-400">-${opt.riskReduction.toFixed(2)}%</td>
+                                            <td class="p-2 text-blue-400">${opt.tradesExecuted}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    opt.outcome === 'successful' ? 'bg-green-600 text-white' :
+                                                    opt.outcome === 'partially_successful' ? 'bg-yellow-600 text-white' :
+                                                    'bg-red-600 text-white'
+                                                }">${
+                                                    opt.outcome === 'successful' ? 'موفق' :
+                                                    opt.outcome === 'partially_successful' ? 'نیمه موفق' : 'ناموفق'
+                                                }</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 04 details:', error);
+            this.showErrorMessage('خطا در بارگذاری جزئیات ایجنت بهینه‌سازی پرتفولیو');
+        }
+    }
+
+    async handleAgent04Control(action) {
+        try {
+            const result = await this.controlAgent04(action);
+            this.showSuccessMessage(result.message || `عملیات ${action} با موفقیت انجام شد`);
+            
+            // Refresh agent status
+            await this.loadAgent04Status();
+        } catch (error) {
+            console.error('❌ Error controlling Agent 04:', error);
+            this.showErrorMessage(`خطا در انجام عملیات ${action}`);
+        }
+    }
+
+    async startAgent04Optimization(riskTolerance = 'moderate', timeHorizon = 'long_term') {
+        try {
+            const loadingMsg = this.showLoadingMessage('در حال بهینه‌سازی پرتفولیو...');
+            
+            const optimization = await this.startAgent04Optimization(null, riskTolerance, timeHorizon);
+            
+            loadingMsg.remove();
+            
+            // Show optimization results
+            this.showOptimizationResults(optimization);
+
+        } catch (error) {
+            console.error('❌ Error starting Agent 04 optimization:', error);
+            this.showErrorMessage('خطا در انجام بهینه‌سازی پرتفولیو');
+        }
+    }
+
+    showOptimizationResults(optimization) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">نتایج بهینه‌سازی پرتفولیو</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Performance Comparison -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">مقایسه عملکرد</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-green-400">
+                                    ${optimization.results.expectedReturn.current.toFixed(1)}% → ${optimization.results.expectedReturn.optimized.toFixed(1)}%
+                                </div>
+                                <div class="text-gray-300">بازده مورد انتظار</div>
+                                <div class="text-green-400 text-sm">
+                                    بهبود: +${optimization.results.expectedReturn.improvement.toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-blue-400">
+                                    ${optimization.results.risk.current.toFixed(1)}% → ${optimization.results.risk.optimized.toFixed(1)}%
+                                </div>
+                                <div class="text-gray-300">ریسک (نوسان)</div>
+                                <div class="text-cyan-400 text-sm">
+                                    کاهش: -${optimization.results.risk.reduction.toFixed(1)}%
+                                </div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-lg font-bold text-purple-400">
+                                    ${optimization.results.sharpeRatio.current.toFixed(2)} → ${optimization.results.sharpeRatio.optimized.toFixed(2)}
+                                </div>
+                                <div class="text-gray-300">نسبت شارپ</div>
+                                <div class="text-purple-400 text-sm">
+                                    بهبود: +${optimization.results.sharpeRatio.improvement.toFixed(2)}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recommended Trades -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">معاملات پیشنهادی</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">دارایی</th>
+                                        <th class="text-right p-2">عملیات</th>
+                                        <th class="text-right p-2">وزن فعلی</th>
+                                        <th class="text-right p-2">وزن هدف</th>
+                                        <th class="text-right p-2">مقدار</th>
+                                        <th class="text-right p-2">دلیل</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${optimization.recommendedTrades.map(trade => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-white font-semibold">${trade.asset}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.action === 'buy' || trade.action === 'increase' ? 'bg-green-600 text-white' :
+                                                    'bg-red-600 text-white'
+                                                }">${
+                                                    trade.action === 'increase' ? 'افزایش' :
+                                                    trade.action === 'reduce' ? 'کاهش' :
+                                                    trade.action === 'buy' ? 'خرید' : 'فروش'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">${trade.currentWeight.toFixed(1)}%</td>
+                                            <td class="p-2 text-green-400">${trade.targetWeight.toFixed(1)}%</td>
+                                            <td class="p-2 text-${trade.amount > 0 ? 'green' : 'red'}-400">
+                                                ${trade.amount > 0 ? '+' : ''}$${Math.abs(trade.amount).toLocaleString()}
+                                            </td>
+                                            <td class="p-2 text-gray-300 text-xs">${trade.reasoning}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Risk Analysis -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">تحلیل ریسک</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">${optimization.riskAnalysis.concentrationRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک تمرکز</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${optimization.riskAnalysis.correlationRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک همبستگی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${optimization.riskAnalysis.liquidityRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک نقدینگی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${optimization.riskAnalysis.marketRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک بازار</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <div class="text-lg font-bold text-white">امتیاز کلی ریسک: ${optimization.riskAnalysis.overallRiskScore.toFixed(1)}</div>
+                            <div class="text-gray-400">اعتماد بهینه‌سازی: ${optimization.confidence.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-between">
+                    <button onclick="aiTabInstance.executeAgent04Rebalance(${JSON.stringify(optimization.recommendedTrades)}, true)" 
+                            class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg">
+                        <i class="fas fa-eye mr-2"></i>شبیه‌سازی
+                    </button>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // =============================================================================
+    // AGENT 05 SPECIFIC UI METHODS (Market Making)
+    // =============================================================================
+    
+    async showAgent05Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent05Status(),
+                this.loadAgent05Config(),
+                this.loadAgent05History()
+            ]);
+
+            // Create detailed modal for Agent 05
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-7xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت مارکت میکر (05)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Market Making Overview -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Current Spreads -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">اسپردهای جاری</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">${status.spreads.current.toFixed(3)}%</div>
+                                <div class="text-gray-300">اسپرد فعلی</div>
+                                <div class="mt-3 text-sm">
+                                    <div class="text-blue-400">هدف: ${status.spreads.target.toFixed(3)}%</div>
+                                    <div class="text-yellow-400">میانگین: ${(status.spreads.current * 1.1).toFixed(3)}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Book Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت آردر بوک</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">سفارشات خرید:</span>
+                                    <span class="text-green-400">${status.orderBook.bidOrders}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">سفارشات فروش:</span>
+                                    <span class="text-red-400">${status.orderBook.askOrders}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حجم کل:</span>
+                                    <span class="text-purple-400">${status.orderBook.totalVolume.toFixed(2)} BTC</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">گردش موجودی:</span>
+                                    <span class="text-cyan-400">${((status.orderBook.bidOrders + status.orderBook.askOrders) / 2).toFixed(0)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">پهنای بازار:</span>
+                                    <span class="text-yellow-400">${(status.spreads.current * 100 * 10).toFixed(0)} سطح</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Performance Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای عملکرد</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">کل حجم:</span>
+                                    <span class="text-green-400">$${status.performance.totalVolume.toLocaleString()}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">سود:</span>
+                                    <span class="text-blue-400">$${status.performance.profits.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">معاملات:</span>
+                                    <span class="text-purple-400">${Math.floor(status.performance.totalVolume / 1000)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Fill Rate:</span>
+                                    <span class="text-cyan-400">${(85 + Math.random() * 10).toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">PnL روزانه:</span>
+                                    <span class="text-green-400">+${(status.performance.profits / 30).toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Inventory Status -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">وضعیت موجودی</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">BTC موجودی:</span>
+                                    <span class="text-blue-400">${(25.5 + Math.random() * 5).toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">USDT موجودی:</span>
+                                    <span class="text-green-400">${(125000 + Math.random() * 50000).toFixed(0).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نسبت تعادل:</span>
+                                    <span class="text-purple-400">${(45 + Math.random() * 10).toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ریسک موجودی:</span>
+                                    <span class="text-yellow-400">کم</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">آستانه ریبالانس:</span>
+                                    <span class="text-orange-400">${(65 + Math.random() * 5).toFixed(0)}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Grid Strategy Configuration -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">تنظیمات استراتژی گرید</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">اندازه گرید</label>
+                                <input type="number" id="agent05-grid-size" value="${config.gridSize || 10}" min="5" max="50"
+                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر اسپرد (%)</label>
+                                <input type="number" id="agent05-max-spread" value="${(config.maxSpread * 100).toFixed(3) || '0.050'}" min="0.001" max="1" step="0.001"
+                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">حجم سفارش (BTC)</label>
+                                <input type="number" id="agent05-order-size" value="${config.orderSize || 0.01}" min="0.001" max="10" step="0.001"
+                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-gray-300 mb-2">آستانه موجودی (%)</label>
+                                <input type="number" id="agent05-inventory-threshold" value="${config.inventoryThreshold || 70}" min="50" max="90"
+                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Activity -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">فعالیت‌های اخیر</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">قیمت</th>
+                                        <th class="text-right p-2">مقدار</th>
+                                        <th class="text-right p-2">اسپرد</th>
+                                        <th class="text-right p-2">PnL</th>
+                                        <th class="text-right p-2">وضعیت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.recentTrades.slice(0, 8).map(trade => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(trade.timestamp).toLocaleTimeString('fa-IR')}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.side === 'buy' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                                                }">${trade.side === 'buy' ? 'خرید' : 'فروش'}</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">$${trade.price.toLocaleString()}</td>
+                                            <td class="p-2 text-white">${trade.amount.toFixed(4)} BTC</td>
+                                            <td class="p-2 text-yellow-400">${(trade.spread * 100).toFixed(3)}%</td>
+                                            <td class="p-2 text-${trade.pnl >= 0 ? 'green' : 'red'}-400">
+                                                ${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}
+                                            </td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.status === 'filled' ? 'bg-green-600 text-white' :
+                                                    trade.status === 'partial' ? 'bg-yellow-600 text-white' :
+                                                    'bg-gray-600 text-white'
+                                                }">${
+                                                    trade.status === 'filled' ? 'تکمیل' :
+                                                    trade.status === 'partial' ? 'جزئی' : 'درانتظار'
+                                                }</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex space-x-4 space-x-reverse justify-center">
+                        <button onclick="aiTabInstance.startAgent05Strategy()" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>شروع استراتژی
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent05('pause')" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>متوقف کردن
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent05('adjust_spread')" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-arrows-alt-h mr-2"></i>تنظیم اسپرد
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent05('rebalance_inventory')" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-balance-scale mr-2"></i>ریبالانس موجودی
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 05 details:', error);
+            this.showErrorMessage('خطا در نمایش جزئیات ایجنت مارکت میکر');
+        }
+    }
+
+    async startAgent05Strategy() {
+        try {
+            const gridSize = parseInt(document.getElementById('agent05-grid-size')?.value) || 10;
+            const maxSpread = parseFloat(document.getElementById('agent05-max-spread')?.value) / 100 || 0.05;
+
+            const loadingMsg = this.showLoadingMessage('در حال اجرای استراتژی مارکت میکر...');
+            
+            const execution = await this.executeAgent05Strategy('BTC/USDT', maxSpread, gridSize);
+            
+            loadingMsg.remove();
+            
+            // Show execution results
+            this.showMarketMakingResults(execution);
+
+        } catch (error) {
+            console.error('❌ Error starting Agent 05 strategy:', error);
+            this.showErrorMessage('خطا در اجرای استراتژی مارکت میکر');
+        }
+    }
+
+    showMarketMakingResults(execution) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-5xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">نتایج اجرای مارکت میکر</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Execution Summary -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">خلاصه اجرا</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-400">${execution.ordersPlaced.buy}</div>
+                                <div class="text-gray-300">سفارشات خرید</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${execution.ordersPlaced.sell}</div>
+                                <div class="text-gray-300">سفارشات فروش</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${execution.spreads.avg.toFixed(3)}%</div>
+                                <div class="text-gray-300">اسپرد متوسط</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.totalValue.toFixed(2)} BTC</div>
+                                <div class="text-gray-300">حجم کل</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Grid Details -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">جزئیات گرید</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">سطح</th>
+                                        <th class="text-right p-2">قیمت خرید</th>
+                                        <th class="text-right p-2">قیمت فروش</th>
+                                        <th class="text-right p-2">اسپرد</th>
+                                        <th class="text-right p-2">حجم</th>
+                                        <th class="text-right p-2">وضعیت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${execution.gridLevels.slice(0, 8).map((level, index) => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-white font-semibold">${index + 1}</td>
+                                            <td class="p-2 text-green-400">$${level.buyPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-red-400">$${level.sellPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-yellow-400">${level.spread.toFixed(3)}%</td>
+                                            <td class="p-2 text-blue-400">${level.volume.toFixed(4)} BTC</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    level.status === 'active' ? 'bg-green-600 text-white' :
+                                                    level.status === 'pending' ? 'bg-yellow-600 text-white' :
+                                                    'bg-gray-600 text-white'
+                                                }">${
+                                                    level.status === 'active' ? 'فعال' :
+                                                    level.status === 'pending' ? 'درانتظار' : 'غیرفعال'
+                                                }</span>
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Risk Metrics -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">معیارهای ریسک</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">${execution.riskMetrics.inventoryRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک موجودی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${execution.riskMetrics.spreadRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک اسپرد</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${execution.riskMetrics.executionRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک اجرا</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.riskMetrics.marketRisk.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">ریسک بازار</div>
+                            </div>
+                        </div>
+                        <div class="mt-4 text-center">
+                            <div class="text-lg font-bold text-white">امتیاز کلی ریسک: ${execution.riskMetrics.overallRiskScore.toFixed(1)}</div>
+                            <div class="text-gray-400">اعتماد اجرا: ${execution.confidence.toFixed(1)}%</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-center">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
     }
 }

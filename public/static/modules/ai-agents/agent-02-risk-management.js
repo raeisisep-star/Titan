@@ -1225,7 +1225,7 @@ class RiskManagementAgent {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer demo_token_12345'
+                        'Authorization': `Bearer ${window.authToken || 'demo_token_12345'}`
                     }
                 };
                 
@@ -1272,24 +1272,69 @@ class RiskManagementAgent {
      */
     async getCurrentPortfolioData() {
         try {
-            // Try to get real portfolio data
-            const response = await this.makeAPICall('/api/portfolio/list', 'GET');
+            // Try to get real portfolio data from TITAN API
+            const response = await this.makeAPICall('/api/portfolio', 'GET');
             
             if (response.success && response.data) {
                 return {
-                    positions: response.data.holdings || [],
-                    totalValue: response.data.totalValue || 0,
-                    cash: response.data.availableCash || 0,
+                    positions: response.data.holdings || response.data.positions || [],
+                    totalValue: response.data.totalValue || response.data.total_value || 0,
+                    cash: response.data.availableCash || response.data.available_cash || 0,
                     lastUpdate: new Date().toISOString()
                 };
             }
             
-            // Fallback to simulated portfolio data
-            return this.generateSimulatedPortfolio();
+            // Try alternative portfolio endpoint
+            const altResponse = await this.makeAPICall('/api/portfolio/list', 'GET');
+            if (altResponse.success && altResponse.data) {
+                return {
+                    positions: altResponse.data.holdings || [],
+                    totalValue: altResponse.data.totalValue || 0,
+                    cash: altResponse.data.availableCash || 0,
+                    lastUpdate: new Date().toISOString()
+                };
+            }
+            
+            // Try wallets endpoint as backup
+            const walletResponse = await this.makeAPICall('/api/wallets', 'GET');
+            if (walletResponse.success && walletResponse.data) {
+                // Convert wallet data to portfolio format
+                const positions = walletResponse.data.map(wallet => ({
+                    symbol: wallet.exchange || 'UNKNOWN',
+                    amount: wallet.balance?.total || 0,
+                    value: wallet.balance?.usd || 0,
+                    price: (wallet.balance?.usd || 0) / (wallet.balance?.total || 1),
+                    change24h: 0,
+                    type: 'spot'
+                }));
+                
+                const totalValue = positions.reduce((sum, pos) => sum + pos.value, 0);
+                
+                return {
+                    positions: positions,
+                    totalValue: totalValue,
+                    cash: 0,
+                    lastUpdate: new Date().toISOString()
+                };
+            }
+            
+            // Last resort: return empty portfolio structure
+            console.warn(`⚠️ [Agent ${this.agentId}] No portfolio data available, returning empty portfolio`);
+            return {
+                positions: [],
+                totalValue: 0,
+                cash: 0,
+                lastUpdate: new Date().toISOString()
+            };
             
         } catch (error) {
-            console.warn(`⚠️ [Agent ${this.agentId}] Failed to get portfolio data, using simulation:`, error.message);
-            return this.generateSimulatedPortfolio();
+            console.error(`❌ [Agent ${this.agentId}] Failed to get portfolio data:`, error.message);
+            return {
+                positions: [],
+                totalValue: 0,
+                cash: 0,
+                lastUpdate: new Date().toISOString()
+            };
         }
     }
     

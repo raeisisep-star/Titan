@@ -1263,7 +1263,7 @@ class TechnicalAnalysisAgent {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': 'Bearer demo_token_12345' // Use demo token
+                        'Authorization': `Bearer ${window.authToken || 'demo_token_12345'}` // Use real auth token
                     }
                 };
                 
@@ -1314,10 +1314,10 @@ class TechnicalAnalysisAgent {
             const symbols = Array.from(this.marketData.websocket.subscriptions);
             const marketData = {};
             
-            // Fetch data for each subscribed symbol
+            // First try internal TITAN API
             for (const symbol of symbols) {
                 try {
-                    const response = await this.makeAPICall(`/api/markets/${symbol}`);
+                    const response = await this.makeAPICall(`/api/market/prices/${symbol}`);
                     if (response.success && response.data) {
                         marketData[symbol] = {
                             price: response.data.price,
@@ -1327,9 +1327,56 @@ class TechnicalAnalysisAgent {
                             low24h: response.data.low24h,
                             timestamp: new Date().toISOString()
                         };
+                        continue; // Success, move to next symbol
                     }
                 } catch (error) {
-                    console.warn(`⚠️ [Agent ${this.agentId}] Failed to fetch data for ${symbol}:`, error.message);
+                    console.warn(`⚠️ [Agent ${this.agentId}] Internal API failed for ${symbol}, trying external APIs`);
+                }
+                
+                // Fallback to MEXC API
+                try {
+                    const mexcSymbol = symbol.replace('USDT', 'USDT'); // Ensure proper format
+                    const response = await fetch(`https://api.mexc.com/api/v3/ticker/24hr?symbol=${mexcSymbol}`);
+                    
+                    if (response.ok) {
+                        const mexcData = await response.json();
+                        marketData[symbol] = {
+                            price: parseFloat(mexcData.lastPrice),
+                            volume: parseFloat(mexcData.volume),
+                            change: parseFloat(mexcData.priceChangePercent),
+                            high24h: parseFloat(mexcData.highPrice),
+                            low24h: parseFloat(mexcData.lowPrice),
+                            timestamp: new Date().toISOString()
+                        };
+                        console.log(`✅ Agent 01: Got real data for ${symbol} from MEXC`);
+                        continue;
+                    }
+                } catch (error) {
+                    console.warn(`⚠️ [Agent ${this.agentId}] MEXC API failed for ${symbol}, trying CoinGecko`);
+                }
+                
+                // Last fallback to CoinGecko
+                try {
+                    const coinGeckoId = this.mapSymbolToCoinGecko(symbol);
+                    const response = await fetch(`https://api.coingecko.com/api/v3/simple/price?ids=${coinGeckoId}&vs_currencies=usd&include_24hr_vol=true&include_24hr_change=true`);
+                    
+                    if (response.ok) {
+                        const coinGeckoData = await response.json();
+                        const data = coinGeckoData[coinGeckoId];
+                        if (data) {
+                            marketData[symbol] = {
+                                price: data.usd,
+                                volume: data.usd_24h_vol || 0,
+                                change: data.usd_24h_change || 0,
+                                high24h: data.usd * 1.02, // Estimated
+                                low24h: data.usd * 0.98, // Estimated
+                                timestamp: new Date().toISOString()
+                            };
+                            console.log(`✅ Agent 01: Got real data for ${symbol} from CoinGecko`);
+                        }
+                    }
+                } catch (error) {
+                    console.error(`❌ [Agent ${this.agentId}] All APIs failed for ${symbol}:`, error.message);
                 }
             }
             
@@ -1354,14 +1401,18 @@ class TechnicalAnalysisAgent {
                 return cached.data;
             }
             
-            // Generate realistic historical data (in production, this would call real API)
-            const historicalData = this.generateRealisticHistoricalData(limit);
+            // Fetch real historical data from multiple sources
+            const historicalData = await this.fetchRealHistoricalData(symbol, timeframe, limit);
             
-            // Cache the data
-            this.marketData.historical.set(cacheKey, {
-                data: historicalData,
-                timestamp: Date.now()
-            });
+            // Cache the real data
+            if (historicalData && historicalData.length > 0) {
+                this.marketData.historical.set(cacheKey, {
+                    data: historicalData,
+                    timestamp: Date.now()
+                });
+                
+                console.log(`✅ Agent 01: Cached ${historicalData.length} real candles for ${symbol}`);
+            }
             
             return historicalData;
             
@@ -1372,40 +1423,126 @@ class TechnicalAnalysisAgent {
     }
     
     /**
-     * Generate Realistic Historical Data (for demo purposes)
+     * Fetch Real Historical Data from MEXC API
      */
-    generateRealisticHistoricalData(length) {
-        const data = [];
-        let price = 45000 + Math.random() * 10000; // Starting price
-        
-        for (let i = 0; i < length; i++) {
-            // Generate realistic price movement
-            const volatility = 0.02; // 2% volatility
-            const trend = (Math.random() - 0.48) * 0.001; // Slight upward bias
-            const randomChange = (Math.random() - 0.5) * volatility;
+    async fetchRealHistoricalData(symbol, timeframe, length = 500) {
+        try {
+            // Use real MEXC API for historical data
+            const response = await fetch(`https://api.mexc.com/api/v3/klines?symbol=${symbol}&interval=${timeframe}&limit=${length}`);
             
-            price *= (1 + trend + randomChange);
+            if (!response.ok) {
+                throw new Error(`MEXC API error: ${response.status}`);
+            }
             
-            // Generate OHLC data
-            const open = price;
-            const close = price * (1 + (Math.random() - 0.5) * 0.005);
-            const high = Math.max(open, close) * (1 + Math.random() * 0.01);
-            const low = Math.min(open, close) * (1 - Math.random() * 0.01);
-            const volume = Math.random() * 1000000 + 100000;
+            const rawData = await response.json();
             
-            data.push({
-                timestamp: Date.now() - (length - i) * 5 * 60 * 1000, // 5 minutes apart
-                open: open,
-                high: high,
-                low: low,
-                close: close,
-                volume: volume
-            });
+            // Transform MEXC data to our format
+            const data = rawData.map((kline, index) => ({
+                timestamp: parseInt(kline[0]), // Open time
+                open: parseFloat(kline[1]),
+                high: parseFloat(kline[2]),
+                low: parseFloat(kline[3]),
+                close: parseFloat(kline[4]),
+                volume: parseFloat(kline[5]),
+                quoteVolume: parseFloat(kline[7]),
+                trades: parseInt(kline[8])
+            }));
             
-            price = close;
+            console.log(`✅ Agent 01: Fetched ${data.length} real historical candles for ${symbol}`);
+            return data;
+            
+        } catch (error) {
+            console.error(`❌ Agent 01: Error fetching real data:`, error);
+            
+            // Fallback to backup API or cached data
+            return await this.fallbackHistoricalData(symbol, timeframe, length);
+        }
+    }
+    
+    /**
+     * Fallback method when main API fails
+     */
+    async fallbackHistoricalData(symbol, timeframe, length) {
+        try {
+            // Try CoinGecko API as backup
+            const coinGeckoId = this.mapSymbolToCoinGecko(symbol);
+            const response = await fetch(`https://api.coingecko.com/api/v3/coins/${coinGeckoId}/market_chart?vs_currency=usdt&days=30&interval=hourly`);
+            
+            if (response.ok) {
+                const data = await response.json();
+                return this.transformCoinGeckoData(data, length);
+            }
+            
+        } catch (error) {
+            console.warn('❌ Agent 01: Backup API also failed, using cached data');
         }
         
-        return data;
+        // Last resort: use internal TITAN API
+        try {
+            const response = await fetch(`/api/market/history/${symbol}/${timeframe}?limit=${length}`, {
+                headers: { 'Authorization': `Bearer ${window.authToken}` }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                return result.data || [];
+            }
+            
+        } catch (error) {
+            console.warn('❌ Agent 01: Internal API also failed');
+        }
+        
+        // Ultimate fallback: return empty array to prevent crashes
+        console.warn('⚠️ Agent 01: All data sources failed, returning empty data');
+        return [];
+    }
+    
+    /**
+     * Map trading symbols to CoinGecko IDs
+     */
+    mapSymbolToCoinGecko(symbol) {
+        const mapping = {
+            'BTCUSDT': 'bitcoin',
+            'ETHUSDT': 'ethereum',
+            'BNBUSDT': 'binancecoin',
+            'ADAUSDT': 'cardano',
+            'SOLUSDT': 'solana',
+            'DOTUSDT': 'polkadot',
+            'MATICUSDT': 'matic-network',
+            'LINKUSDT': 'chainlink',
+            'UNIUSDT': 'uniswap',
+            'AVAXUSDT': 'avalanche-2'
+        };
+        return mapping[symbol] || 'bitcoin';
+    }
+    
+    /**
+     * Transform CoinGecko data to our format
+     */
+    transformCoinGeckoData(coinGeckoData, length) {
+        const prices = coinGeckoData.prices || [];
+        const volumes = coinGeckoData.total_volumes || [];
+        
+        return prices.slice(-length).map((price, index) => {
+            const timestamp = price[0];
+            const closePrice = price[1];
+            const volume = volumes[index] ? volumes[index][1] : 0;
+            
+            // Estimate OHLC from single price point
+            const volatility = 0.001; // 0.1% estimated volatility
+            const spread = closePrice * volatility;
+            
+            return {
+                timestamp: timestamp,
+                open: closePrice * (1 + (Math.random() - 0.5) * volatility),
+                high: closePrice + spread * Math.random(),
+                low: closePrice - spread * Math.random(),
+                close: closePrice,
+                volume: volume,
+                quoteVolume: volume * closePrice,
+                trades: Math.floor(volume / 100)
+            };
+        });
     }
     
     // ==========================================
