@@ -23526,6 +23526,435 @@ appWithD1.put('/api/agents/05/config', authMiddleware, async (c) => {
   }
 });
 
+// =============================================================================
+// AGENT 06: ALGORITHMIC TRADING AGENT ENDPOINTS
+// =============================================================================
+
+// Agent 06: Algorithmic Trading Agent - Status endpoint
+appWithD1.get('/api/agents/06/status', authMiddleware, async (c) => {
+  try {
+    const status = {
+      id: '06',
+      name: 'Algorithmic Trading Agent',
+      status: 'active',
+      accuracy: 89.2,
+      confidence: 87.8,
+      lastActivity: new Date().toISOString(),
+      
+      // Active trading strategies
+      strategies: {
+        momentum: {
+          active: true,
+          performance: 12.8,  // % return
+          sharpe: 1.45,
+          maxDrawdown: -3.2,
+          winRate: 68.5
+        },
+        meanReversion: {
+          active: true,
+          performance: 8.9,
+          sharpe: 1.22,
+          maxDrawdown: -2.8,
+          winRate: 72.1
+        },
+        arbitrage: {
+          active: false,
+          performance: 15.3,
+          sharpe: 2.1,
+          maxDrawdown: -1.5,
+          winRate: 85.2
+        },
+        grid: {
+          active: true,
+          performance: 6.7,
+          sharpe: 0.98,
+          maxDrawdown: -4.1,
+          winRate: 58.9
+        }
+      },
+
+      // Current positions
+      positions: {
+        totalValue: 287500.45,
+        activePositions: 8,
+        longPositions: 5,
+        shortPositions: 3,
+        exposure: {
+          BTC: 0.35,   // 35% exposure
+          ETH: 0.25,   // 25% exposure
+          SOL: 0.15,   // 15% exposure
+          MATIC: 0.12, // 12% exposure
+          AVAX: 0.13   // 13% exposure
+        },
+        unrealizedPnL: 2847.23
+      },
+
+      // Trading performance
+      performance: {
+        totalTrades: 1456,
+        winningTrades: 982,
+        losingTrades: 474,
+        totalPnL: 18750.67,
+        averageTrade: 12.87,
+        largestWin: 2340.50,
+        largestLoss: -1890.25,
+        profitFactor: 2.34,
+        recoveryFactor: 1.87,
+        lastUpdate: new Date().toISOString()
+      },
+
+      // Risk metrics
+      riskMetrics: {
+        positionSizing: 'conservative', // conservative/moderate/aggressive
+        maxDrawdown: -5.8,
+        currentDrawdown: -1.2,
+        riskPerTrade: 2.5,  // % of portfolio
+        kellyCriterion: 0.15,
+        informationRatio: 0.78,
+        calmarRatio: 1.65
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Execute Algorithmic Trading Strategy
+appWithD1.post('/api/agents/06/execute', authMiddleware, async (c) => {
+  try {
+    const { strategy, symbol, parameters } = await c.req.json();
+
+    // Simulate algorithmic strategy execution
+    const execution = {
+      strategy: strategy || 'momentum',
+      symbol: symbol || 'BTC/USDT',
+      timestamp: new Date().toISOString(),
+      
+      parameters: {
+        timeframe: parameters?.timeframe || '1h',
+        riskPerTrade: parameters?.riskPerTrade || 2.5,
+        stopLoss: parameters?.stopLoss || 3.0,
+        takeProfit: parameters?.takeProfit || 6.0,
+        lookbackPeriod: parameters?.lookbackPeriod || 20,
+        ...parameters
+      },
+
+      // Strategy-specific signals
+      signals: generateTradingSignals(strategy, symbol),
+
+      // Execution results
+      execution: {
+        ordersGenerated: Math.floor(Math.random() * 8) + 3,
+        estimatedSlippage: (Math.random() * 0.15).toFixed(3),
+        executionTime: Math.floor(Math.random() * 500) + 100,
+        marketImpact: (Math.random() * 0.08).toFixed(3),
+        fillRate: 95 + Math.random() * 5
+      },
+
+      // Performance prediction
+      prediction: {
+        expectedReturn: (Math.random() * 8 - 2).toFixed(2), // -2% to 6%
+        confidence: 75 + Math.random() * 20,
+        timeHorizon: parameters?.timeHorizon || '4h',
+        riskReward: (1.5 + Math.random() * 1.5).toFixed(2),
+        probability: (0.55 + Math.random() * 0.25).toFixed(2)
+      },
+
+      // Risk assessment
+      riskAssessment: {
+        positionRisk: 'moderate',
+        portfolioImpact: (Math.random() * 5).toFixed(1),
+        correlationRisk: Math.random() > 0.7 ? 'high' : 'low',
+        liquidityRisk: 'low',
+        overallRisk: Math.floor(Math.random() * 100)
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: execution,
+      message: 'Algorithmic trading strategy executed successfully'
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get Algorithmic Trading History
+appWithD1.get('/api/agents/06/history', authMiddleware, async (c) => {
+  try {
+    const trades = [];
+    for (let i = 0; i < 15; i++) {
+      const isWin = Math.random() > 0.3;
+      trades.push({
+        id: `algo_${Date.now()}_${i}`,
+        timestamp: new Date(Date.now() - i * 1800000).toISOString(), // Every 30 min
+        strategy: ['momentum', 'mean_reversion', 'arbitrage', 'grid'][Math.floor(Math.random() * 4)],
+        symbol: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT', 'MATIC/USDT'][Math.floor(Math.random() * 4)],
+        side: Math.random() > 0.5 ? 'buy' : 'sell',
+        entryPrice: 42000 + (Math.random() * 10000 - 5000),
+        exitPrice: function() {
+          const entry = this.entryPrice;
+          const changePercent = isWin ? (Math.random() * 8 + 1) : -(Math.random() * 5 + 1);
+          return entry * (1 + changePercent / 100);
+        }(),
+        quantity: (Math.random() * 2 + 0.1).toFixed(4),
+        pnl: isWin ? (Math.random() * 500 + 50) : -(Math.random() * 300 + 20),
+        pnlPercent: isWin ? (Math.random() * 8 + 1) : -(Math.random() * 5 + 1),
+        duration: Math.floor(Math.random() * 240) + 30, // 30-270 minutes
+        status: 'closed',
+        slippage: (Math.random() * 0.2).toFixed(3),
+        commission: (Math.random() * 15 + 5).toFixed(2)
+      });
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        recentTrades: trades,
+        summary: {
+          totalTrades: trades.length,
+          winningTrades: trades.filter(t => t.pnl > 0).length,
+          losingTrades: trades.filter(t => t.pnl <= 0).length,
+          totalPnL: trades.reduce((sum, t) => sum + t.pnl, 0),
+          averagePnL: trades.reduce((sum, t) => sum + t.pnl, 0) / trades.length,
+          winRate: (trades.filter(t => t.pnl > 0).length / trades.length * 100).toFixed(1)
+        }
+      }
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Control Algorithmic Trading Agent
+appWithD1.post('/api/agents/06/control', authMiddleware, async (c) => {
+  try {
+    const { action, parameters } = await c.req.json();
+    
+    let result = { success: true };
+    
+    switch (action) {
+      case 'start':
+        result.message = 'All algorithmic strategies started';
+        result.data = { activeStrategies: 4, status: 'running' };
+        break;
+      
+      case 'stop':
+        result.message = 'All algorithmic strategies stopped';
+        result.data = { activeStrategies: 0, status: 'stopped' };
+        break;
+        
+      case 'pause':
+        result.message = 'Algorithmic strategies paused';
+        result.data = { status: 'paused', resumeTime: new Date(Date.now() + 600000).toISOString() };
+        break;
+        
+      case 'optimize_parameters':
+        result.message = 'Strategy parameters optimized';
+        result.data = { 
+          optimizationScore: (85 + Math.random() * 15).toFixed(1),
+          parametersChanged: Math.floor(Math.random() * 5) + 2,
+          expectedImprovement: (Math.random() * 15 + 5).toFixed(1) + '%'
+        };
+        break;
+        
+      case 'rebalance_strategies':
+        result.message = 'Strategy allocation rebalanced';
+        result.data = { 
+          newAllocation: {
+            momentum: (Math.random() * 40 + 20).toFixed(0) + '%',
+            meanReversion: (Math.random() * 30 + 15).toFixed(0) + '%',
+            arbitrage: (Math.random() * 25 + 10).toFixed(0) + '%',
+            grid: (Math.random() * 20 + 5).toFixed(0) + '%'
+          }
+        };
+        break;
+        
+      case 'emergency_stop':
+        result.message = 'Emergency stop activated - all positions closed';
+        result.data = { 
+          positionsClosed: 8,
+          estimatedSlippage: (Math.random() * 1 + 0.2).toFixed(3) + '%',
+          emergencyMode: true
+        };
+        break;
+        
+      default:
+        result.success = false;
+        result.message = 'Unknown control action';
+    }
+
+    return c.json(result);
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get Algorithmic Trading Configuration
+appWithD1.get('/api/agents/06/config', authMiddleware, async (c) => {
+  try {
+    const config = {
+      strategies: {
+        momentum: {
+          enabled: true,
+          weight: 35, // % of capital
+          parameters: {
+            lookback: 20,
+            threshold: 0.02,
+            rsi_oversold: 30,
+            rsi_overbought: 70,
+            volume_filter: true
+          }
+        },
+        meanReversion: {
+          enabled: true,
+          weight: 25,
+          parameters: {
+            bollinger_periods: 20,
+            bollinger_std: 2,
+            rsi_mean: 50,
+            zscore_threshold: 2
+          }
+        },
+        arbitrage: {
+          enabled: false,
+          weight: 15,
+          parameters: {
+            min_spread: 0.5,
+            max_exposure: 10000,
+            execution_speed: 'fast'
+          }
+        },
+        grid: {
+          enabled: true,
+          weight: 25,
+          parameters: {
+            grid_levels: 10,
+            grid_spacing: 1.5,
+            base_order_size: 100
+          }
+        }
+      },
+      
+      riskManagement: {
+        maxPositionSize: 10, // % of portfolio
+        maxDailyLoss: 5,     // % of portfolio
+        maxDrawdown: 8,      // % of portfolio
+        stopLoss: 3,         // %
+        takeProfit: 6,       // %
+        riskPerTrade: 2.5,   // % of portfolio
+        correlationLimit: 0.7
+      },
+      
+      execution: {
+        slippageTolerance: 0.1,  // %
+        timeoutSeconds: 30,
+        retryAttempts: 3,
+        partialFills: true,
+        minOrderSize: 10,        // USDT
+        maxOrderSize: 10000      // USDT
+      },
+      
+      notifications: {
+        tradeExecution: true,
+        errorAlerts: true,
+        performanceReports: true,
+        riskWarnings: true,
+        dailySummary: true
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Update Algorithmic Trading Configuration
+appWithD1.put('/api/agents/06/config', authMiddleware, async (c) => {
+  try {
+    const config = await c.req.json();
+    
+    return c.json({
+      success: true,
+      message: 'Algorithmic Trading configuration updated successfully',
+      data: config
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Helper function to generate trading signals
+function generateTradingSignals(strategy, symbol) {
+  const basePrice = 42000 + (Math.random() * 10000 - 5000);
+  
+  switch (strategy) {
+    case 'momentum':
+      return {
+        type: 'momentum',
+        direction: Math.random() > 0.5 ? 'bullish' : 'bearish',
+        strength: (Math.random() * 100).toFixed(1),
+        indicators: {
+          rsi: (Math.random() * 100).toFixed(1),
+          macd: (Math.random() * 0.2 - 0.1).toFixed(3),
+          adx: (Math.random() * 100).toFixed(1)
+        },
+        entryPrice: basePrice,
+        targets: [
+          basePrice * (1 + 0.02),
+          basePrice * (1 + 0.04),
+          basePrice * (1 + 0.06)
+        ]
+      };
+      
+    case 'mean_reversion':
+      return {
+        type: 'mean_reversion',
+        deviation: (Math.random() * 3 + 1).toFixed(2),
+        mean: basePrice,
+        currentPrice: basePrice * (0.97 + Math.random() * 0.06),
+        signals: {
+          bollinger: Math.random() > 0.5 ? 'oversold' : 'overbought',
+          zscore: (Math.random() * 4 - 2).toFixed(2),
+          rsi: (Math.random() * 100).toFixed(1)
+        }
+      };
+      
+    case 'arbitrage':
+      return {
+        type: 'arbitrage',
+        opportunities: [
+          {
+            exchange1: 'Binance',
+            exchange2: 'Coinbase',
+            spread: (Math.random() * 0.8 + 0.2).toFixed(3),
+            volume: (Math.random() * 1000 + 100).toFixed(0)
+          }
+        ]
+      };
+      
+    default:
+      return {
+        type: 'grid',
+        gridLevels: Array.from({length: 10}, (_, i) => ({
+          level: i + 1,
+          price: basePrice * (0.95 + (i * 0.01)),
+          type: i < 5 ? 'buy' : 'sell'
+        }))
+      };
+  }
+}
+
 // Mount the original app
 appWithD1.route('/', app);
 

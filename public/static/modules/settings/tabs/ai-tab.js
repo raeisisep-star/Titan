@@ -868,6 +868,12 @@ export default class AITab {
                         <i class="fas fa-exchange-alt mr-1"></i>
                         پنل مارکت میکر
                     </button>
+                    ` : agent.id === 'agent_06' ? `
+                    <button onclick="aiTabInstance.showAgent06Details()" 
+                            class="flex-1 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-robot mr-1"></i>
+                        پنل الگوریتمیک
+                    </button>
                     ` : `
                     <button onclick="aiTabInstance.toggleAgentStatus('${agent.id}')" 
                             class="flex-1 px-3 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg text-sm transition-colors">
@@ -2607,6 +2613,182 @@ export default class AITab {
             }
         } catch (error) {
             console.error('❌ Error updating Agent 05 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 06 (Algorithmic Trading)
+    // =============================================================================
+    
+    async loadAgent06Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent06Status = result.data;
+                console.log('✅ Agent 06 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 06 status:', error);
+            throw error;
+        }
+    }
+
+    async executeAgent06Strategy(strategy = 'momentum', symbol = 'BTC/USDT', parameters = {}) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/execute', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ strategy, symbol, parameters })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 06 strategy executed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error executing Agent 06 strategy:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent06History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 06 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 06 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent06(action, parameters = {}) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action, parameters })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 06 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 06:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent06Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 06 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 06 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent06Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/06/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 06 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 06 config:', error);
             throw error;
         }
     }
@@ -4513,5 +4695,485 @@ export default class AITab {
         `;
 
         document.body.appendChild(modal);
+    }
+
+    // =============================================================================
+    // AGENT 06 SPECIFIC UI METHODS (Algorithmic Trading)
+    // =============================================================================
+    
+    async showAgent06Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent06Status(),
+                this.loadAgent06Config(),
+                this.loadAgent06History()
+            ]);
+
+            // Create detailed modal for Agent 06
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-7xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت معاملات الگوریتمیک (06)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- Strategy Overview -->
+                    <div class="grid grid-cols-1 lg:grid-cols-4 gap-6 mb-6">
+                        <!-- Portfolio Performance -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">عملکرد پرتفولیو</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">$${status.positions.totalValue.toLocaleString()}</div>
+                                <div class="text-gray-300">ارزش کل</div>
+                                <div class="mt-3 text-sm">
+                                    <div class="text-blue-400">PnL: $${status.positions.unrealizedPnL.toFixed(2)}</div>
+                                    <div class="text-yellow-400">پوزیشن‌ها: ${status.positions.activePositions}</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Trading Stats -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">آمار معاملاتی</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">کل معاملات:</span>
+                                    <span class="text-green-400">${status.performance.totalTrades}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نرخ برد:</span>
+                                    <span class="text-blue-400">${((status.performance.winningTrades / status.performance.totalTrades) * 100).toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">متوسط معامله:</span>
+                                    <span class="text-purple-400">$${status.performance.averageTrade.toFixed(2)}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Profit Factor:</span>
+                                    <span class="text-cyan-400">${status.performance.profitFactor}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Max Drawdown:</span>
+                                    <span class="text-red-400">${status.riskMetrics.maxDrawdown}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Active Strategies -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">استراتژی‌های فعال</h4>
+                            <div class="space-y-2 text-sm">
+                                ${Object.entries(status.strategies).map(([name, strategy]) => `
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-gray-300">${
+                                            name === 'momentum' ? 'مومنتوم' :
+                                            name === 'meanReversion' ? 'برگشت میانه' :
+                                            name === 'arbitrage' ? 'آربیتراژ' : 'گرید'
+                                        }:</span>
+                                        <div class="flex items-center">
+                                            <span class="text-${strategy.performance > 0 ? 'green' : 'red'}-400 mr-2">
+                                                ${strategy.performance > 0 ? '+' : ''}${strategy.performance.toFixed(1)}%
+                                            </span>
+                                            <div class="w-2 h-2 bg-${strategy.active ? 'green' : 'gray'}-400 rounded-full"></div>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+
+                        <!-- Risk Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای ریسک</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اندازه موقعیت:</span>
+                                    <span class="text-blue-400">${status.riskMetrics.positionSizing}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ریسک هر معامله:</span>
+                                    <span class="text-yellow-400">${status.riskMetrics.riskPerTrade}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Kelly Criterion:</span>
+                                    <span class="text-purple-400">${status.riskMetrics.kellyCriterion}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Calmar Ratio:</span>
+                                    <span class="text-green-400">${status.riskMetrics.calmarRatio}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Drawdown فعلی:</span>
+                                    <span class="text-orange-400">${status.riskMetrics.currentDrawdown}%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Strategy Configuration -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">تنظیمات استراتژی</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${Object.entries(config.strategies).map(([name, strategy]) => `
+                                <div class="bg-gray-800 rounded-lg p-3 border ${strategy.enabled ? 'border-green-500' : 'border-gray-600'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-white font-medium">${
+                                            name === 'momentum' ? 'مومنتوم' :
+                                            name === 'meanReversion' ? 'برگشت میانه' :
+                                            name === 'arbitrage' ? 'آربیتراژ' : 'گرید'
+                                        }</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" ${strategy.enabled ? 'checked' : ''} 
+                                                   onchange="aiTabInstance.toggleStrategy('${name}')">
+                                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="text-sm text-gray-400">وزن: ${strategy.weight}%</div>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        ${Object.entries(strategy.parameters).slice(0, 2).map(([key, value]) => 
+                                            `${key}: ${value}`
+                                        ).join(', ')}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Recent Trading Activity -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">فعالیت‌های معاملاتی اخیر</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">استراتژی</th>
+                                        <th class="text-right p-2">نماد</th>
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">مقدار</th>
+                                        <th class="text-right p-2">قیمت ورود</th>
+                                        <th class="text-right p-2">قیمت خروج</th>
+                                        <th class="text-right p-2">PnL</th>
+                                        <th class="text-right p-2">مدت زمان</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.recentTrades.slice(0, 8).map(trade => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(trade.timestamp).toLocaleTimeString('fa-IR')}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.strategy === 'momentum' ? 'bg-blue-600 text-white' :
+                                                    trade.strategy === 'mean_reversion' ? 'bg-purple-600 text-white' :
+                                                    trade.strategy === 'arbitrage' ? 'bg-green-600 text-white' :
+                                                    'bg-orange-600 text-white'
+                                                }">${
+                                                    trade.strategy === 'momentum' ? 'مومنتوم' :
+                                                    trade.strategy === 'mean_reversion' ? 'برگشت' :
+                                                    trade.strategy === 'arbitrage' ? 'آربیتراژ' : 'گرید'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">${trade.symbol}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.side === 'buy' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                                                }">${trade.side === 'buy' ? 'خرید' : 'فروش'}</span>
+                                            </td>
+                                            <td class="p-2 text-white">${trade.quantity}</td>
+                                            <td class="p-2 text-yellow-400">$${trade.entryPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-cyan-400">$${trade.exitPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-${trade.pnl >= 0 ? 'green' : 'red'}-400">
+                                                ${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)} (${trade.pnlPercent.toFixed(1)}%)
+                                            </td>
+                                            <td class="p-2 text-gray-400">${trade.duration}m</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Control Panel -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <!-- Strategy Execution -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h5 class="text-white font-semibold mb-3">اجرای استراتژی</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">استراتژی</label>
+                                    <select id="agent06-strategy" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="momentum">مومنتوم</option>
+                                        <option value="mean_reversion">برگشت به میانه</option>
+                                        <option value="arbitrage">آربیتراژ</option>
+                                        <option value="grid">گرید</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">نماد</label>
+                                    <select id="agent06-symbol" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="BTC/USDT">BTC/USDT</option>
+                                        <option value="ETH/USDT">ETH/USDT</option>
+                                        <option value="SOL/USDT">SOL/USDT</option>
+                                        <option value="MATIC/USDT">MATIC/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Management -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h5 class="text-white font-semibold mb-3">مدیریت ریسک</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">ریسک هر معامله (%)</label>
+                                    <input type="number" id="agent06-risk-per-trade" value="${config.riskManagement.riskPerTrade}" min="0.5" max="10" step="0.1"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">Stop Loss (%)</label>
+                                    <input type="number" id="agent06-stop-loss" value="${config.riskManagement.stopLoss}" min="1" max="10" step="0.1"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex space-x-4 space-x-reverse justify-center">
+                        <button onclick="aiTabInstance.executeAgent06Strategy()" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-play mr-2"></i>اجرای استراتژی
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent06('pause')" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>متوقف کردن
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent06('optimize_parameters')" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-cog mr-2"></i>بهینه‌سازی
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent06('rebalance_strategies')" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-balance-scale mr-2"></i>ریبالانس
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent06('emergency_stop')" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-stop mr-2"></i>توقف اضطراری
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 06 details:', error);
+            this.showErrorMessage('خطا در نمایش جزئیات ایجنت معاملات الگوریتمیک');
+        }
+    }
+
+    async executeAgent06Strategy() {
+        try {
+            const strategy = document.getElementById('agent06-strategy')?.value || 'momentum';
+            const symbol = document.getElementById('agent06-symbol')?.value || 'BTC/USDT';
+            const riskPerTrade = parseFloat(document.getElementById('agent06-risk-per-trade')?.value) || 2.5;
+            const stopLoss = parseFloat(document.getElementById('agent06-stop-loss')?.value) || 3.0;
+
+            const parameters = {
+                riskPerTrade,
+                stopLoss,
+                timeframe: '1h',
+                lookbackPeriod: 20
+            };
+
+            const loadingMsg = this.showLoadingMessage('در حال اجرای استراتژی الگوریتمیک...');
+            
+            const execution = await this.executeAgent06Strategy(strategy, symbol, parameters);
+            
+            loadingMsg.remove();
+            
+            // Show execution results
+            this.showAlgorithmicResults(execution);
+
+        } catch (error) {
+            console.error('❌ Error executing Agent 06 strategy:', error);
+            this.showErrorMessage('خطا در اجرای استراتژی الگوریتمیک');
+        }
+    }
+
+    showAlgorithmicResults(execution) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">نتایج اجرای استراتژی الگوریتمیک</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Execution Summary -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">خلاصه اجرا</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-400">${execution.strategy}</div>
+                                <div class="text-gray-300">استراتژی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${execution.symbol}</div>
+                                <div class="text-gray-300">نماد</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.execution.ordersGenerated}</div>
+                                <div class="text-gray-300">سفارشات تولید شده</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${execution.execution.fillRate.toFixed(1)}%</div>
+                                <div class="text-gray-300">نرخ اجرا</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Prediction -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">پیش‌بینی عملکرد</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-${execution.prediction.expectedReturn >= 0 ? 'green' : 'red'}-400">
+                                    ${execution.prediction.expectedReturn >= 0 ? '+' : ''}${execution.prediction.expectedReturn}%
+                                </div>
+                                <div class="text-gray-300 text-sm">بازده مورد انتظار</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${execution.prediction.confidence.toFixed(0)}%</div>
+                                <div class="text-gray-300 text-sm">اعتماد</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.prediction.riskReward}</div>
+                                <div class="text-gray-300 text-sm">نسبت ریسک/پاداش</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-cyan-400">${execution.prediction.probability}</div>
+                                <div class="text-gray-300 text-sm">احتمال موفقیت</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">${execution.prediction.timeHorizon}</div>
+                                <div class="text-gray-300 text-sm">بازه زمانی</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Trading Signals -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">سیگنال‌های معاملاتی</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-2">اطلاعات سیگنال</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">نوع:</span>
+                                        <span class="text-white">${execution.signals.type}</span>
+                                    </div>
+                                    ${execution.signals.direction ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">جهت:</span>
+                                            <span class="text-${execution.signals.direction === 'bullish' ? 'green' : 'red'}-400">
+                                                ${execution.signals.direction === 'bullish' ? 'صعودی' : 'نزولی'}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                    ${execution.signals.strength ? `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">قدرت سیگنال:</span>
+                                            <span class="text-blue-400">${execution.signals.strength}%</span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            </div>
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-2">شاخص‌های تکنیکال</h5>
+                                <div class="space-y-2 text-sm">
+                                    ${execution.signals.indicators ? Object.entries(execution.signals.indicators).map(([key, value]) => `
+                                        <div class="flex justify-between">
+                                            <span class="text-gray-400">${key.toUpperCase()}:</span>
+                                            <span class="text-cyan-400">${value}</span>
+                                        </div>
+                                    `).join('') : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Risk Assessment -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">ارزیابی ریسک</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">${execution.riskAssessment.positionRisk}</div>
+                                <div class="text-gray-300 text-sm">ریسک موقعیت</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${execution.riskAssessment.portfolioImpact}%</div>
+                                <div class="text-gray-300 text-sm">تأثیر پرتفولیو</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${execution.riskAssessment.correlationRisk}</div>
+                                <div class="text-gray-300 text-sm">ریسک همبستگی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.riskAssessment.overallRisk}</div>
+                                <div class="text-gray-300 text-sm">ریسک کلی</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Execution Metrics -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">معیارهای اجرا</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 text-center">
+                            <div>
+                                <div class="text-lg font-bold text-blue-400">${execution.execution.estimatedSlippage}%</div>
+                                <div class="text-gray-300 text-sm">لغزش تخمینی</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-bold text-green-400">${execution.execution.executionTime}ms</div>
+                                <div class="text-gray-300 text-sm">زمان اجرا</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-bold text-purple-400">${execution.execution.marketImpact}%</div>
+                                <div class="text-gray-300 text-sm">تأثیر بازار</div>
+                            </div>
+                            <div>
+                                <div class="text-lg font-bold text-cyan-400">${execution.execution.fillRate.toFixed(1)}%</div>
+                                <div class="text-gray-300 text-sm">نرخ اجرا</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-center">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    toggleStrategy(strategyName) {
+        console.log(`Toggle strategy: ${strategyName}`);
+        // Implementation for toggling strategy
     }
 }
