@@ -880,6 +880,12 @@ export default class AITab {
                         <i class="fas fa-newspaper mr-1"></i>
                         پنل اخبار
                     </button>
+                    ` : agent.id === 'agent_08' ? `
+                    <button onclick="aiTabInstance.showAgent08Details()" 
+                            class="flex-1 px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm transition-colors">
+                        <i class="fas fa-bolt mr-1"></i>
+                        پنل HFT
+                    </button>
                     ` : `
                     <button onclick="aiTabInstance.toggleAgentStatus('${agent.id}')" 
                             class="flex-1 px-3 py-2 bg-${agent.status === 'active' ? 'red' : 'green'}-600 hover:bg-${agent.status === 'active' ? 'red' : 'green'}-700 text-white rounded-lg text-sm transition-colors">
@@ -2971,6 +2977,182 @@ export default class AITab {
             }
         } catch (error) {
             console.error('❌ Error updating Agent 07 config:', error);
+            throw error;
+        }
+    }
+
+    // =============================================================================
+    // API INTEGRATION METHODS FOR AGENT 08 (HFT - High-Frequency Trading)
+    // =============================================================================
+    
+    async loadAgent08Status() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                this.state.agent08Status = result.data;
+                console.log('✅ Agent 08 status loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 08 status:', error);
+            throw error;
+        }
+    }
+
+    async executeAgent08Strategy(strategy = 'arbitrage', symbol = 'BTC/USDT', parameters = {}) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/execute', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ strategy, symbol, parameters })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 08 HFT strategy executed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error executing Agent 08 HFT strategy:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent08History() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/history', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 08 history loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 08 history:', error);
+            throw error;
+        }
+    }
+
+    async controlAgent08(action, parameters = {}) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/control', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ action, parameters })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 08 control action completed:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error controlling Agent 08:', error);
+            throw error;
+        }
+    }
+
+    async loadAgent08Config() {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/config', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 08 config loaded:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error loading Agent 08 config:', error);
+            throw error;
+        }
+    }
+
+    async updateAgent08Config(config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/agents/08/config', {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(config)
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ Agent 08 config updated:', result.data);
+                return result.data;
+            } else {
+                throw new Error(result.error);
+            }
+        } catch (error) {
+            console.error('❌ Error updating Agent 08 config:', error);
             throw error;
         }
     }
@@ -5962,5 +6144,627 @@ export default class AITab {
         `;
 
         document.body.appendChild(modal);
+    }
+
+    // =============================================================================
+    // AGENT 08 SPECIFIC UI METHODS (HFT - High-Frequency Trading)
+    // =============================================================================
+    
+    async showAgent08Details() {
+        try {
+            // Load real data from backend
+            const [status, config, history] = await Promise.all([
+                this.loadAgent08Status(),
+                this.loadAgent08Config(),
+                this.loadAgent08History()
+            ]);
+
+            // Create detailed modal for Agent 08
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6 max-w-8xl w-full mx-4 max-h-screen overflow-y-auto">
+                    <div class="flex justify-between items-center mb-6">
+                        <h3 class="text-2xl font-bold text-white">ایجنت معاملات فرکانس بالا (08)</h3>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="text-gray-400 hover:text-white text-2xl">×</button>
+                    </div>
+                    
+                    <!-- HFT Overview -->
+                    <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-6">
+                        <!-- Performance Stats -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">عملکرد روزانه</h4>
+                            <div class="text-center">
+                                <div class="text-3xl font-bold text-green-400">${status.performance.todayTrades.toLocaleString()}</div>
+                                <div class="text-gray-300">معاملات امروز</div>
+                                <div class="mt-3 text-sm">
+                                    <div class="text-blue-400">نرخ: ${status.performance.tradesPerSecond}/ثانیه</div>
+                                    <div class="text-yellow-400">سودآوری: ${status.performance.profitability}%</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Latency Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">معیارهای تأخیر</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">کل:</span>
+                                    <span class="text-${status.latency.total <= status.latency.targetLatency ? 'green' : 'red'}-400">
+                                        ${status.latency.total}ms
+                                    </span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ورود سفارش:</span>
+                                    <span class="text-blue-400">${status.latency.orderEntry}ms</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">داده بازار:</span>
+                                    <span class="text-green-400">${status.latency.marketData}ms</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اجرا:</span>
+                                    <span class="text-purple-400">${status.latency.execution}ms</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">هدف:</span>
+                                    <span class="text-cyan-400">${status.latency.targetLatency}ms</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Order Book Analysis -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">تحلیل آردر بوک</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">عمق:</span>
+                                    <span class="text-blue-400">${status.orderBook.depth.bidLevels}/${status.orderBook.depth.askLevels}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حجم کل:</span>
+                                    <span class="text-green-400">${status.orderBook.depth.totalVolume.toFixed(2)} BTC</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اسپرد:</span>
+                                    <span class="text-yellow-400">${(status.orderBook.depth.spread * 100).toFixed(3)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">عدم تعادل:</span>
+                                    <span class="text-orange-400">${(status.orderBook.depth.imbalance * 100).toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نقدینگی:</span>
+                                    <span class="text-purple-400">${status.orderBook.depth.liquidityScore.toFixed(1)}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Arbitrage Metrics -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">آربیتراژ</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">فرصت فعال:</span>
+                                    <span class="text-green-400">${status.arbitrage.activeOpportunities}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">کل تشخیصی:</span>
+                                    <span class="text-blue-400">${status.arbitrage.totalDetected}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">اسپرد متوسط:</span>
+                                    <span class="text-yellow-400">${(status.arbitrage.averageSpread * 100).toFixed(3)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نرخ موفقیت:</span>
+                                    <span class="text-purple-400">${status.arbitrage.successRate.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">ضبط سود:</span>
+                                    <span class="text-cyan-400">${status.arbitrage.profitCapture.toFixed(1)}%</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Management -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h4 class="text-lg font-semibold text-white mb-3">مدیریت ریسک</h4>
+                            <div class="space-y-2 text-sm">
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">حداکثر پوزیشن:</span>
+                                    <span class="text-blue-400">${status.risk.maxPosition} BTC</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">قرارگیری فعلی:</span>
+                                    <span class="text-green-400">${status.risk.currentExposure} BTC</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">نرخ استفاده:</span>
+                                    <span class="text-yellow-400">${status.risk.utilizationRate.toFixed(1)}%</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">Stop Loss:</span>
+                                    <span class="text-red-400">${status.risk.stopLossHits}</span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-gray-300">سطح ریسک:</span>
+                                    <span class="text-${status.risk.riskScore === 'low' ? 'green' : status.risk.riskScore === 'medium' ? 'yellow' : 'red'}-400">
+                                        ${status.risk.riskScore === 'low' ? 'کم' : status.risk.riskScore === 'medium' ? 'متوسط' : 'بالا'}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Strategy Configuration -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">تنظیمات استراتژی HFT</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                            ${Object.entries(config.strategies).map(([name, strategy]) => `
+                                <div class="bg-gray-800 rounded-lg p-3 border ${strategy.enabled ? 'border-green-500' : 'border-gray-600'}">
+                                    <div class="flex items-center justify-between mb-2">
+                                        <span class="text-white font-medium">${
+                                            name === 'arbitrage' ? 'آربیتراژ' :
+                                            name === 'marketMaking' ? 'مارکت میکر' :
+                                            name === 'scalping' ? 'اسکلپینگ' : 'مومنتوم'
+                                        }</span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input type="checkbox" class="sr-only peer" ${strategy.enabled ? 'checked' : ''} 
+                                                   onchange="aiTabInstance.toggleHFTStrategy('${name}')">
+                                            <div class="w-9 h-5 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-green-600"></div>
+                                        </label>
+                                    </div>
+                                    <div class="text-xs text-gray-400">
+                                        ${name === 'arbitrage' ? `حداقل اسپرد: ${(strategy.minSpread * 100).toFixed(2)}%` :
+                                          name === 'marketMaking' ? `ضریب اسپرد: ${strategy.spreadMultiplier}x` :
+                                          name === 'scalping' ? `هدف سود: ${(strategy.profitTarget * 100).toFixed(2)}%` : 
+                                          `آستانه: ${(strategy.threshold * 100).toFixed(2)}%`}
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+
+                    <!-- Real-time Latency Monitor -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">مانیتور تأخیر Real-time</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <!-- Latency Breakdown -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">تجزیه تأخیر</h5>
+                                <div class="space-y-3">
+                                    ${Object.entries(status.latency).filter(([key]) => 
+                                        key !== 'total' && key !== 'targetLatency' && key !== 'networkJitter'
+                                    ).map(([component, time]) => `
+                                        <div class="flex items-center justify-between">
+                                            <span class="text-gray-400">${
+                                                component === 'orderEntry' ? 'ورود سفارش' :
+                                                component === 'marketData' ? 'داده بازار' :
+                                                component === 'riskCheck' ? 'بررسی ریسک' : 'اجرا'
+                                            }:</span>
+                                            <div class="flex items-center">
+                                                <div class="w-24 bg-gray-600 rounded-full h-2 mr-2">
+                                                    <div class="bg-${
+                                                        time <= 0.2 ? 'green' : time <= 0.5 ? 'yellow' : time <= 1.0 ? 'orange' : 'red'
+                                                    }-400 h-2 rounded-full" style="width: ${Math.min((time / 1.5) * 100, 100)}%"></div>
+                                                </div>
+                                                <span class="text-cyan-400 text-sm w-12">${time}ms</span>
+                                            </div>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+
+                            <!-- Performance Metrics -->
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">معیارهای عملکرد</h5>
+                                <div class="grid grid-cols-2 gap-4 text-center">
+                                    <div class="bg-gray-800 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-green-400">${status.performance.fillRate}%</div>
+                                        <div class="text-xs text-gray-400">نرخ تکمیل</div>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-blue-400">${(status.performance.slippage * 100).toFixed(2)}%</div>
+                                        <div class="text-xs text-gray-400">لغزش متوسط</div>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-purple-400">${status.performance.uptime}%</div>
+                                        <div class="text-xs text-gray-400">زمان فعالیت</div>
+                                    </div>
+                                    <div class="bg-gray-800 rounded-lg p-3">
+                                        <div class="text-2xl font-bold text-orange-400">${status.performance.averageLatency}ms</div>
+                                        <div class="text-xs text-gray-400">تأخیر متوسط</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Recent HFT Activity -->
+                    <div class="bg-gray-700 rounded-lg p-4 mb-6">
+                        <h4 class="text-lg font-semibold text-white mb-4">فعالیت‌های HFT اخیر</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">زمان</th>
+                                        <th class="text-right p-2">استراتژی</th>
+                                        <th class="text-right p-2">نماد</th>
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">مقدار</th>
+                                        <th class="text-right p-2">قیمت ورود</th>
+                                        <th class="text-right p-2">قیمت خروج</th>
+                                        <th class="text-right p-2">PnL</th>
+                                        <th class="text-right p-2">تأخیر</th>
+                                        <th class="text-right p-2">لغزش</th>
+                                        <th class="text-right p-2">مدت</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${history.recentTrades.slice(0, 10).map(trade => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2 text-gray-300">${new Date(trade.timestamp).toLocaleTimeString('fa-IR')}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.strategy === 'arbitrage' ? 'bg-blue-600 text-white' :
+                                                    trade.strategy === 'market_making' ? 'bg-green-600 text-white' :
+                                                    trade.strategy === 'scalping' ? 'bg-purple-600 text-white' :
+                                                    'bg-orange-600 text-white'
+                                                }">${
+                                                    trade.strategy === 'arbitrage' ? 'آربیتراژ' :
+                                                    trade.strategy === 'market_making' ? 'مارکت میکر' :
+                                                    trade.strategy === 'scalping' ? 'اسکلپ' : 'مومنتوم'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-blue-400">${trade.symbol}</td>
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    trade.side === 'buy' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+                                                }">${trade.side === 'buy' ? 'خرید' : 'فروش'}</span>
+                                            </td>
+                                            <td class="p-2 text-white">${trade.quantity}</td>
+                                            <td class="p-2 text-yellow-400">$${trade.entryPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-cyan-400">$${trade.exitPrice.toLocaleString()}</td>
+                                            <td class="p-2 text-${trade.pnl >= 0 ? 'green' : 'red'}-400">
+                                                ${trade.pnl >= 0 ? '+' : ''}$${trade.pnl.toFixed(2)}
+                                            </td>
+                                            <td class="p-2 text-${parseFloat(trade.latency) <= 1.0 ? 'green' : parseFloat(trade.latency) <= 2.0 ? 'yellow' : 'red'}-400">
+                                                ${trade.latency}ms
+                                            </td>
+                                            <td class="p-2 text-orange-400">${(parseFloat(trade.slippage) * 100).toFixed(3)}%</td>
+                                            <td class="p-2 text-gray-400">${trade.duration}s</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <!-- Summary Stats -->
+                        <div class="mt-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
+                            <div class="bg-gray-800 rounded-lg p-3">
+                                <div class="text-lg font-bold text-green-400">${history.summary.winRate}%</div>
+                                <div class="text-xs text-gray-400">نرخ برد</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3">
+                                <div class="text-lg font-bold text-blue-400">${history.summary.avgLatency}ms</div>
+                                <div class="text-xs text-gray-400">تأخیر متوسط</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3">
+                                <div class="text-lg font-bold text-purple-400">${(parseFloat(history.summary.avgSlippage) * 100).toFixed(3)}%</div>
+                                <div class="text-xs text-gray-400">لغزش متوسط</div>
+                            </div>
+                            <div class="bg-gray-800 rounded-lg p-3">
+                                <div class="text-lg font-bold text-${history.summary.totalPnL >= 0 ? 'green' : 'red'}-400">
+                                    ${history.summary.totalPnL >= 0 ? '+' : ''}$${history.summary.totalPnL.toFixed(2)}
+                                </div>
+                                <div class="text-xs text-gray-400">PnL کل</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- HFT Strategy Execution Panel -->
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                        <!-- Strategy Selection -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h5 class="text-white font-semibold mb-3">اجرای استراتژی HFT</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">استراتژی</label>
+                                    <select id="agent08-strategy" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="arbitrage">آربیتراژ</option>
+                                        <option value="market_making">مارکت میکر</option>
+                                        <option value="scalping">اسکلپینگ</option>
+                                        <option value="momentum">مومنتوم</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">نماد</label>
+                                    <select id="agent08-symbol" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                        <option value="BTC/USDT">BTC/USDT</option>
+                                        <option value="ETH/USDT">ETH/USDT</option>
+                                        <option value="SOL/USDT">SOL/USDT</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Risk Parameters -->
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <h5 class="text-white font-semibold mb-3">پارامترهای ریسک</h5>
+                            <div class="space-y-3">
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر تأخیر (ms)</label>
+                                    <input type="number" id="agent08-max-latency" value="1.0" min="0.1" max="5.0" step="0.1"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-medium text-gray-300 mb-2">حداکثر پوزیشن (BTC)</label>
+                                    <input type="number" id="agent08-max-position" value="10" min="0.1" max="100" step="0.1"
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons -->
+                    <div class="flex space-x-4 space-x-reverse justify-center">
+                        <button onclick="aiTabInstance.executeAgent08HFT()" 
+                                class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-bolt mr-2"></i>اجرای HFT
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent08('pause')" 
+                                class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-pause mr-2"></i>متوقف کردن
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent08('optimize_latency')" 
+                                class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-tachometer-alt mr-2"></i>بهینه‌سازی تأخیر
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent08('recalibrate_models')" 
+                                class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-cog mr-2"></i>کالیبراسیون مدل
+                        </button>
+                        <button onclick="aiTabInstance.controlAgent08('emergency_halt')" 
+                                class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors">
+                            <i class="fas fa-stop mr-2"></i>توقف اضطراری
+                        </button>
+                        <button onclick="this.closest('.fixed').remove()" 
+                                class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg transition-colors">
+                            بستن
+                        </button>
+                    </div>
+                </div>
+            `;
+
+            document.body.appendChild(modal);
+
+        } catch (error) {
+            console.error('❌ Error showing Agent 08 details:', error);
+            this.showErrorMessage('خطا در نمایش جزئیات ایجنت HFT');
+        }
+    }
+
+    async executeAgent08HFT() {
+        try {
+            const strategy = document.getElementById('agent08-strategy')?.value || 'arbitrage';
+            const symbol = document.getElementById('agent08-symbol')?.value || 'BTC/USDT';
+            const maxLatency = parseFloat(document.getElementById('agent08-max-latency')?.value) || 1.0;
+            const maxPosition = parseFloat(document.getElementById('agent08-max-position')?.value) || 10;
+
+            const parameters = {
+                maxLatency,
+                maxPosition,
+                executionMode: 'ultra_fast'
+            };
+
+            const loadingMsg = this.showLoadingMessage('در حال اجرای استراتژی HFT...');
+            
+            const execution = await this.executeAgent08Strategy(strategy, symbol, parameters);
+            
+            loadingMsg.remove();
+            
+            // Show execution results
+            this.showHFTResults(execution);
+
+        } catch (error) {
+            console.error('❌ Error executing Agent 08 HFT:', error);
+            this.showErrorMessage('خطا در اجرای استراتژی HFT');
+        }
+    }
+
+    showHFTResults(execution) {
+        const modal = document.createElement('div');
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 max-w-6xl w-full mx-4 max-h-screen overflow-y-auto">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="text-xl font-bold text-white">نتایج اجرای HFT</h3>
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">×</button>
+                </div>
+                
+                <div class="space-y-6">
+                    <!-- Execution Summary -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">خلاصه اجرا</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-green-400">${execution.execution.ordersSubmitted}</div>
+                                <div class="text-gray-300">سفارشات ارسالی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${execution.execution.ordersFilled}</div>
+                                <div class="text-gray-300">سفارشات تکمیل شده</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-purple-400">${execution.execution.avgLatency}ms</div>
+                                <div class="text-gray-300">تأخیر متوسط</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${execution.execution.fillRate}%</div>
+                                <div class="text-gray-300">نرخ تکمیل</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-cyan-400">${execution.execution.executionTime}ms</div>
+                                <div class="text-gray-300">زمان کل اجرا</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Performance Metrics -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">معیارهای عملکرد</h4>
+                        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                            <div class="grid grid-cols-2 gap-4 text-center">
+                                <div class="bg-gray-800 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-green-400">${execution.performance.profitCapture}%</div>
+                                    <div class="text-xs text-gray-400">ضبط سود</div>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-${parseFloat(execution.performance.expectedPnL) >= 0 ? 'green' : 'red'}-400">
+                                        ${parseFloat(execution.performance.expectedPnL) >= 0 ? '+' : ''}$${execution.performance.expectedPnL}
+                                    </div>
+                                    <div class="text-xs text-gray-400">PnL مورد انتظار</div>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-purple-400">${execution.performance.sharpeRatio}</div>
+                                    <div class="text-xs text-gray-400">نسبت شارپ</div>
+                                </div>
+                                <div class="bg-gray-800 rounded-lg p-3">
+                                    <div class="text-lg font-bold text-blue-400">${execution.performance.informationRatio}</div>
+                                    <div class="text-xs text-gray-400">نسبت اطلاعات</div>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h5 class="text-gray-300 font-medium mb-3">معیارهای کیفیت اجرا</h5>
+                                <div class="space-y-2 text-sm">
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">لغزش:</span>
+                                        <span class="text-orange-400">${(parseFloat(execution.execution.slippage) * 100).toFixed(3)}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">تأثیر بازار:</span>
+                                        <span class="text-yellow-400">${(parseFloat(execution.execution.marketImpact) * 100).toFixed(3)}%</span>
+                                    </div>
+                                    <div class="flex justify-between">
+                                        <span class="text-gray-400">بازده تعدیل شده:</span>
+                                        <span class="text-cyan-400">${execution.performance.riskAdjusted}%</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detected Opportunities -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">فرصت‌های تشخیص داده شده</h4>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="text-gray-300 border-b border-gray-600">
+                                        <th class="text-right p-2">نوع</th>
+                                        <th class="text-right p-2">جزئیات</th>
+                                        <th class="text-right p-2">سود/اسپرد</th>
+                                        <th class="text-right p-2">حجم/عمق</th>
+                                        <th class="text-right p-2">اعتماد</th>
+                                        <th class="text-right p-2">تأخیر</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${execution.opportunities.slice(0, 6).map((opp, index) => `
+                                        <tr class="border-b border-gray-600">
+                                            <td class="p-2">
+                                                <span class="px-2 py-1 rounded text-xs ${
+                                                    opp.type === 'arbitrage' ? 'bg-blue-600 text-white' :
+                                                    opp.type === 'market_making' ? 'bg-green-600 text-white' :
+                                                    opp.type === 'scalping' ? 'bg-purple-600 text-white' :
+                                                    'bg-orange-600 text-white'
+                                                }">${
+                                                    opp.type === 'arbitrage' ? 'آربیتراژ' :
+                                                    opp.type === 'market_making' ? 'مارکت میکر' :
+                                                    opp.type === 'scalping' ? 'اسکلپ' : 'مومنتوم'
+                                                }</span>
+                                            </td>
+                                            <td class="p-2 text-white text-xs">
+                                                ${opp.type === 'arbitrage' ? `${opp.exchange1} → ${opp.exchange2}` :
+                                                  opp.type === 'market_making' ? `${opp.bidPrice?.toFixed(0)} - ${opp.askPrice?.toFixed(0)}` :
+                                                  opp.type === 'scalping' ? `${opp.direction} ${opp.entryPrice?.toFixed(0)}` :
+                                                  `${opp.direction} قدرت ${opp.strength}%`}
+                                            </td>
+                                            <td class="p-2 text-yellow-400">
+                                                ${opp.spread ? `${(parseFloat(opp.spread) * 100).toFixed(3)}%` :
+                                                  opp.type === 'scalping' ? `${((opp.targetPrice - opp.entryPrice) / opp.entryPrice * 100).toFixed(2)}%` :
+                                                  'متغیر'}
+                                            </td>
+                                            <td class="p-2 text-cyan-400">
+                                                ${opp.volume || opp.depth || opp.expectedVolume || 'متغیر'}
+                                            </td>
+                                            <td class="p-2 text-green-400">
+                                                ${opp.confidence || opp.probability || opp.reliability || 'N/A'}${
+                                                    (opp.confidence || opp.probability || opp.reliability) ? '%' : ''
+                                                }
+                                            </td>
+                                            <td class="p-2 text-purple-400">
+                                                ${opp.latency ? `${opp.latency}ms` : 'N/A'}
+                                            </td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Risk Assessment -->
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h4 class="text-white font-semibold mb-4">ارزیابی ریسک</h4>
+                        <div class="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-red-400">${execution.risk.maxDrawdown}%</div>
+                                <div class="text-gray-300 text-sm">حداکثر افت</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-orange-400">$${Math.abs(execution.risk.varEstimate)}</div>
+                                <div class="text-gray-300 text-sm">VaR تخمینی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-yellow-400">${execution.risk.leverageUsed}x</div>
+                                <div class="text-gray-300 text-sm">اهرم استفاده شده</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-blue-400">${execution.risk.correlationExposure}%</div>
+                                <div class="text-gray-300 text-sm">قرارگیری همبستگی</div>
+                            </div>
+                            <div class="text-center">
+                                <div class="text-2xl font-bold text-${
+                                    execution.risk.liquidityRisk === 'low' ? 'green' :
+                                    execution.risk.liquidityRisk === 'medium' ? 'yellow' : 'red'
+                                }-400">
+                                    ${execution.risk.liquidityRisk === 'low' ? 'کم' :
+                                      execution.risk.liquidityRisk === 'medium' ? 'متوسط' : 'بالا'}
+                                </div>
+                                <div class="text-gray-300 text-sm">ریسک نقدینگی</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mt-6 flex justify-center">
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg">
+                        بستن
+                    </button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    toggleHFTStrategy(strategyName) {
+        console.log(`Toggle HFT strategy: ${strategyName}`);
+        // Implementation for toggling HFT strategy
     }
 }

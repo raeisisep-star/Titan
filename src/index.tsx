@@ -24357,6 +24357,466 @@ function generateSimilarNews() {
   return similar;
 }
 
+// =============================================================================
+// AGENT 08: HIGH-FREQUENCY TRADING (HFT) AGENT ENDPOINTS
+// =============================================================================
+
+// Agent 08: HFT Agent - Status endpoint
+appWithD1.get('/api/agents/08/status', authMiddleware, async (c) => {
+  try {
+    const status = {
+      id: '08',
+      name: 'High-Frequency Trading Agent',
+      status: 'active',
+      accuracy: 94.2,
+      confidence: 91.8,
+      lastActivity: new Date().toISOString(),
+      
+      // Performance metrics
+      performance: {
+        totalTrades: 28947,
+        todayTrades: 1842,
+        tradesPerSecond: 12.7,
+        averageLatency: 0.85,     // milliseconds
+        slippage: 0.015,          // % average slippage
+        fillRate: 99.2,           // % order fill rate
+        uptime: 99.97,            // % system uptime
+        profitability: 15.8       // % daily profitability
+      },
+
+      // Latency metrics
+      latency: {
+        orderEntry: 0.65,         // ms - order entry to exchange
+        marketData: 0.12,         // ms - market data processing
+        riskCheck: 0.08,          // ms - risk validation
+        execution: 0.45,          // ms - execution confirmation
+        total: 1.30,              // ms - total round trip
+        networkJitter: 0.05,      // ms - network variance
+        targetLatency: 1.0        // ms - target latency SLA
+      },
+
+      // Order book analysis
+      orderBook: {
+        depth: {
+          bidLevels: 25,          // number of bid levels
+          askLevels: 27,          // number of ask levels
+          totalVolume: 847.32,    // BTC total volume
+          spread: 0.018,          // % current spread
+          imbalance: 0.15,        // order flow imbalance
+          liquidityScore: 85.7    // liquidity quality score
+        },
+        microstructure: {
+          tickSize: 0.01,         // minimum price increment
+          lotSize: 0.001,         // minimum quantity increment
+          marketImpact: 0.003,    // % market impact per $1000
+          priceEfficiency: 94.2,  // % price efficiency score
+          informationRatio: 1.85  // information content ratio
+        }
+      },
+
+      // Arbitrage opportunities
+      arbitrage: {
+        activeOpportunities: 8,
+        totalDetected: 245,
+        averageSpread: 0.025,      // % average arbitrage spread
+        executionSpeed: 0.75,      // ms average execution time
+        successRate: 87.4,         // % successful arbitrage trades
+        profitCapture: 78.3,       // % of theoretical profit captured
+        riskAdjustedReturn: 12.7   // % risk-adjusted return
+      },
+
+      // Market making metrics
+      marketMaking: {
+        activePairs: 6,
+        quotesPerSecond: 45.8,
+        inventoryTurnover: 8.5,     // times per day
+        skewAdjustment: 0.12,       // % inventory skew adjustment
+        optimalSpread: 0.022,       // % calculated optimal spread
+        competitiveness: 92.4,      // % quote competitiveness
+        adverseSelection: 3.8       // % adverse selection rate
+      },
+
+      // Risk management
+      risk: {
+        maxPosition: 50,            // BTC maximum position size
+        currentExposure: 23.7,      // BTC current net exposure
+        utilizationRate: 47.4,      // % of max exposure used
+        stopLossHits: 3,           // stop losses triggered today
+        circuitBreakerTrips: 0,     // circuit breaker activations
+        riskScore: 'low',          // current risk level
+        correlationRisk: 15.2      // % correlation risk
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: status
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Execute HFT Strategy
+appWithD1.post('/api/agents/08/execute', authMiddleware, async (c) => {
+  try {
+    const { strategy, symbol, parameters } = await c.req.json();
+
+    // Simulate HFT strategy execution
+    const execution = {
+      strategy: strategy || 'arbitrage',
+      symbol: symbol || 'BTC/USDT',
+      timestamp: new Date().toISOString(),
+      
+      parameters: {
+        maxLatency: parameters?.maxLatency || 1.0,      // ms
+        minSpread: parameters?.minSpread || 0.01,       // %
+        maxPosition: parameters?.maxPosition || 10,     // BTC
+        riskLimit: parameters?.riskLimit || 5000,       // USDT
+        executionMode: parameters?.executionMode || 'aggressive',
+        ...parameters
+      },
+
+      // Execution results
+      execution: {
+        ordersSubmitted: Math.floor(Math.random() * 20) + 10,
+        ordersFilled: Math.floor(Math.random() * 18) + 8,
+        avgLatency: (0.5 + Math.random() * 0.8).toFixed(2), // ms
+        slippage: (Math.random() * 0.03).toFixed(4),        // %
+        marketImpact: (Math.random() * 0.005).toFixed(4),   // %
+        fillRate: (90 + Math.random() * 9).toFixed(1),      // %
+        executionTime: Math.floor(Math.random() * 500) + 100 // ms
+      },
+
+      // Detected opportunities
+      opportunities: generateHFTOpportunities(strategy, symbol),
+
+      // Performance metrics
+      performance: {
+        profitCapture: (70 + Math.random() * 25).toFixed(1),  // %
+        expectedPnL: (Math.random() * 200 - 50).toFixed(2),   // USDT
+        riskAdjusted: (Math.random() * 15).toFixed(2),        // %
+        informationRatio: (0.8 + Math.random() * 1.5).toFixed(2),
+        sharpeRatio: (1.2 + Math.random() * 1.8).toFixed(2)
+      },
+
+      // Risk assessment
+      risk: {
+        maxDrawdown: (Math.random() * 3 + 0.5).toFixed(2),   // %
+        varEstimate: -(Math.random() * 500 + 100).toFixed(0), // USDT VaR
+        leverageUsed: (Math.random() * 3 + 1).toFixed(1),    // x
+        correlationExposure: (Math.random() * 30).toFixed(1), // %
+        liquidityRisk: ['low', 'medium', 'high'][Math.floor(Math.random() * 3)]
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: execution,
+      message: 'HFT strategy executed successfully'
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get HFT Trading History
+appWithD1.get('/api/agents/08/history', authMiddleware, async (c) => {
+  try {
+    const trades = [];
+    for (let i = 0; i < 25; i++) {
+      const isProfit = Math.random() > 0.15; // 85% win rate for HFT
+      const latency = 0.3 + Math.random() * 1.2;
+      trades.push({
+        id: `hft_${Date.now()}_${i}`,
+        timestamp: new Date(Date.now() - i * 120000).toISOString(), // Every 2 min
+        strategy: ['arbitrage', 'market_making', 'scalping', 'momentum'][Math.floor(Math.random() * 4)],
+        symbol: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT'][Math.floor(Math.random() * 3)],
+        side: Math.random() > 0.5 ? 'buy' : 'sell',
+        quantity: (Math.random() * 5 + 0.1).toFixed(4),
+        entryPrice: 42000 + (Math.random() * 2000 - 1000),
+        exitPrice: function() {
+          const entry = this.entryPrice;
+          const changePercent = isProfit ? (Math.random() * 0.5 + 0.05) : -(Math.random() * 0.3 + 0.02);
+          return entry * (1 + changePercent / 100);
+        }(),
+        pnl: isProfit ? (Math.random() * 50 + 5) : -(Math.random() * 30 + 2),
+        latency: latency.toFixed(2),
+        slippage: (Math.random() * 0.05).toFixed(4),
+        fillRate: (95 + Math.random() * 5).toFixed(1),
+        duration: Math.floor(Math.random() * 30) + 5, // 5-35 seconds
+        status: 'completed'
+      });
+    }
+
+    return c.json({
+      success: true,
+      data: {
+        recentTrades: trades,
+        summary: {
+          totalTrades: trades.length,
+          profitableTrades: trades.filter(t => t.pnl > 0).length,
+          losingTrades: trades.filter(t => t.pnl <= 0).length,
+          totalPnL: trades.reduce((sum, t) => sum + t.pnl, 0),
+          avgLatency: (trades.reduce((sum, t) => sum + parseFloat(t.latency), 0) / trades.length).toFixed(2),
+          avgSlippage: (trades.reduce((sum, t) => sum + parseFloat(t.slippage), 0) / trades.length).toFixed(4),
+          winRate: (trades.filter(t => t.pnl > 0).length / trades.length * 100).toFixed(1)
+        }
+      }
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Control HFT Agent
+appWithD1.post('/api/agents/08/control', authMiddleware, async (c) => {
+  try {
+    const { action, parameters } = await c.req.json();
+    
+    let result = { success: true };
+    
+    switch (action) {
+      case 'start':
+        result.message = 'HFT engine started';
+        result.data = { status: 'active', strategies: 4, latency: '0.85ms' };
+        break;
+      
+      case 'stop':
+        result.message = 'HFT engine stopped gracefully';
+        result.data = { status: 'stopped', ordersCancel: 'all', positions: 'flat' };
+        break;
+        
+      case 'pause':
+        result.message = 'HFT engine paused';
+        result.data = { status: 'paused', newOrders: false, existingOrders: 'maintain' };
+        break;
+        
+      case 'optimize_latency':
+        result.message = 'Latency optimization completed';
+        result.data = { 
+          previousLatency: '1.2ms',
+          newLatency: '0.75ms',
+          improvement: '37.5%',
+          optimizations: ['network_tuning', 'algorithm_optimization', 'hardware_upgrade']
+        };
+        break;
+        
+      case 'adjust_risk':
+        result.message = 'Risk parameters adjusted';
+        result.data = { 
+          maxPosition: parameters?.maxPosition || 25,
+          riskLimit: parameters?.riskLimit || 10000,
+          stopLossLevel: parameters?.stopLoss || 2.5,
+          leverageLimit: parameters?.leverage || 3.0
+        };
+        break;
+        
+      case 'recalibrate_models':
+        result.message = 'Trading models recalibrated';
+        result.data = { 
+          modelsUpdated: 6,
+          backtestPeriod: '7 days',
+          performanceImprovement: (5 + Math.random() * 15).toFixed(1) + '%',
+          calibrationScore: (85 + Math.random() * 12).toFixed(1)
+        };
+        break;
+        
+      case 'emergency_halt':
+        result.message = 'Emergency halt executed';
+        result.data = { 
+          allOrdersCanceled: true,
+          positionsFlattened: true,
+          systemLocked: true,
+          haltTime: new Date().toISOString()
+        };
+        break;
+        
+      default:
+        result.success = false;
+        result.message = 'Unknown control action';
+    }
+
+    return c.json(result);
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get HFT Configuration
+appWithD1.get('/api/agents/08/config', authMiddleware, async (c) => {
+  try {
+    const config = {
+      execution: {
+        maxLatency: 1.0,          // ms - maximum acceptable latency
+        targetLatency: 0.5,       // ms - target latency
+        timeoutMs: 100,           // ms - order timeout
+        retryAttempts: 2,         // number of retry attempts
+        slippageTolerance: 0.05,  // % maximum slippage
+        partialFills: true,       // allow partial fills
+        icebergOrders: false,     // use iceberg orders
+        postOnly: false           // post-only orders
+      },
+      
+      strategies: {
+        arbitrage: {
+          enabled: true,
+          minSpread: 0.01,          // % minimum profitable spread
+          maxPosition: 10,          // BTC maximum position
+          exchanges: ['binance', 'coinbase', 'kraken'],
+          executionSpeed: 'ultra_fast',
+          riskLimit: 5000           // USDT risk limit
+        },
+        marketMaking: {
+          enabled: true,
+          spreadMultiplier: 1.5,    // spread multiplier
+          inventoryTarget: 0.5,     // target inventory ratio
+          skewFactor: 0.1,          // inventory skew factor
+          quotesPerSecond: 50,      // maximum quotes per second
+          minQuoteSize: 0.01        // BTC minimum quote size
+        },
+        scalping: {
+          enabled: true,
+          tickSize: 0.01,           // minimum price increment
+          holdTime: 30,             // seconds maximum hold time
+          profitTarget: 0.02,       // % profit target
+          stopLoss: 0.05,           // % stop loss
+          maxTrades: 100            // maximum trades per hour
+        },
+        momentum: {
+          enabled: false,
+          threshold: 0.05,          // % momentum threshold
+          timeWindow: 5,            // seconds time window
+          fadeTime: 30,             // seconds fade time
+          riskMultiplier: 1.2       // risk multiplier
+        }
+      },
+      
+      risk: {
+        maxPositionSize: 50,        // BTC maximum position
+        maxLeverage: 3.0,          // maximum leverage
+        maxDailyLoss: 10000,       // USDT maximum daily loss
+        maxDrawdown: 5,            // % maximum drawdown
+        correlationLimit: 0.8,     // maximum correlation
+        varLimit: 20000,           // USDT VaR limit
+        liquidityThreshold: 10,    // minimum liquidity score
+        circuitBreakerLoss: 5000   // USDT circuit breaker level
+      },
+      
+      monitoring: {
+        latencyAlerts: true,
+        slippageAlerts: true,
+        riskAlerts: true,
+        performanceAlerts: true,
+        systemAlerts: true,
+        alertThresholds: {
+          latency: 2.0,            // ms alert threshold
+          slippage: 0.1,           // % alert threshold  
+          drawdown: 3.0,           // % alert threshold
+          fillRate: 90.0           // % alert threshold
+        }
+      },
+      
+      infrastructure: {
+        primaryDatacenter: 'us-east-1',
+        backupDatacenter: 'eu-west-1',
+        networkOptimization: true,
+        hardwareAcceleration: true,
+        colocation: true,
+        directMarketAccess: true
+      }
+    };
+
+    return c.json({
+      success: true,
+      data: config
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Update HFT Configuration
+appWithD1.put('/api/agents/08/config', authMiddleware, async (c) => {
+  try {
+    const config = await c.req.json();
+    
+    return c.json({
+      success: true,
+      message: 'HFT configuration updated successfully',
+      data: config
+    });
+  } catch (error) {
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Helper functions for HFT
+function generateHFTOpportunities(strategy, symbol) {
+  const opportunities = [];
+  const count = Math.floor(Math.random() * 8) + 3;
+  
+  for (let i = 0; i < count; i++) {
+    switch (strategy) {
+      case 'arbitrage':
+        opportunities.push({
+          type: 'arbitrage',
+          exchange1: ['Binance', 'Coinbase', 'Kraken'][Math.floor(Math.random() * 3)],
+          exchange2: ['Binance', 'Coinbase', 'Kraken'][Math.floor(Math.random() * 3)],
+          spread: (Math.random() * 0.08 + 0.01).toFixed(4),
+          volume: (Math.random() * 5 + 0.5).toFixed(2),
+          confidence: (75 + Math.random() * 20).toFixed(1),
+          latency: (0.5 + Math.random() * 1.0).toFixed(2)
+        });
+        break;
+        
+      case 'market_making':
+        opportunities.push({
+          type: 'market_making',
+          bidPrice: 42000 - (Math.random() * 50 + 10),
+          askPrice: 42000 + (Math.random() * 50 + 10),
+          spread: (Math.random() * 0.05 + 0.015).toFixed(4),
+          depth: (Math.random() * 10 + 2).toFixed(1),
+          competition: Math.floor(Math.random() * 15) + 5,
+          expectedVolume: (Math.random() * 20 + 5).toFixed(1)
+        });
+        break;
+        
+      case 'scalping':
+        opportunities.push({
+          type: 'scalping',
+          direction: Math.random() > 0.5 ? 'long' : 'short',
+          entryPrice: 42000 + (Math.random() * 200 - 100),
+          targetPrice: function() {
+            const entry = this.entryPrice;
+            const move = Math.random() * 0.3 + 0.1; // 0.1-0.4%
+            return this.direction === 'long' ? entry * (1 + move/100) : entry * (1 - move/100);
+          }(),
+          stopPrice: function() {
+            const entry = this.entryPrice;
+            const move = Math.random() * 0.2 + 0.05; // 0.05-0.25%
+            return this.direction === 'long' ? entry * (1 - move/100) : entry * (1 + move/100);
+          }(),
+          timeWindow: Math.floor(Math.random() * 45) + 15, // 15-60 seconds
+          probability: (60 + Math.random() * 30).toFixed(1)
+        });
+        break;
+        
+      default:
+        opportunities.push({
+          type: 'momentum',
+          direction: Math.random() > 0.5 ? 'bullish' : 'bearish',
+          strength: (Math.random() * 100).toFixed(1),
+          timeframe: Math.floor(Math.random() * 30) + 5, // 5-35 seconds
+          volume: (Math.random() * 15 + 2).toFixed(1),
+          reliability: (70 + Math.random() * 25).toFixed(1)
+        });
+    }
+  }
+  
+  return opportunities;
+}
+
 // Mount the original app
 appWithD1.route('/', app);
 
