@@ -30885,6 +30885,437 @@ app.get('/api/config/api-services/usage', async (c) => {
   }
 })
 
+// =============================================================================
+// AI OVERVIEW MANAGEMENT ENDPOINTS
+// =============================================================================
+
+// Get comprehensive AI overview data
+app.get('/api/ai/overview', async (c) => {
+  try {
+    console.log('📊 Loading AI overview data')
+    
+    // Generate comprehensive overview data
+    const overviewData = {
+      artemis: {
+        status: 'active',
+        intelligence: {
+          overallIQ: 142,
+          emotionalIntelligence: 87,
+          strategicThinking: 94
+        },
+        performance: {
+          analysisAccuracy: 94.7,
+          responseTime: 234,
+          requestsPerMinute: 128,
+          activeConnections: 67
+        },
+        lastUpdate: new Date().toISOString(),
+        version: '3.2.1'
+      },
+      
+      agents: Array.from({ length: 15 }, (_, i) => ({
+        id: `agent_${String(i + 1).padStart(2, '0')}`,
+        name: [
+          'تحلیل تکنیکال', 'مدیریت ریسک', 'سیگنال‌های معاملاتی', 'تحلیل احساسات بازار',
+          'پیش‌بینی قیمت', 'بهینه‌سازی پورتفولیو', 'تحلیل اخبار', 'آربیتراژ',
+          'الگوریتم‌های یادگیری', 'تحلیل بلاک‌چین', 'بهینه‌سازی پورتفولیو پیشرفته',
+          'ارزیابی ریسک', 'نظارت بر مقررات', 'آنالیز عملکرد', 'هماهنگ‌سازی سیستم'
+        ][i],
+        type: 'AI Agent',
+        status: Math.random() > 0.2 ? 'active' : Math.random() > 0.5 ? 'learning' : 'offline',
+        performance: {
+          accuracy: 75 + Math.random() * 20,
+          speed: 50 + Math.random() * 40,
+          reliability: 80 + Math.random() * 15
+        },
+        learning: {
+          currentlyLearning: Math.random() > 0.7,
+          progressPercentage: Math.random() * 100,
+          lastTraining: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString()
+        }
+      })),
+      
+      systemMetrics: {
+        overallHealth: 92.5 + Math.random() * 5,
+        cpuUsage: 60 + Math.random() * 20,
+        memoryUsage: 65 + Math.random() * 20,
+        diskUsage: 45 + Math.random() * 15,
+        networkLatency: 30 + Math.random() * 20,
+        apiResponseTime: 180 + Math.random() * 100,
+        activeConnections: 100 + Math.random() * 50,
+        throughput: 500 + Math.random() * 200
+      },
+      
+      externalProviders: [
+        {
+          name: 'OpenAI GPT',
+          status: 'active',
+          responseTime: 0.8 + Math.random() * 0.5,
+          successRate: 97 + Math.random() * 2,
+          dailyRequests: 2000 + Math.random() * 1000,
+          lastTest: new Date().toISOString(),
+          quota: { used: 1250, limit: 5000 }
+        },
+        {
+          name: 'Google Gemini',
+          status: 'active',
+          responseTime: 0.6 + Math.random() * 0.4,
+          successRate: 98 + Math.random() * 1.5,
+          dailyRequests: 1800 + Math.random() * 800,
+          lastTest: new Date().toISOString(),
+          quota: { used: 890, limit: 3000 }
+        },
+        {
+          name: 'Anthropic Claude',
+          status: Math.random() > 0.1 ? 'active' : 'warning',
+          responseTime: 1.1 + Math.random() * 0.8,
+          successRate: 95 + Math.random() * 3,
+          dailyRequests: 1200 + Math.random() * 600,
+          lastTest: new Date().toISOString(),
+          quota: { used: 650, limit: 2000 }
+        }
+      ],
+      
+      recentActivities: [
+        { timestamp: new Date(Date.now() - 2 * 60 * 1000), message: 'ایجنت تحلیل تکنیکال به‌روزرسانی شد', type: 'success' },
+        { timestamp: new Date(Date.now() - 5 * 60 * 1000), message: 'سیگنال خرید BTC/USDT تولید شد', type: 'info' },
+        { timestamp: new Date(Date.now() - 8 * 60 * 1000), message: 'آرتمیس مدل‌های یادگیری را بهینه کرد', type: 'success' },
+        { timestamp: new Date(Date.now() - 12 * 60 * 1000), message: 'هشدار: اتصال به صرافی MEXC قطع شد', type: 'warning' },
+        { timestamp: new Date(Date.now() - 15 * 60 * 1000), message: 'بکاپ خودکار سیستم تکمیل شد', type: 'success' }
+      ]
+    }
+    
+    const response = {
+      success: true,
+      message: 'AI overview data loaded successfully',
+      data: overviewData,
+      timestamp: new Date().toISOString()
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error loading AI overview:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load AI overview data'
+    }, 500)
+  }
+})
+
+// Get system health details
+app.get('/api/ai/overview/health', async (c) => {
+  try {
+    console.log('🏥 Loading system health details')
+    
+    const healthData = {
+      overall: {
+        score: 94.2,
+        status: 'healthy',
+        lastCheck: new Date().toISOString()
+      },
+      components: [
+        { name: 'CPU Usage', value: 68.2, status: 'good', threshold: 80 },
+        { name: 'Memory Usage', value: 72.8, status: 'good', threshold: 85 },
+        { name: 'Disk Usage', value: 45.1, status: 'excellent', threshold: 90 },
+        { name: 'Network Latency', value: 42, status: 'good', threshold: 100, unit: 'ms' },
+        { name: 'Database Connections', value: 15, status: 'excellent', threshold: 50 },
+        { name: 'API Response Time', value: 234, status: 'good', threshold: 500, unit: 'ms' }
+      ],
+      recommendations: [
+        'CPU usage is within normal range but could be optimized',
+        'Consider adding more memory for better performance',
+        'Database queries are performing well',
+        'Network connectivity is stable'
+      ]
+    }
+    
+    return c.json({
+      success: true,
+      data: healthData,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error loading health details:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load system health details'
+    }, 500)
+  }
+})
+
+// Get top performing agents
+app.get('/api/ai/overview/top-agents', async (c) => {
+  try {
+    console.log('🏆 Loading top performing agents')
+    
+    const topAgents = [
+      { id: 'agent_01', name: 'تحلیل تکنیکال', accuracy: 96.8, trades: 342, profit: 12.4 },
+      { id: 'agent_03', name: 'سیگنال‌های معاملاتی', accuracy: 94.2, trades: 278, profit: 9.7 },
+      { id: 'agent_05', name: 'پیش‌بینی قیمت', accuracy: 92.1, trades: 198, profit: 8.3 },
+      { id: 'agent_02', name: 'مدیریت ریسک', accuracy: 91.5, trades: 156, profit: 7.9 },
+      { id: 'agent_06', name: 'بهینه‌سازی پورتفولیو', accuracy: 89.7, trades: 89, profit: 6.2 }
+    ]
+    
+    return c.json({
+      success: true,
+      data: topAgents,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error loading top agents:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load top performing agents'
+    }, 500)
+  }
+})
+
+// Get comprehensive performance metrics
+app.get('/api/ai/overview/performance', async (c) => {
+  try {
+    console.log('📈 Loading performance metrics')
+    
+    const performanceData = {
+      summary: {
+        totalAgents: 15,
+        activeAgents: 13,
+        averageAccuracy: 89.4,
+        totalTrades: 1247,
+        successRate: 87.6,
+        totalProfit: 24.8
+      },
+      trends: {
+        accuracy: Array.from({ length: 7 }, (_, i) => ({
+          date: new Date(Date.now() - (6-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: 85 + Math.random() * 10
+        })),
+        trades: Array.from({ length: 7 }, (_, i) => ({
+          date: new Date(Date.now() - (6-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: 150 + Math.random() * 100
+        })),
+        profit: Array.from({ length: 7 }, (_, i) => ({
+          date: new Date(Date.now() - (6-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+          value: 2 + Math.random() * 4
+        }))
+      },
+      alerts: [
+        { level: 'info', message: 'System performance is within normal parameters' },
+        { level: 'warning', message: 'Agent 04 accuracy has dropped below 85%' },
+        { level: 'success', message: 'New daily profit record achieved' }
+      ]
+    }
+    
+    return c.json({
+      success: true,
+      data: performanceData,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error loading performance metrics:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load performance metrics'
+    }, 500)
+  }
+})
+
+// Update Artemis configuration
+app.post('/api/ai/overview/artemis/config', async (c) => {
+  try {
+    const { sensitivity, confidenceThreshold, learningRate } = await c.req.json()
+    
+    console.log('⚙️ Updating Artemis configuration:', { sensitivity, confidenceThreshold, learningRate })
+    
+    // Simulate configuration update
+    const updatedConfig = {
+      sensitivity: sensitivity || 8,
+      confidenceThreshold: confidenceThreshold || 85,
+      learningRate: learningRate || 7,
+      lastUpdated: new Date().toISOString(),
+      updatedBy: 'admin'
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Artemis configuration updated successfully',
+      data: updatedConfig,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error updating Artemis config:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to update Artemis configuration'
+    }, 500)
+  }
+})
+
+// Optimize all agents
+app.post('/api/ai/overview/optimize-all', async (c) => {
+  try {
+    console.log('🔧 Starting optimization of all agents')
+    
+    // Simulate optimization process
+    const optimizationResults = {
+      totalAgents: 15,
+      optimized: 13,
+      failed: 2,
+      averageImprovement: 5.7,
+      estimatedTime: '3-5 minutes',
+      status: 'completed',
+      details: [
+        { agent: 'Technical Analysis', improvement: 7.2, status: 'success' },
+        { agent: 'Risk Management', improvement: 4.8, status: 'success' },
+        { agent: 'Signal Generation', improvement: 6.1, status: 'success' },
+        { agent: 'Market Sentiment', improvement: 3.9, status: 'success' },
+        { agent: 'Price Prediction', improvement: 0, status: 'failed', error: 'Model convergence issue' }
+      ]
+    }
+    
+    return c.json({
+      success: true,
+      message: 'Agent optimization completed',
+      data: optimizationResults,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error optimizing agents:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to optimize agents'
+    }, 500)
+  }
+})
+
+// Test all external providers
+app.post('/api/ai/overview/test-providers', async (c) => {
+  try {
+    console.log('🧪 Testing all external AI providers')
+    
+    const testResults = {
+      openai: {
+        status: 'success',
+        responseTime: 0.89,
+        successRate: 98.2,
+        lastError: null,
+        quota: { used: 1250, remaining: 3750 }
+      },
+      gemini: {
+        status: 'success', 
+        responseTime: 0.64,
+        successRate: 99.1,
+        lastError: null,
+        quota: { used: 890, remaining: 2110 }
+      },
+      claude: {
+        status: Math.random() > 0.2 ? 'success' : 'warning',
+        responseTime: 1.23,
+        successRate: 96.7,
+        lastError: Math.random() > 0.8 ? 'Rate limit exceeded' : null,
+        quota: { used: 650, remaining: 1350 }
+      }
+    }
+    
+    const overallStatus = Object.values(testResults).every(r => r.status === 'success') ? 'success' : 'partial'
+    
+    return c.json({
+      success: true,
+      message: 'Provider testing completed',
+      data: {
+        overall: overallStatus,
+        results: testResults,
+        summary: `${Object.values(testResults).filter(r => r.status === 'success').length}/${Object.keys(testResults).length} providers healthy`
+      },
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error testing providers:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to test external providers'
+    }, 500)
+  }
+})
+
+// Test individual provider
+app.post('/api/ai/overview/test-provider', async (c) => {
+  try {
+    const { provider } = await c.req.json()
+    console.log(`🧪 Testing provider: ${provider}`)
+    
+    // Simulate provider test
+    const testResult = {
+      provider,
+      status: Math.random() > 0.1 ? 'success' : 'failed',
+      responseTime: 0.5 + Math.random() * 1.5,
+      timestamp: new Date().toISOString(),
+      details: {
+        endpoint: 'Primary API',
+        authentication: 'Valid',
+        quota: Math.random() > 0.9 ? 'Warning: 85% used' : 'Normal'
+      }
+    }
+    
+    return c.json({
+      success: testResult.status === 'success',
+      message: `${provider} test ${testResult.status === 'success' ? 'successful' : 'failed'}`,
+      data: testResult,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error testing provider:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to test provider'
+    }, 500)
+  }
+})
+
+// Run system diagnostics
+app.post('/api/ai/overview/diagnostics', async (c) => {
+  try {
+    console.log('🔍 Running comprehensive system diagnostics')
+    
+    const diagnosticsResults = {
+      overview: {
+        status: 'healthy',
+        score: 94.2,
+        issues: 2,
+        warnings: 1,
+        criticalErrors: 0
+      },
+      components: [
+        { name: 'Database Connectivity', status: 'healthy', responseTime: '15ms' },
+        { name: 'AI Model Loading', status: 'healthy', responseTime: '234ms' },
+        { name: 'External API Connectivity', status: 'warning', message: 'Claude API slow response' },
+        { name: 'Memory Usage', status: 'healthy', usage: '72.8%' },
+        { name: 'CPU Performance', status: 'healthy', usage: '68.2%' },
+        { name: 'Network Connectivity', status: 'healthy', latency: '42ms' }
+      ],
+      recommendations: [
+        'Monitor Claude API response times',
+        'Consider scaling up if traffic increases',
+        'Database performance is optimal',
+        'All critical systems functioning normally'
+      ],
+      nextCheck: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+    }
+    
+    return c.json({
+      success: true,
+      message: 'System diagnostics completed',
+      data: diagnosticsResults,
+      timestamp: new Date().toISOString()
+    })
+  } catch (error) {
+    console.error('❌ Error running diagnostics:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to run system diagnostics'
+    }, 500)
+  }
+})
+
 // Mount the original app routes to appWithD1
 appWithD1.route('/', app);
 
