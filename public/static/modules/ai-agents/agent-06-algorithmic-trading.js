@@ -164,6 +164,22 @@ class AlgorithmicTradingAgent {
         }
     }
 
+    // Helper function to create a proper copy of ML model with preserved functions
+    createModelCopy(originalModel) {
+        return {
+            layers: [],
+            weights: [],
+            biases: [],
+            velocity: null,
+            biasVelocity: null,
+            // Preserve the function references
+            init: originalModel.init,
+            forward: originalModel.forward,
+            matrixMultiply: originalModel.matrixMultiply,
+            train: originalModel.train
+        };
+    }
+
     async initializeMLModels() {
         // Strategy optimization neural network
         this.strategyOptimizationModel = {
@@ -327,8 +343,8 @@ class AlgorithmicTradingAgent {
         
         this.strategyOptimizationModel.init(this.config.modelConfig);
         
-        // Execution optimization model
-        this.executionModel = JSON.parse(JSON.stringify(this.strategyOptimizationModel));
+        // Execution optimization model (proper copy with functions preserved)
+        this.executionModel = this.createModelCopy(this.strategyOptimizationModel);
         this.executionModel.init({ ...this.config.modelConfig, outputSize: 5 }); // Price, Size, Timing, etc.
         
         console.log(`[${this.agentId}] ML models initialized`);

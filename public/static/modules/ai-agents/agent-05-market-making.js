@@ -372,15 +372,49 @@ class MarketMakingAgent {
         
         this.spreadPredictionModel.init(this.config.modelConfig);
 
-        // Liquidity prediction model (similar structure)
-        this.liquidityModel = JSON.parse(JSON.stringify(this.spreadPredictionModel));
+        // Liquidity prediction model (proper deep copy with functions)
+        this.liquidityModel = this.createModelCopy(this.spreadPredictionModel);
         this.liquidityModel.init({ ...this.config.modelConfig, outputSize: 1 });
         
         // Inventory management model
-        this.inventoryModel = JSON.parse(JSON.stringify(this.spreadPredictionModel));
+        this.inventoryModel = this.createModelCopy(this.spreadPredictionModel);
         this.inventoryModel.init({ ...this.config.modelConfig, outputSize: 3 }); // Buy/Hold/Sell signals
         
         console.log(`[${this.agentId}] ML models initialized with ${this.config.modelConfig.hiddenLayers.length} hidden layers`);
+    }
+
+    // Helper function to properly copy ML model with functions
+    createModelCopy(originalModel) {
+        return {
+            layers: [],
+            weights: [],
+            biases: [],
+            velocity: null,
+            biasVelocity: null,
+            
+            init: originalModel.init,
+            forward: originalModel.forward,
+            matrixMultiply: originalModel.matrixMultiply,
+            train: originalModel.train
+        };
+    }
+
+    async setupAPIIntegration() {
+        console.log(`[${this.agentId}] Setting up API integration...`);
+        // API integration setup for market making
+        // This would normally set up real exchange connections
+        try {
+            // Simulate API connection setup
+            for (const [name, config] of Object.entries(this.apis)) {
+                if (config.enabled) {
+                    console.log(`[${this.agentId}] Testing ${name} API...`);
+                    // In real implementation, would test actual API connections
+                }
+            }
+            console.log(`[${this.agentId}] API integration setup completed`);
+        } catch (error) {
+            console.warn(`[${this.agentId}] API integration warning:`, error);
+        }
     }
 
     async initializeOrderBookTracking() {

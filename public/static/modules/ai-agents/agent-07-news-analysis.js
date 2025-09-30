@@ -167,6 +167,22 @@ class NewsAnalysisAgent {
         }
     }
 
+    // Helper function to create a proper copy of ML model with preserved functions
+    createModelCopy(originalModel) {
+        return {
+            layers: [],
+            weights: [],
+            biases: [],
+            velocity: null,
+            biasVelocity: null,
+            // Preserve the function references
+            init: originalModel.init,
+            forward: originalModel.forward,
+            matrixMultiply: originalModel.matrixMultiply,
+            train: originalModel.train
+        };
+    }
+
     async initializeMLModels() {
         // News impact prediction neural network
         this.newsImpactModel = {
@@ -332,7 +348,7 @@ class NewsAnalysisAgent {
         this.newsImpactModel.init(this.config.modelConfig);
 
         // Sentiment classification model (simpler architecture)
-        this.sentimentClassificationModel = JSON.parse(JSON.stringify(this.newsImpactModel));
+        this.sentimentClassificationModel = this.createModelCopy(this.newsImpactModel);
         this.sentimentClassificationModel.init({ 
             ...this.config.modelConfig, 
             outputSize: 5,  // 5 sentiment levels
@@ -340,7 +356,7 @@ class NewsAnalysisAgent {
         });
 
         // News relevance model
-        this.relevanceModel = JSON.parse(JSON.stringify(this.newsImpactModel));
+        this.relevanceModel = this.createModelCopy(this.newsImpactModel);
         this.relevanceModel.init({ 
             ...this.config.modelConfig, 
             outputSize: 1,  // Single relevance score
