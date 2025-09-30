@@ -13332,6 +13332,246 @@ app.post('/api/ai-analytics/training/stop/:sessionId', authMiddleware, async (c)
 })
 
 // Get Training History
+// Advanced AI Analytics API endpoints
+app.get('/api/ai-analytics/performance/overview', authMiddleware, async (c) => {
+    // Generate comprehensive performance overview data
+    const performanceData = {
+        summary: {
+            totalAgents: 15,
+            activeAgents: 13,
+            trainingAgents: 2,
+            avgAccuracy: 87.3,
+            totalDecisions: 2847392,
+            successRate: 94.2,
+            uptime: 99.8,
+            totalLearningHours: 18472
+        },
+        agentPerformance: Array.from({length: 15}, (_, i) => {
+            const agentId = `agent_${String(i + 1).padStart(2, '0')}`;
+            return {
+                id: agentId,
+                name: `TITAN Agent ${String(i + 1).padStart(2, '0')}`,
+                accuracy: Math.random() * 15 + 80,
+                decisions: Math.floor(Math.random() * 200000) + 50000,
+                successRate: Math.random() * 10 + 85,
+                learningHours: Math.floor(Math.random() * 2000) + 500,
+                status: Math.random() > 0.15 ? 'active' : 'training',
+                specialty: ['Technical Analysis', 'Risk Management', 'Sentiment Analysis', 'Portfolio Optimization', 'Market Making'][Math.floor(Math.random() * 5)],
+                lastUpdate: new Date(Date.now() - Math.random() * 24 * 60 * 60 * 1000).toISOString()
+            };
+        }),
+        timeSeriesData: {
+            accuracy: Array.from({length: 30}, (_, i) => ({
+                date: new Date(Date.now() - (29-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                value: Math.random() * 10 + 80 + (i * 0.2)
+            })),
+            decisions: Array.from({length: 30}, (_, i) => ({
+                date: new Date(Date.now() - (29-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                value: Math.floor(Math.random() * 50000) + 80000
+            })),
+            successRate: Array.from({length: 30}, (_, i) => ({
+                date: new Date(Date.now() - (29-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                value: Math.random() * 5 + 90 + (i * 0.1)
+            }))
+        }
+    };
+
+    return c.json({
+        success: true,
+        data: performanceData,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/api/ai-analytics/performance/detailed/:agentId', authMiddleware, async (c) => {
+    const agentId = c.req.param('agentId');
+    
+    // Generate detailed agent performance data
+    const detailedData = {
+        agentInfo: {
+            id: agentId,
+            name: `TITAN Agent ${agentId.split('_')[1]}`,
+            version: '2.1.0',
+            specialty: 'Advanced Trading Analysis',
+            status: 'active',
+            uptime: '99.7%'
+        },
+        currentMetrics: {
+            accuracy: Math.random() * 15 + 80,
+            precision: Math.random() * 10 + 85,
+            recall: Math.random() * 10 + 83,
+            f1Score: Math.random() * 10 + 84,
+            confidence: Math.random() * 20 + 75,
+            responseTime: Math.random() * 50 + 25,
+            throughput: Math.floor(Math.random() * 5000) + 15000
+        },
+        historicalTrends: {
+            performance: Array.from({length: 168}, (_, i) => ({ // Last 7 days hourly
+                timestamp: new Date(Date.now() - (167-i) * 60 * 60 * 1000).toISOString(),
+                accuracy: Math.random() * 20 + 75 + Math.sin(i * 0.1) * 5,
+                decisions: Math.floor(Math.random() * 1000) + 500,
+                errors: Math.floor(Math.random() * 10)
+            })),
+            learning: Array.from({length: 30}, (_, i) => ({ // Last 30 days
+                date: new Date(Date.now() - (29-i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+                knowledgeGrowth: Math.random() * 5 + i * 0.5,
+                trainingHours: Math.random() * 8 + 12,
+                improvementRate: Math.random() * 3 + 1
+            }))
+        },
+        errorAnalysis: {
+            totalErrors: Math.floor(Math.random() * 1000) + 200,
+            errorTypes: [
+                { type: 'Data Quality', count: Math.floor(Math.random() * 50) + 10, percentage: 25.3 },
+                { type: 'Network Timeout', count: Math.floor(Math.random() * 30) + 5, percentage: 15.7 },
+                { type: 'Model Confidence', count: Math.floor(Math.random() * 40) + 15, percentage: 22.1 },
+                { type: 'API Limits', count: Math.floor(Math.random() * 20) + 3, percentage: 12.4 },
+                { type: 'Other', count: Math.floor(Math.random() * 60) + 20, percentage: 24.5 }
+            ]
+        }
+    };
+
+    return c.json({
+        success: true,
+        data: detailedData,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/api/ai-analytics/reports/comprehensive', authMiddleware, async (c) => {
+    const timeRange = c.req.query('range') || '30d';
+    
+    // Generate comprehensive analytics report
+    const reportData = {
+        reportInfo: {
+            id: `report_${Date.now()}`,
+            generatedAt: new Date().toISOString(),
+            timeRange: timeRange,
+            reportType: 'comprehensive_analytics'
+        },
+        executiveSummary: {
+            overallScore: 87.4,
+            improvement: '+5.2%',
+            criticalIssues: 2,
+            recommendations: 8,
+            totalValue: '$24,567.89',
+            roi: '34.7%'
+        },
+        performanceMetrics: {
+            system: {
+                uptime: 99.8,
+                throughput: 1847294,
+                avgResponseTime: 45.7,
+                errorRate: 0.23
+            },
+            agents: {
+                totalActive: 13,
+                avgAccuracy: 87.3,
+                totalDecisions: 2847392,
+                learningProgress: 94.1
+            },
+            trading: {
+                totalTrades: 48273,
+                successfulTrades: 45558,
+                profitability: 78.4,
+                riskScore: 'Medium-Low'
+            }
+        },
+        comparativeAnalysis: {
+            vsLastMonth: {
+                accuracy: '+3.2%',
+                decisions: '+12.7%',
+                errors: '-18.4%',
+                efficiency: '+8.9%'
+            },
+            vsLastQuarter: {
+                accuracy: '+8.1%',
+                decisions: '+34.2%',
+                errors: '-28.7%',
+                efficiency: '+15.4%'
+            }
+        },
+        recommendations: [
+            {
+                priority: 'High',
+                category: 'Performance',
+                title: 'بهینه‌سازی Agent 07',
+                description: 'نرخ خطای Agent 07 بالاتر از حد مطلوب است',
+                expectedImpact: '+2.1% accuracy',
+                estimatedCost: '$500'
+            },
+            {
+                priority: 'Medium',
+                category: 'Training',
+                title: 'افزایش داده‌های آموزش',
+                description: 'اضافه کردن داده‌های بازار جدید برای بهبود عملکرد',
+                expectedImpact: '+1.8% overall performance',
+                estimatedCost: '$1,200'
+            },
+            {
+                priority: 'Medium',
+                category: 'Infrastructure',
+                title: 'ارتقای سرور پردازش',
+                description: 'کاهش زمان پاسخ با ارتقای منابع محاسباتی',
+                expectedImpact: '-20ms response time',
+                estimatedCost: '$800'
+            }
+        ]
+    };
+
+    return c.json({
+        success: true,
+        data: reportData,
+        timestamp: new Date().toISOString()
+    });
+});
+
+app.get('/api/ai-analytics/realtime/dashboard', authMiddleware, async (c) => {
+    // Generate real-time dashboard data
+    const realtimeData = {
+        systemStatus: {
+            overall: 'healthy',
+            cpuUsage: Math.random() * 30 + 45,
+            memoryUsage: Math.random() * 25 + 60,
+            networkLatency: Math.random() * 20 + 15,
+            activeConnections: Math.floor(Math.random() * 1000) + 2500
+        },
+        agentActivity: Array.from({length: 15}, (_, i) => ({
+            agentId: `agent_${String(i + 1).padStart(2, '0')}`,
+            status: Math.random() > 0.1 ? 'active' : 'idle',
+            currentTask: ['Analyzing market trends', 'Processing signals', 'Risk assessment', 'Portfolio rebalancing', 'Pattern recognition'][Math.floor(Math.random() * 5)],
+            cpu: Math.random() * 40 + 20,
+            memory: Math.random() * 30 + 40,
+            requests: Math.floor(Math.random() * 100) + 50
+        })),
+        marketData: {
+            totalSignals: Math.floor(Math.random() * 500) + 1200,
+            processedSignals: Math.floor(Math.random() * 400) + 1000,
+            activeAlerts: Math.floor(Math.random() * 20) + 5,
+            marketVolatility: Math.random() * 0.5 + 0.2
+        },
+        alerts: Array.from({length: 5}, (_, i) => ({
+            id: `alert_${Date.now()}_${i}`,
+            severity: ['info', 'warning', 'error'][Math.floor(Math.random() * 3)],
+            message: [
+                'Agent 03 accuracy dropped below threshold',
+                'High market volatility detected',
+                'New training data available',
+                'System resource usage optimal',
+                'Agent 12 completed learning cycle'
+            ][i],
+            timestamp: new Date(Date.now() - Math.random() * 60 * 60 * 1000).toISOString(),
+            acknowledged: Math.random() > 0.3
+        }))
+    };
+
+    return c.json({
+        success: true,
+        data: realtimeData,
+        timestamp: new Date().toISOString()
+    });
+});
+
 app.get('/api/ai-analytics/training/history', authMiddleware, async (c) => {
   try {
     const user = c.get('user')
