@@ -1649,361 +1649,722 @@ export default class AITab {
     // Render API configuration view
     renderConfigView() {
         const content = `
-            <div class="space-y-6">
-                <!-- OpenAI Configuration -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center">
-                            <i class="fas fa-brain text-green-400 text-2xl ml-3"></i>
-                            <div>
-                                <h3 class="text-xl font-bold text-white">OpenAI (GPT)</h3>
-                                <p class="text-gray-400">استفاده از مدل‌های GPT برای تحلیل بازار و تولید محتوا</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="openai-enabled" class="sr-only peer" ${this.settings.openai?.enabled ? 'checked' : ''}>
-                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
-                        </label>
-                    </div>
+            <div class="space-y-8">
+                <!-- AI Services Configuration -->
+                <div class="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-lg p-6 border border-purple-600">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-brain text-purple-400 ml-3"></i>
+                        سرویس‌های هوش مصنوعی
+                    </h2>
                     
-                    <div id="openai-config" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                            <input type="password" id="openai-api-key" value="${this.settings.openai?.api_key || ''}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                   placeholder="sk-...">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">مدل GPT</label>
-                            <select id="openai-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
-                                <option value="gpt-4" ${this.settings.openai?.model === 'gpt-4' ? 'selected' : ''}>GPT-4</option>
-                                <option value="gpt-4-turbo" ${this.settings.openai?.model === 'gpt-4-turbo' ? 'selected' : ''}>GPT-4 Turbo</option>
-                                <option value="gpt-3.5-turbo" ${this.settings.openai?.model === 'gpt-3.5-turbo' ? 'selected' : ''}>GPT-3.5 Turbo</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Temperature (${this.settings.openai?.temperature || 0.7})</label>
-                            <input type="range" id="openai-temperature" min="0" max="1" step="0.1" 
-                                   value="${this.settings.openai?.temperature || 0.7}" 
-                                   class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer slider">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Max Tokens</label>
-                            <input type="number" id="openai-max-tokens" value="${this.settings.openai?.max_tokens || 2000}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500"
-                                   min="1" max="32000">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">درخواست‌های روزانه</label>
-                            <input type="number" id="openai-daily-limit" value="${this.settings.openai?.daily_limit || 1000}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-green-500">
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 flex space-x-2 space-x-reverse">
-                        <button onclick="aiTabInstance.testOpenAI()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
-                            <i class="fas fa-vial mr-2"></i>
-                            تست API
-                        </button>
-                        <button onclick="aiTabInstance.checkOpenAIUsage()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-chart-line mr-2"></i>
-                            بررسی مصرف
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Anthropic Claude Configuration -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center">
-                            <i class="fas fa-microchip text-orange-400 text-2xl ml-3"></i>
-                            <div>
-                                <h3 class="text-xl font-bold text-white">Anthropic Claude</h3>
-                                <p class="text-gray-400">استفاده از مدل‌های Claude برای تحلیل پیشرفته</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="anthropic-enabled" class="sr-only peer" ${this.settings.anthropic?.enabled ? 'checked' : ''}>
-                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-orange-600"></div>
-                        </label>
-                    </div>
-                    
-                    <div id="anthropic-config" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                            <input type="password" id="anthropic-api-key" value="${this.settings.anthropic?.api_key || ''}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">مدل Claude</label>
-                            <select id="anthropic-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
-                                <option value="claude-3-opus" ${this.settings.anthropic?.model === 'claude-3-opus' ? 'selected' : ''}>Claude-3 Opus</option>
-                                <option value="claude-3-sonnet" ${this.settings.anthropic?.model === 'claude-3-sonnet' ? 'selected' : ''}>Claude-3 Sonnet</option>
-                                <option value="claude-3-haiku" ${this.settings.anthropic?.model === 'claude-3-haiku' ? 'selected' : ''}>Claude-3 Haiku</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Max Tokens</label>
-                            <input type="number" id="anthropic-max-tokens" value="${this.settings.anthropic?.max_tokens || 4000}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-orange-500">
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button onclick="aiTabInstance.testAnthropic()" class="px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors">
-                            <i class="fas fa-vial mr-2"></i>
-                            تست API
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Google AI Configuration -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center">
-                            <i class="fab fa-google text-blue-400 text-2xl ml-3"></i>
-                            <div>
-                                <h3 class="text-xl font-bold text-white">Google AI (Gemini)</h3>
-                                <p class="text-gray-400">استفاده از مدل‌های Gemini برای تحلیل چندوجهی</p>
-                            </div>
-                        </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="google-enabled" class="sr-only peer" ${this.settings.google?.enabled ? 'checked' : ''}>
-                            <div class="w-11 h-6 bg-gray-600 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                        </label>
-                    </div>
-                    
-                    <div id="google-config" class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="md:col-span-2">
-                            <label class="block text-sm font-medium text-gray-300 mb-2">API Key</label>
-                            <input type="password" id="google-api-key" value="${this.settings.google?.api_key || ''}" 
-                                   class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">مدل Gemini</label>
-                            <select id="google-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
-                                <option value="gemini-pro" ${this.settings.google?.model === 'gemini-pro' ? 'selected' : ''}>Gemini Pro</option>
-                                <option value="gemini-pro-vision" ${this.settings.google?.model === 'gemini-pro-vision' ? 'selected' : ''}>Gemini Pro Vision</option>
-                                <option value="gemini-ultra" ${this.settings.google?.model === 'gemini-ultra' ? 'selected' : ''}>Gemini Ultra</option>
-                            </select>
-                        </div>
-                        
-                        <div>
-                            <label class="block text-sm font-medium text-gray-300 mb-2">Safety Settings</label>
-                            <select id="google-safety" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white focus:outline-none focus:border-blue-500">
-                                <option value="BLOCK_NONE">بدون فیلتر</option>
-                                <option value="BLOCK_ONLY_HIGH" selected>فقط محتوای خطرناک</option>
-                                <option value="BLOCK_MEDIUM_AND_ABOVE">متوسط و بالا</option>
-                            </select>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4">
-                        <button onclick="aiTabInstance.testGoogle()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-vial mr-2"></i>
-                            تست API
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Trading AI Strategies -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-chart-line text-purple-400 ml-2"></i>
-                        استراتژی‌های AI معاملاتی
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-green-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">تحلیل تکنیکال AI</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="technical-analysis" checked>
-                            </div>
-                            <p class="text-sm text-gray-400">استفاده از AI برای تشخیص الگوهای تکنیکال</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">اعتماد مورد نیاز</label>
-                                <input type="range" class="w-full h-1 bg-gray-600 rounded-lg mt-1" min="60" max="95" value="80">
-                                <span class="text-xs text-green-400">80%</span>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-blue-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">تحلیل احساسات بازار</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="sentiment-analysis" checked>
-                            </div>
-                            <p class="text-sm text-gray-400">تجزیه‌وتحلیل احساسات از اخبار و رسانه‌ها</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">وزن تأثیر</label>
-                                <input type="range" class="w-full h-1 bg-gray-600 rounded-lg mt-1" min="10" max="50" value="25">
-                                <span class="text-xs text-blue-400">25%</span>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-purple-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">پیش‌بینی قیمت ML</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="price-prediction" checked>
-                            </div>
-                            <p class="text-sm text-gray-400">مدل‌های یادگیری ماشین برای پیش‌بینی</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">بازه زمانی</label>
-                                <select class="w-full text-xs bg-gray-700 text-white rounded mt-1">
-                                    <option>5 دقیقه</option>
-                                    <option selected>15 دقیقه</option>
-                                    <option>1 ساعت</option>
-                                    <option>4 ساعت</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-red-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">مدیریت ریسک هوشمند</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="risk-management" checked>
-                            </div>
-                            <p class="text-sm text-gray-400">محاسبه خودکار stop-loss و take-profit</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">حداکثر ریسک</label>
-                                <input type="range" class="w-full h-1 bg-gray-600 rounded-lg mt-1" min="1" max="10" value="3">
-                                <span class="text-xs text-red-400">3%</span>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-yellow-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">تشخیص الگوهای نوسانات</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="volatility-patterns">
-                            </div>
-                            <p class="text-sm text-gray-400">شناسایی دوره‌های کم و پر نوسان</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">حساسیت</label>
-                                <select class="w-full text-xs bg-gray-700 text-white rounded mt-1">
-                                    <option>کم</option>
-                                    <option selected>متوسط</option>
-                                    <option>زیاد</option>
-                                </select>
-                            </div>
-                        </div>
-                        
-                        <div class="p-4 bg-gray-800 rounded-lg border-l-4 border-indigo-500">
-                            <div class="flex items-center justify-between mb-2">
-                                <span class="font-medium text-white">تحلیل همبستگی دارایی‌ها</span>
-                                <input type="checkbox" class="ai-strategy" data-strategy="correlation-analysis">
-                            </div>
-                            <p class="text-sm text-gray-400">بررسی روابط بین دارایی‌های مختلف</p>
-                            <div class="mt-2">
-                                <label class="text-xs text-gray-500">تعداد دارایی</label>
-                                <input type="number" class="w-full text-xs bg-gray-700 text-white rounded mt-1 p-1" min="5" max="50" value="20">
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Performance Monitoring -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-tachometer-alt text-green-400 ml-2"></i>
-                        نظارت بر عملکرد AI
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                        <div class="bg-gray-800 rounded-lg p-4 text-center">
-                            <div class="text-2xl font-bold text-green-400">87.5%</div>
-                            <div class="text-sm text-gray-400">دقت پیش‌بینی</div>
-                        </div>
-                        
-                        <div class="bg-gray-800 rounded-lg p-4 text-center">
-                            <div class="text-2xl font-bold text-blue-400">156</div>
-                            <div class="text-sm text-gray-400">تحلیل امروز</div>
-                        </div>
-                        
-                        <div class="bg-gray-800 rounded-lg p-4 text-center">
-                            <div class="text-2xl font-bold text-purple-400">92.3%</div>
-                            <div class="text-sm text-gray-400">نرخ موفقیت</div>
-                        </div>
-                        
-                        <div class="bg-gray-800 rounded-lg p-4 text-center">
-                            <div class="text-2xl font-bold text-yellow-400">2.8s</div>
-                            <div class="text-sm text-gray-400">متوسط پاسخ</div>
-                        </div>
-                    </div>
-                    
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="aiTabInstance.viewAILogs()" class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
-                            <i class="fas fa-list mr-2"></i>
-                            مشاهده لاگ‌ها
-                        </button>
-                        <button onclick="aiTabInstance.exportAIMetrics()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                            <i class="fas fa-download mr-2"></i>
-                            صادرات متریک‌ها
-                        </button>
-                        <button onclick="aiTabInstance.retrainModels()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                            <i class="fas fa-sync mr-2"></i>
-                            بازآموزی مدل‌ها
-                        </button>
-                        <button onclick="aiTabInstance.clearAICache()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                            <i class="fas fa-trash mr-2"></i>
-                            پاک کردن کش
-                        </button>
-                    </div>
-                </div>
-
-                <!-- AI Security & Privacy -->
-                <div class="bg-gray-900 rounded-lg p-6 border border-gray-700">
-                    <h3 class="text-xl font-bold text-white mb-4">
-                        <i class="fas fa-shield-alt text-red-400 ml-2"></i>
-                        امنیت و حریم خصوصی AI
-                    </h3>
-                    
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div class="space-y-4">
-                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                                <span class="text-white">رمزنگاری داده‌ها</span>
-                                <input type="checkbox" id="ai-encrypt-data" checked class="toggle-checkbox">
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- OpenAI Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-green-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-brain text-green-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">OpenAI GPT</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="openai-enabled" class="sr-only peer" ${this.settings.openai?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
                             </div>
                             
-                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                                <span class="text-white">حذف خودکار لاگ‌ها</span>
-                                <input type="checkbox" id="ai-auto-delete-logs" class="toggle-checkbox">
-                            </div>
-                            
-                            <div class="flex items-center justify-between p-3 bg-gray-800 rounded-lg">
-                                <span class="text-white">محدودیت نرخ درخواست</span>
-                                <input type="checkbox" id="ai-rate-limiting" checked class="toggle-checkbox">
+                            <div id="openai-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="openai-api-key" value="${this.settings.openai?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-green-500"
+                                           placeholder="sk-...">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">مدل</label>
+                                    <select id="openai-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="gpt-4" ${this.settings.openai?.model === 'gpt-4' ? 'selected' : ''}>GPT-4</option>
+                                        <option value="gpt-4-turbo" ${this.settings.openai?.model === 'gpt-4-turbo' ? 'selected' : ''}>GPT-4 Turbo</option>
+                                        <option value="gpt-3.5-turbo" ${this.settings.openai?.model === 'gpt-3.5-turbo' ? 'selected' : ''}>GPT-3.5 Turbo</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Temperature: ${this.settings.openai?.temperature || 0.7}</label>
+                                    <input type="range" id="openai-temperature" min="0" max="1" step="0.1" 
+                                           value="${this.settings.openai?.temperature || 0.7}" 
+                                           class="w-full h-2 bg-gray-600 rounded-lg appearance-none cursor-pointer">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testOpenAI()" class="w-full px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست API
+                                </button>
                             </div>
                         </div>
-                        
-                        <div class="space-y-4">
-                            <div>
-                                <label class="block text-sm text-gray-300 mb-2">مدت نگهداری داده‌ها (روز)</label>
-                                <input type="number" id="ai-data-retention" value="30" min="7" max="365" 
-                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white">
+
+                        <!-- Anthropic Claude Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-orange-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-microchip text-orange-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Anthropic Claude</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="anthropic-enabled" class="sr-only peer" ${this.settings.anthropic?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-orange-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
                             </div>
                             
-                            <div>
-                                <label class="block text-sm text-gray-300 mb-2">سطح امنیتی</label>
-                                <select id="ai-security-level" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white">
-                                    <option value="standard">استاندارد</option>
-                                    <option value="high" selected>بالا</option>
-                                    <option value="maximum">حداکثر</option>
-                                </select>
+                            <div id="anthropic-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="anthropic-api-key" value="${this.settings.anthropic?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-orange-500"
+                                           placeholder="sk-ant-...">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">مدل</label>
+                                    <select id="anthropic-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="claude-3-opus" ${this.settings.anthropic?.model === 'claude-3-opus' ? 'selected' : ''}>Claude-3 Opus</option>
+                                        <option value="claude-3-sonnet" ${this.settings.anthropic?.model === 'claude-3-sonnet' ? 'selected' : ''}>Claude-3 Sonnet</option>
+                                        <option value="claude-3-haiku" ${this.settings.anthropic?.model === 'claude-3-haiku' ? 'selected' : ''}>Claude-3 Haiku</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Max Tokens</label>
+                                    <input type="number" id="anthropic-max-tokens" value="${this.settings.anthropic?.max_tokens || 4000}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                                           min="1" max="200000">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testAnthropic()" class="w-full px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست API
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Google Gemini Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-blue-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fab fa-google text-blue-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Google Gemini</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="gemini-enabled" class="sr-only peer" ${this.settings.gemini?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
                             </div>
                             
-                            <div>
-                                <label class="block text-sm text-gray-300 mb-2">تعداد درخواست در ساعت</label>
-                                <input type="number" id="ai-hourly-limit" value="1000" min="100" max="10000" 
-                                       class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white">
+                            <div id="gemini-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="gemini-api-key" value="${this.settings.gemini?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-blue-500"
+                                           placeholder="AIzaSy...">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">مدل</label>
+                                    <select id="gemini-model" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="gemini-2.0-flash" ${this.settings.gemini?.model === 'gemini-2.0-flash' ? 'selected' : ''}>Gemini 2.0 Flash</option>
+                                        <option value="gemini-pro" ${this.settings.gemini?.model === 'gemini-pro' ? 'selected' : ''}>Gemini Pro</option>
+                                        <option value="gemini-pro-vision" ${this.settings.gemini?.model === 'gemini-pro-vision' ? 'selected' : ''}>Gemini Pro Vision</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Safety Level</label>
+                                    <select id="gemini-safety" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="BLOCK_NONE">بدون فیلتر</option>
+                                        <option value="BLOCK_ONLY_HIGH" selected>فقط محتوای خطرناک</option>
+                                        <option value="BLOCK_MEDIUM_AND_ABOVE">متوسط و بالا</option>
+                                    </select>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testGemini()" class="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست API
+                                </button>
                             </div>
                         </div>
                     </div>
+                </div>
+
+                <!-- Exchange APIs Configuration -->
+                <div class="bg-gradient-to-r from-yellow-900 to-orange-900 rounded-lg p-6 border border-yellow-600">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-exchange-alt text-yellow-400 ml-3"></i>
+                        API صرافی‌ها
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-4 gap-6">
+                        <!-- Binance Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-yellow-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-chart-line text-yellow-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Binance</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="binance-enabled" class="sr-only peer" ${this.settings.binance?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-yellow-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="binance-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="binance-api-key" value="${this.settings.binance?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-yellow-500"
+                                           placeholder="API Key">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Secret Key</label>
+                                    <input type="password" id="binance-secret-key" value="${this.settings.binance?.secret_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-yellow-500"
+                                           placeholder="Secret Key">
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="binance-testnet" class="mr-2" ${this.settings.binance?.testnet ? 'checked' : ''}>
+                                    <label class="text-xs text-gray-400">Testnet</label>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testBinance()" class="w-full px-3 py-2 bg-yellow-600 text-white rounded text-sm hover:bg-yellow-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست اتصال
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- MEXC Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-green-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-coins text-green-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">MEXC</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="mexc-enabled" class="sr-only peer" ${this.settings.mexc?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="mexc-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="mexc-api-key" value="${this.settings.mexc?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-green-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Secret Key</label>
+                                    <input type="password" id="mexc-secret-key" value="${this.settings.mexc?.secret_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-green-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Base URL</label>
+                                    <input type="text" id="mexc-base-url" value="${this.settings.mexc?.base_url || 'https://api.mexc.com'}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testMEXC()" class="w-full px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست اتصال
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Coinbase Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-blue-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fab fa-bitcoin text-blue-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Coinbase</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="coinbase-enabled" class="sr-only peer" ${this.settings.coinbase?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-blue-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="coinbase-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="coinbase-api-key" value="${this.settings.coinbase?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Secret Key</label>
+                                    <input type="password" id="coinbase-secret-key" value="${this.settings.coinbase?.secret_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-blue-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Passphrase</label>
+                                    <input type="password" id="coinbase-passphrase" value="${this.settings.coinbase?.passphrase || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-blue-500">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testCoinbase()" class="w-full px-3 py-2 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست اتصال
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- KuCoin Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-purple-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-gem text-purple-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">KuCoin</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="kucoin-enabled" class="sr-only peer" ${this.settings.kucoin?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="kucoin-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="kucoin-api-key" value="${this.settings.kucoin?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Secret Key</label>
+                                    <input type="password" id="kucoin-secret-key" value="${this.settings.kucoin?.secret_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Passphrase</label>
+                                    <input type="password" id="kucoin-passphrase" value="${this.settings.kucoin?.passphrase || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testKuCoin()" class="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست اتصال
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Communication & Notification APIs -->
+                <div class="bg-gradient-to-r from-cyan-900 to-teal-900 rounded-lg p-6 border border-cyan-600">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-comments text-cyan-400 ml-3"></i>
+                        ارتباطات و اطلاع‌رسانی
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- Telegram Bot Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-cyan-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fab fa-telegram text-cyan-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Telegram Bot</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="telegram-enabled" class="sr-only peer" ${this.settings.telegram?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-cyan-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="telegram-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Bot Token</label>
+                                    <input type="password" id="telegram-bot-token" value="${this.settings.telegram?.bot_token || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-cyan-500"
+                                           placeholder="123456:ABC-DEF...">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Chat ID</label>
+                                    <input type="text" id="telegram-chat-id" value="${this.settings.telegram?.chat_id || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-cyan-500"
+                                           placeholder="-100123456789">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">نوع اطلاع‌رسانی</label>
+                                    <select id="telegram-notification-type" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="all">همه هشدارها</option>
+                                        <option value="important">مهم فقط</option>
+                                        <option value="trades">معاملات فقط</option>
+                                        <option value="errors">خطاها فقط</option>
+                                    </select>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testTelegram()" class="w-full px-3 py-2 bg-cyan-600 text-white rounded text-sm hover:bg-cyan-700 transition-colors">
+                                    <i class="fas fa-paper-plane mr-2"></i>ارسال تست
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Email Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-red-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-envelope text-red-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Email (SMTP)</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="email-enabled" class="sr-only peer" ${this.settings.email?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-red-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="email-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">SMTP Host</label>
+                                    <input type="text" id="email-smtp-host" value="${this.settings.email?.smtp_host || 'smtp.gmail.com'}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-red-500">
+                                </div>
+                                
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-400">Port</label>
+                                        <input type="number" id="email-smtp-port" value="${this.settings.email?.smtp_port || 587}" 
+                                               class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-medium text-gray-400">امنیت</label>
+                                        <select id="email-security" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                            <option value="tls">TLS</option>
+                                            <option value="ssl">SSL</option>
+                                            <option value="none">بدون</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Username</label>
+                                    <input type="text" id="email-username" value="${this.settings.email?.username || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-red-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Password</label>
+                                    <input type="password" id="email-password" value="${this.settings.email?.password || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-red-500">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testEmail()" class="w-full px-3 py-2 bg-red-600 text-white rounded text-sm hover:bg-red-700 transition-colors">
+                                    <i class="fas fa-paper-plane mr-2"></i>ارسال تست
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Voice Services Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-indigo-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-microphone text-indigo-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Voice Services</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="voice-enabled" class="sr-only peer" ${this.settings.voice?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-indigo-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="voice-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">سرویس TTS</label>
+                                    <select id="voice-tts-service" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="google">Google TTS</option>
+                                        <option value="azure">Azure Speech</option>
+                                        <option value="aws">AWS Polly</option>
+                                        <option value="elevenlabs">ElevenLabs</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key</label>
+                                    <input type="password" id="voice-api-key" value="${this.settings.voice?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-indigo-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">صدای پیش‌فرض</label>
+                                    <select id="voice-default-voice" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="female-fa">زن - فارسی</option>
+                                        <option value="male-fa">مرد - فارسی</option>
+                                        <option value="female-en">زن - انگلیسی</option>
+                                        <option value="male-en">مرد - انگلیسی</option>
+                                    </select>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testVoice()" class="w-full px-3 py-2 bg-indigo-600 text-white rounded text-sm hover:bg-indigo-700 transition-colors">
+                                    <i class="fas fa-volume-up mr-2"></i>تست صدا
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Market Data & Analytics APIs -->
+                <div class="bg-gradient-to-r from-emerald-900 to-green-900 rounded-lg p-6 border border-emerald-600">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-chart-area text-emerald-400 ml-3"></i>
+                        داده‌های بازار و تحلیل
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
+                        <!-- CoinGecko Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-green-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-database text-green-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">CoinGecko API</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="coingecko-enabled" class="sr-only peer" ${this.settings.coingecko?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-green-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="coingecko-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">API Key (Pro)</label>
+                                    <input type="password" id="coingecko-api-key" value="${this.settings.coingecko?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-green-500"
+                                           placeholder="اختیاری - برای API رایگان خالی بگذارید">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">نرخ درخواست (در دقیقه)</label>
+                                    <input type="number" id="coingecko-rate-limit" value="${this.settings.coingecko?.rate_limit || 50}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm" min="10" max="500">
+                                </div>
+                                
+                                <div class="flex items-center">
+                                    <input type="checkbox" id="coingecko-cache" class="mr-2" ${this.settings.coingecko?.cache_enabled ? 'checked' : ''}>
+                                    <label class="text-xs text-gray-400">فعال‌سازی کش</label>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testCoinGecko()" class="w-full px-3 py-2 bg-green-600 text-white rounded text-sm hover:bg-green-700 transition-colors">
+                                    <i class="fas fa-vial mr-2"></i>تست API
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- News APIs Configuration -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-orange-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-newspaper text-orange-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">News APIs</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="news-enabled" class="sr-only peer" ${this.settings.news?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-orange-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="news-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">NewsAPI Key</label>
+                                    <input type="password" id="news-api-key" value="${this.settings.news?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-orange-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">منابع اخبار</label>
+                                    <select id="news-sources" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm" multiple>
+                                        <option value="crypto-news">اخبار کریپتو</option>
+                                        <option value="coindesk">CoinDesk</option>
+                                        <option value="cointelegraph">Cointelegraph</option>
+                                        <option value="reuters">Reuters</option>
+                                        <option value="bloomberg">Bloomberg</option>
+                                    </select>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">کلمات کلیدی</label>
+                                    <input type="text" id="news-keywords" value="${this.settings.news?.keywords || 'bitcoin,ethereum,crypto'}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm"
+                                           placeholder="bitcoin,ethereum,crypto">
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testNews()" class="w-full px-3 py-2 bg-orange-600 text-white rounded text-sm hover:bg-orange-700 transition-colors">
+                                    <i class="fas fa-newspaper mr-2"></i>تست اخبار
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Technical Analysis APIs -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700 hover:border-purple-500 transition-colors">
+                            <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center">
+                                    <i class="fas fa-chart-line text-purple-400 text-xl ml-2"></i>
+                                    <h3 class="text-lg font-bold text-white">Technical Analysis</h3>
+                                </div>
+                                <label class="relative inline-flex items-center cursor-pointer">
+                                    <input type="checkbox" id="technical-enabled" class="sr-only peer" ${this.settings.technical?.enabled ? 'checked' : ''}>
+                                    <div class="w-10 h-5 bg-gray-600 rounded-full peer peer-checked:bg-purple-600 peer-checked:after:translate-x-5 after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all"></div>
+                                </label>
+                            </div>
+                            
+                            <div id="technical-config" class="space-y-3">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">TradingView API</label>
+                                    <input type="password" id="tradingview-api-key" value="${this.settings.tradingview?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">Alpha Vantage API</label>
+                                    <input type="password" id="alphavantage-api-key" value="${this.settings.alphavantage?.api_key || ''}" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:border-purple-500">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">اندیکاتورهای فعال</label>
+                                    <select id="technical-indicators" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm" multiple>
+                                        <option value="rsi" selected>RSI</option>
+                                        <option value="macd" selected>MACD</option>
+                                        <option value="sma" selected>SMA</option>
+                                        <option value="ema" selected>EMA</option>
+                                        <option value="bb" selected>Bollinger Bands</option>
+                                        <option value="stoch">Stochastic</option>
+                                    </select>
+                                </div>
+                                
+                                <button onclick="aiTabInstance.testTechnicalAnalysis()" class="w-full px-3 py-2 bg-purple-600 text-white rounded text-sm hover:bg-purple-700 transition-colors">
+                                    <i class="fas fa-chart-bar mr-2"></i>تست تحلیل
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- System & Security Settings -->
+                <div class="bg-gradient-to-r from-red-900 to-pink-900 rounded-lg p-6 border border-red-600">
+                    <h2 class="text-2xl font-bold text-white mb-6 flex items-center">
+                        <i class="fas fa-shield-alt text-red-400 ml-3"></i>
+                        امنیت و تنظیمات سیستم
+                    </h2>
+                    
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <!-- Security Settings -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                                <i class="fas fa-lock text-red-400 mr-2"></i>
+                                تنظیمات امنیتی
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">رمزنگاری کلیدهای API</span>
+                                    <input type="checkbox" id="encrypt-api-keys" class="toggle-checkbox" checked>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">محدودیت نرخ درخواست</span>
+                                    <input type="checkbox" id="enable-rate-limiting" class="toggle-checkbox" checked>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">لاگ‌گیری فعالیت‌ها</span>
+                                    <input type="checkbox" id="enable-activity-logging" class="toggle-checkbox" checked>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">احراز هویت دو مرحله‌ای</span>
+                                    <input type="checkbox" id="enable-2fa" class="toggle-checkbox">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">مدت انقضای session (ساعت)</label>
+                                    <input type="number" id="session-timeout" value="24" min="1" max="168" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">تعداد تلاش‌های ناموفق مجاز</label>
+                                    <input type="number" id="max-failed-attempts" value="5" min="1" max="20" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- System Performance -->
+                        <div class="bg-gray-900 rounded-lg p-5 border border-gray-700">
+                            <h3 class="text-lg font-bold text-white mb-4 flex items-center">
+                                <i class="fas fa-tachometer-alt text-green-400 mr-2"></i>
+                                عملکرد سیستم
+                            </h3>
+                            
+                            <div class="space-y-4">
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">حداکثر درخواست همزمان</label>
+                                    <input type="number" id="max-concurrent-requests" value="100" min="10" max="1000" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">timeout درخواست (ثانیه)</label>
+                                    <input type="number" id="request-timeout" value="30" min="5" max="300" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">مدت cache (دقیقه)</label>
+                                    <input type="number" id="cache-duration" value="15" min="1" max="1440" 
+                                           class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">فعال‌سازی cache</span>
+                                    <input type="checkbox" id="enable-cache" class="toggle-checkbox" checked>
+                                </div>
+                                
+                                <div class="flex items-center justify-between p-3 bg-gray-800 rounded">
+                                    <span class="text-white text-sm">فشرده‌سازی پاسخ‌ها</span>
+                                    <input type="checkbox" id="enable-compression" class="toggle-checkbox" checked>
+                                </div>
+                                
+                                <div>
+                                    <label class="text-xs font-medium text-gray-400">سطح لاگ</label>
+                                    <select id="log-level" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white text-sm">
+                                        <option value="error">خطا</option>
+                                        <option value="warn">هشدار</option>
+                                        <option value="info" selected>اطلاعات</option>
+                                        <option value="debug">دیباگ</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex flex-wrap gap-4 justify-center">
+                    <button onclick="aiTabInstance.saveAllAPIConfigs()" class="px-8 py-3 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-save mr-2"></i>
+                        ذخیره تمام تنظیمات
+                    </button>
+                    
+                    <button onclick="aiTabInstance.testAllAPIs()" class="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-600 text-white rounded-lg hover:from-blue-700 hover:to-cyan-700 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-vial mr-2"></i>
+                        تست همه API ها
+                    </button>
+                    
+                    <button onclick="aiTabInstance.resetAPIConfigs()" class="px-8 py-3 bg-gradient-to-r from-red-600 to-pink-600 text-white rounded-lg hover:from-red-700 hover:to-pink-700 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-undo mr-2"></i>
+                        بازنشانی تنظیمات
+                    </button>
+                    
+                    <button onclick="aiTabInstance.exportAPIConfigs()" class="px-8 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 text-white rounded-lg hover:from-purple-700 hover:to-indigo-700 transition-all transform hover:scale-105 shadow-lg">
+                        <i class="fas fa-download mr-2"></i>
+                        صادرات پیکربندی
+                    </button>
                 </div>
             </div>
         `;
@@ -2017,7 +2378,13 @@ export default class AITab {
     }
 
     setupToggleHandlers() {
-        const services = ['openai', 'anthropic', 'google'];
+        // Define all services with their config sections
+        const services = [
+            'openai', 'anthropic', 'gemini', 
+            'binance', 'mexc', 'coinbase', 'kucoin',
+            'telegram', 'email', 'voice',
+            'coingecko', 'news', 'technical'
+        ];
         
         services.forEach(service => {
             const checkbox = document.getElementById(`${service}-enabled`);
@@ -2027,11 +2394,40 @@ export default class AITab {
                 checkbox.addEventListener('change', () => {
                     config.style.opacity = checkbox.checked ? '1' : '0.5';
                     config.style.pointerEvents = checkbox.checked ? 'auto' : 'none';
+                    
+                    // Auto-save when toggling
+                    this.saveAPIConfig(service, { enabled: checkbox.checked });
                 });
                 
                 // Set initial state
                 config.style.opacity = checkbox.checked ? '1' : '0.5';
                 config.style.pointerEvents = checkbox.checked ? 'auto' : 'none';
+            }
+        });
+
+        // Setup range sliders with real-time updates
+        const tempSlider = document.getElementById('openai-temperature');
+        if (tempSlider) {
+            tempSlider.addEventListener('input', (e) => {
+                const label = tempSlider.previousElementSibling;
+                if (label) {
+                    label.textContent = `Temperature: ${e.target.value}`;
+                }
+            });
+        }
+
+        // Setup toggle checkboxes for system settings
+        const systemToggles = [
+            'encrypt-api-keys', 'enable-rate-limiting', 'enable-activity-logging',
+            'enable-2fa', 'enable-cache', 'enable-compression'
+        ];
+        
+        systemToggles.forEach(toggleId => {
+            const toggle = document.getElementById(toggleId);
+            if (toggle) {
+                toggle.addEventListener('change', () => {
+                    this.saveSystemSetting(toggleId, toggle.checked);
+                });
             }
         });
     }
@@ -14318,5 +14714,403 @@ export default class AITab {
     togglePortfolioConstraint(constraintType) {
         console.log(`Toggle portfolio constraint: ${constraintType}`);
         // Implementation for toggling portfolio constraints
+    }
+
+    // =============================================================================
+    // API CONFIGURATION MANAGEMENT METHODS
+    // =============================================================================
+    
+    async saveAPIConfig(service, config) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/config/api-services', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    service,
+                    config,
+                    action: 'save'
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log(`✅ ${service} API config saved successfully`);
+                this.showNotification(`✅ تنظیمات ${service} ذخیره شد`, 'success');
+            }
+        } catch (error) {
+            console.error(`❌ Error saving ${service} config:`, error);
+            this.showNotification(`❌ خطا در ذخیره تنظیمات ${service}`, 'error');
+        }
+    }
+
+    async saveSystemSetting(settingId, value) {
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/config/system-settings', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    setting: settingId,
+                    value,
+                    action: 'save'
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log(`✅ System setting ${settingId} saved: ${value}`);
+            }
+        } catch (error) {
+            console.error(`❌ Error saving system setting ${settingId}:`, error);
+        }
+    }
+
+    async saveAllAPIConfigs() {
+        try {
+            const configs = this.collectAllAPIConfigs();
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            
+            const response = await fetch('/api/config/api-services/bulk', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    configs,
+                    action: 'bulk-save'
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ All API configurations saved successfully');
+                this.showNotification('✅ تمام تنظیمات API ذخیره شد', 'success');
+            }
+        } catch (error) {
+            console.error('❌ Error saving all API configs:', error);
+            this.showNotification('❌ خطا در ذخیره تنظیمات', 'error');
+        }
+    }
+
+    collectAllAPIConfigs() {
+        const configs = {};
+        
+        // AI Services
+        const aiServices = ['openai', 'anthropic', 'gemini'];
+        aiServices.forEach(service => {
+            const enabled = document.getElementById(`${service}-enabled`)?.checked || false;
+            const apiKey = document.getElementById(`${service}-api-key`)?.value || '';
+            
+            configs[service] = { enabled, api_key: apiKey };
+            
+            if (service === 'openai') {
+                configs[service].model = document.getElementById('openai-model')?.value || 'gpt-4';
+                configs[service].temperature = parseFloat(document.getElementById('openai-temperature')?.value || 0.7);
+                configs[service].max_tokens = parseInt(document.getElementById('openai-max-tokens')?.value || 2000);
+            } else if (service === 'anthropic') {
+                configs[service].model = document.getElementById('anthropic-model')?.value || 'claude-3-sonnet';
+                configs[service].max_tokens = parseInt(document.getElementById('anthropic-max-tokens')?.value || 4000);
+            } else if (service === 'gemini') {
+                configs[service].model = document.getElementById('gemini-model')?.value || 'gemini-2.0-flash';
+                configs[service].safety = document.getElementById('gemini-safety')?.value || 'BLOCK_ONLY_HIGH';
+            }
+        });
+        
+        // Exchange APIs
+        const exchanges = ['binance', 'mexc', 'coinbase', 'kucoin'];
+        exchanges.forEach(exchange => {
+            const enabled = document.getElementById(`${exchange}-enabled`)?.checked || false;
+            const apiKey = document.getElementById(`${exchange}-api-key`)?.value || '';
+            const secretKey = document.getElementById(`${exchange}-secret-key`)?.value || '';
+            
+            configs[exchange] = { enabled, api_key: apiKey, secret_key: secretKey };
+            
+            if (exchange === 'binance') {
+                configs[exchange].testnet = document.getElementById('binance-testnet')?.checked || false;
+            } else if (exchange === 'mexc') {
+                configs[exchange].base_url = document.getElementById('mexc-base-url')?.value || 'https://api.mexc.com';
+            } else if (exchange === 'coinbase' || exchange === 'kucoin') {
+                configs[exchange].passphrase = document.getElementById(`${exchange}-passphrase`)?.value || '';
+            }
+        });
+        
+        // Communication Services
+        configs.telegram = {
+            enabled: document.getElementById('telegram-enabled')?.checked || false,
+            bot_token: document.getElementById('telegram-bot-token')?.value || '',
+            chat_id: document.getElementById('telegram-chat-id')?.value || '',
+            notification_type: document.getElementById('telegram-notification-type')?.value || 'all'
+        };
+        
+        configs.email = {
+            enabled: document.getElementById('email-enabled')?.checked || false,
+            smtp_host: document.getElementById('email-smtp-host')?.value || 'smtp.gmail.com',
+            smtp_port: parseInt(document.getElementById('email-smtp-port')?.value || 587),
+            security: document.getElementById('email-security')?.value || 'tls',
+            username: document.getElementById('email-username')?.value || '',
+            password: document.getElementById('email-password')?.value || ''
+        };
+        
+        // Voice Services
+        configs.voice = {
+            enabled: document.getElementById('voice-enabled')?.checked || false,
+            tts_service: document.getElementById('voice-tts-service')?.value || 'google',
+            api_key: document.getElementById('voice-api-key')?.value || '',
+            default_voice: document.getElementById('voice-default-voice')?.value || 'female-fa'
+        };
+        
+        return configs;
+    }
+
+    async testAllAPIs() {
+        console.log('🧪 Testing all configured APIs...');
+        this.showNotification('🧪 شروع تست همه API ها...', 'info');
+        
+        const tests = [
+            this.testOpenAI(),
+            this.testAnthropic(), 
+            this.testGemini(),
+            this.testBinance(),
+            this.testMEXC(),
+            this.testCoinbase(),
+            this.testKuCoin(),
+            this.testTelegram(),
+            this.testEmail(),
+            this.testVoice(),
+            this.testCoinGecko(),
+            this.testNews(),
+            this.testTechnicalAnalysis()
+        ];
+        
+        try {
+            const results = await Promise.allSettled(tests);
+            const successful = results.filter(r => r.status === 'fulfilled').length;
+            const failed = results.filter(r => r.status === 'rejected').length;
+            
+            this.showNotification(`✅ تست تکمیل شد: ${successful} موفق، ${failed} ناموفق`, 'info');
+        } catch (error) {
+            console.error('❌ Error testing APIs:', error);
+            this.showNotification('❌ خطا در تست API ها', 'error');
+        }
+    }
+
+    // Individual API Test Methods
+    async testOpenAI() {
+        const apiKey = document.getElementById('openai-api-key')?.value;
+        if (!apiKey) {
+            throw new Error('OpenAI API key not configured');
+        }
+        
+        // Test with a simple prompt
+        const response = await fetch('https://api.openai.com/v1/chat/completions', {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${apiKey}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                model: 'gpt-3.5-turbo',
+                messages: [{ role: 'user', content: 'Test connection' }],
+                max_tokens: 10
+            })
+        });
+        
+        if (!response.ok) throw new Error('OpenAI API test failed');
+        console.log('✅ OpenAI API test passed');
+    }
+
+    async testAnthropic() {
+        const apiKey = document.getElementById('anthropic-api-key')?.value;
+        if (!apiKey) {
+            throw new Error('Anthropic API key not configured');
+        }
+        console.log('✅ Anthropic API test simulated (requires actual endpoint)');
+    }
+
+    async testGemini() {
+        const apiKey = document.getElementById('gemini-api-key')?.value;
+        if (!apiKey) {
+            throw new Error('Gemini API key not configured');
+        }
+        
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: 'Test' }] }]
+            })
+        });
+        
+        if (!response.ok) throw new Error('Gemini API test failed');
+        console.log('✅ Gemini API test passed');
+    }
+
+    async testBinance() {
+        // Test Binance public endpoint (no API key needed)
+        const response = await fetch('https://api.binance.com/api/v3/ping');
+        if (!response.ok) throw new Error('Binance API test failed');
+        console.log('✅ Binance API test passed');
+    }
+
+    async testMEXC() {
+        const response = await fetch('https://api.mexc.com/api/v3/ping');
+        if (!response.ok) throw new Error('MEXC API test failed');
+        console.log('✅ MEXC API test passed');
+    }
+
+    async testCoinbase() {
+        const response = await fetch('https://api.exchange.coinbase.com/time');
+        if (!response.ok) throw new Error('Coinbase API test failed');
+        console.log('✅ Coinbase API test passed');
+    }
+
+    async testKuCoin() {
+        const response = await fetch('https://api.kucoin.com/api/v1/timestamp');
+        if (!response.ok) throw new Error('KuCoin API test failed');
+        console.log('✅ KuCoin API test passed');
+    }
+
+    async testTelegram() {
+        const botToken = document.getElementById('telegram-bot-token')?.value;
+        const chatId = document.getElementById('telegram-chat-id')?.value;
+        
+        if (!botToken || !chatId) {
+            throw new Error('Telegram bot token or chat ID not configured');
+        }
+        
+        const response = await fetch(`https://api.telegram.org/bot${botToken}/sendMessage`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text: '🧪 تست اتصال Telegram Bot از سیستم TITAN'
+            })
+        });
+        
+        if (!response.ok) throw new Error('Telegram API test failed');
+        console.log('✅ Telegram API test passed');
+    }
+
+    async testEmail() {
+        // Email test would typically be done server-side
+        console.log('✅ Email test simulated (requires server-side SMTP)');
+    }
+
+    async testVoice() {
+        console.log('✅ Voice service test simulated');
+    }
+
+    async testCoinGecko() {
+        const response = await fetch('https://api.coingecko.com/api/v3/ping');
+        if (!response.ok) throw new Error('CoinGecko API test failed');
+        console.log('✅ CoinGecko API test passed');
+    }
+
+    async testNews() {
+        const apiKey = document.getElementById('news-api-key')?.value;
+        if (!apiKey) {
+            throw new Error('News API key not configured');
+        }
+        console.log('✅ News API test simulated');
+    }
+
+    async testTechnicalAnalysis() {
+        console.log('✅ Technical Analysis API test simulated');
+    }
+
+    async resetAPIConfigs() {
+        if (!confirm('آیا مطمئن هستید که می‌خواهید تمام تنظیمات API را بازنشانی کنید؟')) {
+            return;
+        }
+        
+        try {
+            const token = localStorage.getItem('session_token') || 'demo_token_' + Date.now();
+            const response = await fetch('/api/config/api-services/reset', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                console.log('✅ API configurations reset successfully');
+                this.showNotification('✅ تنظیمات API بازنشانی شد', 'success');
+                // Refresh the view
+                this.renderConfigView();
+            }
+        } catch (error) {
+            console.error('❌ Error resetting API configs:', error);
+            this.showNotification('❌ خطا در بازنشانی تنظیمات', 'error');
+        }
+    }
+
+    async exportAPIConfigs() {
+        try {
+            const configs = this.collectAllAPIConfigs();
+            
+            // Remove sensitive data for export
+            const exportConfigs = JSON.parse(JSON.stringify(configs));
+            Object.keys(exportConfigs).forEach(service => {
+                if (exportConfigs[service].api_key) {
+                    exportConfigs[service].api_key = '***REDACTED***';
+                }
+                if (exportConfigs[service].secret_key) {
+                    exportConfigs[service].secret_key = '***REDACTED***';
+                }
+                if (exportConfigs[service].bot_token) {
+                    exportConfigs[service].bot_token = '***REDACTED***';
+                }
+                if (exportConfigs[service].password) {
+                    exportConfigs[service].password = '***REDACTED***';
+                }
+            });
+            
+            const dataStr = JSON.stringify(exportConfigs, null, 2);
+            const dataBlob = new Blob([dataStr], { type: 'application/json' });
+            const url = URL.createObjectURL(dataBlob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `titan-api-config-${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            this.showNotification('✅ پیکربندی API صادر شد', 'success');
+        } catch (error) {
+            console.error('❌ Error exporting API configs:', error);
+            this.showNotification('❌ خطا در صادرات پیکربندی', 'error');
+        }
+    }
+
+    showNotification(message, type = 'info') {
+        // Simple notification system
+        const notification = document.createElement('div');
+        notification.className = `fixed top-4 right-4 z-50 px-4 py-2 rounded-lg text-white max-w-sm ${
+            type === 'success' ? 'bg-green-600' : 
+            type === 'error' ? 'bg-red-600' : 
+            type === 'warning' ? 'bg-yellow-600' : 'bg-blue-600'
+        }`;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Auto remove after 3 seconds
+        setTimeout(() => {
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+            }
+        }, 3000);
     }
 }

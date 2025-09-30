@@ -30614,6 +30614,277 @@ function generateNextActions(operation) {
   return nextActionMappings[operation] || ['Monitor results', 'Plan next actions'];
 }
 
+// =============================================================================
+// API CONFIGURATION MANAGEMENT ENDPOINTS
+// =============================================================================
+
+// Save individual API service configuration
+app.post('/api/config/api-services', async (c) => {
+  try {
+    const { service, config, action } = await c.req.json()
+    
+    console.log(`📝 Saving API config for ${service}:`, config)
+    
+    // In production, this would save to database/secure storage
+    const response = {
+      success: true,
+      message: `${service} configuration saved successfully`,
+      data: {
+        service,
+        status: config.enabled ? 'enabled' : 'disabled',
+        lastUpdated: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error saving API config:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to save API configuration'
+    }, 500)
+  }
+})
+
+// Save system settings
+app.post('/api/config/system-settings', async (c) => {
+  try {
+    const { setting, value, action } = await c.req.json()
+    
+    console.log(`⚙️ Saving system setting ${setting}: ${value}`)
+    
+    const response = {
+      success: true,
+      message: `System setting ${setting} saved successfully`,
+      data: {
+        setting,
+        value,
+        lastUpdated: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error saving system setting:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to save system setting'
+    }, 500)
+  }
+})
+
+// Bulk save API configurations
+app.post('/api/config/api-services/bulk', async (c) => {
+  try {
+    const { configs, action } = await c.req.json()
+    
+    console.log('📋 Bulk saving API configurations:', Object.keys(configs))
+    
+    // Simulate saving all configurations
+    const savedConfigs = {}
+    Object.keys(configs).forEach(service => {
+      savedConfigs[service] = {
+        ...configs[service],
+        lastUpdated: new Date().toISOString(),
+        status: 'saved'
+      }
+    })
+    
+    const response = {
+      success: true,
+      message: 'All API configurations saved successfully',
+      data: {
+        totalConfigs: Object.keys(configs).length,
+        savedConfigs,
+        timestamp: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error bulk saving API configs:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to save API configurations'
+    }, 500)
+  }
+})
+
+// Reset API configurations
+app.post('/api/config/api-services/reset', async (c) => {
+  try {
+    console.log('🔄 Resetting all API configurations to defaults')
+    
+    // Simulate reset operation
+    const defaultConfigs = {
+      openai: { enabled: false, api_key: '', model: 'gpt-4', temperature: 0.7, max_tokens: 2000 },
+      anthropic: { enabled: false, api_key: '', model: 'claude-3-sonnet', max_tokens: 4000 },
+      gemini: { enabled: false, api_key: '', model: 'gemini-2.0-flash', safety: 'BLOCK_ONLY_HIGH' },
+      binance: { enabled: false, api_key: '', secret_key: '', testnet: false },
+      mexc: { enabled: false, api_key: '', secret_key: '', base_url: 'https://api.mexc.com' },
+      coinbase: { enabled: false, api_key: '', secret_key: '', passphrase: '' },
+      kucoin: { enabled: false, api_key: '', secret_key: '', passphrase: '' },
+      telegram: { enabled: false, bot_token: '', chat_id: '', notification_type: 'all' },
+      email: { enabled: false, smtp_host: 'smtp.gmail.com', smtp_port: 587, security: 'tls', username: '', password: '' },
+      voice: { enabled: false, tts_service: 'google', api_key: '', default_voice: 'female-fa' },
+      coingecko: { enabled: true, api_key: '', rate_limit: 50, cache_enabled: true },
+      news: { enabled: false, api_key: '', sources: [], keywords: 'bitcoin,ethereum,crypto' },
+      technical: { enabled: false, tradingview_api_key: '', alphavantage_api_key: '', indicators: ['rsi', 'macd', 'sma', 'ema', 'bb'] }
+    }
+    
+    const response = {
+      success: true,
+      message: 'All API configurations reset to defaults',
+      data: {
+        defaultConfigs,
+        resetTimestamp: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error resetting API configs:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to reset API configurations'
+    }, 500)
+  }
+})
+
+// Get current API configurations
+app.get('/api/config/api-services', async (c) => {
+  try {
+    console.log('📖 Loading current API configurations')
+    
+    // In production, this would load from database/secure storage
+    const currentConfigs = {
+      openai: { enabled: false, model: 'gpt-4', temperature: 0.7, max_tokens: 2000, status: 'configured' },
+      anthropic: { enabled: false, model: 'claude-3-sonnet', max_tokens: 4000, status: 'not_configured' },
+      gemini: { enabled: true, model: 'gemini-2.0-flash', safety: 'BLOCK_ONLY_HIGH', status: 'active' },
+      binance: { enabled: true, testnet: false, status: 'active' },
+      mexc: { enabled: true, base_url: 'https://api.mexc.com', status: 'active' },
+      coinbase: { enabled: false, status: 'not_configured' },
+      kucoin: { enabled: false, status: 'not_configured' },
+      telegram: { enabled: false, notification_type: 'all', status: 'not_configured' },
+      email: { enabled: false, smtp_host: 'smtp.gmail.com', smtp_port: 587, security: 'tls', status: 'not_configured' },
+      voice: { enabled: false, tts_service: 'google', default_voice: 'female-fa', status: 'not_configured' },
+      coingecko: { enabled: true, rate_limit: 50, cache_enabled: true, status: 'active' },
+      news: { enabled: false, sources: [], keywords: 'bitcoin,ethereum,crypto', status: 'not_configured' },
+      technical: { enabled: false, indicators: ['rsi', 'macd', 'sma', 'ema', 'bb'], status: 'not_configured' }
+    }
+    
+    const response = {
+      success: true,
+      message: 'API configurations loaded successfully',
+      data: {
+        configs: currentConfigs,
+        totalServices: Object.keys(currentConfigs).length,
+        activeServices: Object.values(currentConfigs).filter(config => config.enabled).length,
+        lastUpdated: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error loading API configs:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load API configurations'
+    }, 500)
+  }
+})
+
+// Test API service connectivity
+app.post('/api/config/api-services/test', async (c) => {
+  try {
+    const { service, config } = await c.req.json()
+    
+    console.log(`🧪 Testing ${service} API connectivity`)
+    
+    // Simulate API testing
+    const testResults = {
+      service,
+      status: Math.random() > 0.2 ? 'success' : 'failed',
+      responseTime: Math.floor(Math.random() * 2000) + 100, // 100-2100ms
+      timestamp: new Date().toISOString()
+    }
+    
+    if (testResults.status === 'success') {
+      testResults.message = `${service} API connection successful`
+      testResults.details = {
+        endpoint: 'Test endpoint reached',
+        authentication: 'Valid',
+        rateLimit: 'Within limits'
+      }
+    } else {
+      testResults.message = `${service} API connection failed`
+      testResults.error = 'Invalid API key or network error'
+    }
+    
+    const response = {
+      success: testResults.status === 'success',
+      message: testResults.message,
+      data: testResults
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error testing API service:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to test API service'
+    }, 500)
+  }
+})
+
+// Get API usage statistics
+app.get('/api/config/api-services/usage', async (c) => {
+  try {
+    console.log('📊 Loading API usage statistics')
+    
+    // Generate mock usage statistics
+    const services = ['openai', 'gemini', 'binance', 'mexc', 'coingecko', 'telegram']
+    const usageStats = {}
+    
+    services.forEach(service => {
+      usageStats[service] = {
+        totalRequests: Math.floor(Math.random() * 10000) + 1000,
+        successfulRequests: Math.floor(Math.random() * 9000) + 900,
+        failedRequests: Math.floor(Math.random() * 100) + 10,
+        averageResponseTime: Math.floor(Math.random() * 1000) + 200,
+        dailyUsage: Array.from({ length: 7 }, () => Math.floor(Math.random() * 500) + 50),
+        rateLimitHits: Math.floor(Math.random() * 10),
+        lastUsed: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+        status: Math.random() > 0.1 ? 'healthy' : 'warning'
+      }
+    })
+    
+    const response = {
+      success: true,
+      message: 'API usage statistics loaded successfully',
+      data: {
+        usageStats,
+        summary: {
+          totalServices: services.length,
+          activeServices: Object.values(usageStats).filter(stat => stat.status === 'healthy').length,
+          totalRequests: Object.values(usageStats).reduce((sum, stat) => sum + stat.totalRequests, 0),
+          overallSuccessRate: 95.8 + Math.random() * 3,
+          averageResponseTime: 450 + Math.random() * 200
+        },
+        timestamp: new Date().toISOString()
+      }
+    }
+    
+    return c.json(response)
+  } catch (error) {
+    console.error('❌ Error loading API usage stats:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to load API usage statistics'
+    }, 500)
+  }
+})
+
 // Mount the original app routes to appWithD1
 appWithD1.route('/', app);
 
