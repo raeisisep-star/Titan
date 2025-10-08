@@ -167,6 +167,13 @@ class PortfolioModule {
                             <span class="text-gray-400">نسبت کالمار:</span>
                             <span id="calmar-ratio" class="text-purple-400 font-medium">--</span>
                         </div>
+                        <div class="mt-4 pt-3 border-t border-gray-700">
+                            <button onclick="window.portfolioModule.showTransactionManager()" 
+                                    class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center justify-center text-sm">
+                                <i class="fas fa-cogs ml-2"></i>
+                                مدیریت تراکنش‌ها
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -929,6 +936,597 @@ class PortfolioModule {
         this.refreshInterval = setInterval(async () => {
             await this.loadPortfolioData();
         }, 5 * 60 * 1000);
+    }
+
+    // ===========================================
+    // TRANSACTION MANAGEMENT METHODS
+    // ===========================================
+
+    async showTransactionManager() {
+        const modal = this.createTransactionModal();
+        document.body.appendChild(modal);
+        await this.loadTransactionsList();
+    }
+
+    createTransactionModal() {
+        const modal = document.createElement('div');
+        modal.id = 'transaction-manager-modal';
+        modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+        
+        modal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-6xl max-h-[90vh] overflow-y-auto">
+                <!-- Header -->
+                <div class="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                    <h2 class="text-2xl font-bold text-white">
+                        <i class="fas fa-exchange-alt ml-2"></i>
+                        مدیریت تراکنش‌ها
+                    </h2>
+                    <button onclick="document.getElementById('transaction-manager-modal').remove()" 
+                            class="text-gray-400 hover:text-white text-2xl">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <!-- Action Bar -->
+                <div class="flex flex-wrap gap-4 mb-6">
+                    <button onclick="window.portfolioModule.showAddTransactionForm()" 
+                            class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-plus ml-2"></i>
+                        افزودن معامله جدید
+                    </button>
+                    <button onclick="window.portfolioModule.toggleBulkActions()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-check-square ml-2"></i>
+                        عملیات گروهی
+                    </button>
+                    <button onclick="window.portfolioModule.refreshTransactions()" 
+                            class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg flex items-center">
+                        <i class="fas fa-refresh ml-2"></i>
+                        بروزرسانی
+                    </button>
+                </div>
+
+                <!-- Bulk Actions (Hidden by default) -->
+                <div id="bulk-actions" class="hidden bg-gray-700 rounded-lg p-4 mb-4">
+                    <div class="flex items-center gap-4">
+                        <span class="text-gray-300">عملیات انتخاب شده:</span>
+                        <button onclick="window.portfolioModule.bulkDeleteTransactions()" 
+                                class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded">
+                            <i class="fas fa-trash ml-1"></i>
+                            حذف
+                        </button>
+                        <button onclick="window.portfolioModule.clearBulkSelection()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded">
+                            انصراف
+                        </button>
+                        <span id="bulk-count" class="text-blue-400 mr-4">0 مورد انتخاب شده</span>
+                    </div>
+                </div>
+
+                <!-- Transactions List -->
+                <div id="transactions-list">
+                    <div class="flex justify-center items-center py-8">
+                        <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-400"></div>
+                        <span class="mr-3 text-gray-400">در حال بارگیری تراکنش‌ها...</span>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        return modal;
+    }
+
+    async loadTransactionsList() {
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.get('/api/portfolio/transactions', {
+                headers: { 'Authorization': `Bearer ${token}` },
+                params: { limit: 100 }
+            });
+
+            if (response.data.success) {
+                this.renderTransactionsList(response.data.data);
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error loading transactions:', error);
+            this.showTransactionError('خطا در بارگیری تراکنش‌ها: ' + error.message);
+        }
+    }
+
+    renderTransactionsList(transactions) {
+        const listContainer = document.getElementById('transactions-list');
+        
+        if (!transactions || transactions.length === 0) {
+            listContainer.innerHTML = `
+                <div class="text-center py-8">
+                    <i class="fas fa-inbox text-4xl text-gray-500 mb-4"></i>
+                    <p class="text-gray-400">هیچ تراکنشی یافت نشد</p>
+                </div>
+            `;
+            return;
+        }
+
+        const tableHTML = `
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-right">
+                    <thead class="bg-gray-700">
+                        <tr>
+                            <th class="p-3">
+                                <input type="checkbox" id="select-all-transactions" 
+                                       onchange="window.portfolioModule.toggleAllTransactions(this)">
+                            </th>
+                            <th class="p-3 text-gray-300">نماد</th>
+                            <th class="p-3 text-gray-300">نوع</th>
+                            <th class="p-3 text-gray-300">مقدار</th>
+                            <th class="p-3 text-gray-300">قیمت ورود</th>
+                            <th class="p-3 text-gray-300">قیمت خروج</th>
+                            <th class="p-3 text-gray-300">سود/زیان</th>
+                            <th class="p-3 text-gray-300">تاریخ ورود</th>
+                            <th class="p-3 text-gray-300">وضعیت</th>
+                            <th class="p-3 text-gray-300">عملیات</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${transactions.map(tx => `
+                            <tr class="bg-gray-800 border-b border-gray-700 hover:bg-gray-750">
+                                <td class="p-3">
+                                    <input type="checkbox" class="transaction-checkbox" 
+                                           value="${tx.id}" onchange="window.portfolioModule.updateBulkCount()">
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex items-center">
+                                        <div class="w-6 h-6 bg-blue-500 rounded-full flex items-center justify-center text-xs font-bold mr-2">
+                                            ${tx.symbol.charAt(0)}
+                                        </div>
+                                        <span class="text-white font-medium">${tx.symbol}</span>
+                                    </div>
+                                </td>
+                                <td class="p-3">
+                                    <span class="px-2 py-1 rounded text-xs font-medium ${tx.side === 'buy' ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
+                                        ${tx.side === 'buy' ? 'خرید' : 'فروش'}
+                                    </span>
+                                </td>
+                                <td class="p-3 text-white">${this.formatNumber(tx.quantity)}</td>
+                                <td class="p-3 text-white">$${this.formatNumber(tx.entry_price)}</td>
+                                <td class="p-3 text-white">${tx.exit_price ? '$' + this.formatNumber(tx.exit_price) : '-'}</td>
+                                <td class="p-3">
+                                    ${tx.net_pnl !== undefined ? 
+                                        `<span class="${tx.net_pnl >= 0 ? 'text-green-400' : 'text-red-400'} font-medium">
+                                            ${tx.net_pnl >= 0 ? '+' : ''}$${this.formatNumber(tx.net_pnl)}
+                                            ${tx.pnl_percentage ? ' (' + (tx.pnl_percentage >= 0 ? '+' : '') + tx.pnl_percentage.toFixed(2) + '%)' : ''}
+                                         </span>`
+                                        : '-'
+                                    }
+                                </td>
+                                <td class="p-3 text-gray-300">${this.formatDate(tx.entry_time)}</td>
+                                <td class="p-3">
+                                    <span class="px-2 py-1 rounded text-xs ${tx.exit_time ? 'bg-gray-700 text-gray-300' : 'bg-blue-900 text-blue-300'}">
+                                        ${tx.exit_time ? 'بسته شده' : 'باز'}
+                                    </span>
+                                </td>
+                                <td class="p-3">
+                                    <div class="flex gap-1">
+                                        <button onclick="window.portfolioModule.editTransaction(${tx.id})" 
+                                                class="bg-blue-600 hover:bg-blue-700 text-white px-2 py-1 rounded text-xs">
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button onclick="window.portfolioModule.deleteTransaction(${tx.id})" 
+                                                class="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-xs">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                        ${!tx.exit_time ? 
+                                            `<button onclick="window.portfolioModule.closeTransaction(${tx.id})" 
+                                                     class="bg-gray-600 hover:bg-gray-700 text-white px-2 py-1 rounded text-xs">
+                                                <i class="fas fa-times-circle"></i>
+                                             </button>`
+                                            : ''
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+
+        listContainer.innerHTML = tableHTML;
+    }
+
+    showAddTransactionForm() {
+        const formModal = document.createElement('div');
+        formModal.id = 'add-transaction-modal';
+        formModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60';
+        
+        formModal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">افزودن معامله جدید</h3>
+                    <button onclick="document.getElementById('add-transaction-modal').remove()" 
+                            class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="add-transaction-form" onsubmit="window.portfolioModule.handleAddTransaction(event)">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">نماد</label>
+                            <input type="text" name="symbol" required 
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500"
+                                   placeholder="مثال: BTC">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">نوع معامله</label>
+                            <select name="type" required 
+                                    class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                                <option value="buy">خرید</option>
+                                <option value="sell">فروش</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">مقدار</label>
+                            <input type="number" step="any" name="quantity" required 
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500"
+                                   placeholder="0.1">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">قیمت واحد ($)</label>
+                            <input type="number" step="any" name="pricePerUnit" required 
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500"
+                                   placeholder="45000">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 text-sm mb-2">دلیل ورود (اختیاری)</label>
+                        <input type="text" name="entryReason" 
+                               class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500"
+                               placeholder="تحلیل تکنیکال، خبر، و غیره">
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('add-transaction-modal').remove()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                            انصراف
+                        </button>
+                        <button type="submit" 
+                                class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-plus ml-1"></i>
+                            افزودن معامله
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(formModal);
+    }
+
+    async handleAddTransaction(event) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const transactionData = {
+            symbol: formData.get('symbol').toUpperCase(),
+            type: formData.get('type'),
+            quantity: parseFloat(formData.get('quantity')),
+            pricePerUnit: parseFloat(formData.get('pricePerUnit')),
+            entryReason: formData.get('entryReason') || null
+        };
+
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.post('/api/portfolio/transactions', transactionData, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                document.getElementById('add-transaction-modal').remove();
+                await this.loadTransactionsList();
+                this.showTransactionSuccess('معامله با موفقیت اضافه شد');
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error adding transaction:', error);
+            this.showTransactionError('خطا در افزودن معامله: ' + (error.response?.data?.error || error.message));
+        }
+    }
+
+    async editTransaction(transactionId) {
+        // Fetch transaction details first
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.get(`/api/portfolio/transactions/${transactionId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                this.showEditTransactionForm(response.data.data);
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error fetching transaction:', error);
+            this.showTransactionError('خطا در بارگیری جزئیات معامله: ' + error.message);
+        }
+    }
+
+    showEditTransactionForm(transaction) {
+        const formModal = document.createElement('div');
+        formModal.id = 'edit-transaction-modal';
+        formModal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-60';
+        
+        formModal.innerHTML = `
+            <div class="bg-gray-800 rounded-lg p-6 w-full max-w-lg">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 class="text-xl font-bold text-white">ویرایش معامله</h3>
+                    <button onclick="document.getElementById('edit-transaction-modal').remove()" 
+                            class="text-gray-400 hover:text-white">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                
+                <form id="edit-transaction-form" onsubmit="window.portfolioModule.handleEditTransaction(event, ${transaction.id})">
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">نماد</label>
+                            <input type="text" name="symbol" required value="${transaction.symbol}"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">نوع معامله</label>
+                            <select name="side" required 
+                                    class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                                <option value="buy" ${transaction.side === 'buy' ? 'selected' : ''}>خرید</option>
+                                <option value="sell" ${transaction.side === 'sell' ? 'selected' : ''}>فروش</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">مقدار</label>
+                            <input type="number" step="any" name="quantity" required value="${transaction.quantity}"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">قیمت ورود ($)</label>
+                            <input type="number" step="any" name="entry_price" required value="${transaction.entry_price}"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">قیمت خروج ($) - اختیاری</label>
+                            <input type="number" step="any" name="exit_price" value="${transaction.exit_price || ''}"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                        </div>
+                        <div>
+                            <label class="block text-gray-300 text-sm mb-2">کارمزد ($)</label>
+                            <input type="number" step="any" name="fees" value="${transaction.fees || 0}"
+                                   class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-300 text-sm mb-2">دلیل ورود</label>
+                        <input type="text" name="entry_reason" value="${transaction.entry_reason || ''}"
+                               class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="block text-gray-300 text-sm mb-2">دلیل خروج</label>
+                        <input type="text" name="exit_reason" value="${transaction.exit_reason || ''}"
+                               class="w-full bg-gray-700 border border-gray-600 text-white px-3 py-2 rounded focus:border-blue-500">
+                    </div>
+                    
+                    <div class="flex justify-end gap-2">
+                        <button type="button" onclick="document.getElementById('edit-transaction-modal').remove()" 
+                                class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded">
+                            انصراف
+                        </button>
+                        <button type="submit" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            <i class="fas fa-save ml-1"></i>
+                            ذخیره تغییرات
+                        </button>
+                    </div>
+                </form>
+            </div>
+        `;
+
+        document.body.appendChild(formModal);
+    }
+
+    async handleEditTransaction(event, transactionId) {
+        event.preventDefault();
+        
+        const formData = new FormData(event.target);
+        const updateData = {
+            symbol: formData.get('symbol').toUpperCase(),
+            side: formData.get('side'),
+            quantity: parseFloat(formData.get('quantity')),
+            entry_price: parseFloat(formData.get('entry_price')),
+            entry_reason: formData.get('entry_reason') || null,
+            fees: parseFloat(formData.get('fees')) || 0
+        };
+
+        // Add exit_price and exit_reason if provided
+        if (formData.get('exit_price')) {
+            updateData.exit_price = parseFloat(formData.get('exit_price'));
+        }
+        if (formData.get('exit_reason')) {
+            updateData.exit_reason = formData.get('exit_reason');
+        }
+
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.put(`/api/portfolio/transactions/${transactionId}`, updateData, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                document.getElementById('edit-transaction-modal').remove();
+                await this.loadTransactionsList();
+                this.showTransactionSuccess('معامله با موفقیت بروزرسانی شد');
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error updating transaction:', error);
+            this.showTransactionError('خطا در بروزرسانی معامله: ' + (error.response?.data?.error || error.message));
+        }
+    }
+
+    async deleteTransaction(transactionId) {
+        if (!confirm('آیا از حذف این معامله اطمینان دارید؟ این عملیات قابل بازگشت نیست.')) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.delete(`/api/portfolio/transactions/${transactionId}`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                await this.loadTransactionsList();
+                this.showTransactionSuccess('معامله با موفقیت حذف شد');
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error deleting transaction:', error);
+            this.showTransactionError('خطا در حذف معامله: ' + (error.response?.data?.error || error.message));
+        }
+    }
+
+    toggleBulkActions() {
+        const bulkActions = document.getElementById('bulk-actions');
+        if (bulkActions) {
+            bulkActions.classList.toggle('hidden');
+        }
+    }
+
+    toggleAllTransactions(checkbox) {
+        const checkboxes = document.querySelectorAll('.transaction-checkbox');
+        checkboxes.forEach(cb => {
+            cb.checked = checkbox.checked;
+        });
+        this.updateBulkCount();
+    }
+
+    updateBulkCount() {
+        const checked = document.querySelectorAll('.transaction-checkbox:checked');
+        const countEl = document.getElementById('bulk-count');
+        if (countEl) {
+            countEl.textContent = `${checked.length} مورد انتخاب شده`;
+        }
+    }
+
+    async bulkDeleteTransactions() {
+        const checked = document.querySelectorAll('.transaction-checkbox:checked');
+        const transactionIds = Array.from(checked).map(cb => parseInt(cb.value));
+        
+        if (transactionIds.length === 0) {
+            this.showTransactionError('هیچ معامله‌ای انتخاب نشده است');
+            return;
+        }
+
+        if (!confirm(`آیا از حذف ${transactionIds.length} معامله انتخاب شده اطمینان دارید؟ این عملیات قابل بازگشت نیست.`)) {
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('titan_auth_token');
+            const response = await axios.post('/api/portfolio/transactions/bulk', {
+                action: 'delete',
+                transactionIds: transactionIds
+            }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.data.success) {
+                await this.loadTransactionsList();
+                this.clearBulkSelection();
+                this.showTransactionSuccess(`${response.data.data.successful} معامله با موفقیت حذف شد`);
+                
+                if (response.data.data.errors.length > 0) {
+                    console.warn('Bulk delete errors:', response.data.data.errors);
+                }
+            } else {
+                throw new Error(response.data.error);
+            }
+        } catch (error) {
+            console.error('Error in bulk delete:', error);
+            this.showTransactionError('خطا در حذف گروهی معاملات: ' + (error.response?.data?.error || error.message));
+        }
+    }
+
+    clearBulkSelection() {
+        const checkboxes = document.querySelectorAll('.transaction-checkbox');
+        checkboxes.forEach(cb => { cb.checked = false; });
+        
+        const selectAll = document.getElementById('select-all-transactions');
+        if (selectAll) { selectAll.checked = false; }
+        
+        this.updateBulkCount();
+        this.toggleBulkActions(); // Hide bulk actions
+    }
+
+    async refreshTransactions() {
+        await this.loadTransactionsList();
+        this.showTransactionSuccess('لیست تراکنش‌ها بروزرسانی شد');
+    }
+
+    showTransactionSuccess(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 left-4 bg-green-600 text-white px-4 py-2 rounded-lg z-70 animate-bounce';
+        toast.innerHTML = `<i class="fas fa-check ml-2"></i>${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    showTransactionError(message) {
+        const toast = document.createElement('div');
+        toast.className = 'fixed top-4 left-4 bg-red-600 text-white px-4 py-2 rounded-lg z-70 animate-bounce';
+        toast.innerHTML = `<i class="fas fa-exclamation-triangle ml-2"></i>${message}`;
+        document.body.appendChild(toast);
+        
+        setTimeout(() => {
+            toast.remove();
+        }, 5000);
+    }
+
+    formatDate(dateString) {
+        if (!dateString) return '-';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('fa-IR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    formatNumber(value) {
+        if (value === null || value === undefined) return '0';
+        return Number(value).toLocaleString('en-US', {
+            minimumFractionDigits: 0,
+            maximumFractionDigits: 8
+        });
     }
 
     destroy() {

@@ -312,23 +312,36 @@ class WatchlistModule {
 
     async loadUserWatchlist() {
         try {
-            const userId = 'demo_user'; // In real app, get from current user
+            // Use demo_user for development - in production this would come from authenticated user
+            const userId = 'demo_user';
+            console.log('📡 Loading watchlist for user:', userId);
+            
             const response = await axios.get(`/api/watchlist/list/${userId}`);
             
             if (response.data.success) {
                 this.watchlistItems = response.data.data;
+                console.log(`✅ Loaded ${this.watchlistItems.length} watchlist items from database`);
                 this.renderWatchlistTable();
                 this.updateWatchlistStats();
+            } else {
+                throw new Error(response.data.error || 'Failed to load watchlist');
             }
         } catch (error) {
-            console.error('Error loading user watchlist:', error);
-            // Use demo data as fallback
+            console.error('❌ Error loading user watchlist:', error);
+            
+            // Check if it's an authentication error
+            if (error.response && error.response.status === 401) {
+                console.warn('⚠️ Authentication required for watchlist access');
+                this.showAlert('برای دسترسی به لیست مورد علاقه، ورود به حساب کاربری لازم است', 'warning');
+                // In a real app, redirect to login
+                return;
+            }
+            
+            // Use minimal demo data as fallback
+            console.log('📋 Using fallback demo data');
             this.watchlistItems = [
-                { id: 'w1', symbol: 'BTCUSDT', name: 'Bitcoin', type: 'crypto', price_alert_high: 50000, price_alert_low: 40000 },
-                { id: 'w2', symbol: 'ETHUSDT', name: 'Ethereum', type: 'crypto', price_alert_high: 3000, price_alert_low: 2000 },
-                { id: 'w3', symbol: 'SOLUSDT', name: 'Solana', type: 'crypto' },
-                { id: 'w4', symbol: 'ADAUSDT', name: 'Cardano', type: 'crypto' },
-                { id: 'w5', symbol: 'DOTUSDT', name: 'Polkadot', type: 'crypto' }
+                { id: 'demo1', symbol: 'BTCUSDT', name: 'Bitcoin', type: 'crypto', current_price: 45230, price_change_percent_24h: 2.45 },
+                { id: 'demo2', symbol: 'ETHUSDT', name: 'Ethereum', type: 'crypto', current_price: 2890, price_change_percent_24h: -1.23 }
             ];
             this.renderWatchlistTable();
             this.updateWatchlistStats();
@@ -340,9 +353,35 @@ class WatchlistModule {
         this.isLoading = true;
 
         try {
+            // First update prices in database
+            const updateResponse = await axios.post('/api/watchlist/update-prices', {
+                user_id: 'demo_user'
+            });
+            
+            if (updateResponse.data.success) {
+                console.log(`✅ Updated prices for ${updateResponse.data.updated_count} items`);
+                
+                // Reload watchlist to get updated data
+                await this.loadUserWatchlist();
+            } else {
+                console.warn('Price update failed, falling back to cache method');
+                await this.refreshPricesFromMarketAPI();
+            }
+            
+        } catch (error) {
+            console.error('Error refreshing watchlist prices:', error);
+            // Fallback to market API method
+            await this.refreshPricesFromMarketAPI();
+        } finally {
+            this.isLoading = false;
+        }
+    }
+
+    async refreshPricesFromMarketAPI() {
+        try {
             const symbols = this.watchlistItems.map(item => item.symbol);
             
-            // Get prices from API
+            // Get prices from market API
             const response = await axios.post('/api/market/prices', { symbols });
             
             if (response.data.success) {
@@ -358,15 +397,42 @@ class WatchlistModule {
                 this.updateLastUpdateTime();
                 
             } else {
-                throw new Error('Failed to fetch prices');
+                throw new Error('Failed to fetch prices from market API');
             }
             
         } catch (error) {
-            console.error('Error refreshing prices:', error);
-            // Use mock data
+            console.error('Error refreshing from market API:', error);
+            // Use mock data as last resort
             this.loadMockPrices();
-        } finally {
-            this.isLoading = false;
+        }
+    }
+
+    async refreshItemPrice(itemId) {
+        try {
+            const item = this.watchlistItems.find(i => i.id === itemId);
+            if (!item) return;
+
+            // Update single item price via market API
+            const response = await axios.post('/api/market/prices', { 
+                symbols: [item.symbol] 
+            });
+            
+            if (response.data.success && response.data.data.length > 0) {
+                const priceData = response.data.data[0];
+                
+                // Update cache
+                this.priceCache.set(item.symbol, priceData);
+                
+                // Update UI
+                this.renderWatchlistTable();
+                this.updateLastUpdateTime();
+                
+                this.showAlert(`قیمت ${item.symbol} بروزرسانی شد`, 'success');
+            }
+            
+        } catch (error) {
+            console.error('Error refreshing item price:', error);
+            this.showAlert('خطا در بروزرسانی قیمت', 'error');
         }
     }
 
@@ -392,50 +458,82 @@ class WatchlistModule {
         if (!tableBody) return;
 
         const rows = this.watchlistItems.map(item => {
-            const priceData = this.priceCache.get(item.symbol) || {};
-            const price = priceData.price || 0;
-            const change24h = priceData.change_24h || 0;
-            const volume = priceData.volume_24h || 0;
+            // Use real database data first, then fallback to cache or mock data
+            const currentPrice = item.current_price || 0;
+            const change24h = item.price_change_percent_24h || 0;
+            const volume = item.volume_24h || 0;
             
-            const changeClass = change24h >= 0 ? 'text-green-400' : 'text-red-400';
-            const changeIcon = change24h >= 0 ? '↗' : '↘';
+            // If no real data, try cache
+            const priceData = this.priceCache.get(item.symbol) || {};
+            const price = currentPrice || priceData.price || 0;
+            const changePercent = change24h || priceData.change_24h || 0;
+            const volumeData = volume || priceData.volume_24h || 0;
+            
+            const changeClass = changePercent >= 0 ? 'text-green-400' : 'text-red-400';
+            const changeIcon = changePercent >= 0 ? '↗' : '↘';
+            
+            // Check if alerts are set
+            const hasAlerts = item.price_alert_high || item.price_alert_low;
+            const alertIcon = hasAlerts ? 'fas fa-bell text-yellow-400' : 'far fa-bell text-gray-400';
+            
+            // Price alert status
+            let alertStatus = '';
+            if (hasAlerts && price > 0) {
+                if (item.price_alert_high && price >= item.price_alert_high) {
+                    alertStatus = ' 🔔'; // Alert triggered high
+                } else if (item.price_alert_low && price <= item.price_alert_low) {
+                    alertStatus = ' 🔔'; // Alert triggered low
+                }
+            }
             
             return `
                 <tr class="hover:bg-gray-700 transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="flex items-center">
-                            <div class="text-sm font-medium text-white">${item.symbol}</div>
+                            <div class="text-sm font-medium text-white">${item.symbol}${alertStatus}</div>
+                            <div class="text-xs text-gray-400 mr-2">${item.type?.toUpperCase() || 'CRYPTO'}</div>
                         </div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm text-gray-300">${item.name}</div>
+                        ${item.notes ? `<div class="text-xs text-gray-500">${item.notes}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm font-medium text-white">$${price.toLocaleString()}</div>
+                        ${item.market_cap ? `<div class="text-xs text-gray-400">MC: $${this.formatVolume(item.market_cap)}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <div class="text-sm ${changeClass}">
-                            ${changeIcon} ${Math.abs(change24h).toFixed(2)}%
+                            ${changeIcon} ${Math.abs(changePercent).toFixed(2)}%
                         </div>
+                        ${item.price_change_24h ? `<div class="text-xs text-gray-400">$${Math.abs(item.price_change_24h).toFixed(4)}</div>` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
-                        <div class="text-sm text-gray-300">$${this.formatVolume(volume)}</div>
+                        <div class="text-sm text-gray-300">$${this.formatVolume(volumeData)}</div>
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap">
                         <button onclick="watchlistModule.showSetAlertModal('${item.id}')" 
-                                class="text-yellow-400 hover:text-yellow-300 text-sm">
-                            <i class="fas fa-bell"></i>
+                                class="hover:text-yellow-300 text-sm" title="تنظیم آلرت قیمت">
+                            <i class="${alertIcon}"></i>
                         </button>
+                        ${hasAlerts ? `<div class="text-xs text-gray-400 mt-1">
+                            ${item.price_alert_high ? `H: $${item.price_alert_high}` : ''}
+                            ${item.price_alert_low ? `L: $${item.price_alert_low}` : ''}
+                        </div>` : ''}
                     </td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div class="flex space-x-2 space-x-reverse">
                             <button onclick="watchlistModule.removeFromWatchlist('${item.id}')" 
-                                    class="text-red-400 hover:text-red-300">
+                                    class="text-red-400 hover:text-red-300" title="حذف از لیست">
                                 <i class="fas fa-trash"></i>
                             </button>
                             <button onclick="app.loadModule('trading')" 
-                                    class="text-blue-400 hover:text-blue-300">
+                                    class="text-blue-400 hover:text-blue-300" title="نمودار قیمت">
                                 <i class="fas fa-chart-line"></i>
+                            </button>
+                            <button onclick="watchlistModule.refreshItemPrice('${item.id}')" 
+                                    class="text-green-400 hover:text-green-300" title="بروزرسانی قیمت">
+                                <i class="fas fa-sync-alt"></i>
                             </button>
                         </div>
                     </td>
@@ -453,8 +551,9 @@ class WatchlistModule {
         let alerts = 0;
 
         this.watchlistItems.forEach(item => {
-            const priceData = this.priceCache.get(item.symbol) || {};
-            const change24h = priceData.change_24h || 0;
+            // Use real database data first, then fallback to cache
+            const change24h = item.price_change_percent_24h || 
+                             (this.priceCache.get(item.symbol) || {}).change_24h || 0;
             
             if (change24h > 0) gainers++;
             else if (change24h < 0) losers++;
@@ -463,10 +562,15 @@ class WatchlistModule {
         });
 
         // Update stats
-        document.getElementById('gainers-count').textContent = gainers;
-        document.getElementById('losers-count').textContent = losers;
-        document.getElementById('alerts-count').textContent = alerts;
-        document.getElementById('total-items').textContent = totalItems;
+        const gainersEl = document.getElementById('gainers-count');
+        const losersEl = document.getElementById('losers-count');
+        const alertsEl = document.getElementById('alerts-count');
+        const totalEl = document.getElementById('total-items');
+        
+        if (gainersEl) gainersEl.textContent = gainers;
+        if (losersEl) losersEl.textContent = losers;
+        if (alertsEl) alertsEl.textContent = alerts;
+        if (totalEl) totalEl.textContent = totalItems;
     }
 
     updateLastUpdateTime() {
@@ -721,50 +825,45 @@ class WatchlistModule {
         }
 
         try {
-            const newItem = {
-                id: 'w' + Date.now(),
+            // Save to server first to get real database ID
+            const response = await axios.post('/api/watchlist/add', {
+                user_id: 'demo_user',
                 symbol,
                 name,
                 type,
                 price_alert_high: alertHigh,
                 price_alert_low: alertLow
-            };
+            });
 
-            // Add to local array
-            this.watchlistItems.push(newItem);
+            if (response.data.success) {
+                // Add the server-returned item with real database ID
+                const newItem = response.data.data;
+                this.watchlistItems.push(newItem);
 
-            // Save to server
-            await this.saveWatchlistItem(newItem);
+                // Update UI
+                this.renderWatchlistTable();
+                this.updateWatchlistStats();
+                
+                // Close modal
+                this.hideAddToWatchlistModal();
 
-            // Update UI
-            this.renderWatchlistTable();
-            this.updateWatchlistStats();
-            
-            // Close modal
-            this.hideAddToWatchlistModal();
-
-            // Show success message
-            this.showAlert('آیتم به لیست مورد علاقه اضافه شد', 'success');
+                // Show success message
+                this.showAlert('آیتم به لیست مورد علاقه اضافه شد', 'success');
+                
+                // Refresh prices for new item
+                await this.refreshItemPrice(newItem.id);
+                
+            } else {
+                throw new Error(response.data.error || 'Failed to add to watchlist');
+            }
 
         } catch (error) {
             console.error('Error adding to watchlist:', error);
-            this.showAlert('خطا در افزودن آیتم', 'error');
-        }
-    }
-
-    async saveWatchlistItem(item) {
-        try {
-            const response = await axios.post('/api/watchlist/add', {
-                user_id: 'demo_user',
-                ...item
-            });
-
-            if (!response.data.success) {
-                throw new Error('Failed to save watchlist item');
+            if (error.response && error.response.data && error.response.data.error) {
+                this.showAlert(error.response.data.error, 'error');
+            } else {
+                this.showAlert('خطا در افزودن آیتم', 'error');
             }
-        } catch (error) {
-            console.error('Error saving watchlist item:', error);
-            // Continue anyway for demo
         }
     }
 

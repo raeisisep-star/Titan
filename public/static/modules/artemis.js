@@ -443,66 +443,71 @@ class ArtemisModule {
     }
 
     async initializeAIAgents() {
-        const agents = [
-            {
-                id: 'market_analyzer',
-                name: 'تحلیلگر بازار',
-                role: 'Market Analysis',
-                status: 'active',
-                confidence: 88 + Math.random() * 12,
-                lastActivity: Date.now() - Math.random() * 3600000,
-                icon: '📊',
-                color: 'blue',
-                speciality: 'تحلیل تکنیکال و بنیادی'
-            },
-            {
-                id: 'price_predictor',
-                name: 'پیش‌بین قیمت',
-                role: 'Price Prediction',
-                status: 'active', 
-                confidence: 92 + Math.random() * 8,
-                lastActivity: Date.now() - Math.random() * 1800000,
-                icon: '🔮',
-                color: 'purple',
-                speciality: 'پیش‌بینی قیمت کوتاه و بلندمدت'
-            },
-            {
-                id: 'risk_manager',
-                name: 'مدیر ریسک',
-                role: 'Risk Management',
-                status: 'active',
-                confidence: 95 + Math.random() * 5,
-                lastActivity: Date.now() - Math.random() * 900000,
-                icon: '🛡️',
-                color: 'green',
-                speciality: 'مدیریت ریسک و محافظت سرمایه'
-            },
-            {
-                id: 'signal_generator',
-                name: 'تولیدکننده سیگنال',
-                role: 'Signal Generation',
-                status: 'active',
-                confidence: 87 + Math.random() * 13,
-                lastActivity: Date.now() - Math.random() * 2700000,
-                icon: '⚡',
-                color: 'yellow',
-                speciality: 'تولید سیگنال‌های خرید و فروش'
-            },
-            {
-                id: 'news_analyzer',
-                name: 'تحلیلگر اخبار',
-                role: 'News Analysis',
-                status: 'active',
-                confidence: 78 + Math.random() * 22,
-                lastActivity: Date.now() - Math.random() * 5400000,
-                icon: '📰',
-                color: 'orange',
-                speciality: 'تحلیل احساسات و تأثیر اخبار'
-            }
-        ];
+        try {
+            // Load real AI agents from API
+            const response = await fetch('/api/artemis/agents', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
+                }
+            });
 
-        this.aiAgents = agents;
+            const data = await response.json();
+            
+            if (data.success && data.data) {
+                // Map API data to frontend format
+                this.aiAgents = data.data.map(agent => ({
+                    id: agent.id,
+                    name: agent.name,
+                    role: agent.specialty,
+                    status: agent.status,
+                    confidence: agent.confidence,
+                    accuracy: agent.accuracy,
+                    lastActivity: Date.now() - Math.random() * 3600000, // Mock last activity
+                    icon: agent.icon || '🤖',
+                    color: this.getAgentColor(agent.id),
+                    speciality: agent.specialty,
+                    current_task: agent.current_task,
+                    trades_executed: agent.trades_executed
+                }));
+            } else {
+                throw new Error(data.error || 'خطا در دریافت اطلاعات ایجنت‌ها');
+            }
+            
+        } catch (error) {
+            console.error('AI Agents API Error:', error);
+            
+            // Fallback to mock data
+            this.aiAgents = [
+                {
+                    id: 'market_analyzer',
+                    name: 'تحلیلگر بازار',
+                    role: 'Market Analysis',
+                    status: 'active',
+                    confidence: 88,
+                    icon: '📊',
+                    color: 'blue',
+                    speciality: 'تحلیل تکنیکال و بنیادی'
+                }
+            ];
+        }
         await this.renderAIAgents();
+    }
+
+    getAgentColor(agentId) {
+        const colors = {
+            'market_analyzer': 'blue',
+            'price_predictor': 'purple', 
+            'risk_manager': 'green',
+            'signal_generator': 'yellow',
+            'news_analyzer': 'orange',
+            '1': 'blue',
+            '2': 'purple',
+            '3': 'green',
+            '4': 'yellow',
+            '5': 'orange'
+        };
+        return colors[agentId] || 'gray';
     }
 
     async renderAIAgents() {
@@ -641,15 +646,10 @@ class ArtemisModule {
     async generateInsights() {
         try {
             const response = await fetch('/api/artemis/insights', {
-                method: 'POST',
+                method: 'GET',
                 headers: {
-                    'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`
-                },
-                body: JSON.stringify({
-                    analysisTypes: ['market_trend', 'volume_analysis', 'sentiment', 'technical_indicators'],
-                    timeframe: '24h'
-                })
+                }
             });
 
             const data = await response.json();
@@ -1186,27 +1186,36 @@ class ArtemisModule {
             const data = await response.json();
             
             if (data.success) {
-                const stats = data.data;
+                const artemisData = data.data;
                 
-                // Update AI stats from API
+                // Update AI stats from real API data
                 const accuracyEl = document.getElementById('ai-accuracy');
                 const predictionsEl = document.getElementById('ai-predictions');
                 const profitEl = document.getElementById('ai-profit');
                 const lastUpdateEl = document.getElementById('last-ai-update');
 
-                if (accuracyEl) accuracyEl.textContent = `${stats.accuracy}%`;
-                if (predictionsEl) predictionsEl.textContent = stats.totalPredictions.toLocaleString();
-                if (profitEl) profitEl.textContent = `+${stats.profitPercentage}%`;
-                if (lastUpdateEl) lastUpdateEl.textContent = new Date(stats.lastUpdate).toLocaleTimeString('fa-IR');
-                
-                // Update AI models status
-                if (stats.aiModels) {
-                    Object.keys(stats.aiModels).forEach(modelKey => {
-                        if (this.aiModels[modelKey]) {
-                            this.aiModels[modelKey] = { ...this.aiModels[modelKey], ...stats.aiModels[modelKey] };
-                        }
-                    });
+                if (accuracyEl && artemisData.artemisStatus) {
+                    accuracyEl.textContent = `${artemisData.artemisStatus.confidence.toFixed(1)}%`;
                 }
+                if (predictionsEl && artemisData.artemisStatus) {
+                    predictionsEl.textContent = artemisData.artemisStatus.totalPredictions.toLocaleString('fa-IR');
+                }
+                if (profitEl && artemisData.artemisStatus) {
+                    const profit = artemisData.artemisStatus.totalProfit;
+                    profitEl.textContent = profit > 0 ? `+${profit.toFixed(1)}%` : `${profit.toFixed(1)}%`;
+                }
+                if (lastUpdateEl && artemisData.artemisStatus) {
+                    lastUpdateEl.textContent = new Date(artemisData.artemisStatus.lastUpdate).toLocaleTimeString('fa-IR');
+                }
+                
+                // Update AI agents with real data
+                if (artemisData.aiAgents) {
+                    this.aiAgents = artemisData.aiAgents;
+                    this.renderAIAgents();
+                }
+                
+                // Store real Artemis status for other methods
+                this.artemisStatus = artemisData.artemisStatus;
                 
             } else {
                 throw new Error(data.error || 'خطا در دریافت داده‌های AI');

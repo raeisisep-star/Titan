@@ -19,9 +19,11 @@ export function initializeDatabase(database: any): DatabaseConnection {
       try {
         const stmt = database.prepare(sql)
         if (params.length > 0) {
-          return await stmt.bind(...params).all()
+          const result = await stmt.bind(...params).all()
+          return { results: result.results || [], success: result.success, meta: result.meta }
         }
-        return await stmt.all()
+        const result = await stmt.all()
+        return { results: result.results || [], success: result.success, meta: result.meta }
       } catch (error) {
         console.error('Database query error:', error)
         throw error
@@ -400,6 +402,56 @@ export class PortfolioAssetDAO {
       WHERE portfolio_id = ? AND symbol = ?
     `, [currentPrice, currentPrice, currentPrice, currentPrice, portfolioId, symbol])
   }
+
+  static async create(asset: Partial<PortfolioAsset>): Promise<PortfolioAsset> {
+    const db = getDatabase()
+    const result = await db.query(`
+      INSERT INTO portfolio_assets (
+        portfolio_id, symbol, amount, locked_amount, avg_buy_price, 
+        current_price, total_value_usd, pnl_usd, pnl_percentage, 
+        last_updated, created_at
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `, [
+      asset.portfolio_id,
+      asset.symbol,
+      asset.amount || 0,
+      asset.locked_amount || 0,
+      asset.avg_buy_price,
+      asset.current_price || asset.avg_buy_price,
+      asset.total_value_usd || (asset.amount * asset.avg_buy_price),
+      asset.pnl_usd || 0,
+      asset.pnl_percentage || 0,
+      asset.last_updated || new Date().toISOString(),
+      asset.created_at || new Date().toISOString()
+    ])
+
+    const result2 = await db.query('SELECT * FROM portfolio_assets WHERE id = ?', [result.meta.last_row_id])
+    return result2.results[0]
+  }
+
+  static async updateAmount(assetId: number, newAmount: number, newAvgPrice: number): Promise<void> {
+    const db = getDatabase()
+    await db.query(`
+      UPDATE portfolio_assets 
+      SET amount = ?, avg_buy_price = ?, last_updated = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `, [newAmount, newAvgPrice, assetId])
+  }
+
+  static async updatePrice(assetId: number, currentPrice: number, totalValue: number, pnlUsd: number, pnlPercentage: number): Promise<void> {
+    const db = getDatabase()
+    await db.query(`
+      UPDATE portfolio_assets 
+      SET 
+        current_price = ?, 
+        total_value_usd = ?, 
+        pnl_usd = ?, 
+        pnl_percentage = ?, 
+        last_updated = CURRENT_TIMESTAMP 
+      WHERE id = ?
+    `, [currentPrice, totalValue, pnlUsd, pnlPercentage, assetId])
+  }
 }
 
 // =====================================
@@ -591,6 +643,118 @@ export class TradeDAO {
     return result2.results[0]
   }
 
+  static async findById(id: number): Promise<Trade | null> {
+    const db = getDatabase()
+    const result = await db.query('SELECT * FROM trades WHERE id = ?', [id])
+    return result.results?.[0] || null
+  }
+
+  static async findByPortfolioId(portfolioId: number, limit = 100): Promise<Trade[]> {
+    const db = getDatabase()
+    const result = await db.query(
+      'SELECT * FROM trades WHERE portfolio_id = ? ORDER BY entry_time DESC LIMIT ?', 
+      [portfolioId, limit]
+    )
+    return result.results || []
+  }
+
+  static async update(id: number, updateData: Partial<Trade>): Promise<Trade | null> {
+    const db = getDatabase()
+    
+    // Build dynamic update query
+    const updateFields: string[] = []
+    const values: any[] = []
+    
+    // Handle all updatable fields
+    if (updateData.symbol !== undefined) {
+      updateFields.push('symbol = ?')
+      values.push(updateData.symbol)
+    }
+    if (updateData.side !== undefined) {
+      updateFields.push('side = ?')
+      values.push(updateData.side)
+    }
+    if (updateData.quantity !== undefined) {
+      updateFields.push('quantity = ?')
+      values.push(updateData.quantity)
+    }
+    if (updateData.entry_price !== undefined) {
+      updateFields.push('entry_price = ?')
+      values.push(updateData.entry_price)
+    }
+    if (updateData.exit_price !== undefined) {
+      updateFields.push('exit_price = ?')
+      values.push(updateData.exit_price)
+    }
+    if (updateData.entry_reason !== undefined) {
+      updateFields.push('entry_reason = ?')
+      values.push(updateData.entry_reason)
+    }
+    if (updateData.exit_reason !== undefined) {
+      updateFields.push('exit_reason = ?')
+      values.push(updateData.exit_reason)
+    }
+    if (updateData.entry_time !== undefined) {
+      updateFields.push('entry_time = ?')
+      values.push(updateData.entry_time)
+    }
+    if (updateData.exit_time !== undefined) {
+      updateFields.push('exit_time = ?')
+      values.push(updateData.exit_time)
+    }
+    if (updateData.fees !== undefined) {
+      updateFields.push('fees = ?')
+      values.push(updateData.fees)
+    }
+    if (updateData.stop_loss !== undefined) {
+      updateFields.push('stop_loss = ?')
+      values.push(updateData.stop_loss)
+    }
+    if (updateData.take_profit !== undefined) {
+      updateFields.push('take_profit = ?')
+      values.push(updateData.take_profit)
+    }
+    
+    if (updateFields.length === 0) {
+      throw new Error('No fields to update')
+    }
+
+    // Recalculate PnL if relevant fields are updated
+    if (updateData.exit_price !== undefined || updateData.entry_price !== undefined || updateData.quantity !== undefined) {
+      const currentTrade = await this.findById(id)
+      if (currentTrade) {
+        const entryPrice = updateData.entry_price !== undefined ? updateData.entry_price : currentTrade.entry_price
+        const exitPrice = updateData.exit_price !== undefined ? updateData.exit_price : currentTrade.exit_price
+        const quantity = updateData.quantity !== undefined ? updateData.quantity : currentTrade.quantity
+        const side = updateData.side !== undefined ? updateData.side : currentTrade.side
+        
+        if (exitPrice) {
+          const pnl = (exitPrice - entryPrice) * quantity * (side === 'buy' ? 1 : -1)
+          const pnlPercentage = ((exitPrice - entryPrice) / entryPrice) * 100 * (side === 'buy' ? 1 : -1)
+          const fees = updateData.fees !== undefined ? updateData.fees : currentTrade.fees || 0
+          const netPnl = pnl - fees
+          
+          updateFields.push('pnl = ?', 'pnl_percentage = ?', 'net_pnl = ?')
+          values.push(pnl, pnlPercentage, netPnl)
+        }
+      }
+    }
+
+    values.push(id) // Add ID for WHERE clause
+    
+    const query = `UPDATE trades SET ${updateFields.join(', ')} WHERE id = ?`
+    await db.query(query, values)
+    
+    // Return updated trade
+    return await this.findById(id)
+  }
+
+  static async delete(id: number): Promise<boolean> {
+    const db = getDatabase()
+    const result = await db.query('DELETE FROM trades WHERE id = ?', [id])
+    return result.meta?.changes > 0
+  }
+
   static async updateExit(id: number, exitPrice: number, exitReason: string, fees: number): Promise<void> {
     const db = getDatabase()
     
@@ -608,6 +772,30 @@ export class TradeDAO {
           exit_reason = ?, exit_time = CURRENT_TIMESTAMP
       WHERE id = ?
     `, [exitPrice, pnl, pnlPercentage, fees, netPnl, exitReason, id])
+  }
+
+  static async countByUserId(userId: number): Promise<number> {
+    const db = getDatabase()
+    const result = await db.query('SELECT COUNT(*) as count FROM trades WHERE user_id = ?', [userId])
+    return result.results?.[0]?.count || 0
+  }
+
+  static async getTotalPnL(userId: number): Promise<{ totalPnL: number, winRate: number }> {
+    const db = getDatabase()
+    const result = await db.query(`
+      SELECT 
+        SUM(net_pnl) as total_pnl,
+        COUNT(*) as total_trades,
+        SUM(CASE WHEN net_pnl > 0 THEN 1 ELSE 0 END) as winning_trades
+      FROM trades 
+      WHERE user_id = ? AND exit_time IS NOT NULL
+    `, [userId])
+    
+    const data = result.results?.[0]
+    return {
+      totalPnL: data?.total_pnl || 0,
+      winRate: data?.total_trades > 0 ? (data?.winning_trades / data?.total_trades) * 100 : 0
+    }
   }
 }
 

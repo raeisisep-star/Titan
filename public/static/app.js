@@ -16,7 +16,15 @@ class TitanApp {
         await this.initializeModuleLoader();
         
         // Check for existing session
-        const token = localStorage.getItem('titan_auth_token');
+        let token = localStorage.getItem('titan_auth_token');
+        
+        // If no token exists, set up demo token for development
+        if (!token) {
+            token = 'demo_token_' + Math.random().toString(36).substring(7);
+            localStorage.setItem('titan_auth_token', token);
+            console.log('🔧 Demo authentication token set up:', token);
+        }
+        
         if (token) {
             // Set axios default header
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -189,7 +197,20 @@ class TitanApp {
         // Dispatch login event for floating sidebar
         document.dispatchEvent(new CustomEvent('user-logged-in'));
         
+        // Simplified approach: Load navigation and then trigger dashboard module
         this.loadDashboardModule();
+        
+        // Auto-click dashboard menu item to load comprehensive dashboard
+        setTimeout(() => {
+            const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
+            if (dashboardLink) {
+                console.log('🚀 Auto-clicking dashboard menu to load comprehensive dashboard...');
+                dashboardLink.click();
+            } else {
+                console.warn('⚠️ Dashboard link not found, calling loadModule directly');
+                this.loadModule('dashboard');
+            }
+        }, 500);
         
         // Floating buttons already exist in HTML, no need to create
         
@@ -198,6 +219,44 @@ class TitanApp {
         
         // Initialize trading mode toggle
         this.initializeModeToggle();
+    }
+
+    /**
+     * Load dashboard script directly without module loader
+     */
+    async loadDashboardScript() {
+        return new Promise((resolve, reject) => {
+            // Check if already loaded
+            if (window.DashboardModule) {
+                console.log('✅ Dashboard module already loaded');
+                resolve();
+                return;
+            }
+            
+            // Create script element
+            const script = document.createElement('script');
+            script.src = `/static/modules/dashboard.js?v=${Date.now()}`;
+            script.async = true;
+            
+            script.onload = () => {
+                console.log('✅ Dashboard script loaded successfully');
+                // Wait a bit for class to be registered
+                setTimeout(() => {
+                    if (window.DashboardModule) {
+                        resolve();
+                    } else {
+                        reject(new Error('DashboardModule class not found after script load'));
+                    }
+                }, 100);
+            };
+            
+            script.onerror = () => {
+                console.error('❌ Failed to load dashboard script');
+                reject(new Error('Failed to load dashboard script'));
+            };
+            
+            document.head.appendChild(script);
+        });
     }
 
     initializeChatbotAfterLogin() {
@@ -226,19 +285,38 @@ class TitanApp {
         const app = document.getElementById('app');
         app.innerHTML = this.getDashboardHTML();
         
-        // Wait for DOM to be ready, then load dashboard using module loader
+        // Wait for DOM to be ready, then load comprehensive dashboard using module loader
         setTimeout(async () => {
             const mainContent = document.getElementById('main-content');
             if (mainContent && window.moduleLoader) {
-                // Use module loader for dashboard
-                const dashboardContent = await window.moduleLoader.loadModule('dashboard');
-                mainContent.innerHTML = dashboardContent;
-                
-                // Set global instance for onclick handlers
-                window.dashboardModule = window.moduleLoader.modules['dashboard'];
-                console.log('✅ Dashboard loaded using module loader');
+                try {
+                    // Load dashboard module properly
+                    const dashboardModule = await window.moduleLoader.loadModule('dashboard');
+                    
+                    if (dashboardModule && typeof dashboardModule.getContent === 'function') {
+                        // Get comprehensive dashboard content
+                        const dashboardContent = await dashboardModule.getContent();
+                        mainContent.innerHTML = dashboardContent;
+                        
+                        // Initialize the dashboard module
+                        await dashboardModule.initialize();
+                        
+                        // Set global instance for onclick handlers
+                        window.dashboardModule = dashboardModule;
+                        
+                        console.log('✅ Comprehensive Dashboard loaded and initialized successfully');
+                    } else {
+                        console.error('❌ Dashboard module not loaded properly');
+                        mainContent.innerHTML = '<div class="text-center text-red-400 p-8">خطا در بارگذاری داشبورد</div>';
+                    }
+                } catch (error) {
+                    console.error('❌ Error loading dashboard module:', error);
+                    mainContent.innerHTML = '<div class="text-center text-red-400 p-8">خطا در بارگذاری ماژول داشبورد</div>';
+                }
+            } else {
+                console.error('❌ Main content element or module loader not found');
             }
-        }, 100);
+        }, 500); // Increased delay to ensure all modules are loaded
         
         this.setupDashboardEvents();
     }
@@ -1649,7 +1727,17 @@ class TitanApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        event.target.classList.add('active');
+        
+        // Add active class to current module if event exists, otherwise find by onclick
+        if (typeof event !== 'undefined' && event.target) {
+            event.target.classList.add('active');
+        } else {
+            // Programmatic call - find the correct nav link
+            const navLink = document.querySelector(`a[onclick*="loadModule('${moduleName}')"]`);
+            if (navLink) {
+                navLink.classList.add('active');
+            }
+        }
         
         const mainContent = document.getElementById('main-content');
         
@@ -1660,6 +1748,11 @@ class TitanApp {
                         console.log('🏠 Starting Dashboard module loading...');
                         
                         // Check if module loader is available
+                        if (!this.moduleLoader) {
+                            console.log('⚠️ Module loader not available, trying to reinitialize...');
+                            await this.initializeModuleLoader();
+                        }
+                        
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, loading dashboard');
                             const dashboardModule = await this.moduleLoader.loadModule('dashboard', {
