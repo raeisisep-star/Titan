@@ -15,7 +15,13 @@ class AlertsManager {
 
     // Get authentication headers for API calls
     getAuthHeaders() {
-        const token = localStorage.getItem('titan_auth_token');
+        // Try multiple token sources for demo purposes
+        let token = localStorage.getItem('titan_auth_token') || 
+                   localStorage.getItem('auth_token') || 
+                   'demo_token_123'; // Fallback demo token
+        
+        console.log('🔑 Using auth token:', token ? token.substring(0, 10) + '...' : 'none');
+        
         return {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -186,12 +192,23 @@ class AlertsManager {
         }
     }
 
-    // Update notification settings
+    // Update notification settings (integration with settings module)
     async updateSettings(settingsData) {
         try {
             const response = await axios.put('/api/alerts/settings', settingsData, { headers: this.getAuthHeaders() });
             if (response.data.success) {
                 this.settings = { ...this.settings, ...response.data.data };
+                
+                // Sync with main settings module if available
+                if (window.settingsModule && window.settingsModule.settings) {
+                    // Update notification settings in main settings
+                    window.settingsModule.settings.notifications = {
+                        ...window.settingsModule.settings.notifications,
+                        ...settingsData
+                    };
+                    console.log('🔄 Settings synced with main settings module');
+                }
+                
                 return response.data.data;
             } else {
                 throw new Error(response.data.error);
@@ -356,6 +373,10 @@ function renderAlertsPage() {
                     <button onclick="showSettingsModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-cog mr-2"></i>
                         تنظیمات
+                    </button>
+                    <button onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-bell-slash mr-2"></i>
+                        اطلاع‌رسانی‌ها
                     </button>
                 </div>
             </div>
@@ -1160,32 +1181,98 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-// Update statistics display
+// Update statistics display with real data
 async function updateAlertsStatistics() {
     try {
+        // Always load fresh statistics from API
+        await window.alertsManager.loadDashboardData();
         const stats = window.alertsManager.statistics;
-        if (!stats) return;
         
-        const cards = document.querySelectorAll('#alertsStatistics .bg-gray-800 p-6');
-        if (cards.length >= 4) {
-            cards[0].querySelector('.text-2xl').textContent = stats.totalAlerts || 0;
-            cards[1].querySelector('.text-2xl').textContent = stats.activeAlerts || 0;
-            cards[2].querySelector('.text-2xl').textContent = stats.triggeredToday || 0;
-            cards[3].querySelector('.text-2xl').textContent = stats.mostTriggeredSymbol || 'N/A';
+        if (!stats) {
+            console.warn('No statistics data available');
+            return;
         }
+        
+        // Update statistics cards with real data
+        const statsContainer = document.getElementById('alertsStatistics');
+        if (statsContainer) {
+            const statCards = [
+                { value: stats.totalAlerts || 0, label: 'کل هشدارها', icon: 'fas fa-bell', color: 'text-blue-400' },
+                { value: stats.activeAlerts || 0, label: 'هشدارهای فعال', icon: 'fas fa-check-circle', color: 'text-green-400' },
+                { value: stats.triggeredToday || 0, label: 'فعال شده امروز', icon: 'fas fa-fire', color: 'text-orange-400' },
+                { value: stats.mostTriggeredSymbol || 'N/A', label: 'نماد پربازده', icon: 'fas fa-chart-line', color: 'text-purple-400' }
+            ];
+            
+            statsContainer.innerHTML = statCards.map(stat => `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="${stat.icon} ${stat.color} text-2xl mr-4"></i>
+                        <div>
+                            <p class="text-gray-400 text-sm">${stat.label}</p>
+                            <p class="text-2xl font-bold text-white">${stat.value}</p>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        console.log('📊 Statistics updated:', stats);
     } catch (error) {
         console.warn('Error updating statistics:', error);
+        // Show fallback statistics
+        const statsContainer = document.getElementById('alertsStatistics');
+        if (statsContainer) {
+            statsContainer.innerHTML = `
+                <div class="bg-gray-800 rounded-lg p-6">
+                    <div class="flex items-center">
+                        <i class="fas fa-exclamation-triangle text-red-400 text-2xl mr-4"></i>
+                        <div>
+                            <p class="text-gray-400 text-sm">خطا در بارگذاری آمار</p>
+                            <p class="text-red-400 text-sm">لطفاً صفحه را رفرش کنید</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
     }
 }
 
-// Initialize when page loads
+// Initialize when page loads with improved error handling
 async function initializeAlertsPage() {
     try {
+        console.log('🚀 Initializing alerts page...');
+        
+        // Initialize alerts manager with real data
         await window.alertsManager.init();
+        
+        // Update statistics with fresh data
         await updateAlertsStatistics();
-        loadActiveAlerts(); // Load default tab
+        
+        // Load default tab (active alerts)
+        loadActiveAlerts();
+        
+        // Start price monitoring for real-time updates
+        window.alertsManager.startPriceMonitoring();
+        
+        console.log('✅ Alerts page initialized successfully');
     } catch (error) {
-        console.error('Failed to initialize alerts page:', error);
+        console.error('❌ Failed to initialize alerts page:', error);
+        
+        // Show error state in the UI
+        const content = document.getElementById('alertsTabContent');
+        if (content) {
+            content.innerHTML = `
+                <div class="bg-red-900 rounded-lg p-6 text-center">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-3xl mb-4"></i>
+                    <h3 class="text-red-400 text-lg font-bold mb-2">خطا در بارگذاری سیستم هشدارها</h3>
+                    <p class="text-gray-300 mb-4">${error.message}</p>
+                    <button onclick="initializeAlertsPage()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        تلاش مجدد
+                    </button>
+                </div>
+            `;
+        }
     }
 }
 
@@ -1226,8 +1313,18 @@ class AlertsModule {
             await this.initialize();
         }
         
+        // Create global instance for HTML button access
+        window.alertsModule = this;
+        
         // Generate content with real data or fallback
-        return this.generateRealAlertsContent();
+        const content = this.generateRealAlertsContent();
+        
+        // Schedule initialization after DOM is ready
+        setTimeout(() => {
+            initializeAlertsPage();
+        }, 100);
+        
+        return content;
     }
 
     generateRealAlertsContent() {
@@ -1246,13 +1343,21 @@ class AlertsModule {
                     <p class="text-gray-400">مدیریت هشدارهای بازار و اطلاع‌رسانی‌های قیمتی</p>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="window.alertsModule.showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>
                         هشدار جدید
                     </button>
-                    <button onclick="window.alertsModule.loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                    <button onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-template mr-2"></i>
                         قالب‌ها
+                    </button>
+                    <button onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-bell mr-2"></i>
+                        اطلاع‌رسانی‌ها
+                    </button>
+                    <button onclick="refreshAlertsData()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-sync-alt mr-2"></i>
+                        بروزرسانی
                     </button>
                 </div>
             </div>
@@ -1431,16 +1536,17 @@ class AlertsModule {
         showCreateAlertModal();
     }
 
+    loadAlertTemplates() {
+        // Load and show alert templates
+        switchAlertsTab('templates');
+    }
+
     async editAlert(alertId) {
         // Use the global editAlert function
         await editAlert(alertId);
     }
 
-    loadAlertTemplates() {
-        // Load and show alert templates
-        this.showNotification('بارگذاری قالب‌ها...', 'info');
-        switchAlertsTab('templates');
-    }
+
 
     getAuthHeaders() {
         const token = localStorage.getItem('titan_auth_token') || localStorage.getItem('token');
@@ -1490,6 +1596,91 @@ if (typeof window !== 'undefined') {
     console.log('📦 Alerts Module registered in TitanModules');
 }
 
+// Integration with Settings Module
+function openNotificationSettings() {
+    // Check if settings module is available and loaded
+    if (window.settingsModule) {
+        console.log('🔗 Opening notification settings from main settings module...');
+        
+        // Switch to notifications tab in settings
+        window.settingsModule.switchTab('notifications');
+        
+        // If we're in a modular interface, switch to settings page
+        if (window.moduleLoader && window.moduleLoader.loadModule) {
+            window.moduleLoader.loadModule('settings');
+        } else {
+            // Fallback: show notification about opening settings
+            window.alertsManager.showNotification('برای تنظیم اطلاع‌رسانی‌ها به بخش تنظیمات > اطلاعیه‌ها بروید', 'info');
+        }
+    } else {
+        // Fallback to local settings modal if main settings not available
+        console.log('⚠️ Main settings module not available, using local settings modal');
+        showSettingsModal();
+    }
+}
+
+// Sync notification settings from main settings module
+function syncNotificationSettingsFromMain() {
+    if (window.settingsModule && window.settingsModule.settings && window.settingsModule.settings.notifications) {
+        const mainNotificationSettings = window.settingsModule.settings.notifications;
+        
+        // Update alerts manager settings
+        if (window.alertsManager) {
+            window.alertsManager.settings = {
+                ...window.alertsManager.settings,
+                pushNotifications: mainNotificationSettings.inapp?.desktop || false,
+                emailNotifications: mainNotificationSettings.email?.enabled || false,
+                telegramNotifications: mainNotificationSettings.telegram?.enabled || false,
+                telegramChatId: mainNotificationSettings.telegram?.chat_id || '',
+                quietHoursStart: '22:00',
+                quietHoursEnd: '08:00',
+                maxAlertsPerDay: 50
+            };
+        }
+        
+        console.log('🔄 Notification settings synced from main settings module');
+        return true;
+    }
+    return false;
+}
+
+// Auto-sync on module load
+if (typeof window !== 'undefined') {
+    // Listen for settings module changes
+    window.addEventListener('settingsModuleLoaded', function() {
+        console.log('📡 Settings module loaded, syncing notification settings...');
+        syncNotificationSettingsFromMain();
+    });
+    
+    // Auto-sync if settings module already exists
+    setTimeout(() => {
+        syncNotificationSettingsFromMain();
+    }, 1000);
+}
+
+// Wrapper function for refreshing alerts data
+function refreshAlertsData() {
+    if (window.alertsModule && window.alertsModule.refreshAlerts) {
+        window.alertsModule.refreshAlerts();
+    } else if (window.alertsManager && window.alertsManager.loadDashboardData) {
+        window.alertsManager.loadDashboardData().then(() => {
+            updateAlertsStatistics();
+            loadActiveAlerts();
+        });
+    } else {
+        console.warn('Alerts manager not available for refresh');
+    }
+}
+
+// Wrapper function for loading templates  
+function loadAlertTemplates() {
+    if (window.alertsModule && window.alertsModule.loadAlertTemplates) {
+        window.alertsModule.loadAlertTemplates();
+    } else {
+        switchAlertsTab('templates');
+    }
+}
+
 // Export functions for global use
 window.AlertsManager = AlertsManager;
 window.renderAlertsPage = renderAlertsPage;
@@ -1509,3 +1700,7 @@ window.performBulkOperation = performBulkOperation;
 window.testNotification = testNotification;
 window.checkNotificationStatus = checkNotificationStatus;
 window.manualAlertCheck = manualAlertCheck;
+window.openNotificationSettings = openNotificationSettings;
+window.syncNotificationSettingsFromMain = syncNotificationSettingsFromMain;
+window.refreshAlertsData = refreshAlertsData;
+window.loadAlertTemplates = loadAlertTemplates;

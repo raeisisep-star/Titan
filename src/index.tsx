@@ -41,8 +41,12 @@ import { AnalyticsService } from './services/analytics-service'
 // Import Services  
 import { ArtemisService } from './services/artemis-service'
 import NewsService from './services/news-service'
+import { AlertsService } from './services/alerts-service'
 
 const app = new Hono()
+
+// Initialize Services
+const alertsService = new AlertsService()
 
 // =============================================================================
 // SIMPLE AUTH MIDDLEWARE
@@ -10063,6 +10067,54 @@ app.get('/api/analytics/summary', authMiddleware, async (c) => {
 // MARKET ALERTS API ENDPOINTS
 // =============================================================================
 
+// Get alerts dashboard with comprehensive data
+app.get('/api/alerts/dashboard', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user')
+    const dashboard = await alertsService.getAlertsDashboard(user.id)
+    
+    return c.json({
+      success: true,
+      data: dashboard
+    })
+    
+  } catch (error) {
+    console.error('Get Alerts Dashboard Error:', error)
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت داشبورد هشدارها'
+    }, 500)
+  }
+})
+
+// Debug endpoint for alerts dashboard (for development)
+app.get('/api/debug/alerts-test', async (c) => {
+  try {
+    console.log('🔧 Debug: Testing alerts service...')
+    
+    // Test alertsService methods directly
+    const dashboard = await alertsService.getAlertsDashboard(1) // Test with user ID 1
+    
+    return c.json({
+      success: true,
+      data: dashboard,
+      debug: true,
+      message: 'Debug alerts test endpoint - remove in production',
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Debug Alerts Test Error:', error)
+    return c.json({
+      success: false,
+      error: error.message,
+      stack: error.stack,
+      debug: true,
+      timestamp: new Date().toISOString()
+    }, 500)
+  }
+})
+
 // Get user's market alerts
 app.get('/api/alerts', authMiddleware, async (c) => {
   try {
@@ -14763,6 +14815,7 @@ app.get('/', (c) => {
         <!-- Load Main Modules -->
         <script src="/static/modules/ai-management.js?v=${Date.now()}"></script>
         <script src="/static/modules/module-loader.js?v=${Date.now()}"></script>
+        <script src="/static/modules/alerts.js?v=${Date.now()}"></script>
         <script src="/static/app.js?v=${Date.now()}"></script>
     </body>
     </html>

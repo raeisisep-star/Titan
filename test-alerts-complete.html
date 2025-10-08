@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست کامل سیستم هشدارها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="/static/styles.css" rel="stylesheet">
+    
+    <style>
+        .loading-spinner {
+            border: 2px solid #1f2937;
+            border-top: 2px solid #3b82f6;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <div class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+            <h1 class="text-2xl font-bold text-white">
+                <i class="fas fa-bell text-yellow-400 mr-3"></i>
+                تست کامل سیستم هشدارها
+            </h1>
+            <div class="flex gap-3">
+                <button onclick="loginAndTest()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    ورود و شروع تست
+                </button>
+                <button onclick="testAlertsAPI()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-test mr-2"></i>
+                    تست API
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Panel -->
+    <div class="p-6">
+        <div class="bg-gray-800 rounded-lg p-4 mb-6">
+            <h2 class="text-lg font-bold mb-4">وضعیت تست</h2>
+            <div id="test-status" class="text-gray-400">در انتظار شروع تست...</div>
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="alerts-content" class="px-6">
+        <div class="bg-gray-800 rounded-lg p-6 text-center">
+            <div class="loading-spinner mx-auto mb-4"></div>
+            <p class="text-gray-400">در انتظار بارگذاری ماژول هشدارها...</p>
+        </div>
+    </div>
+
+    <!-- Load Alerts Module -->
+    <script src="/static/modules/alerts.js"></script>
+    
+    <script>
+        let authToken = null;
+        let alertsModuleInstance = null;
+
+        // Auto login on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Starting automatic login...');
+            loginAndTest();
+        });
+
+        async function loginAndTest() {
+            updateStatus('🔐 در حال ورود...');
+            
+            try {
+                // Login first
+                const loginResponse = await axios.post('/api/auth/login', {
+                    email: 'admin@titan.com',
+                    password: 'admin123'
+                });
+                
+                if (loginResponse.data.success) {
+                    authToken = loginResponse.data.session.accessToken;
+                    localStorage.setItem('titan_auth_token', authToken);
+                    updateStatus('✅ ورود موفق - در حال بارگذاری ماژول هشدارها...');
+                    
+                    // Wait a moment then load alerts module
+                    setTimeout(async () => {
+                        await loadAlertsModule();
+                    }, 1000);
+                } else {
+                    updateStatus('❌ خطا در ورود: ' + loginResponse.data.error);
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                updateStatus('❌ خطا در اتصال: ' + error.message);
+            }
+        }
+
+        async function loadAlertsModule() {
+            updateStatus('📦 بارگذاری ماژول هشدارها...');
+            
+            try {
+                // Check if AlertsModule is available
+                if (typeof window.TitanModules !== 'undefined' && window.TitanModules.AlertsModule) {
+                    alertsModuleInstance = new window.TitanModules.AlertsModule();
+                } else if (typeof AlertsModule !== 'undefined') {
+                    alertsModuleInstance = new AlertsModule();
+                } else {
+                    throw new Error('AlertsModule class not found');
+                }
+                
+                updateStatus('🔧 راه‌اندازی ماژول هشدارها...');
+                
+                // Initialize the module
+                await alertsModuleInstance.initialize();
+                
+                updateStatus('🎨 رندر کردن رابط کاربری...');
+                
+                // Get and render content
+                const content = await alertsModuleInstance.getContent();
+                document.getElementById('alerts-content').innerHTML = content;
+                
+                // Set global instance for button access
+                window.alertsModule = alertsModuleInstance;
+                
+                updateStatus('✅ ماژول هشدارها با موفقیت بارگذاری شد! آماده استفاده است.');
+                
+                // Initialize alerts page if the function exists
+                if (typeof initializeAlertsPage === 'function') {
+                    console.log('🔄 Initializing alerts page...');
+                    await initializeAlertsPage();
+                }
+                
+            } catch (error) {
+                console.error('❌ Alerts module loading error:', error);
+                updateStatus('❌ خطا در بارگذاری ماژول: ' + error.message);
+                
+                // Show error details
+                document.getElementById('alerts-content').innerHTML = `
+                    <div class="bg-red-900 rounded-lg p-6">
+                        <h3 class="text-lg font-bold text-red-400 mb-4">خطا در بارگذاری ماژول هشدارها</h3>
+                        <p class="text-red-300 mb-4">${error.message}</p>
+                        <pre class="text-xs text-gray-400 bg-gray-800 p-3 rounded overflow-auto">${error.stack}</pre>
+                        <button onclick="testBasicAlerts()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                            تست پایه API
+                        </button>
+                    </div>
+                `;
+            }
+        }
+
+        async function testAlertsAPI() {
+            updateStatus('🧪 تست API هشدارها...');
+            
+            if (!authToken) {
+                updateStatus('❌ ابتدا وارد شوید');
+                return;
+            }
+
+            try {
+                // Test dashboard API
+                const response = await axios.get('/api/alerts/dashboard', {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.data.success) {
+                    const data = response.data.data;
+                    updateStatus(`✅ API تست شد - ${data.alerts.length} هشدار، ${data.statistics.activeAlerts} فعال`);
+                    
+                    // Display API results
+                    document.getElementById('alerts-content').innerHTML = `
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h3 class="text-lg font-bold mb-4">نتایج API Dashboard</h3>
+                            <pre class="text-xs bg-gray-900 p-4 rounded overflow-auto">${JSON.stringify(data, null, 2)}</pre>
+                            <button onclick="loadAlertsModule()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                                بارگذاری UI کامل
+                            </button>
+                        </div>
+                    `;
+                } else {
+                    updateStatus('❌ خطا در API: ' + response.data.error);
+                }
+            } catch (error) {
+                console.error('API test error:', error);
+                updateStatus('❌ خطا در تست API: ' + error.message);
+            }
+        }
+
+        async function testBasicAlerts() {
+            updateStatus('🧪 تست پایه هشدارها...');
+            
+            try {
+                // Use simple fallback rendering
+                const basicContent = `
+                    <div class="max-w-7xl mx-auto">
+                        <div class="bg-gray-800 rounded-lg p-6">
+                            <h2 class="text-2xl font-bold mb-6">
+                                <i class="fas fa-bell text-yellow-400 mr-3"></i>
+                                سیستم هشدارهای پایه
+                            </h2>
+                            
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-bell text-blue-400 text-2xl mr-4"></i>
+                                        <div>
+                                            <p class="text-gray-300">کل هشدارها</p>
+                                            <p class="text-2xl font-bold text-white">5</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-check-circle text-green-400 text-2xl mr-4"></i>
+                                        <div>
+                                            <p class="text-gray-300">فعال</p>
+                                            <p class="text-2xl font-bold text-white">4</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-fire text-orange-400 text-2xl mr-4"></i>
+                                        <div>
+                                            <p class="text-gray-300">امروز</p>
+                                            <p class="text-2xl font-bold text-white">1</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="bg-gray-700 rounded-lg p-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-chart-line text-purple-400 text-2xl mr-4"></i>
+                                        <div>
+                                            <p class="text-gray-300">این هفته</p>
+                                            <p class="text-2xl font-bold text-white">2</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-gray-700 rounded-lg p-6">
+                                <h3 class="text-lg font-bold mb-4">هشدارهای نمونه</h3>
+                                <div class="space-y-3">
+                                    <div class="bg-gray-600 rounded p-3 flex justify-between items-center">
+                                        <div>
+                                            <h4 class="text-white font-medium">BTC بالای 50K</h4>
+                                            <p class="text-gray-300 text-sm">Bitcoin - قیمت بالای مقدار</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-white font-bold">$50,000</div>
+                                            <div class="text-xs text-gray-400">فعال</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="bg-gray-600 rounded p-3 flex justify-between items-center">
+                                        <div>
+                                            <h4 class="text-white font-medium">ETH زیر 3K</h4>
+                                            <p class="text-gray-300 text-sm">Ethereum - قیمت پایین مقدار</p>
+                                        </div>
+                                        <div class="text-right">
+                                            <div class="text-white font-bold">$3,000</div>
+                                            <div class="text-xs text-gray-400">فعال</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-6 flex gap-3">
+                                    <button onclick="testAlertsAPI()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                                        تست API
+                                    </button>
+                                    <button onclick="loadAlertsModule()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                                        بارگذاری UI کامل
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                document.getElementById('alerts-content').innerHTML = basicContent;
+                updateStatus('✅ رابط پایه هشدارها بارگذاری شد');
+                
+            } catch (error) {
+                console.error('Basic alerts error:', error);
+                updateStatus('❌ خطا در تست پایه: ' + error.message);
+            }
+        }
+
+        function updateStatus(message) {
+            document.getElementById('test-status').innerHTML = message;
+            console.log(message);
+        }
+
+        // Error handling
+        window.addEventListener('error', function(e) {
+            updateStatus('❌ خطای JavaScript: ' + e.message);
+            console.error('Global error:', e.error);
+        });
+
+        // Check module availability
+        console.log('🔍 Checking available modules:');
+        console.log('- AlertsModule:', typeof AlertsModule !== 'undefined');
+        console.log('- TitanModules:', typeof window.TitanModules !== 'undefined');
+        if (typeof window.TitanModules !== 'undefined') {
+            console.log('- TitanModules.AlertsModule:', typeof window.TitanModules.AlertsModule !== 'undefined');
+        }
+    </script>
+</body>
+</html>
