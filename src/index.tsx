@@ -15981,119 +15981,218 @@ app.get('/api/autopilot/ai-decisions', authMiddleware, async (c) => {
 // 3. TRADING STRATEGIES API ENDPOINTS (🧠 استراتژی‌ها)
 // =============================================================================
 
-// Get strategies list and performance
+// Get strategies list and performance - REAL DATABASE INTEGRATION
 app.get('/api/trading/strategies', authMiddleware, async (c) => {
   try {
     const user = c.get('user')
+    const { env } = c;
 
-    // Mock strategies data
-    const strategies = [
-      {
-        id: 'str1',
-        name: 'AI Prediction Pro',
-        description: 'استراتژی پیشرفته پیش‌بینی با هوش مصنوعی',
-        category: 'ai',
-        status: 'active',
-        performance: {
-          totalReturn: 34.7,
-          winRate: 78.2,
-          totalTrades: 156,
-          winningTrades: 122,
-          maxDrawdown: 8.5,
-          sharpeRatio: 2.1,
-          profitFactor: 1.85
-        },
-        configuration: {
-          maxPositions: 3,
-          positionSizePercent: 5.0,
-          stopLossPercent: 2.0,
-          takeProfitPercent: 6.0,
-          allowedSymbols: ['BTCUSDT', 'ETHUSDT']
-        },
-        aiGenerated: true,
-        lastExecutedAt: new Date(Date.now() - 45 * 60 * 1000).toISOString()
+    // Get strategies from database with performance data
+    const strategiesQuery = `
+      SELECT 
+        ts.id,
+        ts.strategy_id,
+        ts.name,
+        ts.description,
+        ts.category,
+        ts.status,
+        ts.ai_generated,
+        ts.ai_model,
+        ts.confidence_score,
+        ts.risk_level,
+        ts.last_executed_at,
+        ts.created_at,
+        sc.max_positions,
+        sc.position_size_percent,
+        sc.stop_loss_percent,
+        sc.take_profit_percent,
+        sc.max_investment_percent,
+        sc.risk_score,
+        sc.allowed_symbols,
+        sc.timeframe,
+        sc.ai_agent_id,
+        sp.total_return,
+        sp.win_rate,
+        sp.total_trades,
+        sp.winning_trades,
+        sp.losing_trades,
+        sp.max_drawdown,
+        sp.sharpe_ratio,
+        sp.profit_factor,
+        sp.total_volume,
+        sp.avg_hold_time
+      FROM trading_strategies ts
+      LEFT JOIN strategy_configurations sc ON ts.strategy_id = sc.strategy_id
+      LEFT JOIN strategy_performance sp ON ts.strategy_id = sp.strategy_id
+      WHERE ts.user_id = ? AND ts.strategy_id IS NOT NULL
+      ORDER BY ts.created_at DESC
+    `;
+
+    const result = await env.DB.prepare(strategiesQuery).bind(user.id).all();
+    
+    if (!result.success) {
+      throw new Error('Database query failed');
+    }
+
+    // Transform database results to API format
+    const strategies = result.results.map(row => ({
+      id: row.strategy_id,
+      name: row.name,
+      description: row.description || '',
+      category: row.category,
+      status: row.status,
+      performance: {
+        totalReturn: row.total_return || 0,
+        winRate: row.win_rate || 0,
+        totalTrades: row.total_trades || 0,
+        winningTrades: row.winning_trades || 0,
+        maxDrawdown: Math.abs(row.max_drawdown) || 0,
+        sharpeRatio: row.sharpe_ratio || 0,
+        profitFactor: row.profit_factor || 0
       },
-      {
-        id: 'str2',
-        name: 'RSI Swing Trading',
-        description: 'استراتژی نوسانی بر اساس RSI',
-        category: 'technical',
-        status: 'active',
-        performance: {
-          totalReturn: 22.1,
-          winRate: 79.8,
-          totalTrades: 89,
-          winningTrades: 71,
-          maxDrawdown: 6.2,
-          sharpeRatio: 1.9,
-          profitFactor: 2.1
-        },
-        configuration: {
-          maxPositions: 2,
-          positionSizePercent: 3.0,
-          stopLossPercent: 1.5,
-          takeProfitPercent: 4.5,
-          allowedSymbols: ['BTCUSDT', 'ETHUSDT', 'ADAUSDT']
-        },
-        aiGenerated: false,
-        lastExecutedAt: new Date(Date.now() - 20 * 60 * 1000).toISOString()
+      configuration: {
+        maxPositions: row.max_positions || 3,
+        positionSizePercent: row.position_size_percent || 5.0,
+        stopLossPercent: row.stop_loss_percent || 2.0,
+        takeProfitPercent: row.take_profit_percent || 6.0,
+        allowedSymbols: row.allowed_symbols ? JSON.parse(row.allowed_symbols) : ['BTCUSDT']
       },
-      {
-        id: 'str3',
-        name: 'Sentiment Scalper',
-        description: 'معاملات کوتاه‌مدت احساسات بازار',
-        category: 'sentiment',
+      aiGenerated: row.ai_generated === 1,
+      aiModel: row.ai_model,
+      confidenceScore: row.confidence_score,
+      riskLevel: row.risk_level,
+      lastExecutedAt: row.last_executed_at
+    }));
+
+    // Calculate summary statistics
+    const activeStrategies = strategies.filter(s => s.status === 'active');
+    const totalROI = activeStrategies.length > 0 
+      ? activeStrategies.reduce((sum, s) => sum + s.performance.totalReturn, 0) / activeStrategies.length 
+      : 0;
+    const avgWinRate = activeStrategies.length > 0 
+      ? activeStrategies.reduce((sum, s) => sum + s.performance.winRate, 0) / activeStrategies.length 
+      : 0;
+    const totalTrades = strategies.reduce((sum, s) => sum + s.performance.totalTrades, 0);
+    const bestStrategy = strategies.length > 0 
+      ? strategies.reduce((best, current) => 
+          current.performance.totalReturn > best.performance.totalReturn ? current : best
+        ) 
+      : null;
+
+    const strategiesData = {
+      strategies: strategies,
+      summary: {
+        totalStrategies: strategies.length,
+        activeStrategies: activeStrategies.length,
+        totalROI: Math.round(totalROI * 100) / 100,
+        avgWinRate: Math.round(avgWinRate * 100) / 100,
+        totalTrades: totalTrades,
+        bestStrategy: bestStrategy ? {
+          name: bestStrategy.name,
+          return: bestStrategy.performance.totalReturn
+        } : null
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('✅ Loaded strategies from database:', strategies.length);
+    return c.json({
+      success: true,
+      data: strategiesData,
+      message: 'استراتژی‌ها بارگذاری شد'
+    });
+
+  } catch (error) {
+    console.error('Strategies List Error:', error);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت استراتژی‌ها'
+    }, 500);
+  }
+})
+
+// Create new strategy - REAL DATABASE INTEGRATION
+app.post('/api/trading/strategies', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const strategyData = await c.req.json();
+    const { env } = c;
+
+    const requiredFields = ['name', 'description', 'category'];
+    for (const field of requiredFields) {
+      if (!strategyData[field]) {
+        return c.json({
+          success: false,
+          error: `فیلد ${field} الزامی است`
+        }, 400);
+      }
+    }
+
+    const strategyId = `strategy_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    // Begin database transaction
+    try {
+      // Insert main strategy record
+      const insertStrategy = `
+        INSERT INTO trading_strategies (
+          user_id, strategy_id, name, description, category, status, 
+          ai_generated, ai_model, confidence_score, risk_level, type, symbol
+        ) VALUES (?, ?, ?, ?, ?, 'inactive', ?, ?, ?, ?, 'custom', ?)
+      `;
+      
+      const strategyResult = await env.DB.prepare(insertStrategy)
+        .bind(
+          user.id,
+          strategyId,
+          strategyData.name,
+          strategyData.description,
+          strategyData.category,
+          strategyData.aiGenerated ? 1 : 0,
+          strategyData.aiModel || null,
+          strategyData.confidenceScore || null,
+          strategyData.riskLevel || 'medium',
+          strategyData.allowedSymbols?.[0] || 'BTCUSDT'
+        ).run();
+
+      if (!strategyResult.success) {
+        throw new Error('Failed to create strategy');
+      }
+
+      // Insert strategy configuration
+      const insertConfig = `
+        INSERT INTO strategy_configurations (
+          strategy_id, max_positions, position_size_percent, 
+          stop_loss_percent, take_profit_percent, max_investment_percent,
+          risk_score, allowed_symbols, timeframe
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      `;
+      
+      await env.DB.prepare(insertConfig)
+        .bind(
+          strategyId,
+          strategyData.maxPositions || 3,
+          strategyData.positionSizePercent || 5.0,
+          strategyData.stopLossPercent || 2.0,
+          strategyData.takeProfitPercent || 6.0,
+          strategyData.maxInvestmentPercent || 15.0,
+          strategyData.riskScore || 5,
+          JSON.stringify(strategyData.allowedSymbols || ['BTCUSDT']),
+          strategyData.timeframe || '1h'
+        ).run();
+
+      // Initialize performance record
+      const insertPerformance = `
+        INSERT INTO strategy_performance (strategy_id) VALUES (?)
+      `;
+      
+      await env.DB.prepare(insertPerformance).bind(strategyId).run();
+
+      const newStrategy = {
+        id: strategyId,
+        name: strategyData.name,
+        description: strategyData.description,
+        category: strategyData.category,
         status: 'inactive',
-        performance: {
-          totalReturn: 18.9,
-          winRate: 71.4,
-          totalTrades: 234,
-          winningTrades: 167,
-          maxDrawdown: 12.1,
-          sharpeRatio: 1.6,
-          profitFactor: 1.4
-        },
-        configuration: {
-          maxPositions: 5,
-          positionSizePercent: 2.0,
-          stopLossPercent: 1.0,
-          takeProfitPercent: 2.5,
-          allowedSymbols: ['BTCUSDT', 'ETHUSDT', 'SOLUSDT']
-        },
-        aiGenerated: false,
-        lastExecutedAt: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'str4',
-        name: 'MACD Momentum',
-        description: 'استراتژی مومنتوم MACD',
-        category: 'technical',
-        status: 'active',
-        performance: {
-          totalReturn: 15.3,
-          winRate: 71.6,
-          totalTrades: 67,
-          winningTrades: 48,
-          maxDrawdown: 9.8,
-          sharpeRatio: 1.7,
-          profitFactor: 1.6
-        },
-        configuration: {
-          maxPositions: 2,
-          positionSizePercent: 4.0,
-          stopLossPercent: 2.5,
-          takeProfitPercent: 7.0,
-          allowedSymbols: ['BTCUSDT', 'ETHUSDT']
-        },
-        aiGenerated: false,
-        lastExecutedAt: new Date(Date.now() - 10 * 60 * 1000).toISOString()
-      },
-      {
-        id: 'str5',
-        name: 'Custom Grid Bot',
-        description: 'ربات شبکه‌ای سفارشی',
-        category: 'custom',
-        status: 'backtesting',
         performance: {
           totalReturn: 0,
           winRate: 0,
@@ -16104,112 +16203,34 @@ app.get('/api/trading/strategies', authMiddleware, async (c) => {
           profitFactor: 0
         },
         configuration: {
-          maxPositions: 10,
-          positionSizePercent: 1.0,
-          stopLossPercent: 5.0,
-          takeProfitPercent: 3.0,
-          allowedSymbols: ['BTCUSDT']
+          maxPositions: strategyData.maxPositions || 3,
+          positionSizePercent: strategyData.positionSizePercent || 5.0,
+          stopLossPercent: strategyData.stopLossPercent || 2.0,
+          takeProfitPercent: strategyData.takeProfitPercent || 6.0,
+          allowedSymbols: strategyData.allowedSymbols || ['BTCUSDT']
         },
-        aiGenerated: false,
-        lastExecutedAt: null
-      }
-    ]
+        aiGenerated: strategyData.aiGenerated || false,
+        createdAt: new Date().toISOString()
+      };
 
-    // Calculate summary statistics
-    const activeStrategies = strategies.filter(s => s.status === 'active')
-    const totalROI = activeStrategies.reduce((sum, s) => sum + s.performance.totalReturn, 0) / activeStrategies.length
-    const avgWinRate = activeStrategies.reduce((sum, s) => sum + s.performance.winRate, 0) / activeStrategies.length
-    const totalTrades = strategies.reduce((sum, s) => sum + s.performance.totalTrades, 0)
-    const bestStrategy = strategies.reduce((best, current) => 
-      current.performance.totalReturn > best.performance.totalReturn ? current : best
-    )
+      console.log('✅ Created new strategy:', strategyId);
+      return c.json({
+        success: true,
+        data: newStrategy,
+        message: 'استراتژی جدید ایجاد شد'
+      });
 
-    const strategiesData = {
-      strategies: strategies,
-      summary: {
-        totalStrategies: strategies.length,
-        activeStrategies: activeStrategies.length,
-        totalROI: totalROI,
-        avgWinRate: avgWinRate,
-        totalTrades: totalTrades,
-        bestStrategy: {
-          name: bestStrategy.name,
-          return: bestStrategy.performance.totalReturn
-        }
-      },
-      timestamp: new Date().toISOString()
+    } catch (dbError) {
+      console.error('Database operation failed:', dbError);
+      throw dbError;
     }
-
-    return c.json({
-      success: true,
-      data: strategiesData,
-      message: 'استراتژی‌ها بارگذاری شد'
-    })
 
   } catch (error) {
-    console.error('Strategies List Error:', error)
-    return c.json({
-      success: false,
-      error: 'خطا در دریافت استراتژی‌ها'
-    }, 500)
-  }
-})
-
-// Create new strategy
-app.post('/api/trading/strategies', authMiddleware, async (c) => {
-  try {
-    const user = c.get('user')
-    const strategyData = await c.req.json()
-
-    const requiredFields = ['name', 'description', 'category']
-    for (const field of requiredFields) {
-      if (!strategyData[field]) {
-        return c.json({
-          success: false,
-          error: `فیلد ${field} الزامی است`
-        }, 400)
-      }
-    }
-
-    const newStrategy = {
-      id: `str${Date.now()}`,
-      user_id: user.id,
-      name: strategyData.name,
-      description: strategyData.description,
-      category: strategyData.category || 'custom',
-      status: 'inactive',
-      configuration: {
-        maxPositions: strategyData.maxPositions || 3,
-        positionSizePercent: strategyData.positionSizePercent || 5.0,
-        stopLossPercent: strategyData.stopLossPercent || 2.0,
-        takeProfitPercent: strategyData.takeProfitPercent || 6.0,
-        allowedSymbols: strategyData.allowedSymbols || ['BTCUSDT']
-      },
-      performance: {
-        totalReturn: 0,
-        winRate: 0,
-        totalTrades: 0,
-        winningTrades: 0,
-        maxDrawdown: 0,
-        sharpeRatio: 0,
-        profitFactor: 0
-      },
-      aiGenerated: strategyData.aiGenerated || false,
-      createdAt: new Date().toISOString()
-    }
-
-    return c.json({
-      success: true,
-      data: newStrategy,
-      message: 'استراتژی جدید ایجاد شد'
-    })
-
-  } catch (error) {
-    console.error('Create Strategy Error:', error)
+    console.error('Create Strategy Error:', error);
     return c.json({
       success: false,
       error: 'خطا در ایجاد استراتژی'
-    }, 500)
+    }, 500);
   }
 })
 
@@ -16270,37 +16291,97 @@ app.post('/api/trading/strategies/ai-generate', authMiddleware, async (c) => {
   }
 })
 
-// Update strategy status (start/stop/pause)
+// Update strategy status (start/stop/pause) - REAL DATABASE INTEGRATION
 app.put('/api/trading/strategies/:strategyId/status', authMiddleware, async (c) => {
   try {
-    const user = c.get('user')
-    const strategyId = c.req.param('strategyId')
-    const { status } = await c.req.json()
+    const user = c.get('user');
+    const strategyId = c.req.param('strategyId');
+    const { status } = await c.req.json();
+    const { env } = c;
 
-    const validStatuses = ['active', 'inactive', 'paused', 'backtesting']
+    const validStatuses = ['active', 'inactive', 'paused', 'backtesting', 'stopped'];
     if (!validStatuses.includes(status)) {
       return c.json({
         success: false,
         error: 'وضعیت نامعتبر است'
-      }, 400)
+      }, 400);
     }
 
-    let message = ''
+    // Verify strategy ownership
+    const checkOwnership = `
+      SELECT id FROM trading_strategies 
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const ownershipResult = await env.DB.prepare(checkOwnership)
+      .bind(strategyId, user.id)
+      .first();
+
+    if (!ownershipResult) {
+      return c.json({
+        success: false,
+        error: 'استراتژی یافت نشد یا شما دسترسی ندارید'
+      }, 404);
+    }
+
+    // Update strategy status
+    const updateQuery = `
+      UPDATE trading_strategies 
+      SET status = ?, 
+          updated_at = datetime('now'),
+          last_executed_at = CASE 
+            WHEN ? = 'active' THEN datetime('now')
+            ELSE last_executed_at
+          END
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const updateResult = await env.DB.prepare(updateQuery)
+      .bind(status, status, strategyId, user.id)
+      .run();
+
+    if (!updateResult.success) {
+      throw new Error('Failed to update strategy status');
+    }
+
+    // Create alert for status change
+    const insertAlert = `
+      INSERT INTO strategy_alerts (
+        strategy_id, alert_type, message, severity
+      ) VALUES (?, 'status', ?, 'info')
+    `;
+    
+    let alertMessage = '';
+    let responseMessage = '';
+    
     switch (status) {
       case 'active':
-        message = 'استراتژی فعال شد'
-        break
+        alertMessage = 'استراتژی فعال شد و معاملات آغاز یافت';
+        responseMessage = 'استراتژی فعال شد';
+        break;
       case 'inactive':
-        message = 'استراتژی غیرفعال شد'
-        break
+        alertMessage = 'استراتژی غیرفعال شد';
+        responseMessage = 'استراتژی غیرفعال شد';
+        break;
       case 'paused':
-        message = 'استراتژی متوقف شد'
-        break
+        alertMessage = 'استراتژی موقتاً متوقف شد';
+        responseMessage = 'استراتژی متوقف شد';
+        break;
       case 'backtesting':
-        message = 'بک‌تست استراتژی آغاز شد'
-        break
+        alertMessage = 'بک‌تست استراتژی آغاز شد';
+        responseMessage = 'بک‌تست استراتژی آغاز شد';
+        break;
+      case 'stopped':
+        alertMessage = 'استراتژی متوقف شد';
+        responseMessage = 'استراتژی متوقف شد';
+        break;
     }
 
+    await env.DB.prepare(insertAlert)
+      .bind(strategyId, alertMessage)
+      .run();
+
+    console.log('✅ Updated strategy status:', strategyId, 'to', status);
     return c.json({
       success: true,
       data: {
@@ -16308,81 +16389,327 @@ app.put('/api/trading/strategies/:strategyId/status', authMiddleware, async (c) 
         newStatus: status,
         timestamp: new Date().toISOString()
       },
-      message: message
-    })
+      message: responseMessage
+    });
 
   } catch (error) {
-    console.error('Update Strategy Status Error:', error)
+    console.error('Update Strategy Status Error:', error);
     return c.json({
       success: false,
       error: 'خطا در بروزرسانی وضعیت استراتژی'
-    }, 500)
+    }, 500);
   }
 })
 
-// Get strategy performance details
+// Get strategy performance details - REAL DATABASE INTEGRATION
 app.get('/api/trading/strategies/:strategyId/performance', authMiddleware, async (c) => {
   try {
-    const strategyId = c.req.param('strategyId')
+    const user = c.get('user');
+    const strategyId = c.req.param('strategyId');
+    const { env } = c;
+    const { period } = c.req.query();
 
-    // Mock detailed performance data
-    const performanceData = {
-      strategyId: strategyId,
-      performanceChart: {
-        daily: Array.from({ length: 30 }, (_, i) => ({
-          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          return: (Math.random() - 0.3) * 5, // Daily return percentage
-          cumulative: Math.random() * 30 + i * 1.2 // Cumulative return
-        }))
-      },
-      trades: [
-        {
-          id: 'trade1',
-          symbol: 'BTCUSDT',
-          side: 'buy',
-          entry_price: 44800,
-          exit_price: 45600,
-          quantity: 0.1,
-          pnl: 80,
-          pnl_percent: 1.79,
-          duration: '2h 15m',
-          executed_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString()
-        },
-        {
-          id: 'trade2',
-          symbol: 'ETHUSDT',
-          side: 'buy',
-          entry_price: 2850,
-          exit_price: 2920,
-          quantity: 1.5,
-          pnl: 105,
-          pnl_percent: 2.46,
-          duration: '4h 32m',
-          executed_at: new Date(Date.now() - 6 * 60 * 60 * 1000).toISOString()
-        }
-      ],
-      riskMetrics: {
-        valueAtRisk: 2.5, // VaR 95%
-        maximumDrawdown: 8.5,
-        volatility: 15.2,
-        beta: 1.1,
-        alpha: 0.03
-      },
-      timestamp: new Date().toISOString()
+    // Verify strategy ownership
+    const checkOwnership = `
+      SELECT name FROM trading_strategies 
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const strategy = await env.DB.prepare(checkOwnership)
+      .bind(strategyId, user.id)
+      .first();
+
+    if (!strategy) {
+      return c.json({
+        success: false,
+        error: 'استراتژی یافت نشد'
+      }, 404);
     }
 
+    // Get performance history for charts
+    let daysPeriod = 30;
+    switch(period) {
+      case '7d': daysPeriod = 7; break;
+      case '30d': daysPeriod = 30; break;
+      case '90d': daysPeriod = 90; break;
+    }
+
+    const performanceHistoryQuery = `
+      SELECT date, daily_return, cumulative_return, trades_count, volume, win_rate_daily
+      FROM strategy_performance_history 
+      WHERE strategy_id = ? AND date >= date('now', '-${daysPeriod} days')
+      ORDER BY date ASC
+    `;
+
+    const historyResult = await env.DB.prepare(performanceHistoryQuery)
+      .bind(strategyId)
+      .all();
+
+    // Get recent trades
+    const tradesQuery = `
+      SELECT trade_id, symbol, side, entry_price, exit_price, quantity, 
+             profit_loss as pnl, profit_loss_percent as pnl_percent,
+             entry_time, exit_time, status
+      FROM strategy_trades 
+      WHERE strategy_id = ?
+      ORDER BY entry_time DESC
+      LIMIT 20
+    `;
+
+    const tradesResult = await env.DB.prepare(tradesQuery)
+      .bind(strategyId)
+      .all();
+
+    // Get current performance metrics
+    const metricsQuery = `
+      SELECT total_return, win_rate, total_trades, winning_trades, losing_trades,
+             max_drawdown, sharpe_ratio, profit_factor, total_volume, avg_hold_time
+      FROM strategy_performance 
+      WHERE strategy_id = ?
+    `;
+
+    const metrics = await env.DB.prepare(metricsQuery)
+      .bind(strategyId)
+      .first();
+
+    // Transform performance history for charts
+    const performanceChart = {
+      daily: historyResult.success ? historyResult.results.map(row => ({
+        date: row.date,
+        return: row.daily_return || 0,
+        cumulative: row.cumulative_return || 0,
+        trades: row.trades_count || 0,
+        volume: row.volume || 0,
+        winRate: row.win_rate_daily || 0
+      })) : []
+    };
+
+    // Transform trades data
+    const trades = tradesResult.success ? tradesResult.results.map(trade => {
+      const entryTime = new Date(trade.entry_time);
+      const exitTime = trade.exit_time ? new Date(trade.exit_time) : null;
+      
+      let duration = 'در حال اجرا';
+      if (exitTime) {
+        const diffMs = exitTime.getTime() - entryTime.getTime();
+        const hours = Math.floor(diffMs / (1000 * 60 * 60));
+        const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+        duration = `${hours}h ${minutes}m`;
+      }
+
+      return {
+        id: trade.trade_id,
+        symbol: trade.symbol,
+        side: trade.side,
+        entry_price: trade.entry_price,
+        exit_price: trade.exit_price,
+        quantity: trade.quantity,
+        pnl: trade.pnl || 0,
+        pnl_percent: trade.pnl_percent || 0,
+        duration: duration,
+        status: trade.status,
+        executed_at: trade.entry_time
+      };
+    }) : [];
+
+    const performanceData = {
+      strategyId: strategyId,
+      strategyName: strategy.name,
+      performanceChart: performanceChart,
+      trades: trades,
+      currentMetrics: {
+        totalReturn: metrics?.total_return || 0,
+        winRate: metrics?.win_rate || 0,
+        totalTrades: metrics?.total_trades || 0,
+        winningTrades: metrics?.winning_trades || 0,
+        losingTrades: metrics?.losing_trades || 0,
+        maxDrawdown: Math.abs(metrics?.max_drawdown) || 0,
+        sharpeRatio: metrics?.sharpe_ratio || 0,
+        profitFactor: metrics?.profit_factor || 0,
+        totalVolume: metrics?.total_volume || 0,
+        avgHoldTime: metrics?.avg_hold_time || '0'
+      },
+      riskMetrics: {
+        valueAtRisk: Math.abs(metrics?.max_drawdown || 0) * 0.7, // Estimate VaR from drawdown
+        maximumDrawdown: Math.abs(metrics?.max_drawdown || 0),
+        volatility: (metrics?.sharpe_ratio || 0) > 0 ? (metrics?.total_return || 0) / (metrics?.sharpe_ratio || 1) : 15.0,
+        beta: 1.0 + (metrics?.total_return || 0) / 100 * 0.1, // Rough beta estimate
+        alpha: (metrics?.total_return || 0) / 100 * 0.1 // Rough alpha estimate
+      },
+      timestamp: new Date().toISOString()
+    };
+
+    console.log('✅ Loaded performance data for strategy:', strategyId);
     return c.json({
       success: true,
       data: performanceData,
       message: 'جزئیات عملکرد استراتژی دریافت شد'
-    })
+    });
 
   } catch (error) {
-    console.error('Strategy Performance Error:', error)
+    console.error('Strategy Performance Error:', error);
     return c.json({
       success: false,
       error: 'خطا در دریافت عملکرد استراتژی'
-    }, 500)
+    }, 500);
+  }
+})
+
+// Get strategy performance history for charts - REAL DATABASE INTEGRATION
+app.get('/api/trading/strategies/:strategyId/history', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const strategyId = c.req.param('strategyId');
+    const { env } = c;
+    const { period = '30d', metric = 'roi' } = c.req.query();
+
+    // Verify strategy ownership
+    const checkOwnership = `
+      SELECT name FROM trading_strategies 
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const strategy = await env.DB.prepare(checkOwnership)
+      .bind(strategyId, user.id)
+      .first();
+
+    if (!strategy) {
+      return c.json({
+        success: false,
+        error: 'استراتژی یافت نشد'
+      }, 404);
+    }
+
+    let daysPeriod = 30;
+    switch(period) {
+      case '7d': daysPeriod = 7; break;
+      case '30d': daysPeriod = 30; break;
+      case '90d': daysPeriod = 90; break;
+    }
+
+    const historyQuery = `
+      SELECT date, daily_return, cumulative_return, trades_count, volume, win_rate_daily
+      FROM strategy_performance_history 
+      WHERE strategy_id = ? AND date >= date('now', '-${daysPeriod} days')
+      ORDER BY date ASC
+    `;
+
+    const result = await env.DB.prepare(historyQuery)
+      .bind(strategyId)
+      .all();
+
+    if (!result.success) {
+      throw new Error('Failed to fetch performance history');
+    }
+
+    // Transform data based on requested metric
+    const chartData = result.results.map(row => {
+      let value = 0;
+      switch(metric) {
+        case 'roi':
+          value = row.cumulative_return || 0;
+          break;
+        case 'trades':
+          value = row.trades_count || 0;
+          break;
+        case 'winrate':
+          value = row.win_rate_daily || 0;
+          break;
+        case 'volume':
+          value = row.volume || 0;
+          break;
+      }
+
+      return {
+        date: row.date,
+        value: value,
+        dailyReturn: row.daily_return || 0,
+        cumulativeReturn: row.cumulative_return || 0,
+        tradesCount: row.trades_count || 0,
+        winRate: row.win_rate_daily || 0,
+        volume: row.volume || 0
+      };
+    });
+
+    return c.json({
+      success: true,
+      data: {
+        strategyId: strategyId,
+        strategyName: strategy.name,
+        period: period,
+        metric: metric,
+        chartData: chartData,
+        timestamp: new Date().toISOString()
+      },
+      message: 'تاریخچه عملکرد استراتژی دریافت شد'
+    });
+
+  } catch (error) {
+    console.error('Strategy History Error:', error);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت تاریخچه استراتژی'
+    }, 500);
+  }
+})
+
+// Delete strategy - REAL DATABASE INTEGRATION
+app.delete('/api/trading/strategies/:strategyId', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const strategyId = c.req.param('strategyId');
+    const { env } = c;
+
+    // Verify strategy ownership and that it's not active
+    const checkStrategy = `
+      SELECT id, status FROM trading_strategies 
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const strategy = await env.DB.prepare(checkStrategy)
+      .bind(strategyId, user.id)
+      .first();
+
+    if (!strategy) {
+      return c.json({
+        success: false,
+        error: 'استراتژی یافت نشد'
+      }, 404);
+    }
+
+    if (strategy.status === 'active') {
+      return c.json({
+        success: false,
+        error: 'نمی‌توانید استراتژی فعال را حذف کنید. ابتدا آن را غیرفعال کنید'
+      }, 400);
+    }
+
+    // Delete strategy and all related data (CASCADE should handle this)
+    const deleteQuery = `
+      DELETE FROM trading_strategies 
+      WHERE strategy_id = ? AND user_id = ?
+    `;
+    
+    const result = await env.DB.prepare(deleteQuery)
+      .bind(strategyId, user.id)
+      .run();
+
+    if (!result.success) {
+      throw new Error('Failed to delete strategy');
+    }
+
+    console.log('✅ Deleted strategy:', strategyId);
+    return c.json({
+      success: true,
+      message: 'استراتژی با موفقیت حذف شد'
+    });
+
+  } catch (error) {
+    console.error('Delete Strategy Error:', error);
+    return c.json({
+      success: false,
+      error: 'خطا در حذف استراتژی'
+    }, 500);
   }
 })
 

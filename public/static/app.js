@@ -383,10 +383,7 @@ class TitanApp {
                                     <i class="fas fa-brain ml-1 text-purple-400"></i>
                                     آرتمیس AI
                                 </a>
-                                <a href="#" onclick="app.loadModule('phase8')" class="nav-link">
-                                    <i class="fas fa-rocket ml-1 text-blue-400"></i>
-                                    Phase 8
-                                </a>
+
                                 
                                 <!-- More Menu Dropdown -->
                                 <div class="relative">
@@ -619,10 +616,7 @@ class TitanApp {
                         <i class="fas fa-robot text-purple-400"></i>
                         <span>آرتمیس AI</span>
                     </a>
-                    <a href="#" onclick="app.loadModule('phase8'); app.closeMobileMenu();" class="mobile-nav-link">
-                        <i class="fas fa-rocket text-blue-400"></i>
-                        <span>Phase 8 Advanced Trading</span>
-                    </a>
+
                     <a href="#" onclick="app.loadModule('news'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-newspaper text-green-400"></i>
                         <span>اخبار بازار</span>
@@ -1932,37 +1926,7 @@ class TitanApp {
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری ماژول آرتمیس</div></div>';
                     }
                     break;
-                case 'phase8':
-                    try {
-                        console.log('🚀 Starting Phase 8 Advanced Trading Intelligence...');
-                        
-                        // Load Phase 8 module
-                        const script = document.createElement('script');
-                        script.src = '/static/modules/phase8-advanced-trading.js?v=' + Date.now();
-                        
-                        script.onload = () => {
-                            if (window.TitanModules && window.TitanModules.Phase8AdvancedTrading) {
-                                mainContent.innerHTML = window.TitanModules.Phase8AdvancedTrading.render();
-                                window.TitanModules.Phase8AdvancedTrading.init();
-                                console.log('✅ Phase 8 Advanced Trading Intelligence loaded successfully');
-                            } else {
-                                console.error('❌ Phase 8 module not found');
-                                mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری Phase 8</div></div>';
-                            }
-                        };
-                        
-                        script.onerror = () => {
-                            console.error('❌ Failed to load Phase 8 script');
-                            mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری فایل Phase 8</div></div>';
-                        };
-                        
-                        document.head.appendChild(script);
-                    } catch (error) {
-                        console.error('❌ Phase 8 loading error:', error);
-                        this.showAlert('خطا در بارگذاری Phase 8: ' + error.message, 'error');
-                        mainContent.innerHTML = '<div class="text-center p-8"><div class="text-red-400">خطا در بارگذاری Phase 8 Advanced Trading Intelligence</div></div>';
-                    }
-                    break;
+
                 case 'news':
                     try {
                         console.log('📰 Starting News module loading...');
