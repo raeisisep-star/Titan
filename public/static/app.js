@@ -1405,11 +1405,11 @@ class TitanApp {
         input.value = '';
         
         // Show typing indicator
-        this.addChatMessage('artemis', '...', true);
+        this.addChatMessage('artemis', 'در حال پردازش...', true);
         
         try {
             const token = localStorage.getItem('titan_auth_token');
-            const response = await fetch('/api/artemis/chat', {
+            const response = await fetch('/api/artemis/chat-basic', {
                 method: 'POST',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -1417,7 +1417,11 @@ class TitanApp {
                 },
                 body: JSON.stringify({
                     message: message,
-                    context: 'dashboard'
+                    context: {
+                        currentModule: this.getCurrentModule(),
+                        timestamp: new Date().toISOString(),
+                        userPreferences: this.getUserPreferences()
+                    }
                 })
             });
 
@@ -1426,15 +1430,242 @@ class TitanApp {
 
             if (response.ok) {
                 const data = await response.json();
-                this.addChatMessage('artemis', data.response, false, data.actions);
+                if (data.success) {
+                    // Add Artemis response with actions
+                    this.addChatMessage('artemis', data.response, false, data.actions);
+                    
+                    // Execute any actions returned by Artemis
+                    if (data.actions && data.actions.length > 0) {
+                        this.executeArtemisActions(data.actions);
+                    }
+                } else {
+                    this.addChatMessage('artemis', data.response || 'متاسفم، نتوانستم درخواست شما را پردازش کنم.');
+                }
             } else {
-                // Fallback response
-                this.addChatMessage('artemis', this.getArtemisResponse(message));
+                // Enhanced fallback response based on message content
+                this.addChatMessage('artemis', this.getEnhancedArtemisResponse(message));
             }
         } catch (error) {
-            console.warn('Artemis API not available, using simulated response:', error);
+            console.warn('Artemis API not available, using enhanced local response:', error);
             this.removeChatMessage('typing');
-            this.addChatMessage('artemis', this.getArtemisResponse(message));
+            this.addChatMessage('artemis', this.getEnhancedArtemisResponse(message));
+        }
+    }
+
+    /**
+     * Execute actions returned by Artemis
+     */
+    executeArtemisActions(actions) {
+        actions.forEach(action => {
+            switch (action.type) {
+                case 'navigate':
+                    console.log('🎯 Artemis navigation:', action.target);
+                    if (action.target === 'dashboard') {
+                        this.loadModule('dashboard');
+                    } else if (action.target === 'portfolio') {
+                        this.loadModule('portfolio');
+                    } else if (action.target === 'trading') {
+                        this.loadModule('trading');
+                    } else if (action.target === 'trading/manual') {
+                        this.loadModule('trading');
+                        setTimeout(() => this.loadManualTradingTab(), 1000);
+                    } else if (action.target === 'trading/autopilot') {
+                        this.loadModule('trading');
+                        setTimeout(() => this.loadAutopilotTab(), 1000);
+                    } else if (action.target === 'trading/strategies') {
+                        this.loadModule('trading');
+                        setTimeout(() => this.loadStrategiesTab(), 1000);
+                    } else if (action.target === 'settings') {
+                        this.loadModule('settings');
+                    } else if (action.target === 'alerts') {
+                        this.loadModule('alerts');
+                    } else if (action.target === 'news') {
+                        this.loadModule('news');
+                    } else if (action.target === 'watchlist') {
+                        this.loadModule('watchlist');
+                    } else if (action.target === 'ai-management') {
+                        this.loadModule('ai-management');
+                    } else if (action.target === 'analytics') {
+                        this.loadModule('analytics');
+                    } else if (action.target === 'wallets') {
+                        this.loadModule('wallets');
+                    }
+                    break;
+                
+                case 'open_tab':
+                    console.log('📂 Artemis tab opening:', action.tab);
+                    // Open specific tabs in modules (will implement based on module structure)
+                    break;
+                
+                case 'show_system_status':
+                    console.log('🔍 Artemis showing system status');
+                    this.toggleSystemStatus();
+                    break;
+                
+                case 'refresh_data':
+                    console.log('🔄 Artemis data refresh');
+                    // Refresh current module data
+                    this.refreshCurrentModuleData();
+                    break;
+                
+                default:
+                    console.log('🤖 Artemis action:', action);
+            }
+        });
+    }
+
+    /**
+     * Enhanced Artemis response system with full system control
+     */
+    getEnhancedArtemisResponse(message) {
+        const messageText = message.toLowerCase();
+        
+        // Navigation commands
+        if (messageText.includes('dashboard') || messageText.includes('داشبورد') || messageText.includes('صفحه اصلی')) {
+            this.loadModule('dashboard');
+            return '🏠 در حال انتقال به داشبورد...';
+        }
+        
+        if (messageText.includes('portfolio') || messageText.includes('پورتفولیو') || messageText.includes('دارایی')) {
+            this.loadModule('portfolio');
+            return '📊 در حال بارگذاری پورتفولیو...';
+        }
+        
+        if (messageText.includes('trade') || messageText.includes('معامله')) {
+            if (messageText.includes('manual') || messageText.includes('دستی')) {
+                this.loadModule('trading');
+                setTimeout(() => this.loadManualTradingTab(), 1000);
+                return '⚡ در حال انتقال به معامله دستی...';
+            } else if (messageText.includes('autopilot') || messageText.includes('اتوپایلوت')) {
+                this.loadModule('trading');
+                setTimeout(() => this.loadAutopilotTab(), 1000);
+                return '🚀 در حال انتقال به اتوپایلوت حرفه‌ای...';
+            } else {
+                this.loadModule('trading');
+                return '📈 در حال بارگذاری بخش معاملات...';
+            }
+        }
+        
+        if (messageText.includes('strategies') || messageText.includes('استراتژی')) {
+            this.loadModule('trading');
+            setTimeout(() => this.loadStrategiesTab(), 1000);
+            return '🧠 در حال بارگذاری استراتژی‌های معاملاتی...';
+        }
+        
+        if (messageText.includes('settings') || messageText.includes('تنظیمات')) {
+            this.loadModule('settings');
+            return '⚙️ در حال بارگذاری تنظیمات...';
+        }
+        
+        if (messageText.includes('alerts') || messageText.includes('هشدار')) {
+            this.loadModule('alerts');
+            return '🚨 در حال بارگذاری بخش هشدارها...';
+        }
+        
+        if (messageText.includes('news') || messageText.includes('اخبار')) {
+            this.loadModule('news');
+            return '📰 در حال بارگذاری اخبار بازار...';
+        }
+        
+        if (messageText.includes('watchlist') || messageText.includes('مورد علاقه')) {
+            this.loadModule('watchlist');
+            return '❤️ در حال بارگذاری لیست مورد علاقه...';
+        }
+        
+        if (messageText.includes('ai') || messageText.includes('هوش مصنوعی')) {
+            this.loadModule('ai-management');
+            return '🤖 در حال بارگذاری مدیریت AI...';
+        }
+        
+        if (messageText.includes('analytics') || messageText.includes('تحلیل') || messageText.includes('گزارش')) {
+            this.loadModule('analytics');
+            return '📊 در حال بارگذاری آنالیز و گزارشات...';
+        }
+        
+        if (messageText.includes('wallet') || messageText.includes('کیف پول')) {
+            this.loadModule('wallets');
+            return '💰 در حال بارگذاری مدیریت کیف‌پول...';
+        }
+        
+        if (messageText.includes('status') || messageText.includes('وضعیت') || messageText.includes('سیستم')) {
+            this.toggleSystemStatus();
+            return '🔍 نمایش وضعیت سیستم...';
+        }
+        
+        if (messageText.includes('help') || messageText.includes('کمک') || messageText.includes('راهنما')) {
+            return `❓ راهنمای سیستم تایتان:
+
+🎯 دستورات مفید:
+• "نمایش پورتفولیو" - مشاهده دارایی‌ها
+• "معامله دستی" - شروع معامله
+• "اتوپایلوت" - معامله خودکار  
+• "تنظیم هشدار" - ایجاد هشدار
+• "اخبار بازار" - آخرین اخبار
+• "وضعیت سیستم" - سلامت سیستم
+• "تنظیمات" - پیکربندی سیستم
+
+💡 کافیست به زبان ساده بگویید چه کاری می‌خواهید انجام دهید!`;
+        }
+        
+        // Default helpful response
+        return `🤖 سلام! من آرتمیس هستم، دستیار هوشمند شما.
+
+🎯 می‌توانم کمکتان کنم در:
+📊 مدیریت پورتفولیو و دارایی‌ها
+📈 انجام معاملات (دستی و خودکار)
+🚨 تنظیم هشدارها و اطلاع‌رسانی‌ها
+📰 بررسی اخبار و تحلیل‌های بازار
+⚙️ مدیریت تنظیمات سیستم
+🤖 کنترل سیستم‌های هوش مصنوعی
+
+💡 برای شروع، بگویید: "نمایش پورتفولیو" یا "کمک"`;
+    }
+
+    /**
+     * Get current module for context
+     */
+    getCurrentModule() {
+        const currentUrl = window.location.hash || '#dashboard';
+        return currentUrl.replace('#', '') || 'dashboard';
+    }
+
+    /**
+     * Get user preferences for Artemis context
+     */
+    getUserPreferences() {
+        return {
+            language: 'persian',
+            riskTolerance: localStorage.getItem('risk_tolerance') || 'medium',
+            tradingExperience: localStorage.getItem('trading_experience') || 'beginner',
+            preferredNotifications: localStorage.getItem('preferred_notifications') || 'all'
+        };
+    }
+
+    /**
+     * Refresh current module data
+     */
+    refreshCurrentModuleData() {
+        const currentModule = this.getCurrentModule();
+        console.log(`🔄 Refreshing data for module: ${currentModule}`);
+        
+        // Trigger refresh based on current module
+        switch (currentModule) {
+            case 'portfolio':
+                if (window.portfolioModule && window.portfolioModule.refreshData) {
+                    window.portfolioModule.refreshData();
+                }
+                break;
+            case 'trading':
+                if (window.tradingModule && window.tradingModule.refreshData) {
+                    window.tradingModule.refreshData();
+                }
+                break;
+            case 'dashboard':
+                // Refresh dashboard
+                this.loadModule('dashboard');
+                break;
+            default:
+                console.log('No specific refresh method for', currentModule);
         }
     }
 
@@ -9450,7 +9681,219 @@ Object.assign(TitanApp.prototype, {
 
     // Initialize properties  
     isRecognitionActive: false,
-    currentConversationId: null
+    currentConversationId: null,
+
+    // =========================================================================
+    // SYSTEM STATUS FUNCTIONALITY
+    // =========================================================================
+
+    // Toggle system status panel
+    toggleSystemStatus() {
+        const panel = document.getElementById('system-status-panel');
+        if (!panel) return;
+
+        if (panel.classList.contains('hidden')) {
+            panel.classList.remove('hidden');
+            this.startSystemStatusUpdates();
+        } else {
+            panel.classList.add('hidden');
+            this.stopSystemStatusUpdates();
+        }
+    },
+
+    // Start real-time system status updates
+    startSystemStatusUpdates() {
+        console.log('🔄 Starting system status updates...');
+        
+        // Clear existing interval
+        if (this.systemStatusInterval) {
+            clearInterval(this.systemStatusInterval);
+        }
+
+        // Initial load
+        this.updateSystemStatus();
+
+        // Set up auto-refresh every 5 seconds
+        this.systemStatusInterval = setInterval(() => {
+            this.updateSystemStatus();
+        }, 5000);
+    },
+
+    // Stop system status updates
+    stopSystemStatusUpdates() {
+        if (this.systemStatusInterval) {
+            clearInterval(this.systemStatusInterval);
+            this.systemStatusInterval = null;
+        }
+    },
+
+    // Update system status with real data from API
+    async updateSystemStatus() {
+        try {
+            // Fetch all system data concurrently
+            const [statusResponse, metricsResponse, healthResponse, activityResponse] = await Promise.all([
+                axios.get('/api/monitoring/status'),
+                axios.get('/api/monitoring/metrics'),
+                axios.get('/api/monitoring/health'),
+                axios.get('/api/monitoring/activity?limit=6')
+            ]);
+
+            if (statusResponse.data.success) {
+                this.updateSystemOverview(statusResponse.data.data);
+            }
+
+            if (metricsResponse.data.success) {
+                this.updatePerformanceMetrics(metricsResponse.data.data);
+            }
+
+            if (healthResponse.data.success) {
+                this.updateComponentStatus(healthResponse.data.data);
+            }
+
+            if (activityResponse.data.success) {
+                this.updateSystemActivity(activityResponse.data.data);
+            }
+
+        } catch (error) {
+            console.error('❌ System status update failed:', error);
+            // Show error in panel if it's visible
+            const panel = document.getElementById('system-status-panel');
+            if (panel && !panel.classList.contains('hidden')) {
+                this.showAlert('خطا در به‌روزرسانی وضعیت سیستم', 'error');
+            }
+        }
+    },
+
+    // Update system overview section
+    updateSystemOverview(data) {
+        const statusIndicator = document.querySelector('#system-status-panel .text-green-400');
+        const statusText = document.querySelector('#system-status-panel .text-green-400.text-sm');
+
+        if (statusIndicator) {
+            statusIndicator.textContent = data.statusEmoji;
+        }
+
+        if (statusText) {
+            statusText.textContent = `وضعیت کل: ${data.statusText}`;
+            statusText.className = data.overallStatus === 'optimal' 
+                ? 'text-green-400 text-sm font-medium'
+                : 'text-yellow-400 text-sm font-medium';
+        }
+
+        // Update header status emoji
+        const headerEmoji = document.querySelector('#system-status-panel .text-green-400.text-lg');
+        if (headerEmoji) {
+            headerEmoji.textContent = data.statusEmoji;
+        }
+    },
+
+    // Update performance metrics bars
+    updatePerformanceMetrics(data) {
+        // Update CPU
+        const cpuBar = document.getElementById('cpu-bar');
+        const cpuPercent = document.getElementById('cpu-percent');
+        if (cpuBar && cpuPercent) {
+            cpuBar.style.width = `${data.cpu.usage}%`;
+            cpuBar.className = `h-full bg-${data.cpu.color}-500 transition-all duration-300`;
+            cpuPercent.textContent = `${data.cpu.usage}%`;
+        }
+
+        // Update Memory
+        const memoryBar = document.getElementById('memory-bar');
+        const memoryPercent = document.getElementById('memory-percent');
+        if (memoryBar && memoryPercent) {
+            memoryBar.style.width = `${data.memory.usage}%`;
+            memoryBar.className = `h-full bg-${data.memory.color}-500 transition-all duration-300`;
+            memoryPercent.textContent = `${data.memory.usage}%`;
+        }
+
+        // Update Network
+        const networkBar = document.getElementById('network-bar');
+        const networkPercent = document.getElementById('network-percent');
+        if (networkBar && networkPercent) {
+            networkBar.style.width = `${data.network.usage}%`;
+            networkBar.className = `h-full bg-${data.network.color}-500 transition-all duration-300`;
+            networkPercent.textContent = `${data.network.usage}%`;
+        }
+    },
+
+    // Update component status indicators
+    updateComponentStatus(components) {
+        // Find component status container
+        const statusContainer = document.querySelector('#system-status-panel .space-y-2');
+        if (!statusContainer) return;
+
+        // Update existing component status items
+        const statusItems = statusContainer.querySelectorAll('.flex.items-center.justify-between');
+        
+        components.forEach((component, index) => {
+            if (statusItems[index]) {
+                const statusDot = statusItems[index].querySelector('.w-2.h-2');
+                const statusLabel = statusItems[index].querySelector('.text-xs');
+                
+                if (statusDot) {
+                    statusDot.className = component.status === 'online' 
+                        ? 'w-2 h-2 bg-green-400 rounded-full'
+                        : component.status === 'warning'
+                        ? 'w-2 h-2 bg-yellow-400 rounded-full'
+                        : 'w-2 h-2 bg-red-400 rounded-full';
+                }
+                
+                if (statusLabel) {
+                    statusLabel.textContent = component.statusText;
+                    statusLabel.className = component.status === 'online'
+                        ? 'text-green-400 text-xs'
+                        : component.status === 'warning'
+                        ? 'text-yellow-400 text-xs'
+                        : 'text-red-400 text-xs';
+                }
+            }
+        });
+    },
+
+    // Update current system activity
+    updateSystemActivity(activities) {
+        const activityContainer = document.querySelector('#system-status-panel .space-y-3');
+        if (!activityContainer) return;
+
+        // Clear existing activities
+        activityContainer.innerHTML = '';
+
+        // Display latest 3 activities
+        activities.slice(0, 3).forEach(activity => {
+            const activityElement = document.createElement('div');
+            activityElement.className = 'flex items-start gap-3';
+            activityElement.innerHTML = `
+                <div class="w-2 h-2 bg-${activity.statusColor} rounded-full mt-1.5 flex-shrink-0"></div>
+                <div class="flex-1">
+                    <div class="flex items-center justify-between">
+                        <span class="text-white text-xs font-medium">${activity.component}</span>
+                        <span class="text-${activity.statusColor} text-xs">${activity.statusIcon === '🔵' ? 'فعال' : activity.statusIcon === '🟢' ? 'تکمیل' : 'هشدار'}</span>
+                    </div>
+                    <p class="text-gray-400 text-xs">${activity.description}</p>
+                </div>
+            `;
+            activityContainer.appendChild(activityElement);
+        });
+
+        // Add refresh timestamp
+        const timestampElement = document.querySelector('#system-status-panel .mt-4.pt-3.border-t');
+        if (timestampElement) {
+            const updateTime = new Date().toLocaleTimeString('fa-IR');
+            timestampElement.innerHTML = `
+                <div class="flex items-center justify-between text-xs text-gray-400">
+                    <div>آخرین به‌روزرسانی: ${updateTime}</div>
+                    <div class="flex items-center gap-1">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span>زنده</span>
+                    </div>
+                </div>
+            `;
+        }
+    },
+
+    // Initialize system status interval property
+    systemStatusInterval: null
 });
 
 // Initialize the application
@@ -9458,6 +9901,10 @@ window.addEventListener('DOMContentLoaded', function() {
     try {
         // Initialize TITAN app
         window.titanApp = new TitanApp();
+        
+        // Create global alias for onclick handlers
+        window.app = window.titanApp;
+        
         console.log('TITAN Trading System initialized successfully');
     } catch (error) {
         console.error('Failed to initialize TITAN app:', error);

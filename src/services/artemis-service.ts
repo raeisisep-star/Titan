@@ -82,6 +82,343 @@ export interface ArtemisInsight {
 export class ArtemisService {
 
   /**
+   * Process Artemis message with full system control capabilities
+   * عصای دست کاربران بی‌تجربه - کنترل کامل سیستم از طریق چت
+   */
+  static async processArtemisMessage(message: string, context: any, user: any, chatHistory: any[], userPreferences: any) {
+    try {
+      const messageText = message.toLowerCase().trim()
+      
+      // System Navigation Commands
+      if (messageText.includes('dashboard') || messageText.includes('داشبورد') || messageText.includes('صفحه اصلی')) {
+        return {
+          text: '🏠 در حال انتقال به داشبورد...',
+          actions: [{ type: 'navigate', target: 'dashboard' }],
+          suggestedActions: [
+            { action: 'show_portfolio', description: 'نمایش پورتفولیو', risk_level: 'low' },
+            { action: 'market_overview', description: 'بررسی بازار', risk_level: 'low' }
+          ]
+        }
+      }
+
+      // Portfolio Management
+      if (messageText.includes('portfolio') || messageText.includes('پورتفولیو') || messageText.includes('دارایی')) {
+        return await this.handlePortfolioCommands(messageText, user)
+      }
+
+      // Trading Commands
+      if (messageText.includes('trade') || messageText.includes('معامله') || messageText.includes('خرید') || messageText.includes('فروش')) {
+        return await this.handleTradingCommands(messageText, user)
+      }
+
+      // Settings Management
+      if (messageText.includes('settings') || messageText.includes('تنظیمات') || messageText.includes('config')) {
+        return await this.handleSettingsCommands(messageText, user)
+      }
+
+      // Alerts & Notifications
+      if (messageText.includes('alert') || messageText.includes('هشدار') || messageText.includes('اطلاع')) {
+        return await this.handleAlertsCommands(messageText, user)
+      }
+
+      // News & Market Analysis
+      if (messageText.includes('news') || messageText.includes('اخبار') || messageText.includes('تحلیل بازار')) {
+        return await this.handleNewsCommands(messageText, user)
+      }
+
+      // AI Management
+      if (messageText.includes('ai') || messageText.includes('هوش مصنوعی') || messageText.includes('آی') || messageText.includes('مدیریت')) {
+        return await this.handleAICommands(messageText, user)
+      }
+
+      // Watchlist Management
+      if (messageText.includes('watchlist') || messageText.includes('مورد علاقه') || messageText.includes('پیگیری')) {
+        return await this.handleWatchlistCommands(messageText, user)
+      }
+
+      // System Monitoring
+      if (messageText.includes('status') || messageText.includes('وضعیت') || messageText.includes('سیستم') || messageText.includes('health')) {
+        return await this.handleSystemCommands(messageText, user)
+      }
+
+      // Wallet Management
+      if (messageText.includes('wallet') || messageText.includes('کیف پول') || messageText.includes('کیف‌پول')) {
+        return await this.handleWalletCommands(messageText, user)
+      }
+
+      // Analytics & Reports
+      if (messageText.includes('analytics') || messageText.includes('تحلیل') || messageText.includes('گزارش') || messageText.includes('report')) {
+        return await this.handleAnalyticsCommands(messageText, user)
+      }
+
+      // Help & Tutorial
+      if (messageText.includes('help') || messageText.includes('کمک') || messageText.includes('راهنما') || messageText.includes('آموزش')) {
+        return await this.handleHelpCommands(messageText, user)
+      }
+
+      // General conversation - provide helpful guidance
+      return {
+        text: `🤖 سلام! من آرتمیس هستم، دستیار هوشمند شما.\n\n🎯 می‌توانم کمکتان کنم در:\n\n📊 مدیریت پورتفولیو و دارایی‌ها\n📈 انجام معاملات و تحلیل بازار\n🚨 تنظیم هشدارها و اطلاع‌رسانی‌ها\n📰 بررسی اخبار و تحلیل‌های بازار\n⚙️ مدیریت تنظیمات سیستم\n🤖 کنترل سیستم‌های AI\n💰 مدیریت کیف‌پول‌ها\n📋 مشاهده گزارشات و آنالیز\n\n💡 برای شروع، کافیست بگویید چه کاری برایتان انجام دهم!`,
+        actions: [],
+        suggestedActions: [
+          { action: 'show_portfolio', description: '📊 نمایش پورتفولیو', risk_level: 'low' },
+          { action: 'market_analysis', description: '📈 تحلیل بازار', risk_level: 'low' },
+          { action: 'system_status', description: '🔍 وضعیت سیستم', risk_level: 'low' },
+          { action: 'help_guide', description: '❓ راهنمای کامل', risk_level: 'low' }
+        ]
+      }
+    } catch (error) {
+      console.error('Artemis message processing error:', error)
+      return {
+        text: 'متاسفم، خطایی در پردازش پیام شما رخ داده است. لطفاً دوباره تلاش کنید.',
+        actions: [],
+        suggestedActions: [{ action: 'retry', description: 'تلاش مجدد', risk_level: 'low' }]
+      }
+    }
+  }
+
+  /**
+   * Handle Portfolio-related commands
+   */
+  static async handlePortfolioCommands(message: string, user: any) {
+    try {
+      if (message.includes('نمایش') || message.includes('show') || message.includes('وضعیت')) {
+        return {
+          text: '📊 در حال بارگذاری اطلاعات پورتفولیو...\n\n🔄 لطفاً چند لحظه صبر کنید...',
+          actions: [{ type: 'navigate', target: 'portfolio' }, { type: 'refresh_data' }],
+          suggestedActions: [
+            { action: 'portfolio_analysis', description: '📈 تحلیل عملکرد', risk_level: 'low' },
+            { action: 'rebalance_portfolio', description: '⚖️ بازتوازن پورتفولیو', risk_level: 'medium' },
+            { action: 'add_asset', description: '➕ افزودن دارایی', risk_level: 'medium' }
+          ]
+        }
+      }
+      
+      if (message.includes('تحلیل') || message.includes('عملکرد') || message.includes('analysis')) {
+        return {
+          text: '📈 تحلیل عملکرد پورتفولیو:\n\n📊 در حال محاسبه متریک‌های عملکرد...\n🎯 تحلیل ریسک و بازده...\n📋 تهیه گزارش کامل...',
+          actions: [{ type: 'navigate', target: 'portfolio' }, { type: 'show_analytics' }],
+          suggestedActions: [
+            { action: 'export_report', description: '📄 صادرات گزارش', risk_level: 'low' },
+            { action: 'risk_analysis', description: '⚠️ تحلیل ریسک', risk_level: 'low' }
+          ]
+        }
+      }
+
+      return {
+        text: '📊 پورتفولیو - چه کاری برایتان انجام دهم؟\n\n🔸 نمایش وضعیت پورتفولیو\n🔸 تحلیل عملکرد\n🔸 بازتوازن دارایی‌ها\n🔸 افزودن دارایی جدید',
+        actions: [{ type: 'navigate', target: 'portfolio' }],
+        suggestedActions: [
+          { action: 'show_portfolio', description: '👁️ نمایش پورتفولیو', risk_level: 'low' },
+          { action: 'portfolio_analysis', description: '📈 تحلیل عملکرد', risk_level: 'low' }
+        ]
+      }
+    } catch (error) {
+      return this.getErrorResponse('خطا در پردازش درخواست پورتفولیو')
+    }
+  }
+
+  /**
+   * Handle Trading-related commands
+   */
+  static async handleTradingCommands(message: string, user: any) {
+    try {
+      if (message.includes('manual') || message.includes('دستی') || message.includes('معامله دستی')) {
+        return {
+          text: '⚡ معامله دستی:\n\n🎯 انتقال به صفحه معاملات دستی...\n💹 آماده‌سازی محیط معاملات...',
+          actions: [{ type: 'navigate', target: 'trading/manual' }],
+          suggestedActions: [
+            { action: 'place_order', description: '📋 ثبت سفارش', risk_level: 'high' },
+            { action: 'market_analysis', description: '📊 تحلیل بازار', risk_level: 'low' }
+          ]
+        }
+      }
+
+      if (message.includes('autopilot') || message.includes('اتوپایلوت') || message.includes('خودکار')) {
+        return {
+          text: '🚀 اتوپایلوت حرفه‌ای:\n\n🤖 انتقال به سیستم معاملات خودکار...\n⚙️ بررسی تنظیمات اتوماسیون...',
+          actions: [{ type: 'navigate', target: 'trading/autopilot' }],
+          suggestedActions: [
+            { action: 'start_autopilot', description: '▶️ شروع اتوپایلوت', risk_level: 'high' },
+            { action: 'autopilot_settings', description: '⚙️ تنظیمات', risk_level: 'medium' }
+          ]
+        }
+      }
+
+      if (message.includes('strategies') || message.includes('استراتژی') || message.includes('استراتژی‌ها')) {
+        return {
+          text: '🧠 استراتژی‌های معاملاتی:\n\n📈 نمایش استراتژی‌های فعال...\n🎯 بررسی عملکرد استراتژی‌ها...',
+          actions: [{ type: 'navigate', target: 'trading/strategies' }],
+          suggestedActions: [
+            { action: 'create_strategy', description: '➕ ایجاد استراتژی', risk_level: 'medium' },
+            { action: 'backtest_strategy', description: '🔄 بک‌تست', risk_level: 'low' }
+          ]
+        }
+      }
+
+      return {
+        text: '📈 معاملات - چه نوع معامله‌ای می‌خواهید؟\n\n⚡ معامله دستی\n🚀 اتوپایلوت حرفه‌ای\n🧠 مدیریت استراتژی‌ها',
+        actions: [{ type: 'navigate', target: 'trading' }],
+        suggestedActions: [
+          { action: 'manual_trading', description: '⚡ معامله دستی', risk_level: 'high' },
+          { action: 'autopilot_trading', description: '🚀 اتوپایلوت', risk_level: 'high' }
+        ]
+      }
+    } catch (error) {
+      return this.getErrorResponse('خطا در پردازش درخواست معاملات')
+    }
+  }
+
+  /**
+   * Handle Settings-related commands
+   */
+  static async handleSettingsCommands(message: string, user: any) {
+    try {
+      if (message.includes('exchange') || message.includes('صرافی') || message.includes('api')) {
+        return {
+          text: '🏦 تنظیمات صرافی:\n\n🔗 مدیریت اتصالات صرافی‌ها...\n🔑 تنظیم API Keys...\n⚙️ پیکربندی صرافی‌ها...',
+          actions: [{ type: 'navigate', target: 'settings' }, { type: 'open_tab', tab: 'exchanges' }],
+          suggestedActions: [
+            { action: 'test_connections', description: '🔍 تست اتصالات', risk_level: 'low' },
+            { action: 'add_exchange', description: '➕ افزودن صرافی', risk_level: 'medium' }
+          ]
+        }
+      }
+
+      if (message.includes('ai') || message.includes('هوش مصنوعی') || message.includes('آی')) {
+        return {
+          text: '🤖 تنظیمات AI:\n\n🧠 مدیریت عوامل هوش مصنوعی...\n⚙️ پیکربندی مدل‌های AI...\n📊 تنظیم حساسیت و اعتماد...',
+          actions: [{ type: 'navigate', target: 'settings' }, { type: 'open_tab', tab: 'ai' }],
+          suggestedActions: [
+            { action: 'ai_optimization', description: '🚀 بهینه‌سازی AI', risk_level: 'low' },
+            { action: 'ai_training', description: '🎓 آموزش مجدد', risk_level: 'medium' }
+          ]
+        }
+      }
+
+      if (message.includes('notification') || message.includes('اطلاع‌رسانی') || message.includes('notification')) {
+        return {
+          text: '🔔 تنظیمات اطلاع‌رسانی:\n\n📧 تنظیم ایمیل و SMS...\n📱 هشدارهای push...\n🎯 سطح اطلاع‌رسانی‌ها...',
+          actions: [{ type: 'navigate', target: 'settings' }, { type: 'open_tab', tab: 'notifications' }],
+          suggestedActions: [
+            { action: 'test_notifications', description: '🧪 تست اطلاع‌رسانی', risk_level: 'low' }
+          ]
+        }
+      }
+
+      return {
+        text: '⚙️ تنظیمات سیستم - کدام بخش؟\n\n🏦 تنظیمات صرافی‌ها\n🤖 تنظیمات AI\n🔔 اطلاع‌رسانی‌ها\n🔐 امنیت\n📊 نظارت سیستم',
+        actions: [{ type: 'navigate', target: 'settings' }],
+        suggestedActions: [
+          { action: 'exchange_settings', description: '🏦 صرافی‌ها', risk_level: 'medium' },
+          { action: 'ai_settings', description: '🤖 AI Settings', risk_level: 'low' }
+        ]
+      }
+    } catch (error) {
+      return this.getErrorResponse('خطا در پردازش درخواست تنظیمات')
+    }
+  }
+
+  /**
+   * Handle other system commands (similar pattern for alerts, news, etc.)
+   */
+  static async handleAlertsCommands(message: string, user: any) {
+    return {
+      text: '🚨 مدیریت هشدارها:\n\n📊 نمایش هشدارهای فعال...\n⚙️ تنظیم هشدارهای جدید...',
+      actions: [{ type: 'navigate', target: 'alerts' }],
+      suggestedActions: [
+        { action: 'create_alert', description: '➕ هشدار جدید', risk_level: 'low' },
+        { action: 'alert_templates', description: '📋 قالب‌ها', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static async handleNewsCommands(message: string, user: any) {
+    return {
+      text: '📰 اخبار و تحلیل‌های بازار:\n\n📊 آخرین اخبار بازار...\n📈 تحلیل احساسات...\n🔥 موضوعات داغ...',
+      actions: [{ type: 'navigate', target: 'news' }],
+      suggestedActions: [
+        { action: 'market_sentiment', description: '💭 تحلیل احساسات', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static async handleAICommands(message: string, user: any) {
+    return {
+      text: '🤖 مدیریت AI:\n\n🧠 وضعیت عوامل AI...\n📊 عملکرد سیستم‌های هوشمند...\n⚙️ تنظیمات پیشرفته...',
+      actions: [{ type: 'navigate', target: 'ai-management' }],
+      suggestedActions: [
+        { action: 'ai_overview', description: '📊 نمای کلی AI', risk_level: 'low' },
+        { action: 'train_agents', description: '🎓 آموزش عوامل', risk_level: 'medium' }
+      ]
+    }
+  }
+
+  static async handleWatchlistCommands(message: string, user: any) {
+    return {
+      text: '❤️ مورد علاقه‌ها:\n\n📊 نمایش لیست پیگیری...\n➕ افزودن ارز جدید...\n🚨 تنظیم هشدارها...',
+      actions: [{ type: 'navigate', target: 'watchlist' }],
+      suggestedActions: [
+        { action: 'add_to_watchlist', description: '➕ افزودن ارز', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static async handleSystemCommands(message: string, user: any) {
+    return {
+      text: '🔍 وضعیت سیستم:\n\n📊 نظارت real-time...\n💻 متریک‌های عملکرد...\n🔗 وضعیت اتصالات...',
+      actions: [{ type: 'show_system_status' }],
+      suggestedActions: [
+        { action: 'system_health', description: '💚 سلامت سیستم', risk_level: 'low' },
+        { action: 'performance_metrics', description: '📊 متریک‌های عملکرد', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static async handleWalletCommands(message: string, user: any) {
+    return {
+      text: '💰 مدیریت کیف‌پول:\n\n🔗 کیف‌پول‌های متصل...\n❄️ کیف‌پول سرد...\n🌐 DeFi Integration...',
+      actions: [{ type: 'navigate', target: 'wallets' }],
+      suggestedActions: [
+        { action: 'connect_wallet', description: '🔗 اتصال کیف‌پول', risk_level: 'medium' }
+      ]
+    }
+  }
+
+  static async handleAnalyticsCommands(message: string, user: any) {
+    return {
+      text: '📈 آنالیز و گزارشات:\n\n📊 تحلیل عملکرد...\n📋 گزارش‌های تفصیلی...\n📉 تحلیل ریسک...',
+      actions: [{ type: 'navigate', target: 'analytics' }],
+      suggestedActions: [
+        { action: 'generate_report', description: '📄 تولید گزارش', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static async handleHelpCommands(message: string, user: any) {
+    return {
+      text: '❓ راهنما و کمک:\n\n📚 راهنمای کامل سیستم تایتان در دسترس شما:\n\n🎯 **نکات مهم برای کاربران تازه‌کار:**\n\n1️⃣ **شروع کار:** ابتدا پورتفولیو خود را مشاهده کنید\n2️⃣ **تنظیمات:** API صرافی‌ها را پیکربندی کنید\n3️⃣ **هشدارها:** برای ارزهای مهم هشدار تنظیم کنید\n4️⃣ **معاملات:** با معامله دستی شروع کنید\n5️⃣ **اتوماسیون:** پس از تسلط، اتوپایلوت را فعال کنید\n\n💡 **دستورات مفید:**\n• "نمایش پورتفولیو"\n• "وضعیت بازار"\n• "تنظیم هشدار"\n• "شروع معامله"\n• "وضعیت سیستم"',
+      actions: [],
+      suggestedActions: [
+        { action: 'portfolio_guide', description: '📊 راهنمای پورتفولیو', risk_level: 'low' },
+        { action: 'trading_guide', description: '📈 راهنمای معاملات', risk_level: 'low' },
+        { action: 'settings_guide', description: '⚙️ راهنمای تنظیمات', risk_level: 'low' }
+      ]
+    }
+  }
+
+  static getErrorResponse(message: string) {
+    return {
+      text: `⚠️ ${message}\n\nلطفاً دوباره تلاش کنید یا از دستورات ساده‌تر استفاده کنید.`,
+      actions: [],
+      suggestedActions: [
+        { action: 'retry', description: '🔄 تلاش مجدد', risk_level: 'low' },
+        { action: 'help_guide', description: '❓ راهنما', risk_level: 'low' }
+      ]
+    }
+  }
+
+  /**
    * Get comprehensive Artemis system status
    */
   static async getArtemisStatus(userId: string): Promise<ArtemisStatus> {
