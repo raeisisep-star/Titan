@@ -43,6 +43,9 @@ import { ArtemisService } from './services/artemis-service'
 import NewsService from './services/news-service'
 import { AlertsService } from './services/alerts-service'
 
+// Import Manual Trading Routes
+import manualTradingRoutes from './routes/manual-trading-routes'
+
 const app = new Hono()
 
 // Initialize Services
@@ -15389,12 +15392,18 @@ app.get('/api/trading/advanced', authMiddleware, async (c) => {
   }
 })
 
+// Old manual trading routes removed - now using comprehensive implementation in manual-trading-routes.ts
+
 // =============================================================================
-// 1. MANUAL TRADING API ENDPOINTS (📊 معاملات دستی)
+// REMOVED OLD MANUAL TRADING ROUTES - Now using comprehensive implementation in manual-trading-routes.ts
 // =============================================================================
 
-// Get manual trading dashboard data
-app.get('/api/trading/manual/dashboard', authMiddleware, async (c) => {
+// =============================================================================
+// 2. AUTOPILOT SYSTEM API ENDPOINTS (🚀 اتوپایلوت حرفه‌ای)
+// =============================================================================
+
+// Get autopilot dashboard data
+app.get('/api/trading/autopilot/dashboard', authMiddleware, async (c) => {
   try {
     const user = c.get('user')
 
@@ -15518,113 +15527,7 @@ app.get('/api/trading/manual/dashboard', authMiddleware, async (c) => {
   }
 })
 
-// Place a manual trading order
-app.post('/api/trading/manual/order', authMiddleware, async (c) => {
-  try {
-    const user = c.get('user')
-    const { symbol, side, type, quantity, price, stop_price } = await c.req.json()
-
-    if (!symbol || !side || !type || !quantity) {
-      return c.json({
-        success: false,
-        error: 'نماد، نوع سفارش، مقدار و جهت الزامی است'
-      }, 400)
-    }
-
-    const orderId = `ord${Date.now()}`
-    const newOrder = {
-      id: orderId,
-      user_id: user.id,
-      symbol: symbol,
-      side: side, // 'buy' or 'sell'
-      type: type, // 'market', 'limit', 'stop'
-      quantity: parseFloat(quantity),
-      price: price ? parseFloat(price) : null,
-      stop_price: stop_price ? parseFloat(stop_price) : null,
-      status: type === 'market' ? 'filled' : 'pending',
-      filled_quantity: type === 'market' ? parseFloat(quantity) : 0,
-      source: 'manual',
-      created_at: new Date().toISOString()
-    }
-
-    // Calculate estimated cost/proceeds
-    const currentPrice = price || (symbol === 'BTCUSDT' ? 45234 : symbol === 'ETHUSDT' ? 2897 : 95.2)
-    const estimatedValue = parseFloat(quantity) * currentPrice
-    const fees = estimatedValue * 0.001 // 0.1% fee
-
-    return c.json({
-      success: true,
-      data: {
-        order: newOrder,
-        estimatedValue: estimatedValue,
-        fees: fees,
-        total: side === 'buy' ? estimatedValue + fees : estimatedValue - fees
-      },
-      message: `سفارش ${side === 'buy' ? 'خرید' : 'فروش'} ${symbol} با موفقیت ثبت شد`
-    })
-
-  } catch (error) {
-    console.error('Manual Order Error:', error)
-    return c.json({
-      success: false,
-      error: 'خطا در ثبت سفارش'
-    }, 500)
-  }
-})
-
-// Get technical analysis for manual trading
-app.get('/api/trading/manual/analysis/:symbol', authMiddleware, async (c) => {
-  try {
-    const symbol = c.req.param('symbol').toUpperCase()
-    const timeframe = c.req.query('timeframe') || '1h'
-
-    // Mock technical analysis data
-    const technicalData = {
-      symbol: symbol,
-      timeframe: timeframe,
-      indicators: {
-        rsi: {
-          value: Math.random() * 100,
-          signal: Math.random() > 0.5 ? 'overbought' : Math.random() > 0.3 ? 'oversold' : 'neutral'
-        },
-        macd: {
-          macd: (Math.random() - 0.5) * 100,
-          signal: (Math.random() - 0.5) * 80,
-          histogram: (Math.random() - 0.5) * 20,
-          trend: Math.random() > 0.5 ? 'bullish' : 'bearish'
-        },
-        bollinger: {
-          upper: 46000,
-          middle: 45234,
-          lower: 44500,
-          position: Math.random() > 0.5 ? 'upper' : Math.random() > 0.3 ? 'lower' : 'middle'
-        },
-        moving_averages: {
-          sma_20: 45100,
-          sma_50: 44800,
-          sma_200: 43500,
-          trend: 'bullish' // Above all MAs
-        }
-      },
-      overall_signal: ['strong_buy', 'buy', 'neutral', 'sell', 'strong_sell'][Math.floor(Math.random() * 5)],
-      confidence: Math.random() * 0.4 + 0.6, // 0.6 to 1.0
-      timestamp: new Date().toISOString()
-    }
-
-    return c.json({
-      success: true,
-      data: technicalData,
-      message: `تحلیل تکنیکال ${symbol} دریافت شد`
-    })
-
-  } catch (error) {
-    console.error('Technical Analysis Error:', error)
-    return c.json({
-      success: false,
-      error: 'خطا در دریافت تحلیل تکنیکال'
-    }, 500)
-  }
-})
+// All old manual trading routes have been removed and replaced with comprehensive implementation in manual-trading-routes.ts
 
 // =============================================================================
 // 2. AUTOPILOT SYSTEM API ENDPOINTS (🚀 اتوپایلوت حرفه‌ای)
@@ -32499,6 +32402,13 @@ function getTimeframeDaysFromString(timeframe: string): number {
     default: return 7
   }
 }
+
+// Mount manual trading routes
+app.route('/api/trading/manual', manualTradingRoutes)
+
+// Import and mount autopilot routes
+import autopilotRoutes from './routes/autopilot'
+app.route('/api/trading/autopilot', autopilotRoutes)
 
 // Mount the original app routes to appWithD1
 appWithD1.route('/', app);

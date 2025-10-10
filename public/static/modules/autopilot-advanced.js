@@ -89,6 +89,33 @@ class AutopilotAdvancedModule {
                 </div>
             </div>
 
+            <!-- Performance Charts Section -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+                <!-- Profit/Loss Chart -->
+                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">📈 سود و زیان</h3>
+                    <div class="h-64">
+                        <canvas id="profit-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Strategies Performance Chart -->
+                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">🧠 عملکرد استراتژی‌ها</h3>
+                    <div class="h-64">
+                        <canvas id="strategies-chart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Trading Volume Chart -->
+                <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                    <h3 class="text-lg font-bold text-white mb-4">📊 حجم معاملات</h3>
+                    <div class="h-64">
+                        <canvas id="volume-chart"></canvas>
+                    </div>
+                </div>
+            </div>
+
             <!-- Main Autopilot Interface -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- Active Strategies Panel (Left) -->
@@ -357,6 +384,11 @@ class AutopilotAdvancedModule {
         }
     }
 
+    // Initialize method for compatibility with module loader
+    async initialize() {
+        return this.init();
+    }
+
     showLoadingState() {
         // Show loading indicators
         const loadingElements = [
@@ -470,7 +502,7 @@ class AutopilotAdvancedModule {
             }
 
             // Fetch strategies from backend API
-            const response = await fetch('/api/trading/strategies', {
+            const response = await fetch('/api/trading/autopilot/strategies', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -507,9 +539,20 @@ class AutopilotAdvancedModule {
 
     async loadCurrentTarget() {
         try {
-            const response = await axios.get('/api/autopilot/target-trade');
-            if (response.data.success) {
-                this.targetTrade = response.data.targetTrade;
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/target-trade', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.targetTrade = result.targetTrade;
                 this.updateTargetDisplay();
             }
         } catch (error) {
@@ -684,12 +727,23 @@ class AutopilotAdvancedModule {
         }
 
         try {
-            const response = await axios.post('/api/autopilot/emergency-stop');
-            if (response.data.success) {
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/emergency-stop', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
                 this.config.enabled = false;
                 this.config.emergencyStop = true;
                 this.updateUI();
-                this.showNotification(response.data.message, 'warning');
+                this.showNotification(result.message, 'warning');
             }
         } catch (error) {
             console.error('Error in emergency stop:', error);
@@ -707,20 +761,36 @@ class AutopilotAdvancedModule {
         }
 
         try {
-            const response = await axios.post('/api/autopilot/target-trade', {
-                initialAmount,
-                targetAmount,
-                strategy: 'Multi-Strategy AI'
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                this.showNotification('لطفاً ابتدا وارد شوید', 'error');
+                return;
+            }
+            
+            const response = await fetch('/api/trading/autopilot/target-trade', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    initialAmount,
+                    targetAmount,
+                    strategy: 'Multi-Strategy AI'
+                })
             });
 
-            if (response.data.success) {
-                this.targetTrade = response.data.targetTrade;
+            const result = await response.json();
+            if (result.success) {
+                this.targetTrade = result.targetTrade;
                 this.updateTargetDisplay();
-                this.showNotification(response.data.message, 'success');
+                this.showNotification(result.message, 'success');
                 
                 // Clear inputs
                 document.getElementById('initial-amount').value = '';
                 document.getElementById('target-amount-input').value = '';
+            } else {
+                this.showNotification(result.error || 'خطا در ایجاد هدف', 'error');
             }
         } catch (error) {
             console.error('Error creating target trade:', error);
@@ -730,12 +800,23 @@ class AutopilotAdvancedModule {
 
     async toggleStrategy(strategyId) {
         try {
-            const response = await axios.post(`/api/autopilot/strategies/${strategyId}/toggle`);
-            if (response.data.success) {
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch(`/api/trading/autopilot/strategies/${strategyId}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
                 // Update local strategy state
                 const strategy = this.strategies.find(s => s.id === strategyId);
                 if (strategy) {
-                    strategy.enabled = response.data.strategy.enabled;
+                    strategy.enabled = result.strategy.enabled;
                     
                     // Update the strategy card UI
                     const strategyCard = document.querySelector(`#strategy-${strategyId}`).closest('.strategy-card');
@@ -753,7 +834,7 @@ class AutopilotAdvancedModule {
                 }
                 
                 this.updateActiveStrategiesCount();
-                this.showNotification(response.data.message, 'success');
+                this.showNotification(result.message, 'success');
             }
         } catch (error) {
             console.error('Error toggling strategy:', error);
@@ -788,9 +869,20 @@ class AutopilotAdvancedModule {
 
     async loadSignals() {
         try {
-            const response = await axios.get('/api/autopilot/signals');
-            if (response.data.success) {
-                this.signals = response.data.signals;
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/signals', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.signals = result.signals;
                 this.renderSignals();
             }
         } catch (error) {
@@ -941,11 +1033,21 @@ class AutopilotAdvancedModule {
 
     async updateRiskLevel(level) {
         try {
-            const response = await axios.post('/api/autopilot/config', { 
-                riskLevel: parseInt(level) 
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/config', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ riskLevel: parseInt(level) })
             });
-            if (response.data.success) {
-                this.config = response.data.config;
+            
+            const result = await response.json();
+            if (result.success) {
+                this.config = result.config;
                 const riskNames = {
                     '1': 'محافظه‌کار',
                     '5': 'متعادل', 
@@ -987,9 +1089,20 @@ class AutopilotAdvancedModule {
     // Enhanced real-time update methods
     async loadPerformanceMetrics() {
         try {
-            const response = await axios.get('/api/autopilot/performance');
-            if (response.data.success) {
-                this.updatePerformanceMetrics(response.data.metrics);
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/performance', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.updatePerformanceMetrics(result.metrics);
             }
         } catch (error) {
             console.error('Error loading performance metrics:', error);
@@ -998,9 +1111,20 @@ class AutopilotAdvancedModule {
 
     async loadAIStatus() {
         try {
-            const response = await axios.get('/api/autopilot/ai-status');
-            if (response.data.success) {
-                this.updateAIStatus(response.data.aiStatus);
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/ai-status', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.updateAIStatus(result.aiStatus);
             }
         } catch (error) {
             console.error('Error loading AI status:', error);
@@ -1035,6 +1159,196 @@ class AutopilotAdvancedModule {
         if (balanceEl && metrics.availableBalance) {
             balanceEl.textContent = `$${metrics.availableBalance.toLocaleString()}`;
         }
+
+        // Update performance charts
+        this.updatePerformanceCharts(metrics);
+    }
+
+    updatePerformanceCharts(metrics) {
+        // Create or update profit/loss chart
+        this.createProfitChart(metrics);
+        
+        // Create or update strategies performance chart  
+        this.createStrategiesChart(metrics);
+        
+        // Create or update trading volume chart
+        this.createVolumeChart(metrics);
+    }
+
+    createProfitChart(metrics) {
+        const canvas = document.getElementById('profit-chart');
+        if (!canvas) return;
+
+        // Destroy existing chart
+        if (this.profitChart) {
+            this.profitChart.destroy();
+        }
+
+        // Generate sample profit data for demonstration
+        const labels = [];
+        const profitData = [];
+        const now = new Date();
+        
+        for (let i = 29; i >= 0; i--) {
+            const date = new Date(now);
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('fa-IR', { month: 'short', day: 'numeric' }));
+            
+            // Generate realistic profit data
+            const baseProfit = (metrics.dailyProfit || 1000) * (0.5 + Math.random());
+            const variation = (Math.random() - 0.5) * 0.4; // ±20% variation
+            profitData.push(baseProfit * (1 + variation));
+        }
+
+        this.profitChart = new Chart(canvas, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'سود روزانه ($)',
+                    data: profitData,
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                    },
+                    y: {
+                        ticks: { 
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        },
+                        grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                    }
+                }
+            }
+        });
+    }
+
+    createStrategiesChart(metrics) {
+        const canvas = document.getElementById('strategies-chart');
+        if (!canvas) return;
+
+        // Destroy existing chart
+        if (this.strategiesChart) {
+            this.strategiesChart.destroy();
+        }
+
+        // Get strategy names and performance data
+        const strategyLabels = this.strategies.slice(0, 6).map(s => s.name);
+        const performanceData = this.strategies.slice(0, 6).map(s => s.performance_roi || 0);
+        const colors = [
+            '#3b82f6', '#ef4444', '#10b981', 
+            '#f59e0b', '#8b5cf6', '#06b6d4'
+        ];
+
+        this.strategiesChart = new Chart(canvas, {
+            type: 'doughnut',
+            data: {
+                labels: strategyLabels,
+                datasets: [{
+                    data: performanceData,
+                    backgroundColor: colors,
+                    borderColor: colors.map(c => c + '80'),
+                    borderWidth: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            color: '#ffffff',
+                            padding: 10
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    createVolumeChart(metrics) {
+        const canvas = document.getElementById('volume-chart');
+        if (!canvas) return;
+
+        // Destroy existing chart
+        if (this.volumeChart) {
+            this.volumeChart.destroy();
+        }
+
+        // Generate sample volume data
+        const labels = [];
+        const volumeData = [];
+        
+        for (let i = 6; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(date.getDate() - i);
+            labels.push(date.toLocaleDateString('fa-IR', { weekday: 'short' }));
+            
+            // Generate realistic volume data
+            const baseVolume = (metrics.tradingVolume || 50000) * (0.7 + Math.random() * 0.6);
+            volumeData.push(Math.round(baseVolume));
+        }
+
+        this.volumeChart = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'حجم معاملات ($)',
+                    data: volumeData,
+                    backgroundColor: 'rgba(59, 130, 246, 0.8)',
+                    borderColor: '#3b82f6',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        labels: {
+                            color: '#ffffff'
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        ticks: { color: '#9ca3af' },
+                        grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                    },
+                    y: {
+                        ticks: { 
+                            color: '#9ca3af',
+                            callback: function(value) {
+                                return '$' + (value / 1000).toFixed(0) + 'K';
+                            }
+                        },
+                        grid: { color: 'rgba(156, 163, 175, 0.1)' }
+                    }
+                }
+            }
+        });
     }
 
     updateAIStatus(aiStatus) {
@@ -1057,9 +1371,21 @@ class AutopilotAdvancedModule {
 
     async changePerformanceMode(mode) {
         try {
-            const response = await axios.post('/api/autopilot/config', { mode });
-            if (response.data.success) {
-                this.config = response.data.config;
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/config', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ mode })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.config = result.config;
                 this.showNotification(`حالت عملکرد به ${this.getModeName(mode)} تغییر کرد`, 'success');
             }
         } catch (error) {
@@ -1079,9 +1405,21 @@ class AutopilotAdvancedModule {
 
     async updateBudget(budget) {
         try {
-            const response = await axios.post('/api/autopilot/config', { budget: parseFloat(budget) });
-            if (response.data.success) {
-                this.config = response.data.config;
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) return;
+            
+            const response = await fetch('/api/trading/autopilot/config', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ budget: parseFloat(budget) })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                this.config = result.config;
                 this.showNotification('بودجه بروزرسانی شد', 'success');
             }
         } catch (error) {

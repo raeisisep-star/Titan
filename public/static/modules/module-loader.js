@@ -12,6 +12,7 @@ class ModuleLoader {
         this.moduleClassMap = {
             'dashboard': 'DashboardModule',
             'trading': 'TradingModule', 
+            'autopilot-advanced': 'AutopilotAdvancedModule',
             'portfolio': 'PortfolioModule',
             'artemis': 'ArtemisModule',
             'watchlist': 'WatchlistModule',

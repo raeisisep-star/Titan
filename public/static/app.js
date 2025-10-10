@@ -371,6 +371,10 @@ class TitanApp {
                                     <i class="fas fa-chart-line ml-1"></i>
                                     معاملات
                                 </a>
+                                <a href="#" onclick="app.loadModule('autopilot-advanced')" class="nav-link">
+                                    <i class="fas fa-rocket ml-1 text-green-400"></i>
+                                    🚀 اتوپایلوت حرفه‌ای
+                                </a>
                                 <a href="#" onclick="app.loadModule('portfolio')" class="nav-link">
                                     <i class="fas fa-briefcase ml-1"></i>
                                     پورتفولیو
@@ -602,6 +606,10 @@ class TitanApp {
                     <a href="#" onclick="app.loadModule('trading'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-chart-line"></i>
                         <span>معاملات</span>
+                    </a>
+                    <a href="#" onclick="app.loadModule('autopilot-advanced'); app.closeMobileMenu();" class="mobile-nav-link">
+                        <i class="fas fa-rocket text-green-400"></i>
+                        <span>🚀 اتوپایلوت حرفه‌ای</span>
                     </a>
                     <a href="#" onclick="app.loadModule('portfolio'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-briefcase"></i>
@@ -2075,6 +2083,35 @@ class TitanApp {
                         `;
                     }
                     break;
+
+                case 'autopilot-advanced':
+                    if (this.moduleLoader && this.moduleLoader.isEnabled) {
+                        try {
+                            console.log('📡 Loading Autopilot Advanced module...');
+                            const autopilotModule = await this.moduleLoader.loadModule('autopilot-advanced', {
+                                showLoading: true
+                            });
+                            
+                            if (autopilotModule) {
+                                console.log('✅ Autopilot Advanced module loaded, getting content');
+                                mainContent.innerHTML = await autopilotModule.getContent();
+                                console.log('✅ Autopilot content loaded, initializing');
+                                await autopilotModule.initialize();
+                                console.log('✅ Autopilot Advanced module initialized successfully');
+                                // Set global reference for UI interactions
+                                window.autopilotAdvancedModule = autopilotModule;
+                            } else {
+                                throw new Error('Autopilot Advanced module returned null');
+                            }
+                        } catch (error) {
+                            console.error('Error loading Autopilot Advanced module:', error);
+                            this.showAlert('خطا در بارگذاری ماژول اتوپایلوت حرفه‌ای', 'error');
+                        }
+                    } else {
+                        this.showAlert('Module loader غیرفعال است', 'error');
+                    }
+                    break;
+                    
                 default:
                     this.showAlert(`ماژول ${moduleName} یافت نشد`, 'error');
             }

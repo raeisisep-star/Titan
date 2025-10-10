@@ -36,6 +36,14 @@ class ManualTradingAdvancedModule {
                     <div>
                         <h1 class="text-2xl font-bold text-white mb-2">📊 معاملات دستی حرفه‌ای</h1>
                         <p class="text-blue-100">سیستم معاملات دستی مجهز به هوش مصنوعی و تحلیل پیشرفته</p>
+                        <div class="flex items-center gap-4 mt-2">
+                            <div id="trading-mode-indicator" class="text-sm">
+                                <span class="text-yellow-400">📊 حالت شبیه‌سازی</span>
+                            </div>
+                            <div id="exchange-status" class="text-sm">
+                                <span class="text-gray-400">در حال بارگذاری...</span>
+                            </div>
+                        </div>
                     </div>
                     <div class="grid grid-cols-3 gap-4 text-center">
                         <div>
@@ -440,6 +448,7 @@ class ManualTradingAdvancedModule {
         try {
             // Load initial data
             await Promise.all([
+                this.loadExchangeSettings(),
                 this.loadPortfolioData(),
                 this.loadPerformanceMetrics(),
                 this.initializeCharts(),
@@ -665,6 +674,75 @@ class ManualTradingAdvancedModule {
                 </div>
             </div>
         `);
+    }
+
+    // Exchange Settings Integration
+    async loadExchangeSettings() {
+        try {
+            console.log('🔧 Loading exchange settings...');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                console.warn('Authentication token not found for exchange settings');
+                return null;
+            }
+
+            const response = await fetch('/api/trading/manual/exchanges', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Exchange settings request failed: ${response.status}`);
+            }
+
+            const result = await response.json();
+            
+            if (result.success) {
+                this.exchangeSettings = result.data;
+                console.log('✅ Exchange settings loaded:', this.exchangeSettings);
+                
+                // Update UI with exchange status
+                this.updateExchangeStatusUI();
+                
+                return this.exchangeSettings;
+            } else {
+                console.warn('⚠️ Exchange settings load failed:', result.error);
+                // Use fallback data if available
+                this.exchangeSettings = result.fallback_data || null;
+                return this.exchangeSettings;
+            }
+            
+        } catch (error) {
+            console.error('❌ Exchange settings error:', error);
+            this.exchangeSettings = null;
+            return null;
+        }
+    }
+
+    updateExchangeStatusUI() {
+        if (!this.exchangeSettings) return;
+        
+        // Update trading mode indicator
+        const realTradingEnabled = this.exchangeSettings.real_trading_enabled;
+        const tradingModeEl = document.getElementById('trading-mode-indicator');
+        if (tradingModeEl) {
+            tradingModeEl.innerHTML = realTradingEnabled ? 
+                '<span class="text-green-400">🔗 معاملات واقعی</span>' : 
+                '<span class="text-yellow-400">📊 حالت شبیه‌سازی</span>';
+        }
+
+        // Update exchange connection status
+        const exchangeStatusEl = document.getElementById('exchange-status');
+        if (exchangeStatusEl) {
+            const totalConnections = this.exchangeSettings.total_connections;
+            exchangeStatusEl.innerHTML = `
+                <span class="text-gray-400">${totalConnections} صرافی متصل</span>
+            `;
+        }
     }
 
     // Helper Methods
