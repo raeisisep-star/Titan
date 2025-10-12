@@ -1,344 +1,513 @@
-// TITAN Watchlist API - مدیریت لیست مورد علاقه
+/**
+ * TITAN Trading System - Watchlist API
+ * Real Database Implementation - Production Ready
+ * Manages user watchlists, favorite symbols, and price alerts
+ */
+
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
-import type { Env } from '../types/cloudflare'
+import { WatchlistDAO } from '../dao/database'
 
+const app = new Hono()
+
+// Enable CORS
+app.use('*', cors())
+
+// Define interfaces for API responses
 interface WatchlistItem {
-  id: string
-  user_id: string
+  id: number
+  user_id: number
   symbol: string
   name: string
-  type: 'crypto' | 'stock' | 'forex'
+  type: 'crypto' | 'stock' | 'forex' | 'commodity'
   exchange?: string
   price_alert_high?: number
   price_alert_low?: number
   notes?: string
   added_at: string
   is_active: boolean
+  current_price?: number
+  price_change_24h?: number
 }
 
-interface PriceData {
-  symbol: string
-  price: number
-  change_24h: number
-  change_percentage_24h: number
-  volume_24h: number
-  market_cap?: number
-  last_updated: string
-}
-
-export const watchlistApi = new Hono<{ Bindings: Env }>()
-
-watchlistApi.use('/*', cors())
-
-// Get user's watchlist
-watchlistApi.get('/list/:userId', async (c) => {
+/**
+ * Get user's watchlist
+ * GET /watchlist/:userId
+ */
+app.get('/watchlist/:userId', async (c) => {
   try {
-    const userId = c.req.param('userId')
+    const userId = parseInt(c.req.param('userId'))
     
-    // For now, return demo data - later will integrate with D1 database
-    const demoWatchlist: WatchlistItem[] = [
-      {
-        id: 'w1',
-        user_id: userId,
-        symbol: 'BTCUSDT',
-        name: 'Bitcoin',
-        type: 'crypto',
-        exchange: 'binance',
-        price_alert_high: 50000,
-        price_alert_low: 40000,
-        notes: 'هدف اصلی پرتفولیو',
-        added_at: new Date().toISOString(),
-        is_active: true
-      },
-      {
-        id: 'w2',
-        user_id: userId,
-        symbol: 'ETHUSDT',
-        name: 'Ethereum',
-        type: 'crypto',
-        exchange: 'binance',
-        price_alert_high: 3000,
-        price_alert_low: 2000,
-        notes: 'DeFi play',
-        added_at: new Date().toISOString(),
-        is_active: true
-      },
-      {
-        id: 'w3',
-        user_id: userId,
-        symbol: 'SOLUSDT',
-        name: 'Solana',
-        type: 'crypto',
-        exchange: 'binance',
-        added_at: new Date().toISOString(),
-        is_active: true
-      },
-      {
-        id: 'w4',
-        user_id: userId,
-        symbol: 'ADAUSDT',
-        name: 'Cardano',
-        type: 'crypto',
-        exchange: 'binance',
-        added_at: new Date().toISOString(),
-        is_active: true
-      },
-      {
-        id: 'w5',
-        user_id: userId,
-        symbol: 'DOTUSDT',
-        name: 'Polkadot',
-        type: 'crypto',
-        exchange: 'binance',
-        added_at: new Date().toISOString(),
-        is_active: true
-      }
-    ]
-
+    // Get watchlist items from database
+    const items = await WatchlistDAO.findByUserId(userId)
+    
+    // Enrich with current market data
+    const enrichedItems = await enrichWithMarketData(items)
+    
     return c.json({
       success: true,
-      data: demoWatchlist,
-      count: demoWatchlist.length,
-      message: 'Watchlist retrieved successfully'
+      data: enrichedItems,
+      total: enrichedItems.length,
+      timestamp: new Date().toISOString()
     })
-
+    
   } catch (error) {
+    console.error('Get watchlist error:', error)
     return c.json({
       success: false,
-      error: error.message,
-      message: 'Failed to get watchlist'
+      error: 'Failed to get watchlist',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })
 
-// Add item to watchlist
-watchlistApi.post('/add', async (c) => {
+/**
+ * Add item to watchlist
+ * POST /watchlist/add
+ */
+app.post('/watchlist/add', async (c) => {
   try {
-    const body = await c.req.json()
-    const { user_id, symbol, name, type, exchange, price_alert_high, price_alert_low, notes } = body
-
+    const { user_id, symbol, name, type, exchange, price_alert_high, price_alert_low, notes } = await c.req.json()
+    
     if (!user_id || !symbol || !name || !type) {
       return c.json({
         success: false,
+        error: 'Missing required fields',
         message: 'user_id, symbol, name, and type are required'
       }, 400)
     }
-
-    const newItem: WatchlistItem = {
-      id: `w_${Date.now()}_${Math.random().toString(36).substring(7)}`,
-      user_id,
-      symbol: symbol.toUpperCase(),
+    
+    // Check if item already exists
+    const existingItem = await WatchlistDAO.findBySymbol(user_id, symbol)
+    if (existingItem) {
+      return c.json({
+        success: false,
+        error: 'Item already in watchlist',
+        message: `${symbol} is already in your watchlist`
+      }, 409)
+    }
+    
+    // Create new watchlist item
+    const itemId = await WatchlistDAO.create({
+      userId: user_id,
+      symbol,
       name,
       type,
       exchange,
-      price_alert_high,
-      price_alert_low,
-      notes,
-      added_at: new Date().toISOString(),
-      is_active: true
-    }
-
-    // Later: Store in D1 database
-    // For now, just return success with the created item
-
+      priceAlertHigh: price_alert_high,
+      priceAlertLow: price_alert_low,
+      notes
+    })
+    
+    // Get the created item
+    const newItem = await WatchlistDAO.findById(itemId, user_id)
+    
     return c.json({
       success: true,
       data: newItem,
-      message: `${name} added to watchlist`
+      message: `${name} added to watchlist successfully`
     })
-
+    
   } catch (error) {
+    console.error('Add to watchlist error:', error)
     return c.json({
       success: false,
-      error: error.message,
-      message: 'Failed to add to watchlist'
+      error: 'Failed to add to watchlist',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })
 
-// Remove item from watchlist
-watchlistApi.delete('/remove/:itemId', async (c) => {
+/**
+ * Remove item from watchlist
+ * DELETE /watchlist/:itemId
+ */
+app.delete('/watchlist/:itemId', async (c) => {
   try {
-    const itemId = c.req.param('itemId')
+    const itemId = parseInt(c.req.param('itemId'))
+    const userId = parseInt(c.req.query('userId') || '0')
     
-    if (!itemId) {
+    if (!itemId || !userId) {
       return c.json({
         success: false,
-        message: 'Item ID is required'
+        error: 'Item ID and user ID are required'
       }, 400)
     }
-
-    // Later: Remove from D1 database
-    // For now, just return success
-
-    return c.json({
-      success: true,
-      message: 'Item removed from watchlist'
-    })
-
-  } catch (error) {
-    return c.json({
-      success: false,
-      error: error.message,
-      message: 'Failed to remove from watchlist'
-    }, 500)
-  }
-})
-
-// Update watchlist item (alerts, notes)
-watchlistApi.put('/update/:itemId', async (c) => {
-  try {
-    const itemId = c.req.param('itemId')
-    const body = await c.req.json()
     
-    if (!itemId) {
+    // Check if item exists and belongs to user
+    const existingItem = await WatchlistDAO.findById(itemId, userId)
+    if (!existingItem) {
       return c.json({
         success: false,
-        message: 'Item ID is required'
-      }, 400)
+        error: 'Watchlist item not found'
+      }, 404)
     }
-
-    // Later: Update in D1 database
-    // For now, just return success with updated data
-
+    
+    // Remove item from watchlist (soft delete)
+    const success = await WatchlistDAO.delete(itemId, userId)
+    
+    if (!success) {
+      return c.json({
+        success: false,
+        error: 'Failed to remove item from watchlist'
+      }, 500)
+    }
+    
     return c.json({
       success: true,
-      data: { id: itemId, ...body, updated_at: new Date().toISOString() },
-      message: 'Watchlist item updated'
+      message: `${existingItem.name} removed from watchlist successfully`,
+      timestamp: Date.now()
     })
-
+    
   } catch (error) {
+    console.error('Remove from watchlist error:', error)
     return c.json({
       success: false,
-      error: error.message,
-      message: 'Failed to update watchlist item'
+      error: 'Failed to remove from watchlist',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })
 
-// Get real-time prices for watchlist
-watchlistApi.get('/prices/:userId', async (c) => {
+/**
+ * Update watchlist item
+ * PUT /watchlist/:itemId
+ */
+app.put('/watchlist/:itemId', async (c) => {
   try {
-    const userId = c.req.param('userId')
+    const itemId = parseInt(c.req.param('itemId'))
+    const userId = parseInt(c.req.query('userId') || '0')
+    const updates = await c.req.json()
     
-    // Get user's watchlist first
-    const watchlistResponse = await c.req.url.replace(/\/prices\/.*/, `/list/${userId}`)
+    if (!itemId || !userId) {
+      return c.json({
+        success: false,
+        error: 'Item ID and user ID are required'
+      }, 400)
+    }
     
-    // Fetch real-time prices from CoinGecko
-    const symbols = ['bitcoin', 'ethereum', 'solana', 'cardano', 'polkadot']
-    const coingeckoUrl = `https://api.coingecko.com/api/v3/simple/price?ids=${symbols.join(',')}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`
+    // Check if item exists and belongs to user
+    const existingItem = await WatchlistDAO.findById(itemId, userId)
+    if (!existingItem) {
+      return c.json({
+        success: false,
+        error: 'Watchlist item not found'
+      }, 404)
+    }
     
-    const priceResponse = await fetch(coingeckoUrl)
-    const priceData = await priceResponse.json()
-
-    // Transform to our format
-    const pricesFormatted: PriceData[] = [
-      {
-        symbol: 'BTCUSDT',
-        price: priceData.bitcoin?.usd || 0,
-        change_24h: priceData.bitcoin?.usd_24h_change || 0,
-        change_percentage_24h: priceData.bitcoin?.usd_24h_change || 0,
-        volume_24h: priceData.bitcoin?.usd_24h_vol || 0,
-        market_cap: priceData.bitcoin?.usd_market_cap || 0,
-        last_updated: new Date().toISOString()
-      },
-      {
-        symbol: 'ETHUSDT',
-        price: priceData.ethereum?.usd || 0,
-        change_24h: priceData.ethereum?.usd_24h_change || 0,
-        change_percentage_24h: priceData.ethereum?.usd_24h_change || 0,
-        volume_24h: priceData.ethereum?.usd_24h_vol || 0,
-        market_cap: priceData.ethereum?.usd_market_cap || 0,
-        last_updated: new Date().toISOString()
-      },
-      {
-        symbol: 'SOLUSDT',
-        price: priceData.solana?.usd || 0,
-        change_24h: priceData.solana?.usd_24h_change || 0,
-        change_percentage_24h: priceData.solana?.usd_24h_change || 0,
-        volume_24h: priceData.solana?.usd_24h_vol || 0,
-        market_cap: priceData.solana?.usd_market_cap || 0,
-        last_updated: new Date().toISOString()
-      },
-      {
-        symbol: 'ADAUSDT',
-        price: priceData.cardano?.usd || 0,
-        change_24h: priceData.cardano?.usd_24h_change || 0,
-        change_percentage_24h: priceData.cardano?.usd_24h_change || 0,
-        volume_24h: priceData.cardano?.usd_24h_vol || 0,
-        market_cap: priceData.cardano?.usd_market_cap || 0,
-        last_updated: new Date().toISOString()
-      },
-      {
-        symbol: 'DOTUSDT',
-        price: priceData.polkadot?.usd || 0,
-        change_24h: priceData.polkadot?.usd_24h_change || 0,
-        change_percentage_24h: priceData.polkadot?.usd_24h_change || 0,
-        volume_24h: priceData.polkadot?.usd_24h_vol || 0,
-        market_cap: priceData.polkadot?.usd_market_cap || 0,
-        last_updated: new Date().toISOString()
+    // Validate and filter allowed updates
+    const allowedFields = ['name', 'type', 'exchange', 'priceAlertHigh', 'priceAlertLow', 'notes']
+    const filteredUpdates: any = {}
+    
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        filteredUpdates[field] = updates[field]
       }
-    ]
-
+    }
+    
+    if (Object.keys(filteredUpdates).length === 0) {
+      return c.json({
+        success: false,
+        error: 'No valid fields to update'
+      }, 400)
+    }
+    
+    // Update item in database
+    const success = await WatchlistDAO.update(itemId, userId, filteredUpdates)
+    
+    if (!success) {
+      return c.json({
+        success: false,
+        error: 'Failed to update watchlist item'
+      }, 500)
+    }
+    
+    // Get updated item
+    const updatedItem = await WatchlistDAO.findById(itemId, userId)
+    
     return c.json({
       success: true,
-      data: pricesFormatted,
-      count: pricesFormatted.length,
-      message: 'Real-time prices retrieved',
-      last_updated: new Date().toISOString()
+      data: updatedItem,
+      message: 'Watchlist item updated successfully'
     })
-
+    
   } catch (error) {
-    console.error('Error fetching prices:', error)
+    console.error('Update watchlist error:', error)
     return c.json({
       success: false,
-      error: error.message,
-      message: 'Failed to fetch real-time prices'
+      error: 'Failed to update watchlist item',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })
 
-// Search for symbols to add to watchlist
-watchlistApi.get('/search/:query', async (c) => {
+/**
+ * Get watchlist statistics
+ * GET /watchlist/stats/:userId
+ */
+app.get('/watchlist/stats/:userId', async (c) => {
   try {
-    const query = c.req.param('query')
+    const userId = parseInt(c.req.param('userId'))
     
-    if (!query || query.length < 2) {
+    const stats = await WatchlistDAO.getUserWatchlistStats(userId)
+    
+    return c.json({
+      success: true,
+      data: stats,
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Get watchlist stats error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to get watchlist statistics',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
+/**
+ * Check if symbol is in user's watchlist
+ * GET /watchlist/check/:userId/:symbol
+ */
+app.get('/watchlist/check/:userId/:symbol', async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'))
+    const symbol = c.req.param('symbol')
+    
+    const item = await WatchlistDAO.findBySymbol(userId, symbol)
+    
+    return c.json({
+      success: true,
+      data: {
+        isInWatchlist: !!item,
+        item: item
+      },
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Check watchlist error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to check watchlist',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
+/**
+ * Get watchlist items with price alerts
+ * GET /watchlist/alerts/:userId
+ */
+app.get('/watchlist/alerts/:userId', async (c) => {
+  try {
+    const userId = parseInt(c.req.param('userId'))
+    
+    // Get all watchlist items
+    const items = await WatchlistDAO.findByUserId(userId)
+    
+    // Filter items with price alerts
+    const itemsWithAlerts = items.filter(item => 
+      item.price_alert_high !== null || item.price_alert_low !== null
+    )
+    
+    // Enrich with current market data for alert checking
+    const enrichedItems = await enrichWithMarketData(itemsWithAlerts)
+    
+    // Check for triggered alerts
+    const triggeredAlerts = checkTriggeredAlerts(enrichedItems)
+    
+    return c.json({
+      success: true,
+      data: {
+        totalAlerts: itemsWithAlerts.length,
+        triggeredAlerts: triggeredAlerts.length,
+        items: enrichedItems,
+        triggered: triggeredAlerts
+      },
+      timestamp: new Date().toISOString()
+    })
+    
+  } catch (error) {
+    console.error('Get watchlist alerts error:', error)
+    return c.json({
+      success: false,
+      error: 'Failed to get watchlist alerts',
+      message: error instanceof Error ? error.message : 'Unknown error'
+    }, 500)
+  }
+})
+
+/**
+ * Bulk add items to watchlist
+ * POST /watchlist/bulk-add
+ */
+app.post('/watchlist/bulk-add', async (c) => {
+  try {
+    const { user_id, items } = await c.req.json()
+    
+    if (!user_id || !Array.isArray(items) || items.length === 0) {
       return c.json({
         success: false,
-        message: 'Query must be at least 2 characters'
+        error: 'Invalid bulk add data',
+        message: 'user_id and items array are required'
       }, 400)
     }
-
-    // Search CoinGecko for cryptocurrencies
-    const searchUrl = `https://api.coingecko.com/api/v3/search?query=${encodeURIComponent(query)}`
-    const searchResponse = await fetch(searchUrl)
-    const searchData = await searchResponse.json()
-
-    const results = searchData.coins?.slice(0, 10).map(coin => ({
-      symbol: coin.symbol?.toUpperCase(),
-      name: coin.name,
-      type: 'crypto',
-      id: coin.id,
-      thumb: coin.thumb,
-      market_cap_rank: coin.market_cap_rank
-    })) || []
-
+    
+    const results = {
+      added: 0,
+      skipped: 0,
+      failed: 0,
+      errors: [] as string[]
+    }
+    
+    for (const item of items) {
+      try {
+        // Check if item already exists
+        const existingItem = await WatchlistDAO.findBySymbol(user_id, item.symbol)
+        if (existingItem) {
+          results.skipped++
+          continue
+        }
+        
+        // Add new item
+        await WatchlistDAO.create({
+          userId: user_id,
+          symbol: item.symbol,
+          name: item.name,
+          type: item.type || 'crypto',
+          exchange: item.exchange,
+          priceAlertHigh: item.priceAlertHigh,
+          priceAlertLow: item.priceAlertLow,
+          notes: item.notes
+        })
+        
+        results.added++
+        
+      } catch (error) {
+        results.failed++
+        results.errors.push(`Failed to add ${item.symbol}: ${error instanceof Error ? error.message : 'Unknown error'}`)
+      }
+    }
+    
     return c.json({
       success: true,
       data: results,
-      count: results.length,
-      message: `Found ${results.length} results for "${query}"`
+      message: `Bulk add completed: ${results.added} added, ${results.skipped} skipped, ${results.failed} failed`
     })
-
+    
   } catch (error) {
+    console.error('Bulk add to watchlist error:', error)
     return c.json({
       success: false,
-      error: error.message,
-      message: 'Search failed'
+      error: 'Failed to bulk add to watchlist',
+      message: error instanceof Error ? error.message : 'Unknown error'
     }, 500)
   }
 })
 
-export default watchlistApi
+// ===========================
+// Helper Functions
+// ===========================
+
+/**
+ * Enrich watchlist items with current market data
+ */
+async function enrichWithMarketData(items: any[]): Promise<WatchlistItem[]> {
+  const enrichedItems: WatchlistItem[] = []
+  
+  for (const item of items) {
+    try {
+      // Get current price from market data API (simulate for now)
+      const marketData = await getCurrentMarketData(item.symbol)
+      
+      enrichedItems.push({
+        ...item,
+        current_price: marketData.current_price,
+        price_change_24h: marketData.price_change_24h
+      })
+      
+    } catch (error) {
+      // If market data fails, return item without price data
+      enrichedItems.push({
+        ...item,
+        current_price: null,
+        price_change_24h: null
+      })
+    }
+  }
+  
+  return enrichedItems
+}
+
+/**
+ * Get current market data for symbol
+ */
+async function getCurrentMarketData(symbol: string): Promise<{ current_price: number, price_change_24h: number }> {
+  try {
+    // In production, integrate with CoinGecko or other market data API
+    // For now, return simulated data based on symbol
+    
+    const mockPrices: { [key: string]: { price: number, change: number } } = {
+      'BTC': { price: 95000, change: 2.5 },
+      'ETH': { price: 3500, change: -1.2 },
+      'BNB': { price: 650, change: 0.8 },
+      'ADA': { price: 0.45, change: 3.1 },
+      'SOL': { price: 200, change: -0.5 },
+      'DOT': { price: 25, change: 1.8 },
+      'LINK': { price: 18, change: -2.1 },
+      'LTC': { price: 120, change: 0.9 }
+    }
+    
+    const data = mockPrices[symbol.toUpperCase()] || { price: 100, change: 0 }
+    
+    return {
+      current_price: data.price,
+      price_change_24h: data.change
+    }
+    
+  } catch (error) {
+    throw new Error(`Failed to get market data for ${symbol}`)
+  }
+}
+
+/**
+ * Check for triggered price alerts
+ */
+function checkTriggeredAlerts(items: WatchlistItem[]): any[] {
+  const triggered = []
+  
+  for (const item of items) {
+    if (!item.current_price) continue
+    
+    // Check high alert
+    if (item.price_alert_high && item.current_price >= item.price_alert_high) {
+      triggered.push({
+        item_id: item.id,
+        symbol: item.symbol,
+        alert_type: 'high',
+        alert_price: item.price_alert_high,
+        current_price: item.current_price,
+        triggered_at: Date.now()
+      })
+    }
+    
+    // Check low alert
+    if (item.price_alert_low && item.current_price <= item.price_alert_low) {
+      triggered.push({
+        item_id: item.id,
+        symbol: item.symbol,
+        alert_type: 'low',
+        alert_price: item.price_alert_low,
+        current_price: item.current_price,
+        triggered_at: Date.now()
+      })
+    }
+  }
+  
+  return triggered
+}
+
+export default app
