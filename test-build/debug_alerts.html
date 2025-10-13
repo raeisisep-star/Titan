@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Alerts - تست عملکرد دکمه‌ها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-8">🧪 تست عملکرد دکمه‌های هشدارها</h1>
+        
+        <!-- Test Results -->
+        <div id="testResults" class="bg-gray-800 rounded-lg p-6 mb-8">
+            <h2 class="text-xl font-semibold mb-4">نتایج تست:</h2>
+            <div id="results" class="space-y-2">
+                <div class="text-gray-400">در حال بارگذاری...</div>
+            </div>
+        </div>
+
+        <!-- Test Buttons -->
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">تست ویرایش هشدار</h3>
+                <button id="testEditButton" onclick="testEditAlert()" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-edit mr-2"></i>
+                    تست ویرایش
+                </button>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">تست استفاده از قالب</h3>
+                <button id="testTemplateButton" onclick="testUseTemplate()" class="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-template mr-2"></i>
+                    تست قالب
+                </button>
+            </div>
+            
+            <div class="bg-gray-800 rounded-lg p-6">
+                <h3 class="text-lg font-semibold mb-4">تست حذف هشدار</h3>
+                <button id="testDeleteButton" onclick="testDeleteAlert()" class="w-full bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">
+                    <i class="fas fa-trash mr-2"></i>
+                    تست حذف
+                </button>
+            </div>
+        </div>
+
+        <!-- Load Alerts Module -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-semibold mb-4">بارگذاری ماژول هشدارها</h3>
+            <button onclick="loadAlertsModule()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded mr-4">
+                <i class="fas fa-download mr-2"></i>
+                بارگذاری ماژول
+            </button>
+            <button onclick="checkFunctions()" class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded">
+                <i class="fas fa-search mr-2"></i>
+                بررسی توابع
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // Debug functions
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const colors = {
+                success: 'text-green-400',
+                error: 'text-red-400', 
+                info: 'text-blue-400',
+                warning: 'text-yellow-400'
+            };
+            
+            const div = document.createElement('div');
+            div.className = colors[type] || 'text-gray-300';
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        // Load alerts module
+        async function loadAlertsModule() {
+            log('🔄 شروع بارگذاری ماژول هشدارها...', 'info');
+            
+            try {
+                // Load module loader first
+                const moduleLoaderScript = document.createElement('script');
+                moduleLoaderScript.src = '/static/modules/module-loader.js';
+                
+                await new Promise((resolve, reject) => {
+                    moduleLoaderScript.onload = resolve;
+                    moduleLoaderScript.onerror = reject;
+                    document.head.appendChild(moduleLoaderScript);
+                });
+                
+                log('✅ Module loader بارگذاری شد', 'success');
+                
+                // Create module loader instance
+                window.moduleLoader = new window.ModuleLoader();
+                
+                // Load alerts module
+                const alertsModule = await window.moduleLoader.loadModule('alerts');
+                log('✅ ماژول هشدارها بارگذاری شد', 'success');
+                
+                // Set global reference
+                window.alertsModule = alertsModule;
+                
+                checkFunctions();
+                
+            } catch (error) {
+                log('❌ خطا در بارگذاری ماژول: ' + error.message, 'error');
+            }
+        }
+
+        // Check if functions are available
+        function checkFunctions() {
+            log('🔍 بررسی دسترسی به توابع...', 'info');
+            
+            const functions = ['editAlert', 'useTemplate', 'deleteAlert'];
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ ${funcName} در دسترس است`, 'success');
+                } else {
+                    log(`❌ ${funcName} در دسترس نیست`, 'error');
+                }
+            });
+            
+            // Check AlertsModule
+            if (window.TitanModules && window.TitanModules.AlertsModule) {
+                log('✅ AlertsModule کلاس در دسترس است', 'success');
+            } else {
+                log('❌ AlertsModule کلاس در دسترس نیست', 'error');
+            }
+            
+            // Check alertsModule instance
+            if (window.alertsModule) {
+                log('✅ alertsModule نمونه در دسترس است', 'success');
+            } else {
+                log('❌ alertsModule نمونه در دسترس نیست', 'error');
+            }
+        }
+
+        // Test functions
+        function testEditAlert() {
+            log('🧪 تست editAlert...', 'info');
+            
+            if (typeof window.editAlert === 'function') {
+                try {
+                    // Test with dummy ID
+                    window.editAlert('test-alert-123');
+                    log('✅ editAlert فراخوانی شد (ممکن است خطای عدم وجود هشدار نشان دهد)', 'success');
+                } catch (error) {
+                    log('❌ خطا در editAlert: ' + error.message, 'error');
+                }
+            } else {
+                log('❌ editAlert تعریف نشده است', 'error');
+            }
+        }
+
+        function testUseTemplate() {
+            log('🧪 تست useTemplate...', 'info');
+            
+            if (typeof window.useTemplate === 'function') {
+                try {
+                    // Test with dummy ID
+                    window.useTemplate('test-template-123');
+                    log('✅ useTemplate فراخوانی شد (ممکن است خطای عدم وجود قالب نشان دهد)', 'success');
+                } catch (error) {
+                    log('❌ خطا در useTemplate: ' + error.message, 'error');
+                }
+            } else {
+                log('❌ useTemplate تعریف نشده است', 'error');
+            }
+        }
+
+        function testDeleteAlert() {
+            log('🧪 تست deleteAlert...', 'info');
+            
+            if (typeof window.deleteAlert === 'function') {
+                try {
+                    // Mock confirm to prevent actual deletion prompt
+                    const originalConfirm = window.confirm;
+                    window.confirm = () => false; // Always return false to cancel deletion
+                    
+                    window.deleteAlert('test-alert-123');
+                    log('✅ deleteAlert فراخوانی شد (حذف لغو شد)', 'success');
+                    
+                    // Restore original confirm
+                    window.confirm = originalConfirm;
+                } catch (error) {
+                    log('❌ خطا در deleteAlert: ' + error.message, 'error');
+                }
+            } else {
+                log('❌ deleteAlert تعریف نشده است', 'error');
+            }
+        }
+
+        // Initialize
+        log('🚀 صفحه تست آماده است', 'info');
+        log('💡 ابتدا ماژول هشدارها را بارگذاری کنید', 'warning');
+    </script>
+</body>
+</html>

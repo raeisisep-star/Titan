@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>App Navigation Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl mb-6">Testing Real App Navigation</h1>
+        <div id="test-results" class="space-y-4 mb-8"></div>
+        
+        <div class="grid grid-cols-3 gap-4">
+            <button onclick="testModule('dashboard')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Test Dashboard</button>
+            <button onclick="testModule('trading')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded">Test Trading</button>
+            <button onclick="testModule('portfolio')" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">Test Portfolio</button>
+            <button onclick="testModule('artemis')" class="bg-red-600 hover:bg-red-700 px-4 py-2 rounded">Test Artemis</button>
+            <button onclick="testModule('watchlist')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded">Test Watchlist</button>
+            <button onclick="testModule('analytics')" class="bg-indigo-600 hover:bg-indigo-700 px-4 py-2 rounded">Test Analytics</button>
+            <button onclick="testModule('news')" class="bg-pink-600 hover:bg-pink-700 px-4 py-2 rounded">Test News</button>
+            <button onclick="testModule('alerts')" class="bg-orange-600 hover:bg-orange-700 px-4 py-2 rounded">Test Alerts</button>
+            <button onclick="testModule('settings')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Test Settings</button>
+        </div>
+    </div>
+
+    <!-- Load required scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dayjs@1.11.10/dayjs.min.js"></script>
+    <script src="/static/modules/module-loader.js"></script>
+    <script src="/static/app.js"></script>
+    
+    <script>
+        // Initialize app as demo user first
+        setTimeout(() => {
+            if (window.app) {
+                // Bypass login by setting demo mode
+                window.app.currentUser = { username: 'demo', email: 'demo@test.com' };
+                window.app.isDemo = true;
+                
+                // Hide login screen and show main app
+                const loginScreen = document.getElementById('loginScreen');
+                const mainApp = document.getElementById('mainApp');
+                if (loginScreen) loginScreen.style.display = 'none';
+                if (mainApp) mainApp.classList.remove('hidden');
+                
+                console.log('✅ App initialized in demo mode');
+                
+                // Test initial dashboard load
+                setTimeout(() => testModule('dashboard'), 1000);
+            }
+        }, 2000);
+        
+        async function testModule(moduleName) {
+            const results = document.getElementById('test-results');
+            results.innerHTML += `<div class="text-blue-400">🔄 Testing ${moduleName}...</div>`;
+            
+            try {
+                if (window.app && window.app.loadModule) {
+                    await window.app.loadModule(moduleName);
+                    results.innerHTML += `<div class="text-green-400">✅ ${moduleName} loaded successfully via app.loadModule()</div>`;
+                } else {
+                    results.innerHTML += `<div class="text-red-400">❌ app.loadModule not available</div>`;
+                }
+            } catch (error) {
+                results.innerHTML += `<div class="text-red-400">❌ ${moduleName} failed: ${error.message}</div>`;
+            }
+        }
+    </script>
+</body>
+</html>

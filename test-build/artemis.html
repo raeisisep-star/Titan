@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آرتمیس AI - سیستم هوش مصنوعی تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white" dir="rtl">
+    <div class="min-h-screen">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-purple-900 via-blue-900 to-indigo-900 p-8">
+            <div class="container mx-auto">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center">
+                        <div class="text-6xl mr-4 animate-pulse">🧠</div>
+                        <div>
+                            <h1 class="text-4xl font-bold bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
+                                آرتمیس AI
+                            </h1>
+                            <p class="text-xl text-purple-200">سیستم هوش مصنوعی پیشرفته معاملاتی</p>
+                        </div>
+                    </div>
+                    <a href="/" class="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg">
+                        <i class="fas fa-home mr-2"></i>
+                        بازگشت به خانه
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="container mx-auto p-8">
+            <!-- AI Status -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+                <h2 class="text-2xl font-bold mb-4">🔍 وضعیت سیستم</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">📡 سرویس AI</h3>
+                        <div id="ai-status" class="text-yellow-400">در حال بررسی...</div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">🤖 عامل‌های فعال</h3>
+                        <div id="agents-count" class="text-yellow-400">در حال بررسی...</div>
+                    </div>
+                    <div class="bg-gray-700 rounded-lg p-4">
+                        <h3 class="font-semibold mb-2">🎯 دقت سیستم</h3>
+                        <div id="accuracy" class="text-yellow-400">در حال بررسی...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- AI Agents -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+                <h2 class="text-2xl font-bold mb-4">🤖 عامل‌های هوش مصنوعی</h2>
+                <div id="agents-list" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <!-- AI Chat -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700 mb-8">
+                <h2 class="text-2xl font-bold mb-4">💬 گفتگو با آرتمیس</h2>
+                <div id="chat-messages" class="bg-gray-700 rounded-lg p-4 h-64 overflow-y-auto mb-4 space-y-3">
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm mr-3">
+                            🤖
+                        </div>
+                        <div class="bg-purple-900/50 rounded-lg p-3 max-w-xs">
+                            <p class="text-purple-100 text-sm">سلام! من آرتمیس هستم. چطور می‌توانم کمکتان کنم؟</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex gap-2">
+                    <input type="text" id="chat-input" placeholder="سوال خود را بپرسید..." 
+                           onkeypress="if(event.key==='Enter') sendMessage()"
+                           class="flex-1 bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
+                    <button onclick="sendMessage()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded">
+                        <i class="fas fa-paper-plane"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- AI Predictions -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-2xl font-bold mb-4">🔮 پیش‌بینی‌های AI</h2>
+                <div id="predictions-list" class="space-y-3">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Base URL
+        const API_BASE = window.location.origin;
+
+        // Load AI Status
+        async function loadAIStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/api/artemis/status`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    document.getElementById('ai-status').innerHTML = 
+                        '<span class="text-green-400"><i class="fas fa-check-circle"></i> آنلاین و فعال</span>';
+                    document.getElementById('agents-count').innerHTML = 
+                        `<span class="text-green-400"><i class="fas fa-robot"></i> ${data.data.active_agents} عامل</span>`;
+                    document.getElementById('accuracy').innerHTML = 
+                        `<span class="text-blue-400"><i class="fas fa-bullseye"></i> ${data.data.accuracy_today}%</span>`;
+                }
+            } catch (error) {
+                document.getElementById('ai-status').innerHTML = 
+                    '<span class="text-red-400"><i class="fas fa-times-circle"></i> خطا</span>';
+            }
+        }
+
+        // Load AI Agents
+        async function loadAgents() {
+            try {
+                const response = await fetch(`${API_BASE}/api/artemis/agents`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const agentsList = document.getElementById('agents-list');
+                    agentsList.innerHTML = data.data.map(agent => `
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center">
+                                    <span class="text-2xl mr-3">${agent.icon}</span>
+                                    <div>
+                                        <h3 class="font-semibold text-white">${agent.name}</h3>
+                                        <p class="text-sm text-gray-400">${agent.description}</p>
+                                    </div>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-green-400">${agent.confidence}%</div>
+                                    <div class="text-xs text-gray-400">${agent.status === 'active' ? 'فعال' : 'غیرفعال'}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading agents:', error);
+            }
+        }
+
+        // Load Predictions
+        async function loadPredictions() {
+            try {
+                const response = await fetch(`${API_BASE}/api/artemis/predictions`);
+                const data = await response.json();
+                
+                if (data.success) {
+                    const predictionsList = document.getElementById('predictions-list');
+                    predictionsList.innerHTML = data.data.map(pred => `
+                        <div class="bg-gray-700 rounded-lg p-4">
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <h3 class="font-semibold text-blue-300">${pred.symbol}</h3>
+                                    <p class="text-sm text-gray-400">${pred.prediction_type}</p>
+                                    <p class="text-xs text-gray-500 mt-1">${pred.reasoning}</p>
+                                </div>
+                                <div class="text-right">
+                                    <div class="text-lg font-bold text-white">
+                                        $${pred.current_price.toLocaleString()} → $${pred.target_price.toLocaleString()}
+                                    </div>
+                                    <div class="text-sm text-purple-400">${pred.confidence}% اطمینان</div>
+                                    <div class="text-xs text-gray-400">${pred.timeframe}</div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
+                }
+            } catch (error) {
+                console.error('Error loading predictions:', error);
+            }
+        }
+
+        // Send Chat Message
+        async function sendMessage() {
+            const input = document.getElementById('chat-input');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const messagesDiv = document.getElementById('chat-messages');
+            
+            // Add user message
+            messagesDiv.innerHTML += `
+                <div class="flex justify-end">
+                    <div class="bg-blue-600 rounded-lg p-3 max-w-xs">
+                        <p class="text-white text-sm">${message}</p>
+                    </div>
+                </div>
+            `;
+
+            input.value = '';
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            try {
+                const response = await fetch(`${API_BASE}/api/artemis/chat`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ message })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    messagesDiv.innerHTML += `
+                        <div class="flex items-start">
+                            <div class="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center text-white text-sm mr-3">
+                                🤖
+                            </div>
+                            <div class="bg-purple-900/50 rounded-lg p-3 max-w-xs">
+                                <p class="text-purple-100 text-sm">${data.data.ai_response.message}</p>
+                                <p class="text-xs text-purple-300 mt-1">اطمینان: ${data.data.ai_response.confidence}%</p>
+                            </div>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                messagesDiv.innerHTML += `
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-red-600 rounded-full flex items-center justify-center text-white text-sm mr-3">
+                            ❌
+                        </div>
+                        <div class="bg-red-900/50 rounded-lg p-3 max-w-xs">
+                            <p class="text-red-100 text-sm">خطا در ارسال پیام</p>
+                        </div>
+                    </div>
+                `;
+            }
+
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            loadAIStatus();
+            loadAgents();
+            loadPredictions();
+        });
+    </script>
+</body>
+</html>

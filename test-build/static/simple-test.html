@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Test Settings</title>
+</head>
+<body>
+    <h1>Testing Settings.js</h1>
+    <div id="output"></div>
+    
+    <script>
+        console.log('Starting test...');
+        
+        window.onerror = function(msg, url, line, col, error) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<div style="color:red">ERROR: ' + msg + ' (Line: ' + line + ', Col: ' + col + ')</div>';
+            console.error('Window Error:', {msg, url, line, col, error});
+            return true;
+        };
+        
+        const script = document.createElement('script');
+        script.src = '/static/modules/settings.js?v=' + Date.now();
+        script.onload = function() {
+            console.log('Settings loaded successfully');
+            document.getElementById('output').innerHTML += '<div style="color:green">Settings.js loaded OK!</div>';
+            
+            try {
+                const settings = new window.SettingsModule();
+                console.log('SettingsModule created:', settings);
+                document.getElementById('output').innerHTML += '<div style="color:blue">SettingsModule created OK!</div>';
+            } catch (e) {
+                console.error('Error creating SettingsModule:', e);
+                document.getElementById('output').innerHTML += '<div style="color:red">SettingsModule error: ' + e.message + '</div>';
+            }
+        };
+        script.onerror = function(e) {
+            console.error('Script load error:', e);
+            document.getElementById('output').innerHTML += '<div style="color:red">Script load failed</div>';
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

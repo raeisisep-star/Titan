@@ -1,0 +1,749 @@
+/* ==================== ARTEMIS AI CHATBOT STYLES ==================== */
+
+/* System Status Button - Above chatbot button */
+.system-status-button {
+    position: fixed;
+    bottom: 110px; /* 70px (chatbot height) + 20px (bottom) + 20px (gap) */
+    right: 20px;
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    z-index: 9997;
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-status 3s infinite;
+}
+
+.system-status-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 10px 30px rgba(16, 185, 129, 0.4);
+}
+
+.system-status-button i {
+    font-size: 24px;
+    color: white;
+}
+
+.system-status-button.status-online {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+    box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+}
+
+.system-status-button.status-warning {
+    background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+    box-shadow: 0 6px 20px rgba(245, 158, 11, 0.3);
+}
+
+.system-status-button.status-error {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+    box-shadow: 0 6px 20px rgba(239, 68, 68, 0.3);
+}
+
+.system-status-button.status-offline {
+    background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+    box-shadow: 0 6px 20px rgba(107, 114, 128, 0.3);
+}
+
+/* Online indicator dot */  
+.system-status-button::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background: #22c55e;
+    border-radius: 50%;
+    border: 2px solid white;
+    animation: status-pulse 2s infinite;
+}
+
+.system-status-button.status-warning::after {
+    background: #fbbf24;
+}
+
+.system-status-button.status-error::after {
+    background: #f87171;
+    animation: error-blink 1s infinite;
+}
+
+.system-status-button.status-offline::after {
+    background: #9ca3af;
+    animation: none;
+}
+
+/* Pulse animation for status button */
+@keyframes pulse-status {
+    0% {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+    }
+    100% {
+        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+    }
+}
+
+@keyframes status-pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+    }
+}
+
+@keyframes error-blink {
+    0%, 50% {
+        opacity: 1;
+    }
+    25%, 75% {
+        opacity: 0.3;
+    }
+}
+
+/* Chatbot Button - Fixed position at bottom right */
+.artemis-chatbot-button {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    width: 70px;
+    height: 70px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 50%;
+    border: none;
+    cursor: pointer;
+    z-index: 9998;
+    box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: pulse-artemis 2s infinite;
+}
+
+.artemis-chatbot-button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 12px 35px rgba(102, 126, 234, 0.4);
+}
+
+.artemis-chatbot-button i {
+    font-size: 28px;
+    color: white;
+}
+
+.artemis-chatbot-button.has-notification::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 12px;
+    height: 12px;
+    background: #ff4757;
+    border-radius: 50%;
+    border: 2px solid white;
+    animation: notification-bounce 1s infinite;
+}
+
+/* Pulse animation for button */
+@keyframes pulse-artemis {
+    0% {
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    50% {
+        box-shadow: 0 8px 35px rgba(102, 126, 234, 0.5), 0 0 0 10px rgba(102, 126, 234, 0.1);
+    }
+    100% {
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+}
+
+@keyframes notification-bounce {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.2); }
+}
+
+/* Chatbot Container - Main chat interface */
+.artemis-chatbot-container {
+    position: fixed;
+    bottom: 100px;
+    right: 20px;
+    width: 420px;
+    height: 600px;
+    background: rgba(17, 24, 39, 0.95);
+    backdrop-filter: blur(20px);
+    border-radius: 24px;
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    z-index: 9999;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5);
+    animation: chatbot-slide-up 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    max-height: calc(100vh - 140px);
+    overflow: hidden;
+}
+
+.artemis-chatbot-container.active {
+    display: flex;
+}
+
+@keyframes chatbot-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(30px) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Chatbot Header */
+.artemis-chatbot-header {
+    padding: 20px;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border-radius: 24px 24px 0 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+}
+
+.artemis-chatbot-header::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+    animation: header-glow 3s linear infinite;
+}
+
+@keyframes header-glow {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+.artemis-avatar {
+    width: 45px;
+    height: 45px;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    z-index: 1;
+}
+
+.artemis-avatar i {
+    font-size: 22px;
+    color: white;
+    animation: avatar-float 2s ease-in-out infinite;
+}
+
+@keyframes avatar-float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-2px); }
+}
+
+.artemis-info {
+    flex: 1;
+    margin-right: 15px;
+    position: relative;
+    z-index: 1;
+}
+
+.artemis-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: white;
+    margin-bottom: 2px;
+}
+
+.artemis-status {
+    font-size: 12px;
+    color: rgba(255, 255, 255, 0.8);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    background: #2ecc71;
+    border-radius: 50%;
+    animation: status-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes status-pulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50% { opacity: 0.7; transform: scale(1.2); }
+}
+
+.artemis-controls {
+    display: flex;
+    gap: 8px;
+    position: relative;
+    z-index: 1;
+}
+
+.control-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(255, 255, 255, 0.15);
+    border: none;
+    border-radius: 8px;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    backdrop-filter: blur(10px);
+}
+
+.control-btn:hover {
+    background: rgba(255, 255, 255, 0.25);
+    transform: scale(1.05);
+}
+
+/* Chat Messages Area */
+.artemis-messages {
+    flex: 1;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    scroll-behavior: smooth;
+}
+
+.artemis-messages::-webkit-scrollbar {
+    width: 6px;
+}
+
+.artemis-messages::-webkit-scrollbar-track {
+    background: rgba(75, 85, 99, 0.2);
+    border-radius: 3px;
+}
+
+.artemis-messages::-webkit-scrollbar-thumb {
+    background: rgba(102, 126, 234, 0.5);
+    border-radius: 3px;
+}
+
+.artemis-messages::-webkit-scrollbar-thumb:hover {
+    background: rgba(102, 126, 234, 0.7);
+}
+
+/* Message Bubbles */
+.message {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    animation: message-slide-in 0.3s ease-out;
+}
+
+.message.user {
+    flex-direction: row-reverse;
+}
+
+@keyframes message-slide-in {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.message-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.message.user .message-avatar {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.message.artemis .message-avatar {
+    background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    color: white;
+}
+
+.message-content {
+    max-width: 280px;
+    padding: 12px 16px;
+    border-radius: 18px;
+    font-size: 14px;
+    line-height: 1.4;
+    position: relative;
+    word-wrap: break-word;
+}
+
+.message.user .message-content {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-bottom-right-radius: 6px;
+}
+
+.message.artemis .message-content {
+    background: rgba(75, 85, 99, 0.6);
+    color: #f3f4f6;
+    border: 1px solid rgba(107, 114, 128, 0.3);
+    border-bottom-left-radius: 6px;
+}
+
+.message-time {
+    font-size: 10px;
+    opacity: 0.6;
+    margin-top: 4px;
+    text-align: center;
+}
+
+.message.user .message-time {
+    text-align: right;
+}
+
+.message.artemis .message-time {
+    text-align: left;
+}
+
+/* Typing Indicator */
+.typing-indicator {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: rgba(75, 85, 99, 0.6);
+    border-radius: 18px 18px 18px 6px;
+    margin-right: 42px;
+    animation: message-slide-in 0.3s ease-out;
+}
+
+.typing-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.typing-dots span {
+    width: 6px;
+    height: 6px;
+    background: #9ca3af;
+    border-radius: 50%;
+    animation: typing-bounce 1.4s infinite ease-in-out;
+}
+
+.typing-dots span:nth-child(1) { animation-delay: -0.32s; }
+.typing-dots span:nth-child(2) { animation-delay: -0.16s; }
+.typing-dots span:nth-child(3) { animation-delay: 0s; }
+
+@keyframes typing-bounce {
+    0%, 80%, 100% {
+        transform: scale(0.8);
+        opacity: 0.5;
+    }
+    40% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Input Area */
+.artemis-input-area {
+    padding: 20px;
+    border-top: 1px solid rgba(75, 85, 99, 0.3);
+    background: rgba(31, 41, 55, 0.8);
+    border-radius: 0 0 24px 24px;
+    backdrop-filter: blur(10px);
+}
+
+.artemis-input-container {
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 8px;
+}
+
+.artemis-input {
+    flex: 1;
+    background: rgba(55, 65, 81, 0.8);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    border-radius: 20px;
+    padding: 12px 50px 12px 16px;
+    color: white;
+    font-size: 14px;
+    resize: none;
+    min-height: 20px;
+    max-height: 100px;
+    overflow-y: auto;
+    outline: none;
+    transition: all 0.2s ease;
+    line-height: 1.4;
+}
+
+.artemis-input:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.2);
+}
+
+.artemis-input::placeholder {
+    color: rgba(156, 163, 175, 0.8);
+}
+
+.input-actions {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: flex;
+    gap: 4px;
+}
+
+.action-btn {
+    width: 32px;
+    height: 32px;
+    background: rgba(102, 126, 234, 0.8);
+    border: none;
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 14px;
+}
+
+.action-btn:hover:not(:disabled) {
+    background: #667eea;
+    transform: scale(1.05);
+}
+
+.action-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.voice-btn.recording {
+    background: #e74c3c;
+    animation: recording-pulse 1s infinite;
+}
+
+@keyframes recording-pulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.1); }
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+    flex-wrap: wrap;
+}
+
+.quick-action {
+    padding: 6px 12px;
+    background: rgba(55, 65, 81, 0.8);
+    border: 1px solid rgba(75, 85, 99, 0.5);
+    border-radius: 16px;
+    color: #9ca3af;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.quick-action:hover {
+    background: rgba(102, 126, 234, 0.2);
+    color: #667eea;
+    border-color: #667eea;
+}
+
+/* Message Actions (for special messages) */
+.message-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.message-action-btn {
+    padding: 6px 12px;
+    background: rgba(102, 126, 234, 0.1);
+    border: 1px solid rgba(102, 126, 234, 0.3);
+    border-radius: 12px;
+    color: #667eea;
+    font-size: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.message-action-btn:hover {
+    background: rgba(102, 126, 234, 0.2);
+}
+
+.message-action-btn.primary {
+    background: #667eea;
+    color: white;
+    border-color: #667eea;
+}
+
+.message-action-btn.primary:hover {
+    background: #5a67d8;
+}
+
+/* Task/Schedule Status */
+.task-status {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 8px;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    font-size: 11px;
+    color: #22c55e;
+    margin-top: 6px;
+}
+
+.task-status.pending {
+    background: rgba(251, 191, 36, 0.1);
+    border-color: rgba(251, 191, 36, 0.3);
+    color: #fbbf24;
+}
+
+.task-status.error {
+    background: rgba(239, 68, 68, 0.1);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+/* Portfolio/Trade Data Cards */
+.data-card {
+    background: rgba(55, 65, 81, 0.5);
+    border: 1px solid rgba(75, 85, 99, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    margin-top: 8px;
+}
+
+.data-card-header {
+    font-size: 13px;
+    font-weight: 600;
+    color: #f3f4f6;
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.data-card-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.data-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.data-label {
+    color: #9ca3af;
+}
+
+.data-value {
+    color: #f3f4f6;
+    font-weight: 500;
+}
+
+.data-value.positive {
+    color: #22c55e;
+}
+
+.data-value.negative {
+    color: #ef4444;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+    .artemis-chatbot-container {
+        width: calc(100vw - 20px);
+        right: 10px;
+        left: 10px;
+        bottom: 90px;
+        height: calc(100vh - 140px);
+        border-radius: 16px;
+    }
+    
+    .artemis-chatbot-header {
+        border-radius: 16px 16px 0 0;
+        padding: 16px;
+    }
+    
+    .artemis-chatbot-button {
+        bottom: 15px;
+        right: 15px;
+        width: 60px;
+        height: 60px;
+    }
+    
+    .system-status-button {
+        bottom: 90px; /* 60px (chatbot height) + 15px (bottom) + 15px (gap) */
+        right: 15px;
+        width: 50px;
+        height: 50px;
+    }
+    
+    .system-status-button i {
+        font-size: 20px;
+    }
+    
+    .artemis-chatbot-button i {
+        font-size: 24px;
+    }
+    
+    .message-content {
+        max-width: 220px;
+    }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+    .artemis-chatbot-button,
+    .message,
+    .typing-dots span,
+    .status-indicator,
+    .artemis-avatar i {
+        animation: none;
+    }
+    
+    .artemis-chatbot-container {
+        animation: none;
+    }
+}

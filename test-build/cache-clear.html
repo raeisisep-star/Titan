@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>پاک کردن کش مرورگر</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🔄 پاک کردن کش مرورگر</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
+            <p class="text-lg mb-4">برای مشاهده آخرین تغییرات، لطفاً کش مرورگر را پاک کنید:</p>
+            
+            <div class="space-y-4">
+                <div class="bg-blue-900 bg-opacity-30 border-l-4 border-blue-400 p-4 rounded">
+                    <h3 class="font-bold text-blue-300 mb-2">Chrome / Edge:</h3>
+                    <p class="text-sm">Ctrl+Shift+Delete یا F12 → Network → Disable cache</p>
+                </div>
+                
+                <div class="bg-green-900 bg-opacity-30 border-l-4 border-green-400 p-4 rounded">
+                    <h3 class="font-bold text-green-300 mb-2">Firefox:</h3>
+                    <p class="text-sm">Ctrl+Shift+Delete یا F12 → Network → No Cache</p>
+                </div>
+                
+                <div class="bg-purple-900 bg-opacity-30 border-l-4 border-purple-400 p-4 rounded">
+                    <h3 class="font-bold text-purple-300 mb-2">Safari:</h3>
+                    <p class="text-sm">Cmd+Option+E یا Developer → Empty Cache</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="text-center space-y-4">
+            <button onclick="clearCacheAndReload()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                🔄 پاک کردن کش و بارگیری مجدد
+            </button>
+            
+            <button onclick="hardReload()" 
+                    class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium transition-all">
+                ⚡ بارگیری کامل (Hard Reload)
+            </button>
+            
+            <div class="mt-6">
+                <a href="/" class="text-blue-400 hover:text-blue-300 underline">
+                    🏠 بازگشت به سیستم تایتان
+                </a>
+            </div>
+        </div>
+        
+        <div class="mt-8 text-sm text-gray-400 text-center">
+            <p>آخرین بروزرسانی: <span id="timestamp"></span></p>
+        </div>
+    </div>
+
+    <script>
+        // Show current timestamp
+        document.getElementById('timestamp').textContent = new Date().toLocaleString('fa-IR');
+        
+        function clearCacheAndReload() {
+            // Clear various cache types
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Clear localStorage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Reload with cache bypass
+            window.location.href = window.location.href + '?v=' + Date.now();
+        }
+        
+        function hardReload() {
+            // Force reload bypassing cache
+            window.location.reload(true);
+        }
+        
+        // Auto-reload every 5 seconds to show timestamp changes
+        setInterval(() => {
+            document.getElementById('timestamp').textContent = new Date().toLocaleString('fa-IR');
+        }, 5000);
+    </script>
+</body>
+</html>

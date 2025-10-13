@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Module Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-6">
+        <h1 class="text-2xl font-bold mb-6 text-center">تست ماژول پورتفولیو</h1>
+        
+        <!-- Auth Token Status -->
+        <div class="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
+            <h3 class="text-lg font-semibold mb-2">وضعیت احراز هویت</h3>
+            <p id="auth-status" class="text-gray-400">در حال بررسی...</p>
+        </div>
+
+        <!-- API Test Results -->
+        <div class="bg-gray-800 rounded-lg p-4 mb-6 border border-gray-700">
+            <h3 class="text-lg font-semibold mb-2">نتیجه آزمون API</h3>
+            <pre id="api-results" class="text-gray-400 text-sm overflow-auto h-32">در حال بارگیری...</pre>
+        </div>
+
+        <!-- Portfolio Module Container -->
+        <div id="portfolio-content">
+            <!-- Portfolio content will be injected here -->
+        </div>
+    </div>
+
+    <script>
+        class PortfolioTestApp {
+            constructor() {
+                this.init();
+            }
+
+            async init() {
+                // Set up auth token like main app
+                let token = localStorage.getItem('titan_auth_token');
+                if (!token) {
+                    token = 'demo_token_' + Math.random().toString(36).substring(7);
+                    localStorage.setItem('titan_auth_token', token);
+                }
+
+                // Set axios default header
+                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+                document.getElementById('auth-status').textContent = `توکن: ${token}`;
+
+                // Test API
+                await this.testAPI();
+
+                // Load portfolio module
+                await this.loadPortfolioModule();
+            }
+
+            async testAPI() {
+                try {
+                    const response = await axios.get('/api/portfolio/advanced');
+                    document.getElementById('api-results').textContent = JSON.stringify(response.data, null, 2);
+                } catch (error) {
+                    document.getElementById('api-results').textContent = `خطا: ${error.message}`;
+                }
+            }
+
+            async loadPortfolioModule() {
+                try {
+                    // Load portfolio module
+                    const script = document.createElement('script');
+                    script.src = '/static/modules/portfolio.js';
+                    script.onload = async () => {
+                        // Initialize portfolio module
+                        window.portfolioModule = new PortfolioModule();
+                        const content = await window.portfolioModule.getContent();
+                        document.getElementById('portfolio-content').innerHTML = content;
+                        await window.portfolioModule.init();
+                    };
+                    document.head.appendChild(script);
+                } catch (error) {
+                    console.error('Portfolio module error:', error);
+                }
+            }
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            new PortfolioTestApp();
+        });
+    </script>
+</body>
+</html>
