@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Guide Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-8">
+        <h1 class="text-3xl font-bold mb-8 text-center">📖 Setup Guide Test</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl mb-4">Test Setup Guides</h2>
+            <div class="flex flex-wrap gap-3 mb-4">
+                <button onclick="testSetupGuide('binance')" class="bg-yellow-600 hover:bg-yellow-700 px-4 py-2 rounded-lg">🟡 Binance Guide</button>
+                <button onclick="testSetupGuide('mexc')" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg">🔵 MEXC Guide</button>
+                <button onclick="testSetupGuide('okx')" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded-lg">⚫ OKX Guide</button>
+                <button onclick="testSetupGuide('coinbase')" class="bg-blue-700 hover:bg-blue-800 px-4 py-2 rounded-lg">🔷 Coinbase Guide</button>
+                <button onclick="testSetupGuide('kucoin')" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg">🟢 KuCoin Guide</button>
+            </div>
+            <div id="guide-result" class="mt-4 p-3 rounded-lg bg-gray-700"></div>
+        </div>
+
+        <!-- Manual Settings Test -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl mb-4">Manual Settings Module Test</h2>
+            <button onclick="loadSettingsModule()" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg">Load Settings Module</button>
+            <div id="settings-content" class="mt-6"></div>
+        </div>
+    </div>
+
+    <!-- Load Settings Module -->
+    <script src="/static/modules/settings.js"></script>
+    
+    <script>
+        let settingsModule = null;
+        
+        function log(message, type = 'info') {
+            const resultDiv = document.getElementById('guide-result');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'text-green-400' : 
+                              type === 'error' ? 'text-red-400' : 
+                              type === 'warning' ? 'text-yellow-400' : 'text-blue-400';
+            resultDiv.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            console.log(message);
+        }
+        
+        function loadSettingsModule() {
+            try {
+                log('🔄 Loading Settings Module...');
+                
+                // Initialize settings module
+                settingsModule = new SettingsModule();
+                window.settingsModule = settingsModule; // Make it global
+                
+                // Set current tab to exchanges
+                settingsModule.currentTab = 'exchanges';
+                
+                // Render settings
+                const content = settingsModule.render();
+                document.getElementById('settings-content').innerHTML = content;
+                
+                log('✅ Settings Module loaded successfully', 'success');
+                
+                // Test modal functions
+                setTimeout(() => {
+                    if (typeof settingsModule.showModal === 'function' && typeof settingsModule.closeModal === 'function') {
+                        log('✅ Modal functions are available', 'success');
+                    } else {
+                        log('❌ Modal functions are missing', 'error');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                log('❌ Error loading Settings Module: ' + error.message, 'error');
+                console.error('Settings loading error:', error);
+            }
+        }
+        
+        function testSetupGuide(exchange) {
+            log(`🔄 Testing ${exchange} setup guide...`);
+            
+            if (!settingsModule) {
+                // Create settings module if not exists
+                settingsModule = new SettingsModule();
+                window.settingsModule = settingsModule;
+            }
+            
+            try {
+                // Call showExchangeGuide function
+                settingsModule.showExchangeGuide(exchange);
+                log(`✅ ${exchange} setup guide opened successfully`, 'success');
+                
+                // Check if modal appeared
+                setTimeout(() => {
+                    const modal = document.getElementById('settings-modal-backdrop');
+                    if (modal) {
+                        log(`✅ ${exchange} modal is visible in DOM`, 'success');
+                        
+                        // Auto close after 3 seconds for testing
+                        setTimeout(() => {
+                            settingsModule.closeModal();
+                            log(`🔄 ${exchange} modal closed automatically`, 'info');
+                        }, 3000);
+                    } else {
+                        log(`❌ ${exchange} modal not found in DOM`, 'error');
+                    }
+                }, 500);
+                
+            } catch (error) {
+                log(`❌ ${exchange} setup guide failed: ${error.message}`, 'error');
+                console.error(`Setup guide error for ${exchange}:`, error);
+            }
+        }
+        
+        // Auto load settings module on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(loadSettingsModule, 1000);
+        });
+    </script>
+</body>
+</html>

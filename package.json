@@ -1,15 +1,18 @@
 {
   "name": "titan-trading-system",
-  "version": "1.0.0",
-  "description": "سیستم معاملات خودکار تایتان با هوش مصنوعی آرتمیس",
+  "version": "3.0.0",
+  "description": "سیستم معاملات خودکار تایتان با هوش مصنوعی آرتمیس - Enhanced Production Edition",
   "scripts": {
     "dev": "vite",
     "dev:sandbox": "wrangler pages dev dist --ip 0.0.0.0 --port 3000",
     "dev:d1": "wrangler pages dev dist --d1=webapp-production --local --ip 0.0.0.0 --port 3000",
+    "dev:enhanced": "wrangler dev src/enhanced-server.ts --config wrangler.enhanced.jsonc --port 8787",
     "build": "vite build",
+    "build:enhanced": "tsc src/enhanced-server.ts --outDir dist --target es2022 --module esnext --moduleResolution node",
     "preview": "wrangler pages dev dist",
     "deploy": "npm run build && wrangler pages deploy dist",
     "deploy:prod": "npm run build && wrangler pages deploy dist --project-name webapp",
+    "deploy:enhanced": "npm run build:enhanced && wrangler deploy --config wrangler.enhanced.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
     "test": "curl http://localhost:3000",
@@ -22,7 +25,13 @@
     "git:init": "git init && git add . && git commit -m 'Initial Titan Trading System'",
     "git:commit": "git add . && git commit -m",
     "git:status": "git status",
-    "git:log": "git log --oneline"
+    "git:log": "git log --oneline",
+    "test:enhanced": "curl http://localhost:8787/api/health/enhanced",
+    "monitor:start": "npm run dev:enhanced",
+    "monitor:dashboard": "open http://localhost:8787/dashboard/unified-monitoring-dashboard.html",
+    "security:audit": "curl -X POST http://localhost:8787/api/enhanced/security/audit -H 'Authorization: Bearer demo_token_123'",
+    "ai:optimize": "curl -X POST http://localhost:8787/api/enhanced/ai/optimize -H 'Authorization: Bearer demo_token_123' -H 'Content-Type: application/json' -d '{\"modelId\":\"main_predictor\"}'",
+    "performance:metrics": "curl http://localhost:8787/api/enhanced/performance/metrics -H 'Authorization: Bearer demo_token_123'"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.9.0",

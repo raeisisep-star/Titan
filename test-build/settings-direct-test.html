@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings Direct Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">🏦 Settings - Exchange Management Test</h1>
+        
+        <!-- Login Section -->
+        <div id="login-section" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl mb-4">ورود</h2>
+            <div class="grid grid-cols-2 gap-4 mb-4">
+                <input type="text" id="username" placeholder="نام کاربری" value="demo_user" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                <input type="password" id="password" placeholder="رمز عبور" value="demo123" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+            </div>
+            <button onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg">ورود</button>
+            <div id="login-status" class="mt-2 text-sm"></div>
+        </div>
+
+        <!-- Settings Module Container -->
+        <div id="settings-container" class="hidden">
+            <div class="bg-gray-800 rounded-lg p-6 mb-6">
+                <h2 class="text-xl mb-4">Settings Module Test</h2>
+                <button onclick="loadSettingsModule()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg mr-2">Load Settings</button>
+                <button onclick="testAllExchanges()" class="bg-orange-600 hover:bg-orange-700 px-6 py-2 rounded-lg">Test All Exchanges</button>
+            </div>
+            
+            <!-- Settings Content -->
+            <div id="settings-content" class="bg-gray-800 rounded-lg p-6"></div>
+        </div>
+        
+        <!-- Test Results -->
+        <div id="test-results" class="mt-6 bg-gray-800 rounded-lg p-6">
+            <h3 class="text-lg font-bold mb-4">Test Results</h3>
+            <div id="results-content" class="text-sm space-y-2"></div>
+        </div>
+    </div>
+
+    <!-- Load Settings Module -->
+    <script src="/static/modules/settings.js"></script>
+    
+    <script>
+        let token = null;
+        let settingsModule = null;
+        
+        function log(message, type = 'info') {
+            const resultsContent = document.getElementById('results-content');
+            const timestamp = new Date().toLocaleTimeString();
+            const colorClass = type === 'success' ? 'text-green-400' : 
+                              type === 'error' ? 'text-red-400' : 
+                              type === 'warning' ? 'text-yellow-400' : 'text-blue-400';
+            resultsContent.innerHTML += `<div class="${colorClass}">[${timestamp}] ${message}</div>`;
+            resultsContent.scrollTop = resultsContent.scrollHeight;
+            console.log(message);
+        }
+        
+        async function login() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const statusDiv = document.getElementById('login-status');
+            
+            try {
+                log('🔄 Attempting login...');
+                const response = await axios.post('/api/login', {
+                    username: username,
+                    password: password
+                });
+                
+                if (response.data.success) {
+                    token = response.data.session.accessToken;
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    statusDiv.innerHTML = '<span class="text-green-400">✅ Login successful</span>';
+                    document.getElementById('settings-container').classList.remove('hidden');
+                    log('✅ Login successful', 'success');
+                } else {
+                    statusDiv.innerHTML = '<span class="text-red-400">❌ Login failed</span>';
+                    log('❌ Login failed', 'error');
+                }
+            } catch (error) {
+                statusDiv.innerHTML = '<span class="text-red-400">❌ Login error: ' + error.message + '</span>';
+                log('❌ Login error: ' + error.message, 'error');
+            }
+        }
+        
+        function loadSettingsModule() {
+            try {
+                log('🔄 Loading Settings Module...');
+                
+                // Initialize settings module
+                settingsModule = new SettingsModule();
+                
+                // Set current tab to exchanges
+                settingsModule.currentTab = 'exchanges';
+                
+                // Render settings
+                const content = settingsModule.render();
+                document.getElementById('settings-content').innerHTML = content;
+                
+                log('✅ Settings Module loaded successfully', 'success');
+                
+                // Test if exchange section is visible
+                setTimeout(() => {
+                    const exchangeButtons = document.querySelectorAll('[onclick*="testExchange"]');
+                    log(`🔍 Found ${exchangeButtons.length} exchange test buttons`, 'info');
+                    
+                    if (exchangeButtons.length > 0) {
+                        log('✅ Exchange buttons are visible and clickable', 'success');
+                    } else {
+                        log('❌ No exchange buttons found', 'error');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                log('❌ Error loading Settings Module: ' + error.message, 'error');
+                console.error('Settings loading error:', error);
+            }
+        }
+        
+        async function testAllExchanges() {
+            log('🔄 Testing all exchanges...');
+            
+            const exchanges = ['binance', 'mexc', 'okx', 'coinbase', 'kucoin'];
+            
+            for (let exchange of exchanges) {
+                await testSingleExchange(exchange);
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 1000));
+            }
+            
+            log('🏁 All exchange tests completed', 'success');
+        }
+        
+        async function testSingleExchange(exchange) {
+            try {
+                log(`🔄 Testing ${exchange} exchange...`);
+                
+                // Test connection
+                try {
+                    const testResponse = await axios.post('/api/exchanges/test', {
+                        exchange: exchange,
+                        apiKey: 'test_key',
+                        apiSecret: 'test_secret',
+                        testnet: true
+                    });
+                    log(`✅ ${exchange} connection test: ${testResponse.data.success ? 'Success' : 'Failed'}`, testResponse.data.success ? 'success' : 'warning');
+                } catch (error) {
+                    log(`⚠️ ${exchange} connection test failed: ${error.response?.data?.error || error.message}`, 'warning');
+                }
+                
+                // Test balance
+                try {
+                    const balanceResponse = await axios.get(`/api/exchanges/balances/${exchange}`);
+                    log(`✅ ${exchange} balance test: Success (${balanceResponse.data.data.length} assets)`, 'success');
+                } catch (error) {
+                    log(`⚠️ ${exchange} balance test failed: ${error.response?.data?.error || error.message}`, 'warning');
+                }
+                
+                // Test settings save
+                try {
+                    const saveResponse = await axios.post('/api/exchanges/settings', {
+                        exchange: exchange,
+                        apiKey: 'test_key',
+                        apiSecret: 'test_secret',
+                        testnet: true
+                    });
+                    log(`✅ ${exchange} settings save: ${saveResponse.data.success ? 'Success' : 'Failed'}`, saveResponse.data.success ? 'success' : 'warning');
+                } catch (error) {
+                    log(`⚠️ ${exchange} settings save failed: ${error.response?.data?.error || error.message}`, 'warning');
+                }
+                
+            } catch (error) {
+                log(`❌ ${exchange} test failed: ${error.message}`, 'error');
+            }
+        }
+        
+        // Auto login on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            setTimeout(login, 500);
+        });
+    </script>
+</body>
+</html>

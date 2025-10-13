@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug AI Management Module</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🧠 Debug AI Management Module</h1>
+        
+        <div class="space-y-6">
+            <!-- Status Container -->
+            <div id="status-container" class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">وضعیت بارگذاری</h2>
+                <div id="status-log" class="space-y-2 text-sm font-mono bg-black p-4 rounded max-h-60 overflow-y-auto">
+                    <div class="text-green-400">شروع فرآیند بارگذاری...</div>
+                </div>
+            </div>
+            
+            <!-- Test Buttons -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">تست‌های اجرایی</h2>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <button onclick="testAPIConnection()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-plug mr-2"></i>
+                        تست API
+                    </button>
+                    <button onclick="testModuleLoading()" class="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-download mr-2"></i>
+                        تست بارگذاری ماژول
+                    </button>
+                    <button onclick="testDashboardRender()" class="bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-eye mr-2"></i>
+                        تست رندر داشبورد
+                    </button>
+                </div>
+            </div>
+            
+            <!-- AI Management Container -->
+            <div id="ai-management-debug" class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h2 class="text-xl font-bold mb-4">داشبورد AI Management</h2>
+                <div id="ai-management-container" class="min-h-32">
+                    <div class="bg-gray-900 rounded-lg p-6 text-center">
+                        <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mb-4"></div>
+                        <p class="text-gray-300">آماده سازی...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let statusLog = [];
+        
+        function addStatus(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const colors = {
+                info: 'text-blue-400',
+                success: 'text-green-400', 
+                error: 'text-red-400',
+                warning: 'text-yellow-400'
+            };
+            
+            statusLog.push({message, type, timestamp});
+            const logElement = document.getElementById('status-log');
+            logElement.innerHTML += `<div class="${colors[type] || 'text-gray-400'}">[${timestamp}] ${message}</div>`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+        
+        async function testAPIConnection() {
+            addStatus('📡 تست اتصال API...', 'info');
+            try {
+                const response = await axios.get('/api/ai-analytics/agents');
+                if (response.data && response.data.agents) {
+                    addStatus(`✅ API اتصال موفق - ${response.data.agents.length} agent loaded`, 'success');
+                } else {
+                    addStatus('⚠️ API response structure unexpected', 'warning');
+                }
+            } catch (error) {
+                addStatus(`❌ API Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testModuleLoading() {
+            addStatus('📥 تست بارگذاری ماژول...', 'info');
+            
+            // Clear existing module
+            if (window.TitanModules && window.TitanModules.AIManagement) {
+                delete window.TitanModules.AIManagement;
+                addStatus('🔄 ماژول قبلی پاک شد', 'info');
+            }
+            
+            // Remove existing script
+            const existingScript = document.querySelector('script[src*="ai-management.js"]');
+            if (existingScript) {
+                existingScript.remove();
+                addStatus('🔄 اسکریپت قبلی حذف شد', 'info');
+            }
+            
+            return new Promise((resolve, reject) => {
+                const timestamp = Date.now();
+                const script = document.createElement('script');
+                script.src = `/static/modules/ai-management.js?v=${timestamp}`;
+                
+                script.onload = function() {
+                    addStatus(`✅ اسکریپت بارگذاری شد (${timestamp})`, 'success');
+                    
+                    if (window.TitanModules && window.TitanModules.AIManagement) {
+                        addStatus('✅ ماژول AIManagement در دسترس است', 'success');
+                        addStatus(`📋 نسخه ماژول: ${window.TitanModules.AIManagement.version || 'نامشخص'}`, 'info');
+                        resolve();
+                    } else {
+                        addStatus('❌ ماژول AIManagement یافت نشد', 'error');
+                        reject(new Error('Module not found'));
+                    }
+                };
+                
+                script.onerror = function() {
+                    addStatus('❌ خطا در بارگذاری اسکریپت', 'error');
+                    reject(new Error('Script loading failed'));
+                };
+                
+                document.head.appendChild(script);
+            });
+        }
+        
+        async function testDashboardRender() {
+            addStatus('🎨 تست رندر داشبورد...', 'info');
+            
+            try {
+                // First load module if not already loaded
+                if (!window.TitanModules || !window.TitanModules.AIManagement) {
+                    await testModuleLoading();
+                }
+                
+                const container = document.getElementById('ai-management-container');
+                if (!container) {
+                    addStatus('❌ کانتینر یافت نشد', 'error');
+                    return;
+                }
+                
+                // Clear container
+                container.innerHTML = '<div class="text-center p-4"><i class="fas fa-spinner fa-spin mr-2"></i>در حال رندر...</div>';
+                
+                // Render dashboard
+                const dashboardHTML = window.TitanModules.AIManagement.render();
+                container.innerHTML = dashboardHTML;
+                addStatus('✅ HTML رندر شد', 'success');
+                
+                // Initialize module
+                window.TitanModules.AIManagement.init();
+                addStatus('✅ ماژول مقداردهی شد', 'success');
+                
+                addStatus('🎉 داشبورد با موفقیت رندر شد!', 'success');
+                
+            } catch (error) {
+                addStatus(`❌ خطا در رندر: ${error.message}`, 'error');
+                console.error('Dashboard render error:', error);
+            }
+        }
+        
+        // Auto-start debugging process
+        document.addEventListener('DOMContentLoaded', async function() {
+            addStatus('🔄 شروع فرآیند دیباگ خودکار...', 'info');
+            
+            // Wait a moment for page to fully load
+            setTimeout(async () => {
+                await testAPIConnection();
+                
+                setTimeout(async () => {
+                    try {
+                        await testModuleLoading();
+                        setTimeout(() => {
+                            testDashboardRender();
+                        }, 1000);
+                    } catch (error) {
+                        addStatus(`❌ دیباگ خودکار ناموفق: ${error.message}`, 'error');
+                    }
+                }, 1000);
+            }, 1000);
+        });
+        
+        // Global error handler
+        window.addEventListener('error', function(e) {
+            addStatus(`🚨 JavaScript Error: ${e.message} در ${e.filename}:${e.lineno}`, 'error');
+        });
+    </script>
+</body>
+</html>

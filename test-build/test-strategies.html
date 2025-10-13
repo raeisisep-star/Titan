@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست استراتژی‌ها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-6">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-center">🧪 تست مستقیم استراتژی‌ها</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">وضعیت بارگیری ماژول:</h2>
+            <div id="module-status" class="text-gray-400">در حال بررسی...</div>
+        </div>
+        
+        <div class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-6">
+            <button onclick="testCreateStrategy()" 
+                    class="bg-green-600 hover:bg-green-700 text-white p-4 rounded-lg transition-all">
+                ✨ تست ایجاد استراتژی
+            </button>
+            
+            <button onclick="testEditStrategy()" 
+                    class="bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-lg transition-all">
+                ⚙️ تست ویرایش استراتژی
+            </button>
+            
+            <button onclick="testBacktest()" 
+                    class="bg-purple-600 hover:bg-purple-700 text-white p-4 rounded-lg transition-all">
+                🔬 تست بک‌تست
+            </button>
+            
+            <button onclick="testOptimize()" 
+                    class="bg-yellow-600 hover:bg-yellow-700 text-white p-4 rounded-lg transition-all">
+                ⚙️ تست بهینه‌سازی
+            </button>
+            
+            <button onclick="testClone()" 
+                    class="bg-indigo-600 hover:bg-indigo-700 text-white p-4 rounded-lg transition-all">
+                📋 تست کپی استراتژی
+            </button>
+            
+            <button onclick="testExport()" 
+                    class="bg-red-600 hover:bg-red-700 text-white p-4 rounded-lg transition-all">
+                💾 تست صادرات
+            </button>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4">لاگ عملیات:</h2>
+            <div id="test-log" class="bg-gray-900 rounded p-4 h-64 overflow-y-auto font-mono text-sm">
+                <div class="text-green-400">🟢 آماده برای تست...</div>
+            </div>
+        </div>
+        
+        <div class="text-center mt-6">
+            <a href="/" class="text-blue-400 hover:text-blue-300 underline">
+                🏠 بازگشت به سیستم تایتان
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        const log = document.getElementById('test-log');
+        const status = document.getElementById('module-status');
+        
+        function addLog(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const color = type === 'error' ? 'text-red-400' : 
+                         type === 'success' ? 'text-green-400' : 
+                         type === 'warning' ? 'text-yellow-400' : 'text-blue-400';
+            
+            log.innerHTML += `<div class="${color}">[${timestamp}] ${message}</div>`;
+            log.scrollTop = log.scrollHeight;
+        }
+        
+        // Load strategies module with fresh cache
+        async function loadStrategiesModule() {
+            try {
+                addLog('🔄 در حال بارگیری ماژول استراتژی‌ها...');
+                
+                const script = document.createElement('script');
+                script.src = `/static/modules/strategies-advanced.js?v=${Date.now()}`;
+                
+                return new Promise((resolve, reject) => {
+                    script.onload = () => {
+                        if (window.StrategiesAdvancedModule) {
+                            window.strategiesAdvanced = new window.StrategiesAdvancedModule();
+                            addLog('✅ ماژول استراتژی‌ها با موفقیت بارگیری شد', 'success');
+                            status.innerHTML = '<span class="text-green-400">✅ ماژول بارگیری شده</span>';
+                            resolve();
+                        } else {
+                            addLog('❌ کلاس StrategiesAdvancedModule یافت نشد', 'error');
+                            reject('Module class not found');
+                        }
+                    };
+                    
+                    script.onerror = () => {
+                        addLog('❌ خطا در بارگیری فایل ماژول', 'error');
+                        reject('Script loading failed');
+                    };
+                    
+                    document.head.appendChild(script);
+                });
+                
+            } catch (error) {
+                addLog(`❌ خطا: ${error.message}`, 'error');
+                status.innerHTML = '<span class="text-red-400">❌ خطا در بارگیری</span>';
+                throw error;
+            }
+        }
+        
+        // Test functions
+        async function testCreateStrategy() {
+            if (!window.strategiesAdvanced) {
+                addLog('⚠️ ماژول بارگیری نشده، در حال بارگیری...', 'warning');
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست ایجاد استراتژی جدید...');
+            try {
+                await window.strategiesAdvanced.createNewStrategy();
+                addLog('✅ متد createNewStrategy فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در createNewStrategy: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testEditStrategy() {
+            if (!window.strategiesAdvanced) {
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست ویرایش استراتژی...');
+            try {
+                await window.strategiesAdvanced.editStrategy('test-strategy-id');
+                addLog('✅ متد editStrategy فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در editStrategy: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testBacktest() {
+            if (!window.strategiesAdvanced) {
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست بک‌تست...');
+            try {
+                // First set a selected strategy
+                window.strategiesAdvanced.selectedStrategyId = 'test-strategy';
+                await window.strategiesAdvanced.runBacktest();
+                addLog('✅ متد runBacktest فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در runBacktest: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testOptimize() {
+            if (!window.strategiesAdvanced) {
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست بهینه‌سازی...');
+            try {
+                window.strategiesAdvanced.selectedStrategyId = 'test-strategy';
+                await window.strategiesAdvanced.optimizeStrategy();
+                addLog('✅ متد optimizeStrategy فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در optimizeStrategy: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testClone() {
+            if (!window.strategiesAdvanced) {
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست کپی استراتژی...');
+            try {
+                window.strategiesAdvanced.selectedStrategyId = 'test-strategy';
+                await window.strategiesAdvanced.cloneStrategy();
+                addLog('✅ متد cloneStrategy فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در cloneStrategy: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testExport() {
+            if (!window.strategiesAdvanced) {
+                await loadStrategiesModule();
+            }
+            
+            addLog('🔄 تست صادرات استراتژی...');
+            try {
+                window.strategiesAdvanced.selectedStrategyId = 'test-strategy';
+                await window.strategiesAdvanced.exportStrategy();
+                addLog('✅ متد exportStrategy فراخوانی شد', 'success');
+            } catch (error) {
+                addLog(`❌ خطا در exportStrategy: ${error.message}`, 'error');
+            }
+        }
+        
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            addLog('🟢 صفحه تست آماده شد');
+            addLog('💡 لطفاً دکمه‌های تست را فشار دهید');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم پورتفولیو - TITAN Trading</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <div class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-6xl mx-auto">
+            <h1 class="text-2xl font-bold text-white">
+                <i class="fas fa-chart-pie text-blue-400 ml-2"></i>
+                تست سیستم پورتفولیو TITAN
+            </h1>
+            <p class="text-gray-400 mt-1">آزمایش کامل API های پورتفولیو و اتصال فرانت‌اند-بک‌اند</p>
+        </div>
+    </div>
+
+    <div class="max-w-6xl mx-auto p-6">
+        <!-- Authentication Section -->
+        <div class="mb-6">
+            <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
+                <h2 class="text-lg font-semibold mb-3">
+                    <i class="fas fa-key text-green-400 ml-2"></i>
+                    احراز هویت
+                </h2>
+                <div class="flex gap-4 items-end">
+                    <button id="loginBtn" onclick="login()" 
+                            class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+                        <i class="fas fa-sign-in-alt ml-1"></i>
+                        ورود
+                    </button>
+                    <div id="authStatus" class="text-gray-400">آماده برای ورود...</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Tabs -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <div class="flex border-b border-gray-700">
+                <button onclick="switchTab('advanced')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400 bg-gray-700">
+                    📊 پورتفولیو پیشرفته
+                </button>
+                <button onclick="switchTab('correlation')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white">
+                    🔗 همبستگی
+                </button>
+                <button onclick="switchTab('history')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white">
+                    📈 تاریخچه
+                </button>
+                <button onclick="switchTab('allocation')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white">
+                    🥧 توزیع
+                </button>
+                <button onclick="switchTab('insights')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white">
+                    💡 تحلیل‌ها
+                </button>
+                <button onclick="switchTab('export')" 
+                        class="tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white">
+                    💾 خروجی
+                </button>
+                <button onclick="runAllTests()" 
+                        class="mr-auto px-4 py-3 bg-green-600 hover:bg-green-700 text-white rounded-t transition">
+                    <i class="fas fa-play ml-1"></i>
+                    اجرای همه تست‌ها
+                </button>
+            </div>
+
+            <div class="p-6">
+                <!-- Advanced Portfolio Tab -->
+                <div id="tab-advanced" class="tab-content">
+                    <h3 class="text-xl font-semibold mb-4 text-blue-400">
+                        📊 تست پورتفولیو پیشرفته
+                    </h3>
+                    <div class="space-y-4">
+                        <button onclick="testAdvancedPortfolio()" 
+                                class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-chart-line ml-1"></i>
+                            تست API پیشرفته (/api/portfolio/advanced)
+                        </button>
+                        <div id="advanced-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- Correlation Tab -->
+                <div id="tab-correlation" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-purple-400">
+                        🔗 تست ماتریس همبستگی
+                    </h3>
+                    <div class="space-y-4">
+                        <button onclick="testCorrelation()" 
+                                class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-project-diagram ml-1"></i>
+                            تست همبستگی (/api/portfolio/correlation)
+                        </button>
+                        <div id="correlation-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- History Tab -->
+                <div id="tab-history" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-orange-400">
+                        📈 تست تاریخچه عملکرد
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <button onclick="testHistory('7d')" 
+                                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition">
+                                7 روز
+                            </button>
+                            <button onclick="testHistory('30d')" 
+                                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition">
+                                30 روز
+                            </button>
+                            <button onclick="testHistory('90d')" 
+                                    class="bg-orange-600 hover:bg-orange-700 text-white px-4 py-2 rounded transition">
+                                90 روز
+                            </button>
+                        </div>
+                        <div id="history-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- Allocation Tab -->
+                <div id="tab-allocation" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-yellow-400">
+                        🥧 تست توزیع پورتفولیو
+                    </h3>
+                    <div class="space-y-4">
+                        <button onclick="testAllocation()" 
+                                class="bg-yellow-600 hover:bg-yellow-700 text-white px-4 py-2 rounded transition">
+                            <i class="fas fa-pie-chart ml-1"></i>
+                            تست توزیع (/api/portfolio/allocation)
+                        </button>
+                        <div id="allocation-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- Insights Tab -->
+                <div id="tab-insights" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-green-400">
+                        💡 تست تحلیل‌ها و پیشنهادات
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <button onclick="testInsights()" 
+                                    class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded transition">
+                                تحلیل‌ها
+                            </button>
+                            <button onclick="testRiskMetrics()" 
+                                    class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded transition">
+                                ریسک
+                            </button>
+                            <button onclick="testPerformance()" 
+                                    class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded transition">
+                                عملکرد
+                            </button>
+                        </div>
+                        <div id="insights-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+
+                <!-- Export Tab -->
+                <div id="tab-export" class="tab-content hidden">
+                    <h3 class="text-xl font-semibold mb-4 text-cyan-400">
+                        💾 تست خروجی داده‌ها
+                    </h3>
+                    <div class="space-y-4">
+                        <div class="flex gap-4">
+                            <button onclick="testExport('json')" 
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition">
+                                JSON
+                            </button>
+                            <button onclick="testExport('csv')" 
+                                    class="bg-cyan-600 hover:bg-cyan-700 text-white px-4 py-2 rounded transition">
+                                CSV
+                            </button>
+                        </div>
+                        <div id="export-results" class="bg-gray-900 rounded border p-4 text-sm font-mono"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Results Summary -->
+        <div class="mt-6 bg-gray-800 rounded-lg border border-gray-700 p-4">
+            <h2 class="text-lg font-semibold mb-3">
+                <i class="fas fa-clipboard-list text-blue-400 ml-2"></i>
+                خلاصه نتایج تست
+            </h2>
+            <div id="test-summary" class="space-y-2">
+                <div class="text-gray-400">هنوز تستی اجرا نشده است</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let authToken = '';
+        const testResults = {};
+
+        // Authentication
+        async function login() {
+            try {
+                const response = await axios.post('/api/auth/login', {
+                    email: 'admin@example.com',
+                    password: 'admin123'
+                });
+
+                if (response.data.success) {
+                    authToken = response.data.session.accessToken;
+                    document.getElementById('authStatus').innerHTML = 
+                        '<span class="text-green-400"><i class="fas fa-check-circle ml-1"></i>احراز هویت موفق</span>';
+                    document.getElementById('loginBtn').innerHTML = 
+                        '<i class="fas fa-check ml-1"></i>وارد شده';
+                    document.getElementById('loginBtn').disabled = true;
+                    document.getElementById('loginBtn').className = 'bg-green-600 text-white px-4 py-2 rounded';
+                } else {
+                    throw new Error(response.data.error);
+                }
+            } catch (error) {
+                document.getElementById('authStatus').innerHTML = 
+                    `<span class="text-red-400"><i class="fas fa-times-circle ml-1"></i>خطا: ${error.message}</span>`;
+            }
+        }
+
+        // Tab Management
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.add('hidden');
+            });
+            
+            // Remove active state from all buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.className = 'tab-button px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-300 hover:text-white';
+            });
+            
+            // Show selected tab
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            
+            // Set active button
+            event.target.className = 'tab-button px-4 py-3 text-sm font-medium border-b-2 border-blue-500 text-blue-400 bg-gray-700';
+        }
+
+        // API Test Functions
+        async function testAdvancedPortfolio() {
+            try {
+                showLoading('advanced-results');
+                const response = await axios.get('/api/portfolio/advanced', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    totalValue: response.data.data?.totalValue,
+                    totalPnL: response.data.data?.totalPnL,
+                    holdingsCount: response.data.data?.holdings?.length,
+                    performanceDataPoints: response.data.performance?.data?.length,
+                    message: response.data.message
+                };
+
+                displayResult('advanced-results', 'تست پورتفولیو پیشرفته', result, true);
+                testResults.advanced = { success: true, details: result };
+            } catch (error) {
+                displayResult('advanced-results', 'تست پورتفولیو پیشرفته', { error: error.message }, false);
+                testResults.advanced = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testCorrelation() {
+            try {
+                showLoading('correlation-results');
+                const response = await axios.get('/api/portfolio/correlation', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    symbolsCount: response.data.data?.symbols?.length,
+                    symbols: response.data.data?.symbols,
+                    matrixKeys: Object.keys(response.data.data?.matrix || {}),
+                    lastUpdated: response.data.data?.lastUpdated
+                };
+
+                displayResult('correlation-results', 'تست ماتریس همبستگی', result, true);
+                testResults.correlation = { success: true, details: result };
+            } catch (error) {
+                displayResult('correlation-results', 'تست ماتریس همبستگی', { error: error.message }, false);
+                testResults.correlation = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testHistory(period) {
+            try {
+                showLoading('history-results');
+                const response = await axios.get(`/api/portfolio/history?period=${period}`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    period: response.data.data?.period,
+                    historyPoints: response.data.data?.history?.length,
+                    startValue: response.data.data?.summary?.startValue,
+                    endValue: response.data.data?.summary?.endValue,
+                    totalReturn: response.data.data?.summary?.totalReturn
+                };
+
+                displayResult('history-results', `تست تاریخچه (${period})`, result, true);
+                testResults.history = { success: true, details: result };
+            } catch (error) {
+                displayResult('history-results', 'تست تاریخچه', { error: error.message }, false);
+                testResults.history = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testAllocation() {
+            try {
+                showLoading('allocation-results');
+                const response = await axios.get('/api/portfolio/allocation', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    assetsCount: response.data.data?.byAsset?.length,
+                    topConcentration: response.data.data?.concentration?.top1,
+                    diversificationScore: response.data.data?.diversificationScore,
+                    recommendationsCount: response.data.data?.recommendations?.length
+                };
+
+                displayResult('allocation-results', 'تست توزیع پورتفولیو', result, true);
+                testResults.allocation = { success: true, details: result };
+            } catch (error) {
+                displayResult('allocation-results', 'تست توزیع پورتفولیو', { error: error.message }, false);
+                testResults.allocation = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testInsights() {
+            try {
+                showLoading('insights-results');
+                const response = await axios.get('/api/portfolio/insights', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    insightsCount: response.data.data?.insights?.length,
+                    recommendationsCount: response.data.data?.recommendations?.length,
+                    alertsCount: response.data.data?.alerts?.length
+                };
+
+                displayResult('insights-results', 'تست تحلیل‌ها', result, true);
+                testResults.insights = { success: true, details: result };
+            } catch (error) {
+                displayResult('insights-results', 'تست تحلیل‌ها', { error: error.message }, false);
+                testResults.insights = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testRiskMetrics() {
+            try {
+                const response = await axios.get('/api/portfolio/risk', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    riskLevel: response.data.data?.riskLevel,
+                    diversificationScore: response.data.data?.diversificationScore,
+                    recommendationsCount: response.data.data?.recommendations?.length
+                };
+
+                appendResult('insights-results', 'تست ریسک', result, true);
+                testResults.risk = { success: true, details: result };
+            } catch (error) {
+                appendResult('insights-results', 'تست ریسک', { error: error.message }, false);
+                testResults.risk = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testPerformance() {
+            try {
+                const response = await axios.get('/api/portfolio/performance', {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    dailyReturn: response.data.data?.dailyReturn,
+                    monthlyReturn: response.data.data?.monthlyReturn,
+                    sharpeRatio: response.data.data?.sharpeRatio,
+                    volatility: response.data.data?.volatility
+                };
+
+                appendResult('insights-results', 'تست عملکرد', result, true);
+                testResults.performance = { success: true, details: result };
+            } catch (error) {
+                appendResult('insights-results', 'تست عملکرد', { error: error.message }, false);
+                testResults.performance = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        async function testExport(format) {
+            try {
+                showLoading('export-results');
+                const response = await axios.get(`/api/portfolio/export?format=${format}`, {
+                    headers: { Authorization: `Bearer ${authToken}` }
+                });
+
+                const result = {
+                    success: response.data.success,
+                    format: format,
+                    dataSize: JSON.stringify(response.data).length,
+                    hasExportInfo: !!response.data.data?.exportInfo,
+                    assetsCount: response.data.data?.holdings?.length
+                };
+
+                displayResult('export-results', `تست خروجی (${format})`, result, true);
+                testResults.export = { success: true, details: result };
+            } catch (error) {
+                displayResult('export-results', 'تست خروجی', { error: error.message }, false);
+                testResults.export = { success: false, error: error.message };
+            }
+            updateSummary();
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            if (!authToken) {
+                alert('لطفاً ابتدا وارد شوید');
+                return;
+            }
+
+            // Switch to first tab and run tests sequentially
+            switchTab('advanced');
+            await testAdvancedPortfolio();
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            switchTab('correlation');
+            await testCorrelation();
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            switchTab('history');
+            await testHistory('30d');
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            switchTab('allocation');
+            await testAllocation();
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            switchTab('insights');
+            await testInsights();
+            await testRiskMetrics();
+            await testPerformance();
+            
+            await new Promise(resolve => setTimeout(resolve, 500));
+            switchTab('export');
+            await testExport('json');
+
+            alert('همه تست‌ها با موفقیت اجرا شد!');
+        }
+
+        // Helper Functions
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = 
+                '<div class="text-yellow-400"><i class="fas fa-spinner fa-spin ml-1"></i>در حال اجرا...</div>';
+        }
+
+        function displayResult(elementId, title, result, success) {
+            const statusIcon = success ? 
+                '<i class="fas fa-check-circle text-green-400 ml-1"></i>' : 
+                '<i class="fas fa-times-circle text-red-400 ml-1"></i>';
+            
+            const statusColor = success ? 'text-green-400' : 'text-red-400';
+            
+            document.getElementById(elementId).innerHTML = 
+                `<div class="${statusColor} font-bold mb-2">${statusIcon}${title}</div>` +
+                `<pre class="text-gray-300 whitespace-pre-wrap">${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        function appendResult(elementId, title, result, success) {
+            const statusIcon = success ? 
+                '<i class="fas fa-check-circle text-green-400 ml-1"></i>' : 
+                '<i class="fas fa-times-circle text-red-400 ml-1"></i>';
+            
+            const statusColor = success ? 'text-green-400' : 'text-red-400';
+            
+            const currentContent = document.getElementById(elementId).innerHTML;
+            document.getElementById(elementId).innerHTML = currentContent +
+                `<div class="${statusColor} font-bold mb-2 mt-4">${statusIcon}${title}</div>` +
+                `<pre class="text-gray-300 whitespace-pre-wrap">${JSON.stringify(result, null, 2)}</pre>`;
+        }
+
+        function updateSummary() {
+            const totalTests = Object.keys(testResults).length;
+            const passedTests = Object.values(testResults).filter(t => t.success).length;
+            const failedTests = totalTests - passedTests;
+
+            const summaryHTML = `
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="bg-blue-600/20 border border-blue-500 rounded p-3">
+                        <div class="text-blue-400 font-bold text-xl">${totalTests}</div>
+                        <div class="text-sm text-gray-300">کل تست‌ها</div>
+                    </div>
+                    <div class="bg-green-600/20 border border-green-500 rounded p-3">
+                        <div class="text-green-400 font-bold text-xl">${passedTests}</div>
+                        <div class="text-sm text-gray-300">موفق</div>
+                    </div>
+                    <div class="bg-red-600/20 border border-red-500 rounded p-3">
+                        <div class="text-red-400 font-bold text-xl">${failedTests}</div>
+                        <div class="text-sm text-gray-300">ناموفق</div>
+                    </div>
+                </div>
+                <div class="mt-4 text-sm text-gray-400">
+                    آخرین بروزرسانی: ${new Date().toLocaleString('fa-IR')}
+                </div>
+            `;
+
+            document.getElementById('test-summary').innerHTML = summaryHTML;
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🚀 Portfolio Test System initialized');
+        });
+    </script>
+</body>
+</html>

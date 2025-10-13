@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Settings Direct Test</title>
+    <style>
+        body { font-family: Arial; padding: 20px; background: #1a1a1a; color: white; }
+        .success { color: #4ade80; }
+        .error { color: #f87171; }
+        .log { margin: 5px 0; }
+    </style>
+</head>
+<body>
+    <h1>Settings.js Direct Test</h1>
+    <div id="log"></div>
+    
+    <script>
+        const log = document.getElementById('log');
+        function addLog(message, type = 'log') {
+            const div = document.createElement('div');
+            div.className = `log ${type}`;
+            div.textContent = message;
+            log.appendChild(div);
+            console.log(message);
+        }
+        
+        window.onerror = function(message, source, lineno, colno, error) {
+            addLog(`❌ JavaScript Error: ${message} (Line: ${lineno}, Col: ${colno})`, 'error');
+            addLog(`   Source: ${source}`, 'error');
+            if (error && error.stack) {
+                addLog(`   Stack: ${error.stack}`, 'error');
+            }
+            return true;
+        };
+        
+        addLog('🚀 Starting test...');
+        
+        const script = document.createElement('script');
+        script.src = '/static/modules/settings.js?v=' + Date.now();
+        
+        script.onload = function() {
+            addLog('✅ Settings.js loaded successfully', 'success');
+            
+            try {
+                if (window.SettingsModule) {
+                    addLog('✅ SettingsModule class found', 'success');
+                    
+                    const settings = new window.SettingsModule();
+                    addLog('✅ SettingsModule instance created', 'success');
+                    
+                    // Test methods
+                    const methods = ['getTradingTab', 'getSystemTab', 'getContent', 'switchTab'];
+                    methods.forEach(method => {
+                        if (typeof settings[method] === 'function') {
+                            addLog(`✅ ${method} method exists`, 'success');
+                        } else {
+                            addLog(`❌ ${method} method missing`, 'error');
+                        }
+                    });
+                    
+                } else {
+                    addLog('❌ SettingsModule class not found', 'error');
+                }
+            } catch (e) {
+                addLog(`❌ Error creating SettingsModule: ${e.message}`, 'error');
+                if (e.stack) {
+                    addLog(`   Stack: ${e.stack}`, 'error');
+                }
+            }
+        };
+        
+        script.onerror = function(e) {
+            addLog('❌ Failed to load settings.js', 'error');
+            addLog(`   Error: ${e}`, 'error');
+        };
+        
+        document.head.appendChild(script);
+    </script>
+</body>
+</html>

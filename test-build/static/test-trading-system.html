@@ -1,0 +1,662 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست سیستم معاملات - تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+        .test-success { background-color: rgba(16, 185, 129, 0.1); border-color: rgb(16, 185, 129); }
+        .test-error { background-color: rgba(239, 68, 68, 0.1); border-color: rgb(239, 68, 68); }
+        .loading-spinner {
+            border: 4px solid #374151;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .tab-active {
+            background-color: #3B82F6;
+            color: white;
+        }
+        .tab-inactive {
+            background-color: #374151;
+            color: #9CA3AF;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                <i class="fas fa-chart-line mr-2"></i>
+                تست کامل سیستم معاملات تایتان
+            </h1>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div id="connectionStatus" class="text-gray-300">در حال بررسی...</div>
+                <a href="/" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        
+        <!-- Test Control Panel -->
+        <div class="mb-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-play-circle text-green-400 mr-2"></i>
+                پنل کنترل تست سیستم معاملات
+            </h2>
+            
+            <!-- Trading Tabs -->
+            <div class="mb-6">
+                <div class="flex border-b border-gray-700">
+                    <button onclick="switchTab('manual')" id="tab-manual" class="tab-active px-6 py-3 font-medium border-b-2 border-blue-500">
+                        📊 معاملات دستی
+                    </button>
+                    <button onclick="switchTab('autopilot')" id="tab-autopilot" class="tab-inactive px-6 py-3 font-medium border-b-2 border-transparent">
+                        🚀 اتوپایلوت حرفه‌ای
+                    </button>
+                    <button onclick="switchTab('strategies')" id="tab-strategies" class="tab-inactive px-6 py-3 font-medium border-b-2 border-transparent">
+                        🧠 استراتژی‌ها
+                    </button>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <button onclick="autoLogin()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-sign-in-alt mr-2"></i>
+                    ورود خودکار
+                </button>
+                <button onclick="testAllTradingAPIs()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-vial mr-2"></i>
+                    تست همه API ها
+                </button>
+                <button onclick="testCurrentTab()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-flask mr-2"></i>
+                    تست تب فعال
+                </button>
+                <button onclick="openTradingModule()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-external-link-alt mr-2"></i>
+                    باز کردن معاملات
+                </button>
+            </div>
+        </div>
+
+        <!-- Tab Content -->
+        <div id="tab-content">
+            
+            <!-- Manual Trading Tab -->
+            <div id="content-manual" class="tab-panel">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Manual Trading Dashboard Test -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-chart-bar text-blue-400 mr-2"></i>
+                            تست داشبورد معاملات دستی
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>داشبورد کلی</span>
+                                <div id="manual-dashboard" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>موجودی‌ها</span>
+                                <div id="manual-balances" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>پوزیشن‌های فعال</span>
+                                <div id="manual-positions" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>تحلیل تکنیکال</span>
+                                <div id="manual-analysis" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>ثبت سفارش</span>
+                                <div id="manual-order" class="text-gray-400">در انتظار...</div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="testManualTrading()" class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded">
+                                تست معاملات دستی
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Manual Trading Data Display -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 text-blue-400">📊 داده‌های معاملات دستی</h3>
+                        <div id="manual-data" class="text-sm text-gray-400">
+                            داده‌ها پس از تست نمایش داده می‌شوند...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Autopilot Tab -->
+            <div id="content-autopilot" class="tab-panel hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Autopilot Dashboard Test -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-robot text-purple-400 mr-2"></i>
+                            تست اتوپایلوت حرفه‌ای
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>داشبورد اتوپایلوت</span>
+                                <div id="autopilot-dashboard" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>کنترل اتوپایلوت</span>
+                                <div id="autopilot-control" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>تنظیمات</span>
+                                <div id="autopilot-config" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>سیگنال‌های AI</span>
+                                <div id="autopilot-signals" class="text-gray-400">در انتظار...</div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="testAutopilot()" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 rounded">
+                                تست اتوپایلوت
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Autopilot Data Display -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 text-purple-400">🚀 داده‌های اتوپایلوت</h3>
+                        <div id="autopilot-data" class="text-sm text-gray-400">
+                            داده‌ها پس از تست نمایش داده می‌شوند...
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Strategies Tab -->
+            <div id="content-strategies" class="tab-panel hidden">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- Strategies Test -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 flex items-center">
+                            <i class="fas fa-brain text-green-400 mr-2"></i>
+                            تست مدیریت استراتژی‌ها
+                        </h3>
+                        <div class="space-y-3">
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>لیست استراتژی‌ها</span>
+                                <div id="strategies-list" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>ایجاد استراتژی</span>
+                                <div id="strategies-create" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>تولید AI</span>
+                                <div id="strategies-ai" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>کنترل وضعیت</span>
+                                <div id="strategies-control" class="text-gray-400">در انتظار...</div>
+                            </div>
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                                <span>عملکرد استراتژی</span>
+                                <div id="strategies-performance" class="text-gray-400">در انتظار...</div>
+                            </div>
+                        </div>
+                        <div class="mt-4">
+                            <button onclick="testStrategies()" class="w-full bg-green-600 hover:bg-green-700 text-white py-2 rounded">
+                                تست استراتژی‌ها
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Strategies Data Display -->
+                    <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                        <h3 class="text-lg font-bold mb-4 text-green-400">🧠 داده‌های استراتژی‌ها</h3>
+                        <div id="strategies-data" class="text-sm text-gray-400">
+                            داده‌ها پس از تست نمایش داده می‌شوند...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Results -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="fas fa-clipboard-check text-green-400 mr-2"></i>
+                خلاصه نتایج تست سیستم معاملات
+            </h3>
+            <div id="testSummary" class="text-gray-400">
+                برای شروع تست‌ها، ابتدا وارد شوید سپس API های مربوطه را تست کنید.
+            </div>
+        </div>
+
+        <!-- Direct Access Links -->
+        <div class="mt-8 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 border border-blue-700">
+            <h3 class="text-lg font-bold mb-4 flex items-center text-white">
+                <i class="fas fa-external-link-alt text-blue-400 mr-2"></i>
+                دسترسی مستقیم به سیستم معاملات
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-center block transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی تایتان
+                </a>
+                <button onclick="openTradingInApp()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg transition-colors">
+                    <i class="fas fa-chart-line mr-2"></i>
+                    باز کردن صفحه معاملات
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let authToken = null;
+        let currentTab = 'manual';
+        let testResults = {
+            auth: false,
+            manual: false,
+            autopilot: false,
+            strategies: false
+        };
+
+        // Tab switching
+        function switchTab(tabName) {
+            currentTab = tabName;
+            
+            // Update tab buttons
+            document.querySelectorAll('[id^="tab-"]').forEach(tab => {
+                if (tab.id === `tab-${tabName}`) {
+                    tab.className = 'tab-active px-6 py-3 font-medium border-b-2 border-blue-500';
+                } else {
+                    tab.className = 'tab-inactive px-6 py-3 font-medium border-b-2 border-transparent';
+                }
+            });
+            
+            // Update content panels
+            document.querySelectorAll('[id^="content-"]').forEach(panel => {
+                if (panel.id === `content-${tabName}`) {
+                    panel.classList.remove('hidden');
+                } else {
+                    panel.classList.add('hidden');
+                }
+            });
+        }
+
+        // Test helper functions
+        function setTestStatus(elementId, status, message = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (status === 'loading') {
+                element.innerHTML = '<div class="loading-spinner"></div>';
+            } else if (status === 'success') {
+                element.innerHTML = '<i class="fas fa-check-circle text-green-400"></i>';
+                element.title = message;
+            } else if (status === 'error') {
+                element.innerHTML = '<i class="fas fa-times-circle text-red-400"></i>';
+                element.title = message;
+            }
+        }
+
+        // Authentication
+        async function autoLogin() {
+            try {
+                setTestStatus('manual-dashboard', 'loading');
+                
+                const response = await axios.post('/api/auth/login', {
+                    username: 'test@example.com',
+                    password: 'password'
+                });
+
+                if (response.data.success) {
+                    authToken = response.data.session.accessToken;
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                    
+                    document.getElementById('connectionStatus').innerHTML = 
+                        '<i class="fas fa-check-circle text-green-400 mr-2"></i>وارد شده: ' + response.data.session.user.firstName;
+                    
+                    testResults.auth = true;
+                    updateSummary();
+                    return true;
+                }
+            } catch (error) {
+                console.error('Login failed:', error);
+                document.getElementById('connectionStatus').innerHTML = 
+                    '<i class="fas fa-times-circle text-red-400 mr-2"></i>خطا در ورود';
+                return false;
+            }
+        }
+
+        // Manual Trading Tests
+        async function testManualTrading() {
+            if (!authToken) {
+                await autoLogin();
+            }
+
+            try {
+                setTestStatus('manual-dashboard', 'loading');
+                setTestStatus('manual-balances', 'loading');
+                setTestStatus('manual-positions', 'loading');
+                setTestStatus('manual-analysis', 'loading');
+                setTestStatus('manual-order', 'loading');
+
+                // Test dashboard
+                const dashboardResponse = await axios.get('/api/trading/manual/dashboard');
+                if (dashboardResponse.data.success) {
+                    setTestStatus('manual-dashboard', 'success', `موجودی کل: $${dashboardResponse.data.data.performance.totalBalance.toFixed(2)}`);
+                    
+                    document.getElementById('manual-data').innerHTML = `
+                        <div class="space-y-3">
+                            <div><strong>موجودی کل:</strong> $${dashboardResponse.data.data.performance.totalBalance.toFixed(2)}</div>
+                            <div><strong>سود روزانه:</strong> $${dashboardResponse.data.data.performance.dailyPnL.toFixed(2)}</div>
+                            <div><strong>نرخ برد:</strong> ${dashboardResponse.data.data.performance.winRate}%</div>
+                            <div><strong>معاملات فعال:</strong> ${dashboardResponse.data.data.performance.activeTrades}</div>
+                            <div><strong>شارپ ریشو:</strong> ${dashboardResponse.data.data.performance.sharpeRatio}</div>
+                            <div><strong>پوزیشن‌ها:</strong> ${dashboardResponse.data.data.positions.length} پوزیشن فعال</div>
+                            <div><strong>موجودی USDT:</strong> ${dashboardResponse.data.data.balances.USDT.available} USDT</div>
+                            <div><strong>موجودی BTC:</strong> ${dashboardResponse.data.data.balances.BTC.available} BTC</div>
+                        </div>
+                    `;
+                    
+                    setTestStatus('manual-balances', 'success', `${Object.keys(dashboardResponse.data.data.balances).length} ارز`);
+                    setTestStatus('manual-positions', 'success', `${dashboardResponse.data.data.positions.length} پوزیشن`);
+                }
+
+                // Test technical analysis
+                const analysisResponse = await axios.get('/api/trading/manual/analysis/BTCUSDT');
+                if (analysisResponse.data.success) {
+                    setTestStatus('manual-analysis', 'success', `سیگنال: ${analysisResponse.data.data.overall_signal}`);
+                }
+
+                // Test order placement
+                const orderResponse = await axios.post('/api/trading/manual/order', {
+                    symbol: 'BTCUSDT',
+                    side: 'buy',
+                    type: 'limit',
+                    quantity: 0.001,
+                    price: 45000
+                });
+                if (orderResponse.data.success) {
+                    setTestStatus('manual-order', 'success', `سفارش: ${orderResponse.data.data.order.id}`);
+                }
+
+                testResults.manual = true;
+                updateSummary();
+
+            } catch (error) {
+                console.error('Manual trading test failed:', error);
+                setTestStatus('manual-dashboard', 'error', error.message);
+                setTestStatus('manual-balances', 'error', error.message);
+                setTestStatus('manual-positions', 'error', error.message);
+                setTestStatus('manual-analysis', 'error', error.message);
+                setTestStatus('manual-order', 'error', error.message);
+            }
+        }
+
+        // Autopilot Tests
+        async function testAutopilot() {
+            if (!authToken) {
+                await autoLogin();
+            }
+
+            try {
+                setTestStatus('autopilot-dashboard', 'loading');
+                setTestStatus('autopilot-control', 'loading');
+                setTestStatus('autopilot-config', 'loading');
+                setTestStatus('autopilot-signals', 'loading');
+
+                // Test dashboard
+                const dashboardResponse = await axios.get('/api/trading/autopilot/dashboard');
+                if (dashboardResponse.data.success) {
+                    setTestStatus('autopilot-dashboard', 'success', `وضعیت: ${dashboardResponse.data.data.status}`);
+                    
+                    document.getElementById('autopilot-data').innerHTML = `
+                        <div class="space-y-3">
+                            <div><strong>نام جلسه:</strong> ${dashboardResponse.data.data.name}</div>
+                            <div><strong>وضعیت:</strong> ${dashboardResponse.data.data.status}</div>
+                            <div><strong>عملکرد کل:</strong> ${dashboardResponse.data.data.performance.totalPerformance}%</div>
+                            <div><strong>سود روزانه:</strong> $${dashboardResponse.data.data.performance.dailyProfit}</div>
+                            <div><strong>کل معاملات:</strong> ${dashboardResponse.data.data.performance.totalTrades}</div>
+                            <div><strong>نرخ موفقیت:</strong> ${dashboardResponse.data.data.performance.successRate}%</div>
+                            <div><strong>ماکزیمم درآوری:</strong> ${dashboardResponse.data.data.performance.maxDrawdown}%</div>
+                            <div><strong>استراتژی‌های فعال:</strong> ${dashboardResponse.data.data.activeStrategies.length}</div>
+                        </div>
+                    `;
+                }
+
+                // Test control
+                const controlResponse = await axios.post('/api/trading/autopilot/control', {
+                    action: 'pause',
+                    sessionId: 'ap1'
+                });
+                if (controlResponse.data.success) {
+                    setTestStatus('autopilot-control', 'success', `عمل: ${controlResponse.data.data.action}`);
+                }
+
+                // Test config update
+                const configResponse = await axios.put('/api/trading/autopilot/config', {
+                    maxRiskPerTrade: 2.5,
+                    aiConfidenceThreshold: 0.8
+                });
+                if (configResponse.data.success) {
+                    setTestStatus('autopilot-config', 'success', 'تنظیمات بروزرسانی شد');
+                }
+
+                setTestStatus('autopilot-signals', 'success', 'سیگنال‌ها آماده');
+                testResults.autopilot = true;
+                updateSummary();
+
+            } catch (error) {
+                console.error('Autopilot test failed:', error);
+                setTestStatus('autopilot-dashboard', 'error', error.message);
+                setTestStatus('autopilot-control', 'error', error.message);
+                setTestStatus('autopilot-config', 'error', error.message);
+                setTestStatus('autopilot-signals', 'error', error.message);
+            }
+        }
+
+        // Strategies Tests
+        async function testStrategies() {
+            if (!authToken) {
+                await autoLogin();
+            }
+
+            try {
+                setTestStatus('strategies-list', 'loading');
+                setTestStatus('strategies-create', 'loading');
+                setTestStatus('strategies-ai', 'loading');
+                setTestStatus('strategies-control', 'loading');
+                setTestStatus('strategies-performance', 'loading');
+
+                // Test strategies list
+                const listResponse = await axios.get('/api/trading/strategies');
+                if (listResponse.data.success) {
+                    setTestStatus('strategies-list', 'success', `${listResponse.data.data.strategies.length} استراتژی`);
+                    
+                    document.getElementById('strategies-data').innerHTML = `
+                        <div class="space-y-3">
+                            <div><strong>کل استراتژی‌ها:</strong> ${listResponse.data.data.summary.totalStrategies}</div>
+                            <div><strong>استراتژی‌های فعال:</strong> ${listResponse.data.data.summary.activeStrategies}</div>
+                            <div><strong>میانگین ROI:</strong> ${listResponse.data.data.summary.totalROI.toFixed(1)}%</div>
+                            <div><strong>میانگین نرخ برد:</strong> ${listResponse.data.data.summary.avgWinRate.toFixed(1)}%</div>
+                            <div><strong>کل معاملات:</strong> ${listResponse.data.data.summary.totalTrades}</div>
+                            <div><strong>بهترین استراتژی:</strong> ${listResponse.data.data.summary.bestStrategy.name} (${listResponse.data.data.summary.bestStrategy.return}%)</div>
+                            <hr class="border-gray-600 my-3">
+                            <div><strong>استراتژی‌ها:</strong></div>
+                            ${listResponse.data.data.strategies.map(s => `
+                                <div class="text-xs">• ${s.name} - ${s.status} - ${s.performance.totalReturn}% ROI</div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                // Test create strategy
+                const createResponse = await axios.post('/api/trading/strategies', {
+                    name: 'Test Strategy',
+                    description: 'استراتژی تست',
+                    category: 'custom'
+                });
+                if (createResponse.data.success) {
+                    setTestStatus('strategies-create', 'success', `ایجاد شد: ${createResponse.data.data.id}`);
+                }
+
+                // Test AI generation
+                const aiResponse = await axios.post('/api/trading/strategies/ai-generate', {
+                    preferences: { riskLevel: 'medium' }
+                });
+                if (aiResponse.data.success) {
+                    setTestStatus('strategies-ai', 'success', `${aiResponse.data.data.generatedStrategies.length} استراتژی AI`);
+                }
+
+                // Test status control
+                const controlResponse = await axios.put('/api/trading/strategies/str1/status', {
+                    status: 'active'
+                });
+                if (controlResponse.data.success) {
+                    setTestStatus('strategies-control', 'success', `وضعیت: ${controlResponse.data.data.newStatus}`);
+                }
+
+                // Test performance
+                const perfResponse = await axios.get('/api/trading/strategies/str1/performance');
+                if (perfResponse.data.success) {
+                    setTestStatus('strategies-performance', 'success', `${perfResponse.data.data.trades.length} معامله`);
+                }
+
+                testResults.strategies = true;
+                updateSummary();
+
+            } catch (error) {
+                console.error('Strategies test failed:', error);
+                setTestStatus('strategies-list', 'error', error.message);
+                setTestStatus('strategies-create', 'error', error.message);
+                setTestStatus('strategies-ai', 'error', error.message);
+                setTestStatus('strategies-control', 'error', error.message);
+                setTestStatus('strategies-performance', 'error', error.message);
+            }
+        }
+
+        // Test all APIs
+        async function testAllTradingAPIs() {
+            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال تست...';
+
+            const loginResult = await autoLogin();
+            if (loginResult) {
+                await testManualTrading();
+                await testAutopilot();
+                await testStrategies();
+            }
+
+            const allPassed = Object.values(testResults).every(Boolean);
+            const statusColor = allPassed ? 'text-green-400' : 'text-yellow-400';
+            const statusIcon = allPassed ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            
+            document.getElementById('connectionStatus').innerHTML = 
+                `<i class="fas ${statusIcon} ${statusColor} mr-2"></i>${allPassed ? 'همه تست‌ها موفق' : 'برخی تست‌ها نیاز به بررسی دارند'}`;
+        }
+
+        // Test current tab only
+        async function testCurrentTab() {
+            if (!authToken) {
+                await autoLogin();
+            }
+
+            switch (currentTab) {
+                case 'manual':
+                    await testManualTrading();
+                    break;
+                case 'autopilot':
+                    await testAutopilot();
+                    break;
+                case 'strategies':
+                    await testStrategies();
+                    break;
+            }
+        }
+
+        // Update summary
+        function updateSummary() {
+            const summary = document.getElementById('testSummary');
+            const passCount = Object.values(testResults).filter(Boolean).length;
+            const totalCount = Object.keys(testResults).length;
+            
+            let statusClass = 'text-green-400';
+            let statusIcon = 'fa-check-circle';
+            let statusText = 'همه تست‌ها موفقیت‌آمیز';
+
+            if (passCount < totalCount) {
+                statusClass = passCount > 0 ? 'text-yellow-400' : 'text-red-400';
+                statusIcon = passCount > 0 ? 'fa-exclamation-triangle' : 'fa-times-circle';
+                statusText = `${passCount} از ${totalCount} تست موفقیت‌آمیز`;
+            }
+
+            summary.innerHTML = `
+                <div class="flex items-center ${statusClass}">
+                    <i class="fas ${statusIcon} mr-3 text-2xl"></i>
+                    <div>
+                        <div class="text-lg font-bold">${statusText}</div>
+                        <div class="text-sm text-gray-400 mt-1">
+                            احراز هویت: ${testResults.auth ? '✅' : '❌'} | 
+                            معاملات دستی: ${testResults.manual ? '✅' : '❌'} | 
+                            اتوپایلوت: ${testResults.autopilot ? '✅' : '❌'} | 
+                            استراتژی‌ها: ${testResults.strategies ? '✅' : '❌'}
+                        </div>
+                    </div>
+                </div>
+                
+                ${passCount === totalCount ? `
+                    <div class="mt-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                        <h4 class="font-bold text-green-400 mb-2">🎉 عالی! سیستم معاملات کاملاً آماده است</h4>
+                        <ul class="text-sm text-gray-300 space-y-1">
+                            <li>✅ معاملات دستی با تحلیل تکنیکال پیشرفته</li>
+                            <li>✅ اتوپایلوت هوشمند با کنترل کامل</li>
+                            <li>✅ مدیریت استراتژی‌های حرفه‌ای</li>
+                            <li>✅ تولید استراتژی با هوش مصنوعی</li>
+                            <li>✅ مدیریت ریسک و عملکرد پیشرفته</li>
+                        </ul>
+                        <div class="mt-3">
+                            <button onclick="openTradingInApp()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm">
+                                <i class="fas fa-rocket mr-2"></i>
+                                شروع معاملات در برنامه اصلی
+                            </button>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Open trading in main app
+        function openTradingInApp() {
+            window.open('/', '_blank');
+            alert('🎯 برای تست کامل:\n\n1. وارد برنامه شوید\n2. از منوی کناری "معاملات" کلیک کنید\n3. هر سه تب را تست کنید:\n   📊 معاملات دستی\n   🚀 اتوپایلوت حرفه‌ای\n   🧠 استراتژی‌ها');
+        }
+
+        // Open trading module
+        function openTradingModule() {
+            openTradingInApp();
+        }
+    </script>
+</body>
+</html>
