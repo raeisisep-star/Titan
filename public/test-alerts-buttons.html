@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست دکمه‌های هشدارها</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🧪 تست دکمه‌های بخش هشدارها</h1>
+        
+        <!-- Test Section 1: Button Types -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">1️⃣ تست نوع دکمه‌ها</h2>
+            <div class="space-y-3">
+                <div>
+                    <button onclick="alert('دکمه بدون type کلیک شد!')" class="bg-blue-600 px-4 py-2 rounded">
+                        دکمه بدون type (مشکل‌دار)
+                    </button>
+                    <span class="text-gray-400 text-sm mr-4">← این باید صفحه را refresh کند</span>
+                </div>
+                
+                <div>
+                    <button type="button" onclick="alert('دکمه با type=button کلیک شد!')" class="bg-green-600 px-4 py-2 rounded">
+                        دکمه با type="button" (صحیح)
+                    </button>
+                    <span class="text-gray-400 text-sm mr-4">← این نباید refresh کند</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test Section 2: Global Functions -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">2️⃣ تست توابع Global</h2>
+            <div class="space-y-3">
+                <button type="button" onclick="testGlobalFunction()" class="bg-purple-600 px-4 py-2 rounded">
+                    تست تابع Global
+                </button>
+                <div id="global-test-result" class="text-gray-400 text-sm mt-2"></div>
+            </div>
+        </div>
+
+        <!-- Test Section 3: Load Alerts Module -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">3️⃣ بارگذاری ماژول Alerts</h2>
+            <button type="button" onclick="loadAlertsModule()" class="bg-indigo-600 px-4 py-2 rounded mb-4">
+                بارگذاری alerts.js
+            </button>
+            <div id="module-status" class="text-gray-400 text-sm"></div>
+        </div>
+
+        <!-- Test Section 4: Alerts Functions -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">4️⃣ تست توابع Alerts</h2>
+            <div class="grid grid-cols-2 gap-3">
+                <button type="button" onclick="testShowCreateModal()" class="bg-blue-600 px-4 py-2 rounded text-sm">
+                    showCreateAlertModal()
+                </button>
+                <button type="button" onclick="testShowSettingsModal()" class="bg-green-600 px-4 py-2 rounded text-sm">
+                    showSettingsModal()
+                </button>
+                <button type="button" onclick="testLoadActiveAlerts()" class="bg-yellow-600 px-4 py-2 rounded text-sm">
+                    loadActiveAlerts()
+                </button>
+                <button type="button" onclick="testLoadTemplates()" class="bg-purple-600 px-4 py-2 rounded text-sm">
+                    loadAlertTemplates()
+                </button>
+            </div>
+            <div id="function-test-result" class="text-gray-400 text-sm mt-4"></div>
+        </div>
+
+        <!-- Console Log Display -->
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">📋 Console Logs</h2>
+            <div id="console-output" class="bg-black p-4 rounded text-green-400 font-mono text-sm h-64 overflow-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global test function
+        function testGlobalFunction() {
+            const result = document.getElementById('global-test-result');
+            result.innerHTML = '✅ تابع Global به درستی اجرا شد!';
+            result.className = 'text-green-400 text-sm mt-2';
+            logToConsole('✅ testGlobalFunction executed');
+        }
+
+        // Load alerts module
+        async function loadAlertsModule() {
+            const status = document.getElementById('module-status');
+            status.innerHTML = '⏳ در حال بارگذاری...';
+            
+            try {
+                // Load the script
+                const script = document.createElement('script');
+                script.src = '/static/modules/alerts.js';
+                script.onload = () => {
+                    logToConsole('✅ alerts.js loaded');
+                    
+                    // Check what's available
+                    const checks = {
+                        'window.AlertsManager': typeof window.AlertsManager,
+                        'window.AlertsModule': typeof window.AlertsModule,
+                        'window.TitanModules.AlertsModule': window.TitanModules?.AlertsModule ? 'function' : 'undefined',
+                        'window.alertsManager': typeof window.alertsManager,
+                        'window.showCreateAlertModal': typeof window.showCreateAlertModal,
+                        'window.loadActiveAlerts': typeof window.loadActiveAlerts
+                    };
+                    
+                    logToConsole('Module checks:', checks);
+                    
+                    let statusHtml = '<div class="space-y-1">';
+                    for (const [key, value] of Object.entries(checks)) {
+                        const icon = value !== 'undefined' ? '✅' : '❌';
+                        statusHtml += `<div>${icon} ${key}: ${value}</div>`;
+                    }
+                    statusHtml += '</div>';
+                    
+                    status.innerHTML = statusHtml;
+                    status.className = 'text-white text-sm';
+                };
+                script.onerror = () => {
+                    logToConsole('❌ Failed to load alerts.js');
+                    status.innerHTML = '❌ خطا در بارگذاری alerts.js';
+                    status.className = 'text-red-400 text-sm';
+                };
+                document.body.appendChild(script);
+            } catch (error) {
+                logToConsole('❌ Error:', error);
+                status.innerHTML = `❌ خطا: ${error.message}`;
+                status.className = 'text-red-400 text-sm';
+            }
+        }
+
+        // Test alerts functions
+        function testShowCreateModal() {
+            const result = document.getElementById('function-test-result');
+            try {
+                if (typeof window.showCreateAlertModal === 'function') {
+                    logToConsole('Calling showCreateAlertModal()');
+                    window.showCreateAlertModal();
+                    result.innerHTML = '✅ showCreateAlertModal() اجرا شد';
+                    result.className = 'text-green-400 text-sm mt-4';
+                } else {
+                    throw new Error('showCreateAlertModal is not defined');
+                }
+            } catch (error) {
+                logToConsole('❌ Error:', error.message);
+                result.innerHTML = `❌ خطا: ${error.message}`;
+                result.className = 'text-red-400 text-sm mt-4';
+            }
+        }
+
+        function testShowSettingsModal() {
+            const result = document.getElementById('function-test-result');
+            try {
+                if (typeof window.showSettingsModal === 'function') {
+                    logToConsole('Calling showSettingsModal()');
+                    window.showSettingsModal();
+                    result.innerHTML = '✅ showSettingsModal() اجرا شد';
+                    result.className = 'text-green-400 text-sm mt-4';
+                } else {
+                    throw new Error('showSettingsModal is not defined');
+                }
+            } catch (error) {
+                logToConsole('❌ Error:', error.message);
+                result.innerHTML = `❌ خطا: ${error.message}`;
+                result.className = 'text-red-400 text-sm mt-4';
+            }
+        }
+
+        function testLoadActiveAlerts() {
+            const result = document.getElementById('function-test-result');
+            try {
+                if (typeof window.loadActiveAlerts === 'function') {
+                    logToConsole('Calling loadActiveAlerts()');
+                    window.loadActiveAlerts();
+                    result.innerHTML = '✅ loadActiveAlerts() اجرا شد';
+                    result.className = 'text-green-400 text-sm mt-4';
+                } else {
+                    throw new Error('loadActiveAlerts is not defined');
+                }
+            } catch (error) {
+                logToConsole('❌ Error:', error.message);
+                result.innerHTML = `❌ خطا: ${error.message}`;
+                result.className = 'text-red-400 text-sm mt-4';
+            }
+        }
+
+        function testLoadTemplates() {
+            const result = document.getElementById('function-test-result');
+            try {
+                if (typeof window.loadAlertTemplates === 'function') {
+                    logToConsole('Calling loadAlertTemplates()');
+                    window.loadAlertTemplates();
+                    result.innerHTML = '✅ loadAlertTemplates() اجرا شد';
+                    result.className = 'text-green-400 text-sm mt-4';
+                } else {
+                    throw new Error('loadAlertTemplates is not defined');
+                }
+            } catch (error) {
+                logToConsole('❌ Error:', error.message);
+                result.innerHTML = `❌ خطا: ${error.message}`;
+                result.className = 'text-red-400 text-sm mt-4';
+            }
+        }
+
+        // Console logging
+        function logToConsole(...args) {
+            const output = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            const message = args.map(arg => 
+                typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)
+            ).join(' ');
+            output.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+            console.log(...args);
+        }
+
+        // Intercept console.log
+        const originalLog = console.log;
+        console.log = function(...args) {
+            logToConsole(...args);
+            originalLog.apply(console, args);
+        };
+
+        logToConsole('🚀 Test page loaded');
+        logToConsole('📊 Checking initial state...');
+        logToConsole('window.showCreateAlertModal:', typeof window.showCreateAlertModal);
+        logToConsole('window.AlertsManager:', typeof window.AlertsManager);
+    </script>
+</body>
+</html>
