@@ -4791,7 +4791,7 @@ class TitanApp {
         try {
             // Get real trading statistics from API
             const mockData = {
-                value: Math.floor(Math.random() * 100),
+                value: 50 /* Will be updated from API */,
                 value_classification: 'متعادل',
                 last_updated: new Date().toISOString()
             };
@@ -4998,7 +4998,7 @@ class TitanApp {
     }
 
     async renderTopMoversWidget(widget) {
-        // Generate realistic top movers data (gainers and losers)
+        // TODO: Fetch from /api/market/prices for real top movers data (gainers and losers)
         const topGainers = [
             {
                 symbol: 'SHIB',
@@ -5122,7 +5122,7 @@ class TitanApp {
     }
 
     async renderTradingSignalsWidget(widget) {
-        // Generate realistic trading signals
+        // TODO: Fetch from /api/ai/signals for real trading signals
         const signals = [
             {
                 symbol: 'BTC',
@@ -5247,6 +5247,7 @@ class TitanApp {
 
     async renderAIRecommendationsWidget(widget) {
         const recommendations = [
+            // TODO: Fetch real recommendations from /api/ai/recommendations
             'بیت‌کوین در نزدیکی حمایت قوی',
             'اتریوم پتانسیل رشد دارد',
             'توصیه به صبر و نگهداری'
