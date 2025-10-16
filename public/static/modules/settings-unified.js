@@ -109,24 +109,24 @@ class UnifiedSettingsModule {
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <div class="flex justify-between items-center">
                             <div class="flex items-center space-x-3 space-x-reverse">
-                                <button onclick="unifiedSettings.saveAllSettings()" 
+                                <button type="button" onclick="unifiedSettings.saveAllSettings()" 
                                         class="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center">
                                     <i class="fas fa-save mr-2"></i>
                                     💾 ذخیره تنظیمات
                                 </button>
-                                <button onclick="unifiedSettings.resetSettings()" 
+                                <button type="button" onclick="unifiedSettings.resetSettings()" 
                                         class="px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition-colors flex items-center">
                                     <i class="fas fa-undo mr-2"></i>
                                     🔄 بازنشانی
                                 </button>
                             </div>
                             <div class="flex items-center space-x-3 space-x-reverse">
-                                <button onclick="unifiedSettings.exportSettings()" 
+                                <button type="button" onclick="unifiedSettings.exportSettings()" 
                                         class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center">
                                     <i class="fas fa-download mr-2"></i>
                                     📥 Export
                                 </button>
-                                <button onclick="unifiedSettings.importSettings()" 
+                                <button type="button" onclick="unifiedSettings.importSettings()" 
                                         class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg text-sm transition-colors flex items-center">
                                     <i class="fas fa-upload mr-2"></i>
                                     📤 Import

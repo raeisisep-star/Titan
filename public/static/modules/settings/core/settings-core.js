@@ -418,6 +418,9 @@ class SettingsCore {
     async initialize() {
         console.log('🚀 Initializing Settings Core System');
         
+        // Load settings from backend first
+        await this.loadSettingsFromBackend();
+        
         // Load initial tab (general)
         await this.switchTab('general');
         
@@ -425,6 +428,47 @@ class SettingsCore {
         window.settingsCore = this;
         
         console.log('✅ Settings Core initialized successfully');
+    }
+    
+    async loadSettingsFromBackend() {
+        try {
+            console.log('📥 Loading settings from backend...');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                console.warn('⚠️ No auth token found, using default settings');
+                return;
+            }
+            
+            const response = await fetch('/api/settings', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success && result.data) {
+                    // Merge backend settings with defaults
+                    this.settings = {
+                        ...this.settings,
+                        ...result.data
+                    };
+                    console.log('✅ Settings loaded from backend:', this.settings);
+                } else {
+                    console.warn('⚠️ Backend returned no settings data');
+                }
+            } else if (response.status === 401) {
+                console.warn('⚠️ Unauthorized - token may be invalid');
+            } else {
+                console.warn('⚠️ Failed to load settings:', response.status);
+            }
+        } catch (error) {
+            console.error('❌ Error loading settings from backend:', error);
+            // Continue with default settings
+        }
     }
 }
 
