@@ -362,19 +362,19 @@ function renderAlertsPage() {
                     <p class="text-gray-400">مدیریت هشدارهای بازار و اطلاع‌رسانی‌های قیمتی</p>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>
                         هشدار جدید
                     </button>
-                    <button onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-template mr-2"></i>
                         قالب‌ها
                     </button>
-                    <button onclick="showSettingsModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="showSettingsModal()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-cog mr-2"></i>
                         تنظیمات
                     </button>
-                    <button onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-bell-slash mr-2"></i>
                         اطلاع‌رسانی‌ها
                     </button>
@@ -426,13 +426,13 @@ function renderAlertsPage() {
                 <!-- Tab Headers -->
                 <div class="border-b border-gray-700">
                     <nav class="flex space-x-8 space-x-reverse px-6">
-                        <button onclick="switchAlertsTab('active')" id="tab-active" class="alert-tab py-4 px-2 border-b-2 border-blue-500 text-blue-500 font-medium">
+                        <button type="button" onclick="switchAlertsTab('active')" id="tab-active" class="alert-tab py-4 px-2 border-b-2 border-blue-500 text-blue-500 font-medium">
                             هشدارهای فعال
                         </button>
-                        <button onclick="switchAlertsTab('history')" id="tab-history" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
+                        <button type="button" onclick="switchAlertsTab('history')" id="tab-history" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
                             تاریخچه
                         </button>
-                        <button onclick="switchAlertsTab('templates')" id="tab-templates" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
+                        <button type="button" onclick="switchAlertsTab('templates')" id="tab-templates" class="alert-tab py-4 px-2 border-b-2 border-transparent text-gray-400 hover:text-gray-300 font-medium">
                             قالب‌ها
                         </button>
                     </nav>
@@ -453,7 +453,7 @@ function renderAlertsPage() {
             <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-white">ایجاد هشدار جدید</h3>
-                    <button onclick="closeCreateAlertModal()" class="text-gray-400 hover:text-gray-300">
+                    <button type="button" onclick="closeCreateAlertModal()" class="text-gray-400 hover:text-gray-300">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -542,7 +542,7 @@ function renderAlertsPage() {
             <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
                 <div class="flex justify-between items-center mb-6">
                     <h3 class="text-xl font-bold text-white">تنظیمات اطلاع‌رسانی</h3>
-                    <button onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-300">
+                    <button type="button" onclick="closeSettingsModal()" class="text-gray-400 hover:text-gray-300">
                         <i class="fas fa-times"></i>
                     </button>
                 </div>
@@ -661,7 +661,7 @@ async function loadActiveAlerts() {
                 <div class="text-center py-8">
                     <i class="fas fa-bell-slash text-gray-500 text-4xl mb-4"></i>
                     <p class="text-gray-400">هشداری ایجاد نشده است</p>
-                    <button onclick="showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>
                         ایجاد اولین هشدار
                     </button>
@@ -696,15 +696,15 @@ async function loadActiveAlerts() {
                                     <div class="text-xs text-gray-400">فعال‌سازی: ${alert.triggeredCount} بار</div>
                                 </div>
                                 
-                                <button onclick="toggleAlert('${alert.id}', ${!alert.isActive})" class="px-3 py-1 rounded text-sm ${alert.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
+                                <button type="button" onclick="toggleAlert('${alert.id}', ${!alert.isActive})" class="px-3 py-1 rounded text-sm ${alert.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
                                     ${alert.isActive ? 'غیرفعال' : 'فعال'}
                                 </button>
                                 
-                                <button onclick="editAlert('${alert.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
+                                <button type="button" onclick="editAlert('${alert.id}')" class="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm">
                                     ویرایش
                                 </button>
                                 
-                                <button onclick="deleteAlert('${alert.id}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
+                                <button type="button" onclick="deleteAlert('${alert.id}')" class="px-3 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-sm">
                                     حذف
                                 </button>
                             </div>
@@ -718,10 +718,10 @@ async function loadActiveAlerts() {
                     مجموع: ${alerts.length} هشدار (${alerts.filter(a => a.isActive).length} فعال)
                 </div>
                 <div class="flex gap-2">
-                    <button onclick="performBulkOperation('enable')" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm">
+                    <button type="button" onclick="performBulkOperation('enable')" class="px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded text-sm">
                         فعال‌سازی همه
                     </button>
-                    <button onclick="performBulkOperation('disable')" class="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm">
+                    <button type="button" onclick="performBulkOperation('disable')" class="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 text-white rounded text-sm">
                         غیرفعال‌سازی همه
                     </button>
                 </div>
@@ -817,7 +817,7 @@ async function loadAlertTemplates() {
                         <p class="text-gray-300 text-sm mb-4">${template.description}</p>
                         <div class="flex items-center justify-between">
                             <span class="text-gray-400 text-xs">استفاده شده: ${template.usageCount} بار</span>
-                            <button onclick="useTemplate('${template.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
+                            <button type="button" onclick="useTemplate('${template.id}')" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded text-sm">
                                 استفاده از قالب
                             </button>
                         </div>
@@ -1266,7 +1266,7 @@ async function initializeAlertsPage() {
                     <i class="fas fa-exclamation-triangle text-red-400 text-3xl mb-4"></i>
                     <h3 class="text-red-400 text-lg font-bold mb-2">خطا در بارگذاری سیستم هشدارها</h3>
                     <p class="text-gray-300 mb-4">${error.message}</p>
-                    <button onclick="initializeAlertsPage()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="initializeAlertsPage()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-sync-alt mr-2"></i>
                         تلاش مجدد
                     </button>
@@ -1343,19 +1343,19 @@ class AlertsModule {
                     <p class="text-gray-400">مدیریت هشدارهای بازار و اطلاع‌رسانی‌های قیمتی</p>
                 </div>
                 <div class="flex gap-3">
-                    <button onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="showCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-plus mr-2"></i>
                         هشدار جدید
                     </button>
-                    <button onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="loadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-template mr-2"></i>
                         قالب‌ها
                     </button>
-                    <button onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="openNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-bell mr-2"></i>
                         اطلاع‌رسانی‌ها
                     </button>
-                    <button onclick="refreshAlertsData()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="refreshAlertsData()" class="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg">
                         <i class="fas fa-sync-alt mr-2"></i>
                         بروزرسانی
                     </button>
@@ -1413,7 +1413,7 @@ class AlertsModule {
                         هشدارهای فعال
                     </h2>
                     <div class="flex gap-2">
-                        <button onclick="window.alertsModule.refreshAlerts()" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
+                        <button type="button" onclick="window.alertsModule.refreshAlerts()" class="bg-gray-700 hover:bg-gray-600 text-white px-3 py-1 rounded text-sm">
                             <i class="fas fa-sync-alt mr-1"></i>
                             بروزرسانی
                         </button>
@@ -1434,7 +1434,7 @@ class AlertsModule {
                 <div class="text-center py-8">
                     <i class="fas fa-bell-slash text-gray-500 text-4xl mb-4"></i>
                     <p class="text-gray-400">هیچ هشدار فعالی وجود ندارد</p>
-                    <button onclick="window.alertsModule.showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <button type="button" onclick="window.alertsModule.showCreateAlertModal()" class="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
                         اولین هشدار را ایجاد کنید
                     </button>
                 </div>
@@ -1461,15 +1461,15 @@ class AlertsModule {
                         </div>
                         
                         <div class="flex gap-2">
-                            <button onclick="window.alertsModule.toggleAlert('${alert.id}', ${!alert.isActive})" 
+                            <button type="button" onclick="window.alertsModule.toggleAlert('${alert.id}', ${!alert.isActive})" 
                                     class="px-3 py-1 rounded text-sm ${alert.isActive ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'} text-white">
                                 ${alert.isActive ? 'غیرفعال' : 'فعال'}
                             </button>
-                            <button onclick="window.alertsModule.editAlert('${alert.id}')" 
+                            <button type="button" onclick="window.alertsModule.editAlert('${alert.id}')" 
                                     class="px-3 py-1 rounded text-sm bg-blue-600 hover:bg-blue-700 text-white">
                                 <i class="fas fa-edit"></i>
                             </button>
-                            <button onclick="window.alertsModule.deleteAlert('${alert.id}')" 
+                            <button type="button" onclick="window.alertsModule.deleteAlert('${alert.id}')" 
                                     class="px-3 py-1 rounded text-sm bg-red-600 hover:bg-red-700 text-white">
                                 <i class="fas fa-trash"></i>
                             </button>
