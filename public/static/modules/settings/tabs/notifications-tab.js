@@ -67,7 +67,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="notificationsTab.testEmailConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <button type="button" onclick="notificationsTab.testEmailConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fas fa-paper-plane mr-2"></i>
                             تست ارسال ایمیل
                         </button>
@@ -115,7 +115,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="notificationsTab.testTelegramConnection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                        <button type="button" onclick="notificationsTab.testTelegramConnection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                             <i class="fab fa-telegram mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -160,7 +160,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="notificationsTab.testWhatsAppConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                        <button type="button" onclick="notificationsTab.testWhatsAppConnection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                             <i class="fab fa-whatsapp mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -207,7 +207,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="notificationsTab.testSMSConnection()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <button type="button" onclick="notificationsTab.testSMSConnection()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                             <i class="fas fa-sms mr-2"></i>
                             تست ارسال پیامک
                         </button>
@@ -246,7 +246,7 @@ export default class NotificationsTab {
                     </div>
                     
                     <div class="mt-4">
-                        <button onclick="notificationsTab.testDiscordConnection()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+                        <button type="button" onclick="notificationsTab.testDiscordConnection()" class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
                             <i class="fab fa-discord mr-2"></i>
                             تست ارسال پیام
                         </button>
@@ -287,7 +287,7 @@ export default class NotificationsTab {
                         </div>
                         
                         <div class="flex items-center justify-center">
-                            <button onclick="notificationsTab.requestDesktopPermission()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-controls text-sm">
+                            <button type="button" onclick="notificationsTab.requestDesktopPermission()" class="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors text-sm">
                                 <i class="fas fa-desktop mr-2"></i>
                                 مجوز دسکتاپ
                             </button>
