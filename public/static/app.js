@@ -64,13 +64,31 @@ class TitanApp {
     }
 
     setupEventListeners() {
-        // Login form
+        // Login form - Multiple ways to ensure it works
         const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        
         console.log('Setting up login form listener, form found:', !!loginForm);
+        console.log('Login button found:', !!loginBtn);
+        
         if (loginForm) {
+            // Method 1: Form submit event
             loginForm.addEventListener('submit', (e) => {
-                console.log('Login form submitted!', e);
+                e.preventDefault();
+                console.log('Login form submitted via form event!');
                 this.handleLogin(e);
+            });
+        }
+        
+        if (loginBtn) {
+            // Method 2: Button click event (backup)
+            loginBtn.addEventListener('click', (e) => {
+                const form = document.getElementById('loginForm');
+                if (form) {
+                    e.preventDefault();
+                    console.log('Login button clicked directly!');
+                    this.handleLogin(e);
+                }
             });
         }
 
