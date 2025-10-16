@@ -4675,7 +4675,19 @@ class TitanApp {
     async renderPortfolioSummaryWidget(widget) {
         try {
             // Get real portfolio data from API
-            const response = await this.apiCall('/api/dashboard/comprehensive');
+            const fetchResponse = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (!fetchResponse.ok) {
+                console.warn('Portfolio API failed');
+                return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
+            }
+            
+            const response = await fetchResponse.json();
             
             if (!response.success || !response.data?.portfolio) {
                 console.warn('Portfolio API failed, using fallback');
@@ -4709,8 +4721,14 @@ class TitanApp {
     async renderMarketOverviewWidget(widget) {
         try {
             // Get real market data from API
-            const response = await this.apiCall('/api/dashboard/comprehensive');
-            const marketData = response.data?.market || {
+            const response = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            const marketData = data.data?.market || {
                 total_market_cap: 0,
                 total_volume_24h: 0,
                 market_cap_change_24h: 0,
@@ -4886,17 +4904,25 @@ class TitanApp {
         // Fetch real-time cryptocurrency prices from API
         let coins = [];
         try {
-            const response = await this.apiCall('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK');
-            if (response.success && response.data) {
-                // Transform API data to coins array
-                coins = Object.values(response.data).map((coin, idx) => ({
-                    symbol: coin.symbol,
-                    name: coin.name,
-                    current_price: coin.current_price,
-                    price_change_percentage_24h: coin.price_change_percentage_24h,
-                    market_cap_rank: idx + 1,
-                    favorite: true
-                }));
+            const response = await fetch('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK', {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    // Transform API data to coins array
+                    coins = Object.values(data.data).map((coin, idx) => ({
+                        symbol: coin.symbol,
+                        name: coin.name,
+                        current_price: coin.current_price,
+                        price_change_percentage_24h: coin.price_change_percentage_24h,
+                        market_cap_rank: idx + 1,
+                        favorite: true
+                    }));
+                }
             }
         } catch (error) {
             console.warn('Failed to fetch watchlist prices:', error);
@@ -5271,8 +5297,14 @@ class TitanApp {
 
         try {
             // Get real performance data from API
-            const response = await this.apiCall('/api/portfolio/advanced');
-            const performance = response.data?.performance || {};
+            const response = await fetch('/api/portfolio/advanced', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            const performance = data.data?.performance || {};
             
             // Use real PnL data or fallback
             const totalPnL = performance.totalPnL || 0;
@@ -5404,8 +5436,14 @@ class TitanApp {
     async getPerformanceHistory() {
         try {
             // Try to get real historical data from API
-            const response = await this.apiCall('/api/portfolio/performance');
-            if (response.success && response.data?.history) {
+            const response = await fetch('/api/portfolio/performance', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            if (data.success && data.data?.history) {
                 return response.data.history;
             }
         } catch (error) {
@@ -5413,8 +5451,14 @@ class TitanApp {
         }
         
         // Fallback: calculate from current portfolio data
-        const dashResponse = await this.apiCall('/api/dashboard/comprehensive');
-        const portfolio = dashResponse.data?.portfolio || {};
+        const dashResponse = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        const data = dashResponse.ok ? await dashResponse.json() : {};
+        const portfolio = data.data?.portfolio || {};
         const currentBalance = portfolio.totalBalance || 10000;
         const totalPnL = portfolio.totalPnL || 0;
         
