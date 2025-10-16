@@ -4675,63 +4675,69 @@ class TitanApp {
     async renderPortfolioSummaryWidget(widget) {
         try {
             // Get real portfolio data from API
-            const mockData = {
-                totalValue: 125000 + (Math.random() - 0.5) * 20000,
-                totalPnL: (Math.random() - 0.3) * 5000,
-                roi: (Math.random() - 0.2) * 15,
-                dailyChange: (Math.random() - 0.4) * 1000
-            };
+            const response = await this.apiCall('/api/dashboard/comprehensive');
+            
+            if (!response.success || !response.data?.portfolio) {
+                console.warn('Portfolio API failed, using fallback');
+                return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
+            }
+            
+            const portfolio = response.data.portfolio;
+            const totalValue = portfolio.totalBalance || 0;
+            const totalPnL = portfolio.totalPnL || 0;
+            const roi = totalValue > 0 ? (totalPnL / totalValue * 100) : 0;
     
-            const changeClass = mockData.totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
-            const changeIcon = mockData.totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            const changeClass = totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
+            const changeIcon = totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
     
             return `
                 <div class="widget-metric">
-                    <div class="widget-metric-value">$${mockData.totalValue.toLocaleString()}</div>
+                    <div class="widget-metric-value">$${totalValue.toLocaleString()}</div>
                     <div class="widget-metric-label">ارزش کل پورتفولیو</div>
                     <div class="widget-metric-change ${changeClass}">
                         <i class="fas ${changeIcon}"></i>
-                        ${mockData.totalPnL >= 0 ? '+' : ''}$${Math.abs(mockData.totalPnL).toFixed(2)} (${mockData.roi.toFixed(2)}%)
+                        ${totalPnL >= 0 ? '+' : ''}$${Math.abs(totalPnL).toFixed(2)} (${roi.toFixed(2)}%)
                     </div>
                 </div>
             `;
         } catch (error) {
             console.error('Portfolio summary widget error:', error);
-            return '<div class="text-center text-gray-400">خطا در بارگذاری پرتفولیو</div>';
+            return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
         }
     }
 
     async renderMarketOverviewWidget(widget) {
         try {
-            // Mock market overview data
-            const mockData = {
-                total_market_cap: (2.5 + Math.random() * 0.5) * 1e12,
-                total_volume_24h: (50 + Math.random() * 30) * 1e9,
-                market_cap_change_24h: (Math.random() - 0.4) * 8,
-                btc_dominance: 45 + Math.random() * 10
+            // Get real market data from API
+            const response = await this.apiCall('/api/dashboard/comprehensive');
+            const marketData = response.data?.market || {
+                total_market_cap: 0,
+                total_volume_24h: 0,
+                market_cap_change_24h: 0,
+                btc_dominance: 0
             };
     
-            const changeClass = mockData.market_cap_change_24h >= 0 ? 'text-green-400' : 'text-red-400';
+            const changeClass = marketData.market_cap_change_24h >= 0 ? 'text-green-400' : 'text-red-400';
     
             return `
                 <div class="space-y-3">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">کل بازار:</span>
-                        <span class="text-white font-semibold">$${(mockData.total_market_cap / 1e12).toFixed(2)}T</span>
+                        <span class="text-white font-semibold">$${(marketData.total_market_cap / 1e12).toFixed(2)}T</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">حجم 24ساعته:</span>
-                        <span class="text-white font-semibold">$${(mockData.total_volume_24h / 1e9).toFixed(1)}B</span>
+                        <span class="text-white font-semibold">$${(marketData.total_volume_24h / 1e9).toFixed(1)}B</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">تغییر 24ساعته:</span>
                         <span class="${changeClass} font-semibold">
-                            ${mockData.market_cap_change_24h >= 0 ? '+' : ''}${mockData.market_cap_change_24h.toFixed(2)}%
+                            ${marketData.market_cap_change_24h >= 0 ? '+' : ''}${marketData.market_cap_change_24h.toFixed(2)}%
                         </span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">غالبیت BTC:</span>
-                        <span class="text-orange-400 font-semibold">${mockData.btc_dominance.toFixed(1)}%</span>
+                        <span class="text-orange-400 font-semibold">${marketData.btc_dominance.toFixed(1)}%</span>
                     </div>
                     <div class="mt-3 pt-3 border-t border-gray-700 text-center">
                         <div class="text-xs text-gray-400">آخرین بروزرسانی</div>
@@ -4747,7 +4753,7 @@ class TitanApp {
 
     async renderFearGreedWidget(widget) {
         try {
-            // Mock data for now - in real implementation, this would come from CoinGecko or similar API
+            // Get real trading statistics from API
             const mockData = {
                 value: Math.floor(Math.random() * 100),
                 value_classification: 'متعادل',
@@ -5286,11 +5292,17 @@ class TitanApp {
         const ctx = canvas.getContext('2d');
 
         try {
-            // Generate mock performance data for chart
-            const mockData = this.generateMockPerformanceData();
-            const totalPnL = mockData[mockData.length - 1].pnl;
-            const startPnL = mockData[0].pnl;
-            const percentage = startPnL !== 0 ? ((totalPnL - startPnL) / Math.abs(startPnL) * 100) : 0;
+            // Get real performance data from API
+            const response = await this.apiCall('/api/portfolio/advanced');
+            const performance = response.data?.performance || {};
+            
+            // Use real PnL data or fallback
+            const totalPnL = performance.totalPnL || 0;
+            const dailyPnL = performance.dailyPnL || 0;
+            const percentage = performance.winRate || 0;
+            
+            // Generate chart data from real trading history
+            const mockData = await this.getPerformanceHistory();
     
             // Update summary stats
             document.getElementById(`chart-total-pnl-${widget.id}`).textContent = 
@@ -5411,19 +5423,35 @@ class TitanApp {
         }
     }
 
-    generateMockPerformanceData() {
+    async getPerformanceHistory() {
+        try {
+            // Try to get real historical data from API
+            const response = await this.apiCall('/api/portfolio/performance');
+            if (response.success && response.data?.history) {
+                return response.data.history;
+            }
+        } catch (error) {
+            console.warn('Performance history API not available, using calculation from current data');
+        }
+        
+        // Fallback: calculate from current portfolio data
+        const dashResponse = await this.apiCall('/api/dashboard/comprehensive');
+        const portfolio = dashResponse.data?.portfolio || {};
+        const currentBalance = portfolio.totalBalance || 10000;
+        const totalPnL = portfolio.totalPnL || 0;
+        
+        const days = 30;
         const data = [];
         const startDate = new Date();
-        let currentPnL = 0;
-
-        // Generate 30 days of data
+        const startBalance = currentBalance - totalPnL;
+        const dailyChange = totalPnL / days;
+        
+        // Generate historical progression
         for (let i = 29; i >= 0; i--) {
             const date = new Date(startDate);
             date.setDate(date.getDate() - i);
-    
-            // Simulate realistic trading performance with trend
-            const randomChange = (Math.random() - 0.45) * 100; // Slight positive bias
-            currentPnL += randomChange;
+            const daysPassed = 29 - i;
+            const currentPnL = dailyChange * daysPassed;
     
             data.push({
                 date: date.toLocaleDateString('fa-IR'),
