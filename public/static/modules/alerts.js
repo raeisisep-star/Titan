@@ -1103,12 +1103,21 @@ async function manualAlertCheck() {
     }
 }
 
-// Form submissions
-document.addEventListener('DOMContentLoaded', function() {
+// Setup form event listeners (can be called multiple times)
+function setupFormListeners() {
+    console.log('📝 Setting up alerts form listeners...');
+    
     // Create Alert Form
     const createForm = document.getElementById('createAlertForm');
     if (createForm) {
-        createForm.addEventListener('submit', async function(e) {
+        // Remove old listener if exists
+        const oldListener = createForm._submitListener;
+        if (oldListener) {
+            createForm.removeEventListener('submit', oldListener);
+        }
+        
+        // Create new listener
+        const submitListener = async function(e) {
             e.preventDefault();
             
             const formData = new FormData(e.target);
@@ -1151,13 +1160,25 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 window.alertsManager.showNotification('خطا در ذخیره هشدار: ' + error.message, 'error');
             }
-        });
+        };
+        
+        // Store listener reference and attach
+        createForm._submitListener = submitListener;
+        createForm.addEventListener('submit', submitListener);
+        console.log('✅ Create form listener attached');
     }
     
     // Settings Form
     const settingsForm = document.getElementById('settingsForm');
     if (settingsForm) {
-        settingsForm.addEventListener('submit', async function(e) {
+        // Remove old listener if exists
+        const oldListener = settingsForm._submitListener;
+        if (oldListener) {
+            settingsForm.removeEventListener('submit', oldListener);
+        }
+        
+        // Create new listener
+        const submitListener = async function(e) {
             e.preventDefault();
             
             const settingsData = {
@@ -1177,8 +1198,18 @@ document.addEventListener('DOMContentLoaded', function() {
             } catch (error) {
                 window.alertsManager.showNotification('خطا در ذخیره تنظیمات: ' + error.message, 'error');
             }
-        });
+        };
+        
+        // Store listener reference and attach
+        settingsForm._submitListener = submitListener;
+        settingsForm.addEventListener('submit', submitListener);
+        console.log('✅ Settings form listener attached');
     }
+}
+
+// Call setup on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormListeners();
 });
 
 // Update statistics display with real data
@@ -1254,6 +1285,9 @@ async function initializeAlertsPage() {
         // Start price monitoring for real-time updates
         window.alertsManager.startPriceMonitoring();
         
+        // Setup form listeners after DOM is ready
+        setTimeout(() => setupFormListeners(), 200);
+        
         console.log('✅ Alerts page initialized successfully');
     } catch (error) {
         console.error('❌ Failed to initialize alerts page:', error);
@@ -1322,6 +1356,8 @@ class AlertsModule {
         // Schedule initialization after DOM is ready
         setTimeout(() => {
             initializeAlertsPage();
+            // Also setup form listeners
+            setTimeout(() => setupFormListeners(), 300);
         }, 100);
         
         return content;
@@ -1704,3 +1740,4 @@ window.openNotificationSettings = openNotificationSettings;
 window.syncNotificationSettingsFromMain = syncNotificationSettingsFromMain;
 window.refreshAlertsData = refreshAlertsData;
 window.loadAlertTemplates = loadAlertTemplates;
+window.setupFormListeners = setupFormListeners;
