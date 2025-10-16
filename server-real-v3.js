@@ -674,16 +674,86 @@ async function getMarketOverview() {
   const cacheKey = 'market:overview';
   
   return await withCache(cacheKey, CONFIG.cache.marketData, async () => {
-    // In production, fetch from real market data API (Binance, CoinGecko, etc.)
-    // For now, return realistic mock data
-    return {
-      btcPrice: 43250 + (Math.random() * 1000 - 500),
-      ethPrice: 2680 + (Math.random() * 50 - 25),
-      fear_greed_index: 65,
-      dominance: 51.2,
-      total_market_cap: 1750000000000,
-      volume_24h: 85000000000
-    };
+    try {
+      // Fetch real market data from CoinGecko API (Free, no API key required)
+      const response = await axios.get('https://api.coingecko.com/api/v3/global', {
+        timeout: 5000
+      });
+      
+      const data = response.data.data;
+      
+      return {
+        btcPrice: data.market_cap_percentage?.btc || 0,
+        ethPrice: data.market_cap_percentage?.eth || 0,
+        total_market_cap: data.total_market_cap?.usd || 0,
+        total_volume_24h: data.total_volume?.usd || 0,
+        market_cap_change_24h: data.market_cap_change_percentage_24h_usd || 0,
+        btc_dominance: data.market_cap_percentage?.btc || 0,
+        active_cryptocurrencies: data.active_cryptocurrencies || 0
+      };
+    } catch (error) {
+      console.warn('Failed to fetch market data from CoinGecko:', error.message);
+      // Fallback to basic data
+      return {
+        btcPrice: 0,
+        ethPrice: 0,
+        total_market_cap: 0,
+        total_volume_24h: 0,
+        market_cap_change_24h: 0,
+        btc_dominance: 0,
+        active_cryptocurrencies: 0
+      };
+    }
+  });
+}
+
+// Get real-time cryptocurrency prices
+async function getCryptoPrices(symbols = ['bitcoin', 'ethereum', 'cardano', 'polkadot', 'chainlink']) {
+  const cacheKey = `crypto:prices:${symbols.join(',')}`;
+  
+  return await withCache(cacheKey, CONFIG.cache.marketData, async () => {
+    try {
+      // Fetch real prices from CoinGecko API
+      const ids = symbols.join(',');
+      const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price`, {
+        params: {
+          ids: ids,
+          vs_currencies: 'usd',
+          include_24hr_change: 'true',
+          include_market_cap: 'true'
+        },
+        timeout: 5000
+      });
+      
+      // Transform to our format
+      const prices = {};
+      const symbolMap = {
+        'bitcoin': 'BTC',
+        'ethereum': 'ETH',
+        'cardano': 'ADA',
+        'polkadot': 'DOT',
+        'chainlink': 'LINK',
+        'ripple': 'XRP',
+        'solana': 'SOL',
+        'avalanche-2': 'AVAX'
+      };
+      
+      for (const [id, data] of Object.entries(response.data)) {
+        const symbol = symbolMap[id] || id.toUpperCase().substring(0, 3);
+        prices[symbol] = {
+          symbol: symbol,
+          name: id.charAt(0).toUpperCase() + id.slice(1),
+          current_price: data.usd || 0,
+          price_change_percentage_24h: data.usd_24h_change || 0,
+          market_cap: data.usd_market_cap || 0
+        };
+      }
+      
+      return prices;
+    } catch (error) {
+      console.warn('Failed to fetch crypto prices:', error.message);
+      return {};
+    }
   });
 }
 
@@ -700,6 +770,54 @@ app.get('/api/dashboard/comprehensive-real', authMiddleware, async (c) => {
     });
   } catch (error) {
     console.error('Dashboard error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 💹 MARKET DATA API - Real-time Cryptocurrency Prices
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Get real-time crypto prices for watchlist
+app.get('/api/market/prices', optionalAuthMiddleware, async (c) => {
+  try {
+    const symbols = c.req.query('symbols');
+    const cryptoIds = symbols 
+      ? symbols.split(',').map(s => {
+          const map = {
+            'BTC': 'bitcoin', 'ETH': 'ethereum', 'ADA': 'cardano',
+            'DOT': 'polkadot', 'LINK': 'chainlink', 'XRP': 'ripple',
+            'SOL': 'solana', 'AVAX': 'avalanche-2'
+          };
+          return map[s.toUpperCase()] || s.toLowerCase();
+        })
+      : ['bitcoin', 'ethereum', 'cardano', 'polkadot', 'chainlink'];
+    
+    const prices = await getCryptoPrices(cryptoIds);
+    
+    return c.json({
+      success: true,
+      data: prices,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Market prices error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Get comprehensive market overview
+app.get('/api/market/overview', optionalAuthMiddleware, async (c) => {
+  try {
+    const marketData = await getMarketOverview();
+    
+    return c.json({
+      success: true,
+      data: marketData,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Market overview error:', error);
     return c.json({ success: false, error: error.message }, 500);
   }
 });

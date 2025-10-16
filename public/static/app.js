@@ -4883,51 +4883,29 @@ class TitanApp {
 
     // Widget rendering functions (continued)
     async renderWatchlistWidget(widget) {
-        // Generate realistic watchlist data
-        const watchlistCoins = [
-            {
-                symbol: 'BTC',
-                name: 'Bitcoin',
-                current_price: 67342.50,
-                price_change_percentage_24h: 2.45,
-                market_cap_rank: 1,
-                favorite: true
-            },
-            {
-                symbol: 'ETH',
-                name: 'Ethereum',
-                current_price: 3456.78,
-                price_change_percentage_24h: -1.23,
-                market_cap_rank: 2,
-                favorite: true
-            },
-            {
-                symbol: 'ADA',
-                name: 'Cardano',
-                current_price: 0.4567,
-                price_change_percentage_24h: 4.12,
-                market_cap_rank: 8,
-                favorite: true
-            },
-            {
-                symbol: 'DOT',
-                name: 'Polkadot',
-                current_price: 6.89,
-                price_change_percentage_24h: -2.45,
-                market_cap_rank: 12,
-                favorite: true
-            },
-            {
-                symbol: 'LINK',
-                name: 'Chainlink',
-                current_price: 14.56,
-                price_change_percentage_24h: 6.78,
-                market_cap_rank: 15,
-                favorite: true
+        // Fetch real-time cryptocurrency prices from API
+        let coins = [];
+        try {
+            const response = await this.apiCall('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK');
+            if (response.success && response.data) {
+                // Transform API data to coins array
+                coins = Object.values(response.data).map((coin, idx) => ({
+                    symbol: coin.symbol,
+                    name: coin.name,
+                    current_price: coin.current_price,
+                    price_change_percentage_24h: coin.price_change_percentage_24h,
+                    market_cap_rank: idx + 1,
+                    favorite: true
+                }));
             }
-        ];
-
-        const coins = watchlistCoins.slice(0, widget.settings?.limit || 5);
+        } catch (error) {
+            console.warn('Failed to fetch watchlist prices:', error);
+            // Fallback to empty array if API fails
+            coins = [];
+        }
+        
+        // Limit coins based on widget settings
+        coins = coins.slice(0, widget.settings?.limit || 5);
 
         return `
             <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
