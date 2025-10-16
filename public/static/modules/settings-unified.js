@@ -198,9 +198,21 @@ class UnifiedSettingsModule {
             const tabModule = new this.tabModules[tabName](this.settings);
             const content = tabModule.render();
             
-            // Store instance globally for AI tab
+            // Store instances globally for tabs that need save functionality
             if (tabName === 'ai') {
                 window.aiTabInstance = tabModule;
+            } else if (tabName === 'exchanges') {
+                window.exchangesTab = tabModule;
+                // Initialize the tab
+                if (typeof tabModule.initialize === 'function') {
+                    tabModule.initialize();
+                }
+            } else if (tabName === 'notifications') {
+                window.notificationsTab = tabModule;
+            } else if (tabName === 'security') {
+                window.securityTab = tabModule;
+            } else if (tabName === 'general') {
+                window.generalTab = tabModule;
             }
             
             return content;
@@ -294,6 +306,9 @@ class UnifiedSettingsModule {
                     if (tabName === 'ai' && window.aiTabInstance && typeof window.aiTabInstance.initialize === 'function') {
                         console.log('🤖 Initializing AI Tab...');
                         window.aiTabInstance.initialize();
+                    } else if (tabName === 'exchanges' && window.exchangesTab && typeof window.exchangesTab.initialize === 'function') {
+                        console.log('🏦 Initializing Exchanges Tab...');
+                        window.exchangesTab.initialize();
                     }
                 }, 100);
                 

@@ -715,9 +715,13 @@ export default class ExchangesTab {
     // Initialize tab functionality
     initialize() {
         console.log('🔧 Exchanges tab initialized with MEXC support');
+        console.log('🔧 Available methods:', Object.keys(this));
+        console.log('🔧 Has saveSettings:', typeof this.saveSettings === 'function');
+        console.log('🔧 Has testMEXCConnection:', typeof this.testMEXCConnection === 'function');
         
         // Set up global instance
         window.exchangesTab = this;
+        console.log('✅ window.exchangesTab set to:', window.exchangesTab);
     }
 
     // MEXC Exchange Methods
