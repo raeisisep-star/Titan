@@ -1205,6 +1205,268 @@ app.post('/api/settings', authMiddleware, async (c) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 🔔 NOTIFICATION APIS - Test & Manage Notifications
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Test Telegram connection and send test message
+app.post('/api/notifications/test-telegram', authMiddleware, async (c) => {
+  try {
+    console.log('🔔 Testing Telegram notification...');
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { bot_token, chat_id, parse_mode, enabled } = body;
+
+    if (!enabled) {
+      return c.json({ success: false, error: 'سرویس تلگرام فعال نیست' }, 400);
+    }
+
+    if (!bot_token || !chat_id) {
+      return c.json({ success: false, error: 'Bot Token و Chat ID الزامی است' }, 400);
+    }
+
+    console.log('📡 Sending Telegram test message...');
+    console.log('Bot Token:', bot_token.substring(0, 10) + '...');
+    console.log('Chat ID:', chat_id);
+
+    // Send test message via Telegram Bot API
+    const telegramApiUrl = `https://api.telegram.org/bot${bot_token}/sendMessage`;
+    
+    const testMessage = parse_mode === 'HTML' 
+      ? `<b>🚀 TITAN Trading System</b>\n\n✅ تست ارتباط با تلگرام موفق بود!\n\n🔔 اعلان‌های سیستم به درستی ارسال خواهند شد.\n\n⏰ زمان: ${new Date().toLocaleString('fa-IR')}`
+      : `*🚀 TITAN Trading System*\n\n✅ تست ارتباط با تلگرام موفق بود\\!\n\n🔔 اعلان‌های سیستم به درستی ارسال خواهند شد\\.\n\n⏰ زمان: ${new Date().toLocaleString('fa-IR')}`;
+
+    const telegramResponse = await axios.post(telegramApiUrl, {
+      chat_id: chat_id,
+      text: testMessage,
+      parse_mode: parse_mode || 'HTML'
+    });
+
+    console.log('✅ Telegram API response:', telegramResponse.data);
+
+    if (telegramResponse.data.ok) {
+      console.log('✅ Telegram test message sent successfully');
+      return c.json({
+        success: true,
+        message: 'پیام تست با موفقیت به تلگرام ارسال شد',
+        data: {
+          message_id: telegramResponse.data.result.message_id,
+          chat_id: telegramResponse.data.result.chat.id
+        },
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      console.error('❌ Telegram API error:', telegramResponse.data);
+      return c.json({
+        success: false,
+        error: 'خطا در ارسال پیام تلگرام: ' + (telegramResponse.data.description || 'Unknown error')
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('❌ Telegram test error:', error.message);
+    console.error('Error details:', error.response?.data || error);
+    
+    let errorMessage = 'خطا در تست اتصال تلگرام';
+    
+    if (error.response?.data?.description) {
+      errorMessage += ': ' + error.response.data.description;
+    } else if (error.message) {
+      errorMessage += ': ' + error.message;
+    }
+    
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, 500);
+  }
+});
+
+// Test Email connection
+app.post('/api/notifications/test-email', authMiddleware, async (c) => {
+  try {
+    console.log('📧 Testing Email notification...');
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { enabled, smtp_host, smtp_port, smtp_user, smtp_pass, from_email, from_name } = body;
+
+    if (!enabled) {
+      return c.json({ success: false, error: 'سرویس ایمیل فعال نیست' }, 400);
+    }
+
+    if (!smtp_host || !smtp_user || !smtp_pass) {
+      return c.json({ success: false, error: 'اطلاعات SMTP کامل نیست' }, 400);
+    }
+
+    // For now, return success message (full SMTP implementation requires nodemailer)
+    console.log('✅ Email configuration validated');
+    console.log('SMTP Host:', smtp_host);
+    console.log('SMTP Port:', smtp_port);
+    console.log('SMTP User:', smtp_user);
+
+    return c.json({
+      success: true,
+      message: 'تنظیمات ایمیل معتبر است (پیاده‌سازی ارسال واقعی در نسخه بعدی)',
+      data: {
+        smtp_host,
+        smtp_port,
+        from_email: from_email || smtp_user
+      },
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('❌ Email test error:', error);
+    return c.json({
+      success: false,
+      error: 'خطا در تست اتصال ایمیل: ' + error.message
+    }, 500);
+  }
+});
+
+// Test Discord webhook
+app.post('/api/notifications/test-discord', authMiddleware, async (c) => {
+  try {
+    console.log('💬 Testing Discord notification...');
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { enabled, webhook_url, username } = body;
+
+    if (!enabled) {
+      return c.json({ success: false, error: 'سرویس دیسکورد فعال نیست' }, 400);
+    }
+
+    if (!webhook_url) {
+      return c.json({ success: false, error: 'Webhook URL الزامی است' }, 400);
+    }
+
+    console.log('📡 Sending Discord test message...');
+
+    // Send test message via Discord webhook
+    const discordResponse = await axios.post(webhook_url, {
+      username: username || 'TITAN Bot',
+      avatar_url: 'https://www.zala.ir/static/icons/icon-192x192.svg',
+      embeds: [{
+        title: '🚀 TITAN Trading System',
+        description: '✅ تست ارتباط با دیسکورد موفق بود!',
+        color: 0x00ff00, // Green
+        fields: [
+          {
+            name: '🔔 وضعیت',
+            value: 'اعلان‌های سیستم به درستی ارسال خواهند شد',
+            inline: false
+          },
+          {
+            name: '⏰ زمان',
+            value: new Date().toLocaleString('fa-IR'),
+            inline: false
+          }
+        ],
+        timestamp: new Date().toISOString(),
+        footer: {
+          text: 'TITAN Trading System'
+        }
+      }]
+    });
+
+    console.log('✅ Discord webhook response:', discordResponse.status);
+
+    if (discordResponse.status === 204 || discordResponse.status === 200) {
+      return c.json({
+        success: true,
+        message: 'پیام تست با موفقیت به دیسکورد ارسال شد',
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      return c.json({
+        success: false,
+        error: 'خطا در ارسال پیام دیسکورد'
+      }, 500);
+    }
+
+  } catch (error) {
+    console.error('❌ Discord test error:', error.message);
+    
+    let errorMessage = 'خطا در تست اتصال دیسکورد';
+    
+    if (error.response?.status === 404) {
+      errorMessage += ': Webhook URL نامعتبر است';
+    } else if (error.message) {
+      errorMessage += ': ' + error.message;
+    }
+    
+    return c.json({
+      success: false,
+      error: errorMessage
+    }, 500);
+  }
+});
+
+// Get notification/alert settings (used by frontend)
+app.get('/api/alerts/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    const result = await pool.query(
+      'SELECT settings FROM users WHERE id = $1',
+      [user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
+    const settings = result.rows[0].settings || {};
+    const notificationSettings = settings.notifications || {};
+    
+    return c.json({
+      success: true,
+      data: notificationSettings,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Get alert settings error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Save notification/alert settings
+app.put('/api/alerts/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const notificationSettings = await c.req.json();
+    
+    // Get current settings
+    const currentResult = await pool.query(
+      'SELECT settings FROM users WHERE id = $1',
+      [user.id]
+    );
+    
+    let settings = currentResult.rows[0]?.settings || {};
+    
+    // Update notifications section
+    settings.notifications = notificationSettings;
+    
+    // Save back to database
+    await pool.query(
+      'UPDATE users SET settings = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(settings), user.id]
+    );
+    
+    console.log(`✅ Notification settings saved for user ${user.id}`);
+    
+    return c.json({
+      success: true,
+      message: 'تنظیمات اطلاع‌رسانی با موفقیت ذخیره شد',
+      data: notificationSettings,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Save alert settings error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 app.get('/api/dashboard/comprehensive', authMiddleware, async (c) => {
   // Alias to comprehensive-real
   return app.request('/api/dashboard/comprehensive-real', {
