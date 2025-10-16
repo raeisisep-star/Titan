@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Login</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔐 Test Login Button</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">راهنما</h2>
+            <ol class="text-sm space-y-2">
+                <li>1. این صفحه را باز نگه دارید</li>
+                <li>2. در تب دیگر به https://www.zala.ir بروید</li>
+                <li>3. Console را باز کنید (F12)</li>
+                <li>4. به صفحه login بروید (اگر login هستید، logout کنید)</li>
+                <li>5. این دستورات را در Console تایپ کنید:</li>
+            </ol>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">دستورات Console</h2>
+            
+            <div class="space-y-4">
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">1. بررسی وجود Form:</h3>
+                    <code class="text-xs block">document.getElementById('loginForm')</code>
+                    <p class="text-xs text-gray-400 mt-2">باید یک HTMLFormElement نشان دهد</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">2. بررسی وجود Button:</h3>
+                    <code class="text-xs block">document.getElementById('loginBtn')</code>
+                    <p class="text-xs text-gray-400 mt-2">باید یک HTMLButtonElement نشان دهد</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">3. بررسی Event Listeners:</h3>
+                    <code class="text-xs block">
+                        const form = document.getElementById('loginForm');<br>
+                        console.log('Form:', form);<br>
+                        console.log('Form onsubmit:', form.onsubmit);<br>
+                        console.log('Form listeners:', getEventListeners(form));
+                    </code>
+                    <p class="text-xs text-gray-400 mt-2">باید event listener submit را نشان دهد</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">4. تست دستی Submit:</h3>
+                    <code class="text-xs block">
+                        document.getElementById('username').value = 'testuser';<br>
+                        document.getElementById('password').value = 'Test@123';<br>
+                        document.getElementById('loginForm').submit();
+                    </code>
+                    <p class="text-xs text-gray-400 mt-2">⚠️ این refresh می‌شود (نرمال است)</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">5. تست با dispatchEvent:</h3>
+                    <code class="text-xs block">
+                        document.getElementById('username').value = 'testuser';<br>
+                        document.getElementById('password').value = 'Test@123';<br>
+                        const form = document.getElementById('loginForm');<br>
+                        form.dispatchEvent(new Event('submit', {bubbles: true, cancelable: true}));
+                    </code>
+                    <p class="text-xs text-gray-400 mt-2">این handleLogin را فراخوانی می‌کند</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-green-400 mb-2">6. تست دستی handleLogin:</h3>
+                    <code class="text-xs block">
+                        document.getElementById('username').value = 'testuser';<br>
+                        document.getElementById('password').value = 'Test@123';<br>
+                        app.handleLogin({preventDefault: () => {}});
+                    </code>
+                    <p class="text-xs text-gray-400 mt-2">مستقیماً handleLogin را صدا می‌زند</p>
+                </div>
+                
+                <div class="bg-gray-900 p-4 rounded">
+                    <h3 class="text-sm font-bold text-yellow-400 mb-2">7. بررسی TitanApp:</h3>
+                    <code class="text-xs block">
+                        console.log('window.app:', window.app);<br>
+                        console.log('window.titanApp:', window.titanApp);<br>
+                        console.log('Has handleLogin:', typeof (window.app?.handleLogin || window.titanApp?.handleLogin));
+                    </code>
+                    <p class="text-xs text-gray-400 mt-2">بررسی instance اپلیکیشن</p>
+                </div>
+            </div>
+        </div>
+        
+        <div class="bg-blue-900 bg-opacity-30 border border-blue-600 rounded-lg p-4">
+            <h3 class="font-bold mb-2">💡 نکات:</h3>
+            <ul class="text-sm space-y-1">
+                <li>• اگر form یا button null است → صفحه login نمایش داده نشده</li>
+                <li>• اگر event listener نیست → setupEventListeners اجرا نشده</li>
+                <li>• اگر handleLogin کار نمی‌کند → مشکل در app instance است</li>
+                <li>• اگر submit می‌شود اما login نمی‌شود → مشکل در API است</li>
+            </ul>
+        </div>
+        
+        <div class="mt-6 bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-4">
+            <h3 class="font-bold mb-2 text-red-400">⚠️ اگر دکمه کار نمی‌کند:</h3>
+            <ul class="text-sm space-y-1">
+                <li>1. ✅ Form و Button را بررسی کنید (دستورات 1 و 2)</li>
+                <li>2. ✅ Event listeners را بررسی کنید (دستور 3)</li>
+                <li>3. ✅ تست دستی کنید (دستورات 4، 5، 6)</li>
+                <li>4. ✅ خطاهای Console را بخوانید</li>
+                <li>5. ✅ Screenshot بگیرید و نشان دهید</li>
+            </ul>
+        </div>
+    </div>
+</body>
+</html>
