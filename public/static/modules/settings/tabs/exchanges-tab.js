@@ -654,8 +654,62 @@ export default class ExchangesTab {
                 api_secret: document.getElementById('kucoin-api-secret')?.value || '',
                 passphrase: document.getElementById('kucoin-passphrase')?.value || '',
                 sandbox: document.getElementById('kucoin-sandbox')?.checked || false
+            },
+            okx: {
+                enabled: document.getElementById('okx-enabled')?.checked || false,
+                api_key: document.getElementById('okx-api-key')?.value || '',
+                api_secret: document.getElementById('okx-api-secret')?.value || '',
+                passphrase: document.getElementById('okx-passphrase')?.value || '',
+                testnet: document.getElementById('okx-testnet')?.checked || false,
+                rate_limit: parseInt(document.getElementById('okx-rate-limit')?.value || 2000)
             }
         };
+    }
+
+    // Save settings to backend
+    async saveSettings() {
+        try {
+            console.log('💾 Saving exchange settings...');
+            
+            // Collect form data
+            const exchangeData = this.collectData();
+            console.log('Exchange data to save:', exchangeData);
+            
+            // Send to backend API
+            const response = await fetch('/api/settings/exchanges', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ exchanges: exchangeData })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'خطا در ارتباط با سرور');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('✅ تنظیمات صرافی‌ها با موفقیت ذخیره شد!', 'success');
+                
+                // Update local settings
+                if (this.settings) {
+                    this.settings.exchanges = exchangeData;
+                }
+                
+                return { success: true, message: 'تنظیمات ذخیره شد' };
+            } else {
+                throw new Error(result.message || 'خطا در ذخیره تنظیمات');
+            }
+            
+        } catch (error) {
+            console.error('خطا در ذخیره تنظیمات صرافی:', error);
+            this.showNotification(`❌ خطا: ${error.message}`, 'error');
+            return { success: false, error: error.message };
+        }
     }
 
     // Initialize tab functionality
@@ -774,7 +828,19 @@ export default class ExchangesTab {
     }
 
     showNotification(message, type = 'info') {
-        // Simple notification - would integrate with main notification system
         console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Try to use unified settings toast if available
+        if (window.unifiedSettings && typeof window.unifiedSettings.showToast === 'function') {
+            window.unifiedSettings.showToast(message, type);
+        } 
+        // Fallback to app.showAlert if available
+        else if (window.app && typeof window.app.showAlert === 'function') {
+            window.app.showAlert(message, type);
+        }
+        // Fallback to console
+        else {
+            console.log(`[${type}] ${message}`);
+        }
     }
 }
