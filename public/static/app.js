@@ -5481,7 +5481,7 @@ class TitanApp {
         const totalPnL = portfolio.totalPnL || 0;
         
         const days = 30;
-        const data = [];
+        const historyData = [];
         const startDate = new Date();
         const startBalance = currentBalance - totalPnL;
         const dailyChange = totalPnL / days;
@@ -5493,13 +5493,13 @@ class TitanApp {
             const daysPassed = 29 - i;
             const currentPnL = dailyChange * daysPassed;
     
-            data.push({
+            historyData.push({
                 date: date.toLocaleDateString('fa-IR'),
                 pnl: parseFloat(currentPnL.toFixed(2))
             });
         }
 
-        return data;
+        return historyData;
     }
 
     // ===== THEME CUSTOMIZATION =====
