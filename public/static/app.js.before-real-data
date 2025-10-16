@@ -4674,7 +4674,7 @@ class TitanApp {
 
     async renderPortfolioSummaryWidget(widget) {
         try {
-            // Get real portfolio data from API
+            // Mock portfolio data instead of API call
             const mockData = {
                 totalValue: 125000 + (Math.random() - 0.5) * 20000,
                 totalPnL: (Math.random() - 0.3) * 5000,
