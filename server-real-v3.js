@@ -1101,6 +1101,110 @@ app.get('/api/ai/recommendations', optionalAuthMiddleware, async (c) => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// ⚙️ SETTINGS API - User Settings Management
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Get user settings
+app.get('/api/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    
+    const result = await pool.query(
+      'SELECT settings FROM users WHERE id = $1',
+      [user.id]
+    );
+    
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
+    const settings = result.rows[0].settings || {};
+    
+    return c.json({
+      success: true,
+      data: settings,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Get settings error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Save exchange settings
+app.post('/api/settings/exchanges', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { exchanges } = body;
+    
+    if (!exchanges) {
+      return c.json({ success: false, error: 'تنظیمات صرافی‌ها ارسال نشده است' }, 400);
+    }
+    
+    // Get current settings
+    const currentResult = await pool.query(
+      'SELECT settings FROM users WHERE id = $1',
+      [user.id]
+    );
+    
+    let settings = currentResult.rows[0]?.settings || {};
+    
+    // Update exchanges section
+    settings.exchanges = exchanges;
+    
+    // Save back to database
+    await pool.query(
+      'UPDATE users SET settings = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(settings), user.id]
+    );
+    
+    console.log(`✅ Exchange settings saved for user ${user.id}`);
+    
+    return c.json({
+      success: true,
+      message: 'تنظیمات صرافی‌ها با موفقیت ذخیره شد',
+      data: { exchanges },
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Save exchange settings error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Save all user settings
+app.post('/api/settings', authMiddleware, async (c) => {
+  try {
+    const user = c.get('user');
+    const body = await c.req.json();
+    const { settings } = body;
+    
+    if (!settings) {
+      return c.json({ success: false, error: 'تنظیمات ارسال نشده است' }, 400);
+    }
+    
+    // Save settings to database
+    await pool.query(
+      'UPDATE users SET settings = $1, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(settings), user.id]
+    );
+    
+    console.log(`✅ Settings saved for user ${user.id}`);
+    
+    return c.json({
+      success: true,
+      message: 'تنظیمات با موفقیت ذخیره شد',
+      data: settings,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('Save settings error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
 app.get('/api/dashboard/comprehensive', authMiddleware, async (c) => {
   // Alias to comprehensive-real
   return app.request('/api/dashboard/comprehensive-real', {

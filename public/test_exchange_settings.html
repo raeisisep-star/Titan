@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Exchange Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔧 Test Exchange Settings</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">MEXC Settings</h2>
+            
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm mb-2">API Key</label>
+                    <input type="text" id="mexc-api-key" placeholder="mx0vglXXXXXXXX" 
+                           class="w-full px-4 py-2 bg-gray-700 rounded text-white">
+                </div>
+                
+                <div>
+                    <label class="block text-sm mb-2">API Secret</label>
+                    <input type="password" id="mexc-api-secret" placeholder="••••••••••" 
+                           class="w-full px-4 py-2 bg-gray-700 rounded text-white">
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" id="mexc-enabled" class="mr-2">
+                    <label>فعال کردن MEXC</label>
+                </div>
+                
+                <div class="flex items-center">
+                    <input type="checkbox" id="mexc-testnet" class="mr-2">
+                    <label>حالت Testnet</label>
+                </div>
+            </div>
+            
+            <button onclick="testSaveSettings()" 
+                    class="mt-6 w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-lg font-bold">
+                💾 ذخیره تنظیمات
+            </button>
+        </div>
+        
+        <div id="result" class="bg-gray-800 rounded-lg p-6 hidden">
+            <h3 class="font-bold mb-2">نتیجه:</h3>
+            <pre id="result-content" class="text-sm bg-gray-900 p-4 rounded overflow-auto"></pre>
+        </div>
+        
+        <div class="bg-blue-900 bg-opacity-30 rounded-lg p-4 border border-blue-600">
+            <h3 class="font-bold mb-2">راهنما:</h3>
+            <ol class="text-sm space-y-1">
+                <li>1. ابتدا وارد سایت اصلی شوید و login کنید</li>
+                <li>2. Token را از localStorage بگیرید</li>
+                <li>3. در Console: <code class="bg-gray-800 px-1">localStorage.getItem('titan_auth_token')</code></li>
+                <li>4. Token را در کد زیر جایگذاری کنید</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        async function testSaveSettings() {
+            const token = localStorage.getItem('titan_auth_token');
+            
+            if (!token) {
+                alert('لطفاً ابتدا در سایت اصلی login کنید!');
+                return;
+            }
+            
+            const exchangeData = {
+                mexc: {
+                    enabled: document.getElementById('mexc-enabled').checked,
+                    api_key: document.getElementById('mexc-api-key').value,
+                    api_secret: document.getElementById('mexc-api-secret').value,
+                    testnet: document.getElementById('mexc-testnet').checked,
+                    rate_limit: 1000
+                }
+            };
+            
+            console.log('Sending data:', exchangeData);
+            
+            try {
+                const response = await fetch('/api/settings/exchanges', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ exchanges: exchangeData })
+                });
+                
+                const result = await response.json();
+                
+                // Show result
+                document.getElementById('result').classList.remove('hidden');
+                document.getElementById('result-content').textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success) {
+                    alert('✅ تنظیمات با موفقیت ذخیره شد!');
+                } else {
+                    alert('❌ خطا: ' + result.error);
+                }
+            } catch (error) {
+                alert('❌ خطا در ارتباط با سرور: ' + error.message);
+                console.error(error);
+            }
+        }
+        
+        // Auto-fill token if available
+        window.addEventListener('load', () => {
+            const token = localStorage.getItem('titan_auth_token');
+            if (token) {
+                console.log('✅ Token موجود است');
+            } else {
+                console.warn('⚠️ Token موجود نیست - لطفاً ابتدا login کنید');
+            }
+        });
+    </script>
+</body>
+</html>
