@@ -130,6 +130,19 @@
         </div>
     </div>
 
+    <!-- Environment Configuration -->
+    <script>
+        // 🌍 تنظیمات محیط برای Titan Trading System
+        window.ENV = {
+            API_URL: '',  // خالی یعنی same-origin
+            USE_MOCK: 'false',  // پیش‌فرض: داده واقعی
+            DEBUG: 'false',  // حالت دیباگ
+            API_TIMEOUT: '8000',  // timeout به میلی‌ثانیه
+            ENABLE_RETRY: 'true',  // فعال‌سازی retry برای 502/503
+            MAX_RETRIES: '1'  // حداکثر تلاش مجدد
+        };
+    </script>
+
     <!-- Scripts -->
     <script>
         function showRegisterScreen() {
