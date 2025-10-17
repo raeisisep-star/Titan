@@ -49,6 +49,9 @@ import manualTradingRoutes from './routes/manual-trading-routes'
 // Import AI Services (Phase 6)
 import aiServicesApp from './api/ai-services'
 
+// 🆕 Import New API Routes (Production Safety)
+import { mountNewRoutes } from './routes/index'
+
 const app = new Hono()
 
 // Initialize Services
@@ -32828,6 +32831,9 @@ app.route('/api/trading/manual', manualTradingRoutes)
 // Import and mount autopilot routes
 import autopilotRoutes from './routes/autopilot'
 app.route('/api/trading/autopilot', autopilotRoutes)
+
+// 🆕 Mount new API routes with metadata signatures
+mountNewRoutes(app)
 
 // Mount AI services routes (Phase 6: Advanced AI & ML Integration)
 app.route('/api/ai', aiServicesApp)
