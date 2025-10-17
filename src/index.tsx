@@ -32581,57 +32581,60 @@ appWithD1.get('/api/dashboard/charts-real', async (c) => {
   }
 });
 
-// 📊 Comprehensive Real Dashboard API (Combines all real data)
-appWithD1.get('/api/dashboard/comprehensive-real', async (c) => {
-  try {
-    console.log('🔄 Loading comprehensive real dashboard data...');
-    
-    // Fetch all real data in parallel
-    const [portfolioRes, agentsRes, marketRes, tradingRes, activitiesRes, chartsRes] = await Promise.all([
-      fetch(`${c.req.url.replace('/comprehensive-real', '/portfolio-real')}`),
-      fetch(`${c.req.url.replace('/comprehensive-real', '/agents-real')}`), 
-      fetch(`${c.req.url.replace('/comprehensive-real', '/market-real')}`),
-      fetch(`${c.req.url.replace('/comprehensive-real', '/trading-real')}`),
-      fetch(`${c.req.url.replace('/comprehensive-real', '/activities-real')}`),
-      fetch(`${c.req.url.replace('/comprehensive-real', '/charts-real')}`)
-    ]);
-    
-    // Parse all responses
-    const [portfolio, agents, market, trading, activities, charts] = await Promise.all([
-      portfolioRes.json(),
-      agentsRes.json(), 
-      marketRes.json(),
-      tradingRes.json(),
-      activitiesRes.json(),
-      chartsRes.json()
-    ]);
-    
-    // Combine all real data
-    const comprehensiveData = {
-      success: true,
-      data: {
-        portfolio: portfolio.data,
-        aiAgents: agents.data.agents,
-        market: market.data,
-        trading: trading.data,
-        activities: activities.data.activities,
-        charts: charts.data,
-        summary: {
-          ...agents.data.summary,
-          lastUpdated: new Date().toISOString(),
-          dataSource: 'real_database'
-        }
-      }
-    };
-    
-    console.log('✅ Comprehensive real dashboard data loaded successfully');
-    return c.json(comprehensiveData);
-    
-  } catch (error) {
-    console.error('❌ Comprehensive Real Dashboard API Error:', error);
-    return c.json({ success: false, error: error.message }, 500);
-  }
-});
+
+// ⚠️ OLD ENDPOINT DEPRECATED - Use new DashboardService in src/routes/dashboard.ts
+// New endpoint: /api/dashboard/comprehensive-real (mounted via mountNewRoutes())
+// DEPRECATED: // 📊 Comprehensive Real Dashboard API (Combines all real data)
+// DEPRECATED: appWithD1.get('/api/dashboard/comprehensive-real', async (c) => {
+// DEPRECATED:   try {
+// DEPRECATED:     console.log('🔄 Loading comprehensive real dashboard data...');
+// DEPRECATED:     
+// DEPRECATED:     // Fetch all real data in parallel
+// DEPRECATED:     const [portfolioRes, agentsRes, marketRes, tradingRes, activitiesRes, chartsRes] = await Promise.all([
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/portfolio-real')}`),
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/agents-real')}`), 
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/market-real')}`),
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/trading-real')}`),
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/activities-real')}`),
+// DEPRECATED:       fetch(`${c.req.url.replace('/comprehensive-real', '/charts-real')}`)
+// DEPRECATED:     ]);
+// DEPRECATED:     
+// DEPRECATED:     // Parse all responses
+// DEPRECATED:     const [portfolio, agents, market, trading, activities, charts] = await Promise.all([
+// DEPRECATED:       portfolioRes.json(),
+// DEPRECATED:       agentsRes.json(), 
+// DEPRECATED:       marketRes.json(),
+// DEPRECATED:       tradingRes.json(),
+// DEPRECATED:       activitiesRes.json(),
+// DEPRECATED:       chartsRes.json()
+// DEPRECATED:     ]);
+// DEPRECATED:     
+// DEPRECATED:     // Combine all real data
+// DEPRECATED:     const comprehensiveData = {
+// DEPRECATED:       success: true,
+// DEPRECATED:       data: {
+// DEPRECATED:         portfolio: portfolio.data,
+// DEPRECATED:         aiAgents: agents.data.agents,
+// DEPRECATED:         market: market.data,
+// DEPRECATED:         trading: trading.data,
+// DEPRECATED:         activities: activities.data.activities,
+// DEPRECATED:         charts: charts.data,
+// DEPRECATED:         summary: {
+// DEPRECATED:           ...agents.data.summary,
+// DEPRECATED:           lastUpdated: new Date().toISOString(),
+// DEPRECATED:           dataSource: 'real_database'
+// DEPRECATED:         }
+// DEPRECATED:       }
+// DEPRECATED:     };
+// DEPRECATED:     
+// DEPRECATED:     console.log('✅ Comprehensive real dashboard data loaded successfully');
+// DEPRECATED:     return c.json(comprehensiveData);
+// DEPRECATED:     
+// DEPRECATED:   } catch (error) {
+// DEPRECATED:     console.error('❌ Comprehensive Real Dashboard API Error:', error);
+// DEPRECATED:     return c.json({ success: false, error: error.message }, 500);
+// DEPRECATED:   }
+// DEPRECATED: });
 
 // =============================================================================
 // TRADING ANALYTICS HELPER FUNCTIONS
