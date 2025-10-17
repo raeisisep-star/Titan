@@ -1,9 +1,5 @@
 // Dashboard Module - Extracted from monolithic app.js
 // Maintains 100% compatibility with existing functionality
-// 🔄 Updated to use Adapters for real API integration
-
-// Import adapters (dynamic imports will be used in methods)
-// NOTE: در صورت استفاده از build tool، می‌توان از static import استفاده کرد
 
 class DashboardModule {
     constructor() {
@@ -59,50 +55,85 @@ class DashboardModule {
 
     /**
      * Load comprehensive dashboard data from API - Enhanced with 15 AI Agents
-     * 🔄 UPDATED: Now uses Adapter pattern for clean separation
      */
     async loadDashboardData() {
         try {
-            console.log('📊 Loading comprehensive dashboard data via Adapters...');
+            console.log('📊 Loading REAL comprehensive dashboard data from API...');
+            const token = localStorage.getItem('titan_auth_token');
             
-            // 🎯 Load comprehensive adapter dynamically
-            const { getComprehensiveDashboard } = await import('../data/dashboard/comprehensive.adapter.js');
-            
-            // 🚀 Use adapter to get data (handles all fallbacks internally)
-            this.dashboardData = await getComprehensiveDashboard();
-            
-            // Update UI with loaded data
-            this.updateDashboardUI();
-            
-            // 🤖 Initialize AI Agents display
-            if (this.dashboardData.aiAgents) {
-                this.updateAIAgentsSection();
-            }
-            
-            // 📊 Initialize performance charts
-            if (this.dashboardData.charts) {
-                if (typeof Chart !== 'undefined') {
-                    console.log('🔄 Chart.js available, initializing charts...');
-                    this.initializePerformanceCharts();
-                } else {
-                    console.log('⏳ Chart.js not available yet, setting up retry mechanism...');
-                    this.setupChartRetry();
+            // 🚀 Use NEW REAL API endpoint (no more mock data!)
+            let response;
+            try {
+                // First try the real comprehensive API
+                console.log('🔄 Attempting real comprehensive API...');
+                response = await axios.get('/api/dashboard/comprehensive-real');
+            } catch (realApiError) {
+                console.log('⚠️ Real API failed, trying auth-required comprehensive API:', realApiError.message);
+                // Fallback to auth-required comprehensive
+                try {
+                    response = await axios.get('/api/dashboard/comprehensive', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                } catch (authError) {
+                    console.log('⚠️ Auth API failed, using dev endpoint as last resort:', authError.message);
+                    // Final fallback to dev endpoint
+                    response = await axios.get('/api/dashboard/comprehensive-dev');
                 }
-            } else {
-                console.warn('⚠️ No charts data available in response');
             }
             
-            console.log('✅ Comprehensive dashboard data loaded successfully');
-            
+            if (response.data.success) {
+                this.dashboardData = response.data.data;
+                this.updateDashboardUI();
+                
+                // 🤖 Initialize AI Agents display
+                if (this.dashboardData.aiAgents) {
+                    this.updateAIAgentsSection();
+                }
+                
+                // 📊 Initialize performance charts with improved error handling
+                if (this.dashboardData.charts) {
+                    if (typeof Chart !== 'undefined') {
+                        console.log('🔄 Chart.js available, initializing charts...');
+                        this.initializePerformanceCharts();
+                    } else {
+                        console.log('⏳ Chart.js not available yet, setting up retry mechanism...');
+                        this.setupChartRetry();
+                    }
+                } else {
+                    console.warn('⚠️ No charts data available in API response');
+                }
+                
+                console.log('✅ Comprehensive dashboard data loaded:', this.dashboardData);
+            } else {
+                throw new Error('API returned success: false');
+            }
         } catch (error) {
-            console.error('❌ Failed to load dashboard data via adapter:', error);
+            console.warn('❌ Dashboard API error, trying fallback API:', error);
             
-            // در صورت خطای کامل، از fallback mock استفاده کن
-            console.warn('⚠️ Using static fallback data');
-            this.dashboardData = this.getComprehensiveFallbackData();
-            this.updateDashboardUI();
-            
-            if (this.dashboardData.aiAgents) {
+            // Try fallback to simple API
+            try {
+                const fallbackResponse = await axios.get('/api/dashboard/overview', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (fallbackResponse.data.success) {
+                    this.dashboardData = fallbackResponse.data.data;
+                    this.updateDashboardUI();
+                    console.log('✅ Fallback dashboard data loaded');
+                } else {
+                    throw new Error('Fallback API also failed');
+                }
+            } catch (fallbackError) {
+                console.warn('❌ Both APIs failed, using static fallback data:', fallbackError);
+                // Provide comprehensive fallback data
+                this.dashboardData = this.getComprehensiveFallbackData();
+                this.updateDashboardUI();
                 this.updateAIAgentsSection();
             }
         }
