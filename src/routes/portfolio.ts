@@ -11,7 +11,7 @@ const app = new Hono()
 // Route handlers expect DB to be available in context
 app.get('/advanced', async (c) => {
   try {
-    const user = c.get('user')
+    const user: any = (c as any).get('user')
     if (!user || !user.id) {
       return c.json({ 
         error: 'User not authenticated',
@@ -46,7 +46,7 @@ app.get('/advanced', async (c) => {
 
 app.get('/transactions', async (c) => {
   try {
-    const user = c.get('user')
+    const user: any = (c as any).get('user')
     if (!user || !user.id) {
       return c.json({ 
         error: 'User not authenticated',
