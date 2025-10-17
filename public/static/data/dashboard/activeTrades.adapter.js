@@ -2,7 +2,9 @@
  * 📈 Active Trades Adapter
  * 
  * آداپتر برای دریافت معاملات فعال
- * Endpoint: GET /api/trades/active
+ * Endpoint: GET /api/portfolio/transactions (بجای /api/trades/active که وجود ندارد)
+ * 
+ * ✅ Updated: استفاده از endpoint موجود backend
  */
 
 import { httpGet, HTTPError } from '../../lib/http.js';
@@ -60,8 +62,14 @@ export async function getActiveTrades() {
     try {
         console.log('📈 [Active Trades Adapter] Fetching from API...');
         
-        // فراخوانی API واقعی
-        const response = await httpGet('/api/trades/active');
+        // ✅ فراخوانی API واقعی - استفاده از /api/portfolio/transactions
+        const response = await httpGet('/api/portfolio/transactions', {
+            params: {
+                status: 'active',  // فیلتر برای معاملات فعال
+                limit: 100,        // حداکثر 100 معامله
+                sort: 'desc'       // جدیدترین‌ها اول
+            }
+        });
         
         // اگر API ساختار استاندارد {success, data} دارد
         if (response.success && response.data) {
@@ -88,6 +96,8 @@ export async function getActiveTrades() {
 
 /**
  * دریافت آمار معاملات
+ * 
+ * ✅ Updated: استفاده از /api/portfolio/advanced برای stats
  */
 export async function getTradesStats() {
     if (USE_MOCK) {
@@ -100,10 +110,16 @@ export async function getTradesStats() {
     }
     
     try {
-        const response = await httpGet('/api/trades/stats');
+        // از /api/portfolio/advanced استفاده کن که stats هم دارد
+        const response = await httpGet('/api/portfolio/advanced');
         
         if (response.success && response.data) {
-            return response.data;
+            return {
+                activeTrades: response.data.activePositions || response.data.openTrades || 0,
+                todayTrades: response.data.tradesCount24h || response.data.todayTrades || 0,
+                successRate: response.data.successRate || response.data.winRate || 0,
+                totalPnL: response.data.totalPnL || response.data.profitLoss || 0
+            };
         }
         
         return response;
@@ -121,49 +137,63 @@ export async function getTradesStats() {
 
 /**
  * Normalize کردن داده‌های trades
+ * 
+ * ✅ Updated: با فیلدهای /api/portfolio/transactions سازگار شد
  */
 function normalizeTradesData(rawData) {
+    // اگر response شامل transactions یا data.transactions است
+    let tradesArray = rawData;
+    if (rawData.data && Array.isArray(rawData.data)) {
+        tradesArray = rawData.data;
+    } else if (rawData.transactions && Array.isArray(rawData.transactions)) {
+        tradesArray = rawData.transactions;
+    } else if (rawData.data && rawData.data.transactions) {
+        tradesArray = rawData.data.transactions;
+    }
+    
     // اگر آرایه‌ای از trades بوده
-    if (Array.isArray(rawData)) {
+    if (Array.isArray(tradesArray)) {
         return {
-            activeTrades: rawData.filter(t => t.status === 'OPEN' || t.status === 'PARTIALLY_FILLED').length,
-            todayTrades: rawData.filter(t => isToday(t.timestamp || t.time)).length,
-            pendingOrders: rawData.filter(t => t.status === 'PENDING' || t.status === 'NEW').length,
-            totalVolume24h: rawData.reduce((sum, t) => sum + ((t.price || 0) * (t.filled || t.executedQty || 0)), 0),
-            successfulTrades: rawData.filter(t => t.status === 'FILLED').length,
-            failedTrades: rawData.filter(t => t.status === 'CANCELED' || t.status === 'REJECTED').length,
+            activeTrades: tradesArray.filter(t => t.status === 'OPEN' || t.status === 'ACTIVE' || t.status === 'PARTIALLY_FILLED' || t.status === 'open').length,
+            todayTrades: tradesArray.filter(t => isToday(t.timestamp || t.time || t.created_at || t.createdAt)).length,
+            pendingOrders: tradesArray.filter(t => t.status === 'PENDING' || t.status === 'NEW' || t.status === 'pending').length,
+            totalVolume24h: tradesArray.reduce((sum, t) => sum + ((t.price || t.amount || 0) * (t.filled || t.executedQty || t.quantity || 0)), 0),
+            successfulTrades: tradesArray.filter(t => t.status === 'FILLED' || t.status === 'COMPLETED' || t.status === 'completed').length,
+            failedTrades: tradesArray.filter(t => t.status === 'CANCELED' || t.status === 'REJECTED' || t.status === 'cancelled').length,
             avgTradeProfit: 0,
-            trades: rawData.map(normalizeTrade)
+            trades: tradesArray.map(normalizeTrade)
         };
     }
     
     // ساختار با فیلدهای جداگانه
     return {
-        activeTrades: rawData.activeTrades || rawData.active || rawData.openTrades || 0,
-        todayTrades: rawData.todayTrades || rawData.today || rawData.trades24h || 0,
-        pendingOrders: rawData.pendingOrders || rawData.pending || rawData.openOrders || 0,
-        totalVolume24h: rawData.totalVolume24h || rawData.volume24h || rawData.volume || 0,
-        successfulTrades: rawData.successfulTrades || rawData.successful || rawData.filled || 0,
-        failedTrades: rawData.failedTrades || rawData.failed || rawData.canceled || 0,
-        avgTradeProfit: rawData.avgTradeProfit || rawData.avgProfit || 0,
+        activeTrades: rawData.activeTrades || rawData.active || rawData.openTrades || rawData.activePositions || 0,
+        todayTrades: rawData.todayTrades || rawData.today || rawData.trades24h || rawData.tradesCount24h || 0,
+        pendingOrders: rawData.pendingOrders || rawData.pending || rawData.openOrders || rawData.pendingOrders || 0,
+        totalVolume24h: rawData.totalVolume24h || rawData.volume24h || rawData.volume || rawData.totalVolume || 0,
+        successfulTrades: rawData.successfulTrades || rawData.successful || rawData.filled || rawData.completedTrades || 0,
+        failedTrades: rawData.failedTrades || rawData.failed || rawData.canceled || rawData.cancelledTrades || 0,
+        avgTradeProfit: rawData.avgTradeProfit || rawData.avgProfit || rawData.averageProfit || 0,
         trades: Array.isArray(rawData.trades) ? rawData.trades.map(normalizeTrade) : []
     };
 }
 
 /**
  * Normalize کردن یک trade
+ * 
+ * ✅ Updated: با فیلدهای /api/portfolio/transactions سازگار شد
  */
 function normalizeTrade(trade) {
     return {
-        id: trade.id || trade.orderId || trade.tradeId,
-        symbol: trade.symbol || trade.pair,
-        side: (trade.side || trade.type || 'BUY').toUpperCase(),
-        type: (trade.orderType || trade.type || 'LIMIT').toUpperCase(),
-        price: parseFloat(trade.price || trade.orderPrice || 0),
-        amount: parseFloat(trade.amount || trade.quantity || trade.origQty || 0),
-        filled: parseFloat(trade.filled || trade.executedQty || 0),
+        id: trade.id || trade.orderId || trade.tradeId || trade.transaction_id,
+        symbol: trade.symbol || trade.pair || trade.asset,
+        side: (trade.side || trade.type || trade.direction || 'BUY').toUpperCase(),
+        type: (trade.orderType || trade.type || trade.transactionType || 'LIMIT').toUpperCase(),
+        price: parseFloat(trade.price || trade.orderPrice || trade.rate || 0),
+        amount: parseFloat(trade.amount || trade.quantity || trade.origQty || trade.qty || 0),
+        filled: parseFloat(trade.filled || trade.executedQty || trade.filledQty || 0),
         status: (trade.status || 'UNKNOWN').toUpperCase(),
-        timestamp: trade.timestamp || trade.time || trade.createdAt || Date.now()
+        timestamp: trade.timestamp || trade.time || trade.createdAt || trade.created_at || Date.now()
     };
 }
 

@@ -1,9 +1,13 @@
 // Dashboard Module - Extracted from monolithic app.js
 // Maintains 100% compatibility with existing functionality
 // 🔄 Updated to use Adapters for real API integration
+// 🔒 PRODUCTION SAFETY: Enhanced with metadata validation and No-Data UI
 
 // Import adapters (dynamic imports will be used in methods)
 // NOTE: در صورت استفاده از build tool، می‌توان از static import استفاده کرد
+
+// 🔐 Production Safety - will be imported dynamically
+let validationFunctions = null;
 
 class DashboardModule {
     constructor() {
@@ -60,16 +64,40 @@ class DashboardModule {
     /**
      * Load comprehensive dashboard data from API - Enhanced with 15 AI Agents
      * 🔄 UPDATED: Now uses Adapter pattern for clean separation
+     * 🔒 PRODUCTION SAFETY: Validates metadata and handles NO-DATA responses
      */
     async loadDashboardData() {
         try {
             console.log('📊 Loading comprehensive dashboard data via Adapters...');
+            
+            // 🔐 Load validation functions if not already loaded
+            if (!validationFunctions) {
+                validationFunctions = await import('../lib/flags.js');
+            }
             
             // 🎯 Load comprehensive adapter dynamically
             const { getComprehensiveDashboard } = await import('../data/dashboard/comprehensive.adapter.js');
             
             // 🚀 Use adapter to get data (handles all fallbacks internally)
             this.dashboardData = await getComprehensiveDashboard();
+            
+            // 🔒 PRODUCTION SAFETY: Validate metadata before displaying
+            if (this.dashboardData.noData === true) {
+                console.warn('⚠️ NO-DATA response received:', this.dashboardData.meta?.reason);
+                this.showNoDataState(this.dashboardData.meta?.reason);
+                this.disableAllActionButtons();
+                return;
+            }
+            
+            if (!this.dashboardData.meta || !validationFunctions.isValidMetadata(this.dashboardData.meta)) {
+                console.error('❌ Invalid or missing metadata in dashboard response');
+                this.showNoDataState('Data validation failed: Invalid metadata');
+                this.disableAllActionButtons();
+                return;
+            }
+            
+            // ✅ Metadata valid - proceed with UI update
+            console.log('✅ Data validation passed, source:', this.dashboardData.meta.source);
             
             // Update UI with loaded data
             this.updateDashboardUI();
@@ -92,19 +120,22 @@ class DashboardModule {
                 console.warn('⚠️ No charts data available in response');
             }
             
+            // 🏷️ Show source badge in DEBUG mode
+            if (validationFunctions.DEBUG_MODE) {
+                this.showSourceBadge(this.dashboardData.meta.source);
+            }
+            
+            // ✅ Enable action buttons (data is valid)
+            this.enableAllActionButtons();
+            
             console.log('✅ Comprehensive dashboard data loaded successfully');
             
         } catch (error) {
             console.error('❌ Failed to load dashboard data via adapter:', error);
             
-            // در صورت خطای کامل، از fallback mock استفاده کن
-            console.warn('⚠️ Using static fallback data');
-            this.dashboardData = this.getComprehensiveFallbackData();
-            this.updateDashboardUI();
-            
-            if (this.dashboardData.aiAgents) {
-                this.updateAIAgentsSection();
-            }
+            // 🔴 PRODUCTION: Show NO-DATA instead of fallback mock
+            this.showNoDataState(`Failed to load dashboard: ${error.message}`);
+            this.disableAllActionButtons();
         }
     }
 
@@ -2418,6 +2449,135 @@ class DashboardModule {
         if (activeCount) activeCount.textContent = '12';
         if (trainingCount) trainingCount.textContent = '2';
         if (standbyCount) standbyCount.textContent = '1';
+    }
+
+    /**
+     * 🔒 PRODUCTION SAFETY: Show NO-DATA state across entire dashboard
+     * @param {string} reason - Reason for no data
+     */
+    showNoDataState(reason = 'No valid data available') {
+        console.warn('🚫 Displaying NO-DATA state:', reason);
+        
+        const dashboardContainer = document.getElementById('dashboard-widgets-container');
+        if (dashboardContainer) {
+            const noDataBanner = document.createElement('div');
+            noDataBanner.id = 'no-data-banner';
+            noDataBanner.className = 'col-span-full bg-red-900/20 border-2 border-red-500/50 rounded-xl p-6 text-center';
+            noDataBanner.innerHTML = `
+                <div class="flex flex-col items-center gap-3">
+                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl"></i>
+                    <h3 class="text-xl font-bold text-red-400">No Data Available</h3>
+                    <p class="text-gray-300 max-w-md">${reason}</p>
+                    <button onclick="window.dashboardModule.refreshData()" 
+                            class="mt-3 bg-red-600 hover:bg-red-700 text-white px-6 py-2 rounded-lg transition-colors">
+                        <i class="fas fa-sync-alt mr-2"></i>Try Again
+                    </button>
+                </div>
+            `;
+            dashboardContainer.prepend(noDataBanner);
+        }
+        
+        this.replaceAllWidgetsWithNoData();
+    }
+
+    /**
+     * 🔒 Replace all widget data with NO-DATA placeholders
+     */
+    replaceAllWidgetsWithNoData() {
+        const dataCardIds = [
+            'total-balance-card', 'balance-change', 'active-trades-card',
+            'total-pnl-card', 'win-rate-card', 'sharpe-ratio-card', 'system-health-card',
+            'btc-price-card', 'eth-price-card', 'fear-greed-card', 'btc-dominance-card',
+            'today-trades-card', 'pending-orders-card', 'volume-24h-card',
+            'total-exposure-card', 'risk-score-card', 'current-drawdown-card',
+            'completed-courses-card', 'current-level-card', 'weekly-progress-card', 'total-sessions-card',
+            'active-agents-card', 'avg-performance-card'
+        ];
+        
+        dataCardIds.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.innerHTML = '<span class="text-gray-500 text-sm">—</span>';
+            }
+        });
+        
+        const aiAgentsContainer = document.getElementById('ai-agents-container');
+        if (aiAgentsContainer) {
+            aiAgentsContainer.innerHTML = `
+                <div class="text-center text-gray-400 py-8">
+                    <i class="fas fa-database text-3xl mb-3 text-red-400"></i>
+                    <p class="text-lg font-semibold">No Agent Data Available</p>
+                </div>
+            `;
+        }
+        
+        const recentActivities = document.getElementById('recent-activities');
+        if (recentActivities) {
+            recentActivities.innerHTML = `
+                <div class="text-center text-gray-400 py-4">
+                    <i class="fas fa-inbox text-2xl mb-2 text-gray-500"></i>
+                    <p>No activity data available</p>
+                </div>
+            `;
+        }
+        
+        ['portfolio-chart-loading', 'agents-chart-loading', 'volume-chart-loading'].forEach(id => {
+            const element = document.getElementById(id);
+            if (element) {
+                element.innerHTML = `<div class="text-center text-gray-500"><i class="fas fa-chart-line text-3xl mb-2 opacity-30"></i><div class="text-sm">No chart data</div></div>`;
+            }
+        });
+    }
+
+    /**
+     * 🔒 Disable all action buttons when data is invalid
+     */
+    disableAllActionButtons() {
+        console.log('🔒 Disabling all action buttons (invalid data)');
+        const actionButtons = document.querySelectorAll('button[onclick*="trade"], button[onclick*="buy"], button[onclick*="sell"]');
+        actionButtons.forEach(button => {
+            button.disabled = true;
+            button.classList.add('opacity-50', 'cursor-not-allowed');
+            button.title = 'Disabled: No valid data available';
+        });
+    }
+
+    /**
+     * 🔓 Enable all action buttons when data is valid
+     */
+    enableAllActionButtons() {
+        console.log('✅ Enabling all action buttons (valid data)');
+        const disabledButtons = document.querySelectorAll('button[disabled]');
+        disabledButtons.forEach(button => {
+            if (button.classList.contains('cursor-not-allowed')) {
+                button.disabled = false;
+                button.classList.remove('opacity-50', 'cursor-not-allowed');
+                button.removeAttribute('title');
+            }
+        });
+    }
+
+    /**
+     * 🏷️ Show source badge in DEBUG mode
+     */
+    showSourceBadge(source) {
+        if (!validationFunctions || !validationFunctions.DEBUG_MODE) return;
+        
+        const existingBadge = document.getElementById('data-source-badge');
+        if (existingBadge) existingBadge.remove();
+        
+        const badge = document.createElement('div');
+        badge.id = 'data-source-badge';
+        badge.className = `fixed bottom-4 right-4 z-50 px-3 py-2 rounded-lg border text-xs font-mono ${validationFunctions.getSourceBadgeColor(source)}`;
+        badge.innerHTML = `
+            <div class="flex items-center gap-2">
+                <i class="fas fa-database"></i>
+                <span>Source: ${validationFunctions.getSourceDisplayName(source)}</span>
+                <span class="text-gray-400">|</span>
+                <span class="text-gray-400">${new Date(this.dashboardData.meta.ts).toLocaleTimeString()}</span>
+            </div>
+        `;
+        document.body.appendChild(badge);
     }
 
     /**
