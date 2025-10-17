@@ -14876,6 +14876,20 @@ app.get('/', (c) => {
                 }
             });
         </script>
+        
+        <!-- 🔒 PRODUCTION SAFETY: Environment Configuration -->
+        <script>
+            window.ENV = {
+                API_URL: "",  // Same-origin
+                FORCE_REAL: "true",  // 🔴 PRODUCTION OVERRIDE - disables mock data
+                USE_MOCK: "false",
+                DEBUG: "false",
+                API_TIMEOUT: "8000",
+                ENABLE_RETRY: "true",
+                MAX_RETRIES: "1"
+            };
+            console.log("🔒 Environment configured with FORCE_REAL=true (production safety)");
+        </script>
         <!-- Load AI Agents -->
         <script src="/static/modules/ai-agents/agent-01-technical-analysis.js?v=${Date.now()}"></script>
         <script src="/static/modules/ai-agents/agent-02-risk-management.js?v=${Date.now()}"></script>

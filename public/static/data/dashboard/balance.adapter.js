@@ -2,7 +2,9 @@
  * 💰 Balance Adapter
  * 
  * آداپتر برای دریافت موجودی کاربر
- * Endpoint: GET /api/user/balance
+ * Endpoint: GET /api/portfolio/advanced (بجای /api/user/balance که وجود ندارد)
+ * 
+ * ✅ Updated: استفاده از endpoint موجود backend
  */
 
 import { httpGet, HTTPError } from '../../lib/http.js';
@@ -37,8 +39,8 @@ export async function getBalance() {
     try {
         console.log('💰 [Balance Adapter] Fetching from API...');
         
-        // فراخوانی API واقعی
-        const response = await httpGet('/api/user/balance');
+        // ✅ فراخوانی API واقعی - استفاده از /api/portfolio/advanced
+        const response = await httpGet('/api/portfolio/advanced');
         
         // اگر API ساختار استاندارد {success, data} دارد
         if (response.success && response.data) {
@@ -66,20 +68,23 @@ export async function getBalance() {
 /**
  * Normalize کردن داده‌های balance به فرمت استاندارد UI
  * 
+ * ✅ Updated: با فیلدهای /api/portfolio/advanced سازگار شد
+ * 
  * @param {object} rawData - داده خام از API
  * @returns {object} داده استاندارد شده
  */
 function normalizeBalanceData(rawData) {
     // Map کردن نام‌های مختلف فیلدها
+    // از /api/portfolio/advanced: totalValue, available, locked, dailyChange, ...
     return {
-        totalBalance: rawData.totalBalance || rawData.total || rawData.balance || 0,
-        availableBalance: rawData.availableBalance || rawData.available || rawData.free || 0,
-        lockedBalance: rawData.lockedBalance || rawData.locked || rawData.frozen || 0,
-        dailyChange: rawData.dailyChange || rawData.daily_change || rawData.changePercent24h || 0,
-        dailyChangeAmount: rawData.dailyChangeAmount || rawData.daily_change_amount || rawData.change24h || 0,
-        weeklyChange: rawData.weeklyChange || rawData.weekly_change || rawData.changePercent7d || 0,
-        monthlyChange: rawData.monthlyChange || rawData.monthly_change || rawData.changePercent30d || 0,
-        currency: rawData.currency || rawData.asset || 'USDT'
+        totalBalance: rawData.totalBalance || rawData.totalValue || rawData.total || rawData.balance || 0,
+        availableBalance: rawData.availableBalance || rawData.available || rawData.free || rawData.availableFunds || 0,
+        lockedBalance: rawData.lockedBalance || rawData.locked || rawData.frozen || rawData.lockedFunds || 0,
+        dailyChange: rawData.dailyChange || rawData.daily_change || rawData.changePercent24h || rawData.dailyChangePercent || 0,
+        dailyChangeAmount: rawData.dailyChangeAmount || rawData.daily_change_amount || rawData.change24h || rawData.dailyChangeValue || 0,
+        weeklyChange: rawData.weeklyChange || rawData.weekly_change || rawData.changePercent7d || rawData.weeklyChangePercent || 0,
+        monthlyChange: rawData.monthlyChange || rawData.monthly_change || rawData.changePercent30d || rawData.monthlyChangePercent || 0,
+        currency: rawData.currency || rawData.asset || rawData.baseCurrency || 'USDT'
     };
 }
 
