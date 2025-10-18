@@ -7,8 +7,12 @@ import { Hono } from 'hono'
 import portfolioRoutes from './portfolio'
 import marketRoutes from './market'
 import dashboardRoutes from './dashboard'
+import authRoutes from './auth-fixed'
 
 export function mountNewRoutes(app: Hono) {
+  // Auth routes with fixed login response format
+  app.route('/api/auth', authRoutes)
+  
   // Portfolio routes with metadata signatures
   app.route('/api/portfolio', portfolioRoutes)
   
@@ -18,5 +22,5 @@ export function mountNewRoutes(app: Hono) {
   // Dashboard routes with comprehensive orchestration
   app.route('/api/dashboard', dashboardRoutes)
   
-  console.log('✅ New API routes mounted: /api/portfolio, /api/market, /api/dashboard')
+  console.log('✅ New API routes mounted: /api/auth, /api/portfolio, /api/market, /api/dashboard')
 }
