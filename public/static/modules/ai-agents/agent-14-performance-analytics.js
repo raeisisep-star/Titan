@@ -2044,7 +2044,7 @@ class PerformanceOptimizationNN extends PerformanceAnalysisNN {
 }
 
 // Circuit Breaker Class (shared)
-class CircuitBreaker {
+class CircuitBreakerAgent14 {
     constructor(config = {}) {
         this.failureThreshold = config.failureThreshold || 5;
         this.recoveryTimeout = config.recoveryTimeout || 30000;

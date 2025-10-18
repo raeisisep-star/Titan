@@ -108,18 +108,37 @@ const MOCK_COMPREHENSIVE_DATA = {
  * @returns {Promise<object>} داده جامع dashboard
  */
 export async function getComprehensiveDashboard() {
+    console.log('🎯 [Comprehensive Adapter] Starting data fetch...');
+    console.log('   USE_MOCK:', USE_MOCK);
+    
+    // Check token via TokenManager if available
+    const token = window.TokenManager?.getToken() || localStorage.getItem('titan_auth_token');
+    console.log('   Token:', token ? 'Present (' + token.substring(0, 20) + '...)' : 'Missing');
+    
+    if (window.TokenManager) {
+        window.TokenManager.debug();
+    }
+    
     // اگر USE_MOCK فعال است
     if (USE_MOCK) {
-        console.log('🎯 [Comprehensive Adapter] Using MOCK data');
+        console.log('🎯 [Comprehensive Adapter] Using MOCK data (USE_MOCK=true)');
         return MOCK_COMPREHENSIVE_DATA;
     }
     
     // Strategy 1: تلاش برای دریافت از comprehensive endpoint
     try {
-        console.log('🎯 [Comprehensive Adapter] Trying comprehensive endpoint...');
+        console.log('🎯 [Comprehensive Adapter] Strategy 1: Trying /api/dashboard/comprehensive-real...');
         
         const response = await httpGet('/api/dashboard/comprehensive-real', {
             timeout: 10000  // timeout بیشتر برای comprehensive
+        });
+        
+        console.log('📦 [Comprehensive Adapter] Response received:', {
+            success: response?.success,
+            hasData: !!response?.data,
+            hasPortfolio: !!response?.portfolio,
+            hasMarket: !!response?.market,
+            keys: Object.keys(response || {})
         });
         
         if (response.success && response.data) {
@@ -132,15 +151,28 @@ export async function getComprehensiveDashboard() {
             return normalizeComprehensiveData(response);
         }
         
+        console.warn('⚠️ [Comprehensive Adapter] Response format unexpected:', response);
+        
     } catch (error) {
-        console.warn('⚠️ [Comprehensive Adapter] Comprehensive endpoint failed:', error.message);
+        console.error('❌ [Comprehensive Adapter] Strategy 1 failed:', {
+            message: error.message,
+            status: error.status,
+            data: error.data,
+            stack: error.stack
+        });
     }
     
     // Strategy 2: تلاش با auth-required endpoint
     try {
-        console.log('🎯 [Comprehensive Adapter] Trying auth-required endpoint...');
+        console.log('🎯 [Comprehensive Adapter] Strategy 2: Trying /api/dashboard/comprehensive...');
         
         const response = await httpGet('/api/dashboard/comprehensive');
+        
+        console.log('📦 [Comprehensive Adapter] Auth endpoint response:', {
+            success: response?.success,
+            hasData: !!response?.data,
+            keys: Object.keys(response || {})
+        });
         
         if (response.success && response.data) {
             console.log('✅ [Comprehensive Adapter] Got data from auth endpoint');
@@ -148,18 +180,28 @@ export async function getComprehensiveDashboard() {
         }
         
     } catch (error) {
-        console.warn('⚠️ [Comprehensive Adapter] Auth endpoint failed:', error.message);
+        console.error('❌ [Comprehensive Adapter] Strategy 2 failed:', {
+            message: error.message,
+            status: error.status,
+            data: error.data
+        });
     }
     
     // Strategy 3: ساخت داده از individual adapters
     try {
-        console.log('🎯 [Comprehensive Adapter] Building from individual adapters...');
+        console.log('🎯 [Comprehensive Adapter] Strategy 3: Building from individual adapters...');
         
         const [balance, market, trades] = await Promise.allSettled([
             getBalance(),
             getMarketPrices(),
             getActiveTrades()
         ]);
+        
+        console.log('📦 [Comprehensive Adapter] Individual adapter results:', {
+            balance: balance.status,
+            market: market.status,
+            trades: trades.status
+        });
         
         const comprehensiveData = {
             portfolio: balance.status === 'fulfilled' ? {
@@ -202,11 +244,15 @@ export async function getComprehensiveDashboard() {
         return comprehensiveData;
         
     } catch (error) {
-        console.error('❌ [Comprehensive Adapter] Individual adapters failed:', error);
+        console.error('❌ [Comprehensive Adapter] Strategy 3 failed:', {
+            message: error.message,
+            stack: error.stack
+        });
     }
     
     // Strategy 4: Complete fallback به mock
-    console.log('🎯 [Comprehensive Adapter] Falling back to complete MOCK data');
+    console.warn('⚠️ [Comprehensive Adapter] ALL STRATEGIES FAILED - Falling back to complete MOCK data');
+    console.warn('   This should NOT happen in production with FORCE_REAL=true');
     return MOCK_COMPREHENSIVE_DATA;
 }
 
@@ -214,7 +260,8 @@ export async function getComprehensiveDashboard() {
  * Normalize کردن داده‌های comprehensive
  */
 function normalizeComprehensiveData(rawData) {
-    return {
+    // 🔒 CRITICAL: Preserve meta object from backend
+    const normalized = {
         portfolio: rawData.portfolio || MOCK_COMPREHENSIVE_DATA.portfolio,
         aiAgents: rawData.aiAgents || rawData.ai_agents || MOCK_COMPREHENSIVE_DATA.aiAgents,
         market: rawData.market || MOCK_COMPREHENSIVE_DATA.market,
@@ -225,6 +272,23 @@ function normalizeComprehensiveData(rawData) {
         summary: rawData.summary || MOCK_COMPREHENSIVE_DATA.summary,
         charts: rawData.charts || MOCK_COMPREHENSIVE_DATA.charts
     };
+    
+    // 🔑 CRITICAL: Preserve meta from backend response
+    if (rawData.meta) {
+        normalized.meta = rawData.meta;
+        console.log('✅ [Adapter] Preserved meta from backend:', rawData.meta);
+    } else {
+        // Create default meta if missing
+        normalized.meta = {
+            source: 'fallback',
+            ts: Date.now(),
+            ttlMs: 30000,
+            stale: false
+        };
+        console.warn('⚠️ [Adapter] No meta in response, created default meta');
+    }
+    
+    return normalized;
 }
 
 /**

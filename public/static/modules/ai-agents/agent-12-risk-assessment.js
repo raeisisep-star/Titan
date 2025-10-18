@@ -17,7 +17,7 @@
  * @version 2.1.0
  */
 
-class RiskAssessmentAgent {
+class RiskAssessmentAgentV1 {
     constructor(config = {}) {
         this.agentId = 'AGENT_12_RISK_ASSESSMENT';
         this.name = 'Risk Assessment Specialist';
@@ -2075,7 +2075,9 @@ class SystemicRiskNN {
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = RiskAssessmentAgent;
+    module.exports = RiskAssessmentAgentV1;
+} else if (typeof window !== 'undefined') {
+    window.RiskAssessmentAgentV1 = RiskAssessmentAgentV1;
 }
 
 // Auto-initialize if in browser

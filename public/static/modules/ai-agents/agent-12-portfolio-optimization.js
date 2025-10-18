@@ -19,7 +19,7 @@
  * @version 2.0.0
  */
 
-class PortfolioOptimizationAgent {
+class PortfolioOptimizationAgentV3 {
     constructor() {
         this.agentId = 'AGENT_12_PORTFOLIO';
         this.name = 'Portfolio Optimization Specialist';
@@ -1894,7 +1894,7 @@ const portfolioAgent = new PortfolioOptimizationAgent();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = PortfolioOptimizationAgent;
 } else if (typeof window !== 'undefined') {
-    window.PortfolioOptimizationAgent = PortfolioOptimizationAgent;
+    window.PortfolioOptimizationAgentV3 = PortfolioOptimizationAgentV3;
     window.TitanAgents = window.TitanAgents || {};
-    window.TitanAgents.PortfolioOptimizationAgent = portfolioAgent;
+    window.TitanAgents.PortfolioOptimizationAgentV3 = portfolioAgent;
 }

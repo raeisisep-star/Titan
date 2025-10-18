@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Flow Debugger - TITAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 Token Flow Debugger</h1>
+        
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">Step 1: Check Current Token</h2>
+            <button onclick="checkToken()" class="bg-blue-500 px-4 py-2 rounded hover:bg-blue-600">
+                Check localStorage Token
+            </button>
+            <div id="tokenCheck" class="mt-4 p-4 bg-gray-700 rounded font-mono text-sm"></div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">Step 2: Perform Admin Login</h2>
+            <button onclick="performLogin()" class="bg-green-500 px-4 py-2 rounded hover:bg-green-600">
+                Login as admin/admin
+            </button>
+            <div id="loginResult" class="mt-4 p-4 bg-gray-700 rounded font-mono text-sm"></div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">Step 3: Check Token After Login</h2>
+            <button onclick="checkTokenAfterLogin()" class="bg-purple-500 px-4 py-2 rounded hover:bg-purple-600">
+                Check Token Again
+            </button>
+            <div id="tokenCheckAfter" class="mt-4 p-4 bg-gray-700 rounded font-mono text-sm"></div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">Step 4: Test Authenticated API Call</h2>
+            <button onclick="testAuthAPI()" class="bg-yellow-500 px-4 py-2 rounded hover:bg-yellow-600">
+                Call /api/dashboard/comprehensive-real
+            </button>
+            <div id="apiResult" class="mt-4 p-4 bg-gray-700 rounded font-mono text-sm"></div>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">Step 5: Clear Token</h2>
+            <button onclick="clearToken()" class="bg-red-500 px-4 py-2 rounded hover:bg-red-600">
+                Clear localStorage Token
+            </button>
+            <div id="clearResult" class="mt-4 p-4 bg-gray-700 rounded font-mono text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        function log(elementId, message, type = 'info') {
+            const el = document.getElementById(elementId);
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'text-red-400' : type === 'success' ? 'text-green-400' : 'text-blue-400';
+            el.innerHTML = `<span class="${color}">[${timestamp}]</span> ${message}`;
+        }
+
+        function checkToken() {
+            const token = localStorage.getItem('titan_auth_token');
+            if (token) {
+                log('tokenCheck', `✅ Token found: ${token.substring(0, 20)}...${token.substring(token.length - 10)}`, 'success');
+            } else {
+                log('tokenCheck', '❌ No token found in localStorage', 'error');
+            }
+        }
+
+        async function performLogin() {
+            log('loginResult', '⏳ Attempting login...', 'info');
+            
+            try {
+                console.log('🔐 [TEST] Starting login request...');
+                
+                const response = await axios.post('/api/auth/login', {
+                    username: 'admin',
+                    password: 'admin'
+                });
+
+                console.log('🔐 [TEST] Login response:', response.data);
+
+                if (response.data.success && response.data.data && response.data.data.token) {
+                    const token = response.data.data.token;
+                    
+                    console.log('🔐 [TEST] Token received:', token);
+                    console.log('🔐 [TEST] Storing token in localStorage...');
+                    
+                    localStorage.setItem('titan_auth_token', token);
+                    
+                    console.log('🔐 [TEST] Token stored. Verifying...');
+                    const storedToken = localStorage.getItem('titan_auth_token');
+                    console.log('🔐 [TEST] Retrieved token:', storedToken);
+                    
+                    if (storedToken === token) {
+                        console.log('✅ [TEST] Token storage SUCCESSFUL');
+                        log('loginResult', `✅ Login successful!<br>Token: ${token.substring(0, 30)}...<br>User: ${response.data.data.user.username}<br>Token stored: YES`, 'success');
+                    } else {
+                        console.error('❌ [TEST] Token storage FAILED - retrieved token does not match');
+                        log('loginResult', '❌ Token storage verification FAILED', 'error');
+                    }
+                    
+                    // Set axios header
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                    console.log('🔐 [TEST] Axios Authorization header set');
+                } else {
+                    console.error('❌ [TEST] Login response missing token');
+                    log('loginResult', `❌ Login failed: ${response.data.error || 'Unknown error'}`, 'error');
+                }
+            } catch (error) {
+                console.error('❌ [TEST] Login error:', error);
+                log('loginResult', `❌ Login error: ${error.message}<br>Status: ${error.response?.status || 'N/A'}`, 'error');
+            }
+        }
+
+        function checkTokenAfterLogin() {
+            const token = localStorage.getItem('titan_auth_token');
+            const hasAuthHeader = axios.defaults.headers.common['Authorization'];
+            
+            if (token) {
+                log('tokenCheckAfter', `✅ Token still present: ${token.substring(0, 20)}...${token.substring(token.length - 10)}<br>Axios header: ${hasAuthHeader ? 'SET' : 'NOT SET'}`, 'success');
+            } else {
+                log('tokenCheckAfter', '❌ Token LOST! Not found in localStorage', 'error');
+            }
+        }
+
+        async function testAuthAPI() {
+            const token = localStorage.getItem('titan_auth_token');
+            
+            if (!token) {
+                log('apiResult', '❌ No token found. Please login first.', 'error');
+                return;
+            }
+
+            log('apiResult', '⏳ Calling authenticated API...', 'info');
+            
+            try {
+                console.log('🌐 [TEST] Making API call with token:', token.substring(0, 20) + '...');
+                console.log('🌐 [TEST] Axios Authorization header:', axios.defaults.headers.common['Authorization']);
+                
+                const response = await axios.get('/api/dashboard/comprehensive-real', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+
+                console.log('✅ [TEST] API response:', response.data);
+                
+                if (response.data.success) {
+                    const dataKeys = Object.keys(response.data.data || {});
+                    log('apiResult', `✅ API call successful!<br>Data keys: ${dataKeys.join(', ')}<br>Source: ${response.data.data?.meta?.source || 'N/A'}`, 'success');
+                } else {
+                    log('apiResult', `⚠️ API returned success=false: ${JSON.stringify(response.data)}`, 'error');
+                }
+            } catch (error) {
+                console.error('❌ [TEST] API error:', error);
+                log('apiResult', `❌ API error: ${error.message}<br>Status: ${error.response?.status || 'N/A'}<br>Response: ${JSON.stringify(error.response?.data || {})}`, 'error');
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('titan_auth_token');
+            delete axios.defaults.headers.common['Authorization'];
+            log('clearResult', '✅ Token cleared from localStorage and axios', 'success');
+        }
+
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            checkToken();
+        });
+    </script>
+</body>
+</html>

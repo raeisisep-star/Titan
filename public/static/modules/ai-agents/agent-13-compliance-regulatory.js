@@ -1689,7 +1689,7 @@ class TradeSurveillanceNN extends MarketAbuseDetectionNN {}
 class RegulatoryRiskNN extends MarketAbuseDetectionNN {}
 
 // Circuit Breaker Class (shared)
-class CircuitBreaker {
+class CircuitBreakerAgent13 {
     constructor(config = {}) {
         this.failureThreshold = config.failureThreshold || 5;
         this.recoveryTimeout = config.recoveryTimeout || 30000;

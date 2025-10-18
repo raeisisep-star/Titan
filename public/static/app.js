@@ -395,10 +395,6 @@ class TitanApp {
                                     <i class="fas fa-brain ml-1 text-purple-400"></i>
                                     آرتمیس AI
                                 </a>
-                                <a href="#" onclick="app.loadModule('ai-insights')" class="nav-link">
-                                    <i class="fas fa-robot ml-1 text-cyan-400"></i>
-                                    هوش مصنوعی
-                                </a>
 
                         
                                 <!-- More Menu Dropdown -->
@@ -632,14 +628,6 @@ class TitanApp {
                         <i class="fas fa-robot text-purple-400"></i>
                         <span>آرتمیس AI</span>
                     </a>
-                    <a href="#" onclick="app.loadModule('ai-insights'); app.closeMobileMenu();" class="mobile-nav-link">
-                        <i class="fas fa-brain text-cyan-400"></i>
-                        <span>هوش مصنوعی</span>
-                    </a>
-
-                    <a href="#" onclick="app.loadModule('news'); app.closeMobileMenu();" class="mobile-nav-link">
-                        <i class="fas fa-newspaper text-green-400"></i>
-                        <span>اخبار بازار</span>
                     </a>
                     <a href="#" onclick="app.loadModule('alerts'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-bell text-yellow-400"></i>
@@ -2178,55 +2166,55 @@ class TitanApp {
                     }
                     break;
 
-                case 'ai-insights':
-                    try {
-                        console.log('🧠 Starting AI Insights Dashboard module loading...');
-                        
-                        // Load AI Insights module directly (it's self-contained)
-                        const script = document.createElement('script');
-                        script.src = `/static/modules/ai-insights.js?v=${Date.now()}`;
-                        
-                        await new Promise((resolve, reject) => {
-                            script.onload = resolve;
-                            script.onerror = reject;
-                            document.head.appendChild(script);
-                        });
-                        
-                        // Wait a moment for script to be parsed
-                        await new Promise(resolve => setTimeout(resolve, 100));
-                        
-                        if (typeof AIInsightsDashboard !== 'undefined') {
-                            console.log('✅ AI Insights Dashboard class loaded');
-                            
-                            // Create and initialize AI Insights Dashboard
-                            const aiInsightsDashboard = new AIInsightsDashboard();
-                            await aiInsightsDashboard.initialize();
-                            
-                            console.log('✅ AI Insights Dashboard initialized successfully');
-                        } else {
-                            throw new Error('AIInsightsDashboard class not found after loading');
-                        }
-                        
-                    } catch (error) {
-                        console.error('❌ AI Insights loading error:', error);
-                        this.showAlert('خطا در بارگذاری ماژول هوش مصنوعی: ' + error.message, 'error');
-                        
-                        // Show fallback content
-                        mainContent.innerHTML = `
-                            <div class="text-center p-8">
-                                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md mx-auto">
-                                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
-                                    <h3 class="text-red-400 text-lg font-bold mb-2">خطا در بارگذاری هوش مصنوعی</h3>
-                                    <p class="text-gray-300 text-sm mb-4">سرویس‌های هوش مصنوعی در حال حاضر در دسترس نیستند.</p>
-                                    <button onclick="app.loadModule('ai-insights')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
-                                        <i class="fas fa-retry mr-2"></i>
-                                        تلاش مجدد
-                                    </button>
-                                </div>
-                            </div>
-                        `;
-                    }
-                    break;
+// DISABLED:                 case 'ai-insights':
+// DISABLED:                     try {
+// DISABLED:                         console.log('🧠 Starting AI Insights Dashboard module loading...');
+// DISABLED:                         
+// DISABLED:                         // Load AI Insights module directly (it's self-contained)
+// DISABLED:                         const script = document.createElement('script');
+// DISABLED:                         script.src = `/static/modules/ai-insights.js?v=${Date.now()}`;
+// DISABLED:                         
+// DISABLED:                         await new Promise((resolve, reject) => {
+// DISABLED:                             script.onload = resolve;
+// DISABLED:                             script.onerror = reject;
+// DISABLED:                             document.head.appendChild(script);
+// DISABLED:                         });
+// DISABLED:                         
+// DISABLED:                         // Wait a moment for script to be parsed
+// DISABLED:                         await new Promise(resolve => setTimeout(resolve, 100));
+// DISABLED:                         
+// DISABLED:                         if (typeof AIInsightsDashboard !== 'undefined') {
+// DISABLED:                             console.log('✅ AI Insights Dashboard class loaded');
+// DISABLED:                             
+// DISABLED:                             // Create and initialize AI Insights Dashboard
+// DISABLED:                             const aiInsightsDashboard = new AIInsightsDashboard();
+// DISABLED:                             await aiInsightsDashboard.initialize();
+// DISABLED:                             
+// DISABLED:                             console.log('✅ AI Insights Dashboard initialized successfully');
+// DISABLED:                         } else {
+// DISABLED:                             throw new Error('AIInsightsDashboard class not found after loading');
+// DISABLED:                         }
+// DISABLED:                         
+// DISABLED:                     } catch (error) {
+// DISABLED:                         console.error('❌ AI Insights loading error:', error);
+// DISABLED:                         this.showAlert('خطا در بارگذاری ماژول هوش مصنوعی: ' + error.message, 'error');
+// DISABLED:                         
+// DISABLED:                         // Show fallback content
+// DISABLED:                         mainContent.innerHTML = `
+// DISABLED:                             <div class="text-center p-8">
+// DISABLED:                                 <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md mx-auto">
+// DISABLED:                                     <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+// DISABLED:                                     <h3 class="text-red-400 text-lg font-bold mb-2">خطا در بارگذاری هوش مصنوعی</h3>
+// DISABLED:                                     <p class="text-gray-300 text-sm mb-4">سرویس‌های هوش مصنوعی در حال حاضر در دسترس نیستند.</p>
+// DISABLED:                                     <button onclick="app.loadModule('ai-insights')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+// DISABLED:                                         <i class="fas fa-retry mr-2"></i>
+// DISABLED:                                         تلاش مجدد
+// DISABLED:                                     </button>
+// DISABLED:                                 </div>
+// DISABLED:                             </div>
+// DISABLED:                         `;
+// DISABLED:                     }
+// DISABLED:                     break;
 
                 case 'news':
                     try {
