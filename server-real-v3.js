@@ -2019,6 +2019,15 @@ const { registerAllAPIs } = require('./routes-all-apis');
 // Register all additional API routes
 registerAllAPIs(app, pool, redisClient, authMiddleware);
 
+// ═══════════════════════════════════════════════════════════════════════════
+// 🆕 LOAD ALL NEW MISSING APIs (Phase 2 Implementation)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const { loadAllNewAPIs } = require('./routes/load-all-new-apis');
+
+// Load all new missing APIs
+loadAllNewAPIs(app, pool, redisClient);
+
 console.log('');
 console.log('╔══════════════════════════════════════════════════════════════════════════╗');
 console.log('║  🚀 TITAN TRADING SYSTEM - REAL BACKEND V3.0                            ║');

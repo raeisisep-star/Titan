@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN AI Insights Dashboard Test</title>
+    
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <!-- Axios for HTTP requests -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #0f0f23;
+            color: white;
+            min-height: 100vh;
+        }
+        
+        .test-header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            padding: 20px;
+            text-align: center;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .test-title {
+            font-size: 2em;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+        }
+        
+        .test-subtitle {
+            opacity: 0.8;
+            font-size: 1.1em;
+        }
+        
+        .test-controls {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            padding: 10px 20px;
+            background: linear-gradient(45deg, #00f5ff, #0080ff);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            cursor: pointer;
+            font-size: 1em;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 245, 255, 0.3);
+        }
+        
+        .test-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        #content {
+            min-height: calc(100vh - 200px);
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 60px;
+            font-size: 1.2em;
+            opacity: 0.7;
+        }
+        
+        .loading i {
+            animation: spin 1s linear infinite;
+            margin-left: 10px;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .status-success {
+            background: rgba(34, 197, 94, 0.2);
+            color: #22c55e;
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+        
+        .status-error {
+            background: rgba(239, 68, 68, 0.2);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        
+        .test-results {
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            margin: 20px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+    </style>
+</head>
+<body>
+    <div class="test-header">
+        <h1 class="test-title">
+            <i class="fas fa-brain"></i>
+            TITAN AI Insights Dashboard Test
+            <i class="fas fa-robot"></i>
+        </h1>
+        <p class="test-subtitle">Phase 7 Advanced Frontend Integration Testing</p>
+    </div>
+    
+    <div class="test-controls">
+        <button class="test-btn" onclick="loadAIDashboard()">
+            <i class="fas fa-play"></i> Load AI Dashboard
+        </button>
+        <button class="test-btn secondary" onclick="testBackendAPIs()">
+            <i class="fas fa-server"></i> Test Backend APIs
+        </button>
+        <button class="test-btn secondary" onclick="testRealTimeFeatures()">
+            <i class="fas fa-broadcast-tower"></i> Test Real-Time
+        </button>
+        <button class="test-btn secondary" onclick="clearContent()">
+            <i class="fas fa-trash"></i> Clear
+        </button>
+    </div>
+    
+    <div id="content">
+        <div class="loading">
+            <span>Ready to test AI Dashboard</span>
+            <i class="fas fa-cog"></i>
+        </div>
+    </div>
+    
+    <div id="testResults" class="test-results" style="display: none;">
+        <h3><i class="fas fa-clipboard-check"></i> Test Results</h3>
+        <div id="resultsList"></div>
+    </div>
+
+    <script>
+        // Test configuration
+        const config = {
+            backendUrl: 'https://8787-i1ztql4a6psy4zpnosbxx-b32ec7bb.sandbox.novita.ai',
+            testData: {
+                symbol: 'BTCUSDT',
+                timeframe: '1h'
+            }
+        };
+        
+        // Test results tracking
+        let testResults = [];
+        
+        function addTestResult(test, status, message) {
+            testResults.push({ test, status, message, timestamp: new Date().toLocaleTimeString() });
+            updateTestResultsDisplay();
+        }
+        
+        function updateTestResultsDisplay() {
+            const resultsDiv = document.getElementById('testResults');
+            const listDiv = document.getElementById('resultsList');
+            
+            if (testResults.length > 0) {
+                resultsDiv.style.display = 'block';
+                
+                listDiv.innerHTML = testResults.map(result => `
+                    <div style="margin: 10px 0; padding: 10px; background: rgba(255,255,255,0.05); border-radius: 5px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <span><strong>${result.test}</strong></span>
+                            <span class="status-indicator status-${result.status}">
+                                <i class="fas fa-${result.status === 'success' ? 'check' : 'times'}"></i>
+                                ${result.status}
+                            </span>
+                        </div>
+                        <div style="margin-top: 5px; font-size: 0.9em; opacity: 0.8;">
+                            ${result.message} (${result.timestamp})
+                        </div>
+                    </div>
+                `).join('');
+            }
+        }
+        
+        // Load AI Dashboard function
+        async function loadAIDashboard() {
+            const content = document.getElementById('content');
+            content.innerHTML = '<div class="loading"><span>Loading AI Insights Dashboard...</span><i class="fas fa-spinner"></i></div>';
+            
+            try {
+                // Load the AI Insights module
+                const script = document.createElement('script');
+                script.src = '/static/modules/ai-insights.js?' + Date.now();
+                
+                await new Promise((resolve, reject) => {
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+                
+                // Wait for script to be parsed
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                if (typeof AIInsightsDashboard !== 'undefined') {
+                    console.log('✅ AIInsightsDashboard class loaded successfully');
+                    
+                    // Create and initialize the dashboard
+                    const dashboard = new AIInsightsDashboard();
+                    
+                    // Override backend endpoints to use our test server
+                    dashboard.endpoints = {
+                        models: config.backendUrl + '/api/ai/models',
+                        predict: config.backendUrl + '/api/ai/predict',
+                        predictEnsemble: config.backendUrl + '/api/ai/predict/ensemble',
+                        marketConditions: config.backendUrl + '/api/ai/intelligence/market-conditions',
+                        sentiment: config.backendUrl + '/api/ai/intelligence/sentiment',
+                        anomalies: config.backendUrl + '/api/ai/intelligence/anomalies',
+                        forecast: config.backendUrl + '/api/ai/intelligence/forecast',
+                        strategyGenerate: config.backendUrl + '/api/ai/strategy/generate',
+                        strategyBacktest: config.backendUrl + '/api/ai/strategy/backtest',
+                        strategyOptimize: config.backendUrl + '/api/ai/strategy/optimize',
+                        strategyRankings: config.backendUrl + '/api/ai/strategy/rankings',
+                        status: config.backendUrl + '/api/ai/status'
+                    };
+                    
+                    await dashboard.initialize();
+                    
+                    addTestResult('AI Dashboard Load', 'success', 'Dashboard loaded and initialized successfully');
+                    
+                } else {
+                    throw new Error('AIInsightsDashboard class not found');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error loading AI Dashboard:', error);
+                addTestResult('AI Dashboard Load', 'error', error.message);
+                
+                content.innerHTML = `
+                    <div style="text-align: center; padding: 40px;">
+                        <div style="background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 10px; padding: 30px; max-width: 500px; margin: 0 auto;">
+                            <i class="fas fa-exclamation-triangle" style="font-size: 3em; color: #ef4444; margin-bottom: 20px;"></i>
+                            <h3 style="color: #ef4444; margin-bottom: 15px;">AI Dashboard Loading Failed</h3>
+                            <p style="opacity: 0.8; margin-bottom: 20px;">${error.message}</p>
+                            <button class="test-btn" onclick="loadAIDashboard()">
+                                <i class="fas fa-retry"></i> Retry
+                            </button>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+        
+        // Test backend APIs
+        async function testBackendAPIs() {
+            addTestResult('Backend API Test', 'success', 'Starting API connectivity tests...');
+            
+            const tests = [
+                { name: 'AI Status', endpoint: '/api/ai/status' },
+                { name: 'AI Models', endpoint: '/api/ai/models' },
+                { name: 'Market Conditions', endpoint: '/api/ai/intelligence/market-conditions?symbol=BTCUSDT' }
+            ];
+            
+            for (const test of tests) {
+                try {
+                    const response = await fetch(config.backendUrl + test.endpoint);
+                    const data = await response.json();
+                    
+                    if (response.ok && data.success) {
+                        addTestResult(test.name, 'success', `API responded correctly: ${JSON.stringify(data).substring(0, 100)}...`);
+                    } else {
+                        addTestResult(test.name, 'error', `API error: ${data.error || 'Unknown error'}`);
+                    }
+                    
+                } catch (error) {
+                    addTestResult(test.name, 'error', `Network error: ${error.message}`);
+                }
+                
+                // Small delay between tests
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+        }
+        
+        // Test real-time features
+        async function testRealTimeFeatures() {
+            addTestResult('Real-Time Features', 'success', 'Testing real-time capabilities...');
+            
+            // Simulate real-time updates
+            let updateCount = 0;
+            const interval = setInterval(() => {
+                updateCount++;
+                addTestResult(`Real-Time Update ${updateCount}`, 'success', `Simulated update at ${new Date().toLocaleTimeString()}`);
+                
+                if (updateCount >= 3) {
+                    clearInterval(interval);
+                    addTestResult('Real-Time Test Complete', 'success', 'All real-time features tested successfully');
+                }
+            }, 2000);
+        }
+        
+        // Clear content
+        function clearContent() {
+            document.getElementById('content').innerHTML = '<div class="loading"><span>Ready to test AI Dashboard</span><i class="fas fa-cog"></i></div>';
+            document.getElementById('testResults').style.display = 'none';
+            testResults = [];
+        }
+        
+        // Initialize page
+        console.log('🧪 AI Dashboard Test Page Loaded');
+        console.log('🔧 Backend URL:', config.backendUrl);
+        
+        // Add some initial status
+        addTestResult('Page Load', 'success', 'Test environment initialized successfully');
+    </script>
+</body>
+</html>

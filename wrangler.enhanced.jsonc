@@ -1,0 +1,114 @@
+{
+  "name": "titan-trading-system-enhanced",
+  "main": "src/enhanced-server.ts",
+  "compatibility_date": "2024-01-15",
+  "compatibility_flags": ["nodejs_compat"],
+  
+  // Enhanced Production Environment Variables
+  "vars": {
+    "ENVIRONMENT": "production",
+    "APP_VERSION": "3.0.0",
+    "FEATURE_AI_OPTIMIZATION": "true",
+    "FEATURE_PERFORMANCE_MONITORING": "true", 
+    "FEATURE_SECURITY_AUDITING": "true",
+    "FEATURE_UNIFIED_DASHBOARD": "true",
+    "LOG_LEVEL": "info"
+  },
+
+  // Enhanced Database Configuration
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "titan_enhanced_production",
+      "database_id": "production-db-id",
+      "migrations_dir": "./migrations"
+    }
+  ],
+
+  // Enhanced KV Storage for Caching
+  "kv_namespaces": [
+    {
+      "binding": "CACHE",
+      "id": "enhanced-cache-namespace",
+      "preview_id": "enhanced-cache-preview"
+    },
+    {
+      "binding": "SESSIONS",
+      "id": "enhanced-sessions-namespace",
+      "preview_id": "enhanced-sessions-preview"
+    },
+    {
+      "binding": "METRICS",
+      "id": "enhanced-metrics-namespace", 
+      "preview_id": "enhanced-metrics-preview"
+    }
+  ],
+
+  // Enhanced R2 Storage for AI Models and Analytics
+  "r2_buckets": [
+    {
+      "binding": "AI_MODELS",
+      "bucket_name": "titan-ai-models-enhanced"
+    },
+    {
+      "binding": "ANALYTICS_DATA", 
+      "bucket_name": "titan-analytics-enhanced"
+    },
+    {
+      "binding": "SECURITY_LOGS",
+      "bucket_name": "titan-security-logs-enhanced"
+    }
+  ],
+
+  // Enhanced Analytics Engine Integration
+  "analytics_engine_datasets": [
+    {
+      "binding": "PERFORMANCE_ANALYTICS",
+      "dataset": "titan_performance_metrics"
+    },
+    {
+      "binding": "SECURITY_ANALYTICS",
+      "dataset": "titan_security_events"
+    },
+    {
+      "binding": "AI_ANALYTICS", 
+      "dataset": "titan_ai_model_metrics"
+    }
+  ],
+
+  // Enhanced Route Definition (single route)
+  "route": "titan-enhanced.your-domain.com/*",
+
+  // Enhanced Build Configuration
+  "build": {
+    "command": "npm run build:enhanced",
+    "cwd": ".",
+    "watch_dir": ["src", "static", "migrations"]
+  },
+
+  // Enhanced Node.js Compatibility for Advanced Features
+  "node_compat": true,
+
+  // Enhanced Triggers for Cron Jobs
+  "triggers": {
+    "crons": [
+      "0 */5 * * * *",    // AI model optimization every 5 minutes
+      "0 */1 * * * *",    // Performance metrics collection every minute
+      "0 */15 * * * *"    // Security audit every 15 minutes
+    ]
+  },
+
+  // Enhanced Placement Configuration
+  "placement": {
+    "mode": "smart"
+  },
+
+  // Enhanced Development Configuration
+  "dev": {
+    "ip": "0.0.0.0",
+    "port": 8787,
+    "local_protocol": "https",
+    "upstream_protocol": "https",
+    "host": "localhost"
+  }
+}

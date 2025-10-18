@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Settings Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-4">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8 text-center">🏦 Direct Settings Test - Exchange Management</h1>
+        
+        <!-- Login -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl mb-4">ورود</h2>
+            <button onclick="login()" class="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg mb-4">ورود با demo_user</button>
+            <div id="login-status"></div>
+        </div>
+        
+        <!-- Load Settings -->
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl mb-4">بارگذاری Settings</h2>
+            <button onclick="loadSettings()" class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg mb-4">بارگذاری Settings Module</button>
+            <div id="load-status"></div>
+        </div>
+        
+        <!-- Settings Display -->
+        <div id="settings-display" class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl mb-4">Exchange Management</h2>
+            <div id="settings-content"></div>
+        </div>
+        
+        <!-- Test Results -->
+        <div class="bg-gray-800 rounded-lg p-6 mt-6">
+            <h2 class="text-xl mb-4">Test Results</h2>
+            <div id="test-results" class="text-sm space-y-2 max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <!-- Load Settings Module directly -->
+    <script src="/static/modules/settings.js"></script>
+    
+    <script>
+        function log(message, type = 'info') {
+            const div = document.getElementById('test-results');
+            const timestamp = new Date().toLocaleTimeString();
+            const colors = {
+                'info': 'text-blue-400',
+                'success': 'text-green-400', 
+                'error': 'text-red-400',
+                'warning': 'text-yellow-400'
+            };
+            div.innerHTML += `<div class="${colors[type] || 'text-white'}">[${timestamp}] ${message}</div>`;
+            div.scrollTop = div.scrollHeight;
+            console.log(message);
+        }
+        
+        async function login() {
+            try {
+                const response = await axios.post('/api/login', {
+                    username: 'demo_user',
+                    password: 'demo123'
+                });
+                
+                if (response.data.success) {
+                    document.getElementById('login-status').innerHTML = '<span class="text-green-400">✅ وارد شدید</span>';
+                    log('✅ Login successful', 'success');
+                    return true;
+                } else {
+                    document.getElementById('login-status').innerHTML = '<span class="text-red-400">❌ خطا در ورود</span>';
+                    log('❌ Login failed', 'error');
+                    return false;
+                }
+            } catch (error) {
+                log('❌ Login error: ' + error.message, 'error');
+                return false;
+            }
+        }
+        
+        function loadSettings() {
+            try {
+                log('🔄 Loading Settings Module...', 'info');
+                
+                // Check if SettingsModule class exists
+                if (typeof SettingsModule === 'undefined') {
+                    log('❌ SettingsModule class not found', 'error');
+                    return;
+                }
+                
+                log('✅ SettingsModule class found', 'success');
+                
+                // Create instance
+                const settingsModule = new SettingsModule();
+                window.settingsModule = settingsModule; // Make global
+                
+                log('✅ SettingsModule instance created', 'success');
+                
+                // Set tab to exchanges
+                settingsModule.currentTab = 'exchanges';
+                log('✅ Tab set to exchanges', 'success');
+                
+                // Render content
+                const content = settingsModule.render();
+                log('✅ Content rendered', 'success');
+                
+                // Display content
+                document.getElementById('settings-content').innerHTML = content;
+                log('✅ Content displayed in DOM', 'success');
+                
+                document.getElementById('load-status').innerHTML = '<span class="text-green-400">✅ Settings بارگذاری شد</span>';
+                
+                // Count exchanges
+                setTimeout(() => {
+                    const exchangeCards = document.querySelectorAll('.bg-gray-900');
+                    log(`🔍 Found ${exchangeCards.length} exchange cards in DOM`, 'info');
+                    
+                    // Check specific exchanges
+                    const exchanges = ['binance', 'mexc', 'okx', 'coinbase', 'kucoin'];
+                    exchanges.forEach(exchange => {
+                        const found = document.getElementById(`${exchange}-enabled`);
+                        log(`🔍 ${exchange.toUpperCase()}: ${found ? '✅ Found' : '❌ Not found'}`, found ? 'success' : 'warning');
+                    });
+                    
+                    // Test a button click
+                    const testButton = document.querySelector('[onclick*="testExchange"]');
+                    if (testButton) {
+                        log('✅ Test buttons found and clickable', 'success');
+                    } else {
+                        log('❌ Test buttons not found', 'error');
+                    }
+                }, 1000);
+                
+            } catch (error) {
+                log('❌ Error loading Settings: ' + error.message, 'error');
+                document.getElementById('load-status').innerHTML = '<span class="text-red-400">❌ خطا در بارگذاری</span>';
+                console.error('Settings error:', error);
+            }
+        }
+        
+        // Auto login and load on page ready
+        window.addEventListener('DOMContentLoaded', async function() {
+            log('🚀 Page loaded, starting auto test...', 'info');
+            
+            setTimeout(async () => {
+                const loginSuccess = await login();
+                if (loginSuccess) {
+                    setTimeout(() => {
+                        loadSettings();
+                    }, 1000);
+                }
+            }, 500);
+        });
+    </script>
+</body>
+</html>

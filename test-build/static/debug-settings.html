@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-2xl mb-6">🔧 Debug Settings Tabs</h1>
+        
+        <!-- Settings Tabs -->
+        <div class="bg-gray-800 rounded-lg border border-gray-700">
+            <!-- Tab Navigation -->
+            <div class="flex border-b border-gray-700 overflow-x-auto">
+                <button onclick="switchDebugTab('general')" id="tab-general"
+                        class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-blue-400 border-b-2 border-blue-400">
+                    <i class="fas fa-cog"></i>عمومی
+                </button>
+                <button onclick="switchDebugTab('ai')" id="tab-ai"
+                        class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400 hover:text-white">
+                    <i class="fas fa-robot"></i>هوش مصنوعی
+                </button>
+                <button onclick="switchDebugTab('trading')" id="tab-trading"
+                        class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400 hover:text-white">
+                    <i class="fas fa-chart-line"></i>معاملات
+                </button>
+                <button onclick="switchDebugTab('system')" id="tab-system"
+                        class="settings-tab px-6 py-4 text-sm font-medium whitespace-nowrap flex items-center gap-2 text-gray-400 hover:text-white">
+                    <i class="fas fa-cogs"></i>سیستم
+                </button>
+            </div>
+
+            <!-- Tab Content -->
+            <div class="p-6" id="debug-tab-content">
+                <div class="bg-gray-900 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-white mb-4">⚙️ تنظیمات عمومی</h4>
+                    <p class="text-gray-300">تب عمومی - کار می‌کند</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+
+    <script>
+        function switchDebugTab(tabName) {
+            console.log('🔄 Debug switching to tab:', tabName);
+            
+            const content = document.getElementById('debug-tab-content');
+            
+            // Update content based on tab
+            let html = '';
+            switch (tabName) {
+                case 'general':
+                    html = '<div class="bg-gray-900 rounded-lg p-4"><h4 class="text-lg font-semibold text-white mb-4">⚙️ تنظیمات عمومی</h4><p class="text-gray-300">تب عمومی - کار می‌کند</p></div>';
+                    break;
+                case 'ai':
+                    html = '<div class="bg-gray-900 rounded-lg p-4"><h4 class="text-lg font-semibold text-white mb-4">🤖 تنظیمات هوش مصنوعی</h4><p class="text-gray-300">تب AI - کار می‌کند</p></div>';
+                    break;
+                case 'trading':
+                    html = '<div class="bg-gray-900 rounded-lg p-4"><h4 class="text-lg font-semibold text-white mb-4">📋 تنظیمات معاملات</h4><p class="text-gray-300">تب معاملات - کار می‌کند</p></div>';
+                    break;
+                case 'system':
+                    html = '<div class="bg-gray-900 rounded-lg p-4"><h4 class="text-lg font-semibold text-white mb-4">🖥️ تنظیمات سیستم</h4><p class="text-gray-300">تب سیستم - کار می‌کند</p></div>';
+                    break;
+            }
+            
+            content.innerHTML = html;
+            
+            // Update tab styles
+            document.querySelectorAll('.settings-tab').forEach(tab => {
+                tab.classList.remove('text-blue-400', 'border-b-2', 'border-blue-400');
+                tab.classList.add('text-gray-400');
+            });
+            
+            const activeTab = document.getElementById('tab-' + tabName);
+            if (activeTab) {
+                activeTab.classList.remove('text-gray-400');
+                activeTab.classList.add('text-blue-400', 'border-b-2', 'border-blue-400');
+            }
+            
+            console.log('✅ Debug tab switched to:', tabName);
+        }
+    </script>
+</body>
+</html>

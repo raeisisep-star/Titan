@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Module Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <style>
+        .test-log {
+            background: #1f2937;
+            color: #e5e7eb;
+            padding: 1rem;
+            margin: 1rem 0;
+            border-radius: 8px;
+            font-family: monospace;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <h1 class="text-3xl font-bold mb-6">🧪 Portfolio Module Test</h1>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+            <h2 class="text-xl font-bold mb-4">Test Results</h2>
+            <div id="test-results" class="space-y-2"></div>
+            
+            <button id="run-test" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mt-4">
+                🚀 Run Portfolio Module Test
+            </button>
+            
+            <button id="clear-cache" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded mt-4 ml-2">
+                🗑️ Clear Cache & Reload
+            </button>
+        </div>
+        
+        <div>
+            <h2 class="text-xl font-bold mb-4">Console Log</h2>
+            <div id="console-log" class="test-log"></div>
+        </div>
+    </div>
+    
+    <div class="mt-8">
+        <h2 class="text-xl font-bold mb-4">Portfolio Module Output</h2>
+        <div id="portfolio-content" class="bg-gray-800 p-4 rounded-lg min-h-[400px]">
+            <!-- Portfolio Module Content Will Be Loaded Here -->
+        </div>
+    </div>
+
+    <script>
+        let testResults = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEl = document.getElementById('console-log');
+            const color = {
+                'error': '#ef4444',
+                'success': '#10b981',
+                'warning': '#f59e0b',
+                'info': '#3b82f6'
+            }[type];
+            
+            logEl.innerHTML += `<div style="color: ${color}">[${timestamp}] ${message}</div>`;
+            logEl.scrollTop = logEl.scrollHeight;
+            
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+        
+        function addTestResult(test, success, message) {
+            const resultsEl = document.getElementById('test-results');
+            const icon = success ? '✅' : '❌';
+            const color = success ? 'text-green-400' : 'text-red-400';
+            
+            resultsEl.innerHTML += `<div class="flex items-center ${color}">
+                <span class="mr-2">${icon}</span>
+                <span class="font-medium">${test}:</span>
+                <span class="ml-2 text-gray-300">${message}</span>
+            </div>`;
+            
+            testResults.push({ test, success, message });
+        }
+        
+        async function testPortfolioModule() {
+            log('🚀 Starting Portfolio Module Test', 'info');
+            testResults = [];
+            document.getElementById('test-results').innerHTML = '';
+            
+            try {
+                // Test 1: Load Module Loader
+                log('📂 Loading Module Loader...', 'info');
+                
+                if (!window.moduleLoader) {
+                    await loadScript('/static/modules/module-loader.js?v=' + Date.now());
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                }
+                
+                if (window.moduleLoader) {
+                    addTestResult('Module Loader', true, 'Successfully loaded');
+                    log('✅ Module Loader loaded successfully', 'success');
+                } else {
+                    addTestResult('Module Loader', false, 'Failed to load');
+                    log('❌ Module Loader failed to load', 'error');
+                    return;
+                }
+                
+                // Test 2: Load Portfolio Module
+                log('📊 Loading Portfolio Module...', 'info');
+                
+                const portfolioModule = await window.moduleLoader.loadModule('portfolio');
+                
+                if (portfolioModule) {
+                    addTestResult('Portfolio Module Loading', true, `Loaded v${portfolioModule.version}`);
+                    log(`✅ Portfolio Module loaded successfully (v${portfolioModule.version})`, 'success');
+                } else {
+                    addTestResult('Portfolio Module Loading', false, 'Module returned null');
+                    log('❌ Portfolio Module returned null', 'error');
+                    return;
+                }
+                
+                // Test 3: Check TitanModules Namespace
+                log('🔍 Checking TitanModules namespace...', 'info');
+                
+                if (window.TitanModules && window.TitanModules.portfolio) {
+                    addTestResult('TitanModules Namespace', true, 'Portfolio class found');
+                    log('✅ TitanModules.portfolio exists', 'success');
+                } else {
+                    addTestResult('TitanModules Namespace', false, 'Portfolio class missing');
+                    log('❌ TitanModules.portfolio not found', 'error');
+                    log('Available modules: ' + Object.keys(window.TitanModules || {}).join(', '), 'info');
+                }
+                
+                // Test 4: Get Portfolio Content
+                log('📝 Getting Portfolio Content...', 'info');
+                
+                const content = await portfolioModule.getContent();
+                
+                if (content && content.length > 0) {
+                    addTestResult('Portfolio Content', true, `${content.length} characters generated`);
+                    log(`✅ Portfolio content generated (${content.length} chars)`, 'success');
+                    
+                    // Display content
+                    document.getElementById('portfolio-content').innerHTML = content;
+                } else {
+                    addTestResult('Portfolio Content', false, 'Empty or null content');
+                    log('❌ Portfolio content is empty', 'error');
+                }
+                
+                // Test 5: Initialize Portfolio Module
+                log('⚙️ Initializing Portfolio Module...', 'info');
+                
+                try {
+                    await portfolioModule.initialize();
+                    addTestResult('Portfolio Initialization', true, 'Module initialized successfully');
+                    log('✅ Portfolio Module initialized successfully', 'success');
+                } catch (initError) {
+                    addTestResult('Portfolio Initialization', false, initError.message);
+                    log('❌ Portfolio initialization error: ' + initError.message, 'error');
+                }
+                
+                // Test 6: API Endpoint Test
+                log('🌐 Testing Portfolio API...', 'info');
+                
+                try {
+                    const response = await axios.get('/api/portfolio/advanced');
+                    if (response.data.success) {
+                        addTestResult('Portfolio API', true, 'API returned valid data');
+                        log('✅ Portfolio API working correctly', 'success');
+                    } else {
+                        addTestResult('Portfolio API', false, 'API returned error');
+                        log('❌ Portfolio API returned error', 'error');
+                    }
+                } catch (apiError) {
+                    addTestResult('Portfolio API', false, apiError.message);
+                    log('❌ Portfolio API error: ' + apiError.message, 'error');
+                }
+                
+                log('🎉 Test completed!', 'success');
+                
+            } catch (error) {
+                log('❌ Test failed: ' + error.message, 'error');
+                addTestResult('General Test', false, error.message);
+            }
+        }
+        
+        function loadScript(src) {
+            return new Promise((resolve, reject) => {
+                const script = document.createElement('script');
+                script.src = src;
+                script.onload = resolve;
+                script.onerror = reject;
+                document.head.appendChild(script);
+            });
+        }
+        
+        function clearCacheAndReload() {
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Force reload
+            window.location.reload(true);
+        }
+        
+        // Event Listeners
+        document.getElementById('run-test').addEventListener('click', testPortfolioModule);
+        document.getElementById('clear-cache').addEventListener('click', clearCacheAndReload);
+        
+        // Auto-run test on page load
+        window.addEventListener('load', () => {
+            setTimeout(testPortfolioModule, 1000);
+        });
+    </script>
+</body>
+</html>
