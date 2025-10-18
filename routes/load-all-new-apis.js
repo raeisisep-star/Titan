@@ -26,6 +26,11 @@ function loadAllNewAPIs(app, pool, redisClient) {
     aiChatbotReal(app, pool, redisClient);
     console.log('✅ Part 3 loaded: Real AI Chatbot (OpenAI, Claude, Gemini)');
     
+    // Load Part 4: Real Autopilot System (Trading Engine)
+    const autopilotReal = require('./autopilot-real');
+    autopilotReal(app, pool, redisClient);
+    console.log('✅ Part 4 loaded: Real Autopilot System (Trading Engine)');
+    
     console.log('');
     console.log('╔══════════════════════════════════════════════════════════════════════════╗');
     console.log('║  ✅ ALL NEW APIs LOADED SUCCESSFULLY                                     ║');
@@ -34,7 +39,8 @@ function loadAllNewAPIs(app, pool, redisClient) {
     console.log('📊 New API Summary:');
     console.log('   🤖 AI & Artemis APIs: 15+ endpoints');
     console.log('   🧠 Real AI Chatbot APIs: 8+ endpoints (OpenAI, Claude, Gemini)');
-    console.log('   🚀 Autopilot APIs: 10+ endpoints');
+    console.log('   🤖 Real Autopilot APIs: 13 endpoints (Trading Engine)');
+    console.log('   🚀 Autopilot Mock APIs: 10+ endpoints');
     console.log('   🔔 Notifications & Alerts: 12+ endpoints');
     console.log('   📰 News APIs: 5+ endpoints');
     console.log('   👀 Watchlist APIs: 4 endpoints');
@@ -45,8 +51,9 @@ function loadAllNewAPIs(app, pool, redisClient) {
     console.log('   📊 Analytics: 4+ endpoints');
     console.log('   🎮 Mode APIs: 4 endpoints');
     console.log('');
-    console.log('   📈 Total New Endpoints: 88+');
+    console.log('   📈 Total New Endpoints: 101+');
     console.log('   🤖 Real AI Integration: OpenAI GPT-4, Anthropic Claude 3, Google Gemini');
+    console.log('   💹 Real Trading: Binance, MEXC (with Risk Management)');
     console.log('');
     
   } catch (error) {
