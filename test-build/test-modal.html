@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Modal - AI Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-8">🧠 تست Modal Sizing - پیکربندی AI</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <button onclick="showTestModal1()" class="bg-blue-600 hover:bg-blue-700 p-4 rounded-lg text-white text-center">
+                <i class="fas fa-cogs text-2xl mb-2 block"></i>
+                تست Modal جدید
+            </button>
+            <button onclick="showTestModal2()" class="bg-green-600 hover:bg-green-700 p-4 rounded-lg text-white text-center">
+                <i class="fas fa-chart-bar text-2xl mb-2 block"></i>
+                تست Analytics Modal
+            </button>
+            <button onclick="showTestModal3()" class="bg-purple-600 hover:bg-purple-700 p-4 rounded-lg text-white text-center">
+                <i class="fas fa-memory text-2xl mb-2 block"></i>
+                تست Context Modal
+            </button>
+        </div>
+
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-bold mb-4">🔧 تغییرات اعمال شده:</h2>
+            <ul class="list-disc list-inside space-y-2 text-gray-300">
+                <li>✅ حذف کلاس <code class="bg-gray-700 px-2 py-1 rounded">max-h-90vh</code> غیر استاندارد</li>
+                <li>✅ استفاده از <code class="bg-gray-700 px-2 py-1 rounded">max-h-[90vh]</code> معتبر</li>
+                <li>✅ اضافه کردن <code class="bg-gray-700 px-2 py-1 rounded">flex flex-col</code> برای layout بهتر</li>
+                <li>✅ تقسیم محتوا به header و body با <code class="bg-gray-700 px-2 py-1 rounded">flex-shrink-0</code> و <code class="bg-gray-700 px-2 py-1 rounded">flex-1</code></li>
+                <li>✅ اضافه کردن <code class="bg-gray-700 px-2 py-1 rounded">overflow-y-auto</code> به قسمت محتوا</li>
+                <li>✅ تنظیم <code class="bg-gray-700 px-2 py-1 rounded">max-w-4xl</code> و <code class="bg-gray-700 px-2 py-1 rounded">w-full</code> برای responsiveness</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showTestModal1() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4 overflow-hidden';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg w-full max-w-4xl h-full max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+                        <h3 class="text-xl font-semibold text-white">🧠 پیکربندی پیشرفته AI</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div class="space-y-6">
+                            ${generateLongContent()}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showTestModal2() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+                        <h3 class="text-xl font-semibold text-white">📊 آنالیتیکس AI</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                            <div class="bg-gray-700 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-blue-400">1,234</div>
+                                <div class="text-sm text-gray-400">کل درخواست‌ها</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-green-400">98%</div>
+                                <div class="text-sm text-gray-400">نرخ موفقیت</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-yellow-400">1.2s</div>
+                                <div class="text-sm text-gray-400">میانگین پاسخ</div>
+                            </div>
+                            <div class="bg-gray-700 rounded-lg p-4 text-center">
+                                <div class="text-2xl font-bold text-purple-400">5</div>
+                                <div class="text-sm text-gray-400">ارائه‌دهندگان فعال</div>
+                            </div>
+                        </div>
+                        ${generateLongContent()}
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function showTestModal3() {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4';
+            modal.innerHTML = `
+                <div class="bg-gray-800 rounded-lg max-w-2xl w-full max-h-[90vh] flex flex-col">
+                    <div class="flex items-center justify-between p-4 border-b border-gray-700 flex-shrink-0">
+                        <h3 class="text-xl font-semibold text-white">مدیریت حافظه زمینه</h3>
+                        <button onclick="this.closest('.fixed').remove()" class="text-gray-400 hover:text-white">
+                            <i class="fas fa-times text-xl"></i>
+                        </button>
+                    </div>
+                    <div class="flex-1 overflow-y-auto p-4">
+                        <div class="mb-4 flex justify-between items-center">
+                            <span class="text-white">مکالمات ذخیره شده: 15</span>
+                            <button class="bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-white text-sm">
+                                پاکسازی همه
+                            </button>
+                        </div>
+                        <div class="space-y-2">
+                            ${Array.from({length: 20}, (_, i) => `
+                                <div class="bg-gray-700 rounded p-3">
+                                    <div class="flex justify-between items-center">
+                                        <span class="text-white text-sm">مکالمه ${i + 1}</span>
+                                        <span class="text-gray-400 text-xs">${Math.floor(Math.random() * 50) + 5} پیام</span>
+                                    </div>
+                                    <div class="text-gray-400 text-xs mt-1">${new Date().toLocaleString('fa-IR')}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        function generateLongContent() {
+            return Array.from({length: 10}, (_, i) => `
+                <div class="bg-gray-700 rounded-lg p-4">
+                    <h4 class="text-lg font-semibold text-white mb-2">بخش ${i + 1}</h4>
+                    <p class="text-gray-300 mb-4">این یک متن نمونه طولانی است که برای تست scroll در modal استفاده می‌شود.</p>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div class="bg-gray-600 rounded p-3">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">تنظیم ${i * 2 + 1}</label>
+                            <input type="text" class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white" placeholder="مقدار...">
+                        </div>
+                        <div class="bg-gray-600 rounded p-3">
+                            <label class="block text-sm font-medium text-gray-300 mb-2">تنظیم ${i * 2 + 2}</label>
+                            <select class="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded text-white">
+                                <option>گزینه 1</option>
+                                <option>گزینه 2</option>
+                                <option>گزینه 3</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    </script>
+</body>
+</html>

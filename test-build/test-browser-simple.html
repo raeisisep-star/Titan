@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Simple JavaScript Test</title>
+</head>
+<body>
+    <h1>Testing JavaScript Modules</h1>
+    <div id="results"></div>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function log(message) {
+            console.log(message);
+            results.innerHTML += '<div>' + message + '</div>';
+        }
+        
+        log('🧪 Starting JavaScript test...');
+        
+        // Test 1: Load settings.js
+        const script1 = document.createElement('script');
+        script1.src = '/static/modules/settings.js?v=' + Date.now();
+        
+        script1.onload = function() {
+            log('✅ settings.js loaded successfully');
+            
+            setTimeout(() => {
+                // Check if SettingsModule exists
+                if (window.TitanModules && window.TitanModules.SettingsModule) {
+                    log('✅ TitanModules.SettingsModule found');
+                    
+                    try {
+                        // Try to create instance
+                        const instance = new window.TitanModules.SettingsModule();
+                        log('✅ SettingsModule instance created');
+                        
+                        // Test 2: Load override methods
+                        const script2 = document.createElement('script');
+                        script2.src = '/static/modules/simple-trading-system-methods.js?v=' + Date.now();
+                        
+                        script2.onload = function() {
+                            log('✅ Override methods loaded');
+                            
+                            setTimeout(() => {
+                                // Test Trading tab
+                                try {
+                                    const tradingResult = instance.getTradingTab();
+                                    log('✅ getTradingTab() worked - Length: ' + tradingResult.length);
+                                } catch (e) {
+                                    log('❌ getTradingTab() failed: ' + e.message);
+                                }
+                                
+                                // Test System tab
+                                try {
+                                    const systemResult = instance.getSystemTab();
+                                    log('✅ getSystemTab() worked - Length: ' + systemResult.length);
+                                } catch (e) {
+                                    log('❌ getSystemTab() failed: ' + e.message);
+                                }
+                            }, 100);
+                        };
+                        
+                        script2.onerror = function() {
+                            log('❌ Failed to load override methods');
+                        };
+                        
+                        document.head.appendChild(script2);
+                        
+                    } catch (e) {
+                        log('❌ Failed to create SettingsModule instance: ' + e.message);
+                    }
+                } else {
+                    log('❌ TitanModules.SettingsModule not found');
+                }
+            }, 100);
+        };
+        
+        script1.onerror = function() {
+            log('❌ Failed to load settings.js - Likely syntax error');
+        };
+        
+        document.head.appendChild(script1);
+        
+        // Catch any global errors
+        window.onerror = function(msg, url, line, col, error) {
+            log('❌ Global Error: ' + msg + ' at line ' + line);
+            return false;
+        };
+    </script>
+</body>
+</html>

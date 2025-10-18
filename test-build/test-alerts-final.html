@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Alert Functions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8" dir="rtl">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">
+            <i class="fas fa-vial text-yellow-400 mr-2"></i>
+            تست عملکرد دکمه‌های هشدار
+        </h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-bold mb-4">دکمه‌های اصلی هشدارها</h2>
+            <div class="flex gap-4 flex-wrap">
+                <button onclick="testShowCreateAlertModal()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-plus mr-2"></i>
+                    هشدار جدید
+                </button>
+                
+                <button onclick="testLoadAlertTemplates()" class="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-template mr-2"></i>
+                    قالب‌ها
+                </button>
+                
+                <button onclick="testOpenNotificationSettings()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg">
+                    <i class="fas fa-bell mr-2"></i>
+                    اطلاع‌رسانی‌ها
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">نتایج تست</h2>
+            <div id="testResults" class="space-y-2 text-sm">
+                <div class="text-gray-400">در حال تست...</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Load required modules -->
+    <script src="/static/modules/module-loader.js"></script>
+    <script src="/static/modules/alerts.js"></script>
+    
+    <script>
+        let testResults = [];
+        
+        function addResult(test, status, message) {
+            const resultDiv = document.getElementById('testResults');
+            const statusIcon = status === 'success' ? '✅' : '❌';
+            const statusColor = status === 'success' ? 'text-green-400' : 'text-red-400';
+            
+            testResults.push({test, status, message});
+            
+            resultDiv.innerHTML = testResults.map(r => 
+                `<div class="${r.status === 'success' ? 'text-green-400' : 'text-red-400'}">
+                    ${r.status === 'success' ? '✅' : '❌'} ${r.test}: ${r.message}
+                </div>`
+            ).join('');
+        }
+        
+        function testShowCreateAlertModal() {
+            try {
+                if (typeof window.showCreateAlertModal === 'function') {
+                    addResult('هشدار جدید', 'success', 'تابع موجود است و قابل فراخوانی است');
+                    // Don't actually call it to avoid modal issues in test
+                } else {
+                    addResult('هشدار جدید', 'error', 'تابع showCreateAlertModal یافت نشد');
+                }
+            } catch (error) {
+                addResult('هشدار جدید', 'error', 'خطا: ' + error.message);
+            }
+        }
+        
+        function testLoadAlertTemplates() {
+            try {
+                if (typeof window.loadAlertTemplates === 'function') {
+                    addResult('قالب‌ها', 'success', 'تابع موجود است و قابل فراخوانی است');
+                    // Don't actually call it to avoid API calls in test
+                } else {
+                    addResult('قالب‌ها', 'error', 'تابع loadAlertTemplates یافت نشد');
+                }
+            } catch (error) {
+                addResult('قالب‌ها', 'error', 'خطا: ' + error.message);
+            }
+        }
+        
+        function testOpenNotificationSettings() {
+            try {
+                if (typeof window.openNotificationSettings === 'function') {
+                    addResult('اطلاع‌رسانی‌ها', 'success', 'تابع موجود است و قابل فراخوانی است');
+                    // Don't actually call it to avoid navigation issues in test
+                } else {
+                    addResult('اطلاع‌رسانی‌ها', 'error', 'تابع openNotificationSettings یافت نشد');
+                }
+            } catch (error) {
+                addResult('اطلاع‌رسانی‌ها', 'error', 'خطا: ' + error.message);
+            }
+        }
+        
+        // Auto-test when page loads
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                addResult('بارگذاری اولیه', 'success', 'صفحه تست بارگذاری شد');
+                
+                // Test if alerts.js is loaded
+                if (typeof window.AlertsManager !== 'undefined') {
+                    addResult('AlertsManager', 'success', 'کلاس AlertsManager موجود است');
+                } else {
+                    addResult('AlertsManager', 'error', 'کلاس AlertsManager یافت نشد');
+                }
+                
+                // Test if global functions are available
+                const functions = ['showCreateAlertModal', 'loadAlertTemplates', 'openNotificationSettings'];
+                functions.forEach(func => {
+                    if (typeof window[func] === 'function') {
+                        addResult(func, 'success', `تابع ${func} در window موجود است`);
+                    } else {
+                        addResult(func, 'error', `تابع ${func} در window یافت نشد`);
+                    }
+                });
+            }, 1000);
+        });
+    </script>
+</body>
+</html>
