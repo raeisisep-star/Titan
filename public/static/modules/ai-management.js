@@ -1464,7 +1464,7 @@
                 }
             };
             
-            const agent = staticAgents[agentId] || this.state.agents.find(a => a.id === agentId);
+            const agent = this.state.agents.find(a => a.id === agentId) || staticAgents[agentId];
             if (!agent) {
                 // Show error modal instead of alert for better UX
                 const errorModal = `

@@ -6,9 +6,11 @@
  * - Retry logic برای 502/503
  * - خطاهای یکپارچه
  * - Credentials management
+ * - Robust token management with TokenManager
  */
 
 import { API_TIMEOUT, ENABLE_RETRY, MAX_RETRIES, DEBUG_MODE } from './flags.js';
+import tokenManager from './token-manager.js';
 
 // Base URL از window.ENV یا پیش‌فرض
 const BASE_URL = window.ENV?.API_URL || '';
@@ -62,15 +64,22 @@ async function httpRequest(path, options = {}) {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeout);
     
-    // ساخت headers با token اگر موجود باشد
+    // ساخت headers با token اگر موجود باشد (using TokenManager)
     const finalHeaders = {
         'Content-Type': 'application/json',
         ...headers
     };
     
-    const token = localStorage.getItem('titan_auth_token');
-    if (token) {
-        finalHeaders['Authorization'] = `Bearer ${token}`;
+    const authHeader = tokenManager.getAuthHeader();
+    if (authHeader) {
+        finalHeaders['Authorization'] = authHeader;
+        if (DEBUG_MODE) {
+            console.log('🔑 [HTTP] Token found via TokenManager, adding to headers');
+        }
+    } else if (DEBUG_MODE) {
+        console.warn('⚠️ [HTTP] No token found in TokenManager');
+        // Debug token state
+        tokenManager.debug();
     }
     
     // گزینه‌های fetch
@@ -86,7 +95,10 @@ async function httpRequest(path, options = {}) {
     }
     
     if (DEBUG_MODE) {
-        console.log(`🌐 HTTP ${method} ${url.pathname}${url.search}`);
+        console.log(`🌐 HTTP ${method} ${url.pathname}${url.search}`, {
+            hasToken: !!finalHeaders['Authorization'],
+            headers: finalHeaders
+        });
     }
     
     try {
@@ -121,7 +133,10 @@ async function httpRequest(path, options = {}) {
         const data = await response.json();
         
         if (DEBUG_MODE) {
-            console.log(`✅ HTTP ${method} ${url.pathname} - Success`);
+            console.log(`✅ HTTP ${method} ${url.pathname} - Success`, {
+                status: response.status,
+                dataKeys: Object.keys(data || {})
+            });
         }
         
         return data;

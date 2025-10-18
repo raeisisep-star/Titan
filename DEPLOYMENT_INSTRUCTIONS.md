@@ -1,252 +1,172 @@
-# 🚀 دستورالعمل Deploy کامل TITAN Frontend
+# 🚀 Deployment Instructions - Token Management System
 
-## ✅ وضعیت فعلی
+## 📦 فایل‌های جدید که باید آپلود شوند
 
-همه فایل‌های لازم آماده شده‌اند:
-- ✅ `public/index.html` - HTML کامل application (12 KB)
-- ✅ `public/static/` - 116 فایل (app.js, modules, icons, etc.)
-- ✅ `public/config.js` - Configuration با HTTPS URLs
-- ✅ `nginx-titan-updated.conf` - Nginx config جدید
+### 1. فایل‌های جدید (NEW FILES):
+```
+public/static/lib/token-manager.js
+public/static/lib/auth-wrapper.js
+public/test-token-flow.html
+```
 
-## 🎯 مراحل Deploy (دستی)
+### 2. فایل‌های به‌روزرسانی شده (UPDATED FILES):
+```
+public/index.html
+public/static/lib/http.js
+public/static/data/dashboard/comprehensive.adapter.js
+```
 
-### مرحله 1️⃣: Backup کردن Nginx Config
+---
+
+## 🔧 دستورات Deploy روی سرور
+
+### مرحله 1: آپلود فایل‌ها
+
+از طریق SFTP یا SCP، فایل‌های بالا را به سرور منتقل کنید:
 
 ```bash
+# از دایرکتوری محلی Titan
+scp public/static/lib/token-manager.js root@zala.ir:/tmp/webapp/Titan/public/static/lib/
+scp public/static/lib/auth-wrapper.js root@zala.ir:/tmp/webapp/Titan/public/static/lib/
+scp public/test-token-flow.html root@zala.ir:/tmp/webapp/Titan/public/
+scp public/index.html root@zala.ir:/tmp/webapp/Titan/public/
+scp public/static/lib/http.js root@zala.ir:/tmp/webapp/Titan/public/static/lib/
+scp public/static/data/dashboard/comprehensive.adapter.js root@zala.ir:/tmp/webapp/Titan/public/static/data/dashboard/
+```
+
+### مرحله 2: Restart PM2 و Nginx
+
+```bash
+ssh root@zala.ir
+
+# Restart PM2 backend
 cd /tmp/webapp/Titan
-sudo cp /etc/nginx/sites-available/titan /etc/nginx/sites-available/titan.backup.$(date +%Y%m%d_%H%M%S)
-```
+pm2 restart all
 
-✅ **بررسی**: لیست backup‌ها را ببینید
-```bash
-ls -lh /etc/nginx/sites-available/titan.backup.*
-```
-
----
-
-### مرحله 2️⃣: Deploy کردن Nginx Config جدید
-
-```bash
-cd /tmp/webapp/Titan
-sudo cp nginx-titan-updated.conf /etc/nginx/sites-available/titan
-```
-
-✅ **بررسی**: محتوای فایل جدید را ببینید
-```bash
-grep "root /tmp/webapp/Titan" /etc/nginx/sites-available/titan
-```
-
-**باید نتیجه**: `root /tmp/webapp/Titan/public;` (نه `dist`)
-
----
-
-### مرحله 3️⃣: Test کردن Nginx Config
-
-```bash
-sudo nginx -t
-```
-
-✅ **نتیجه مورد انتظار**:
-```
-nginx: the configuration file /etc/nginx/nginx.conf syntax is ok
-nginx: configuration file /etc/nginx/nginx.conf test is successful
-```
-
-❌ **اگر خطا دادید**: Backup را restore کنید
-```bash
-sudo cp /etc/nginx/sites-available/titan.backup.YYYYMMDD_HHMMSS /etc/nginx/sites-available/titan
-```
-
----
-
-### مرحله 4️⃣: Reload کردن Nginx
-
-```bash
+# Reload Nginx
 sudo systemctl reload nginx
-```
 
-✅ **بررسی وضعیت**:
-```bash
-sudo systemctl status nginx
-```
-
----
-
-### مرحله 5️⃣: Verify کردن Deployment
-
-#### بررسی Backend:
-```bash
-curl http://localhost:5000/health
-```
-
-✅ **نتیجه مورد انتظار**: JSON با `status: "healthy"`
-
-#### بررسی Frontend (Local):
-```bash
-curl -I http://localhost:80/
-```
-
-✅ **نتیجه مورد انتظار**: `HTTP/1.1 301 Moved Permanently` (redirect به HTTPS)
-
-#### بررسی HTTPS:
-```bash
-curl -I https://www.zala.ir/
-```
-
-✅ **نتیجه مورد انتظار**: `HTTP/2 200` و `content-type: text/html`
-
-#### بررسی Static Files:
-```bash
-curl -I https://www.zala.ir/static/app.js
-```
-
-✅ **نتیجه مورد انتظار**: `HTTP/2 200` و `content-type: application/javascript`
-
----
-
-## 🎉 تست نهایی در Browser
-
-1. باز کنید: https://www.zala.ir
-2. باید صفحه Login تایتان (🚀) را ببینید
-3. دکمه "🔍 تست اتصال سیستم" را بزنید
-4. باید پیام `✅ اتصال موفقیت آمیز!` را ببینید
-
----
-
-## 🐛 عیب‌یابی (Troubleshooting)
-
-### مشکل 1: صفحه قدیمی نمایش داده می‌شود
-
-**علت**: Browser cache
-
-**راه حل**:
-1. `Ctrl + Shift + R` (Hard Refresh)
-2. یا `Ctrl + F5`
-3. یا در DevTools: Network tab → Disable cache
-
-### مشکل 2: خطای 404 برای /static/
-
-**بررسی**:
-```bash
-ls -la /tmp/webapp/Titan/public/static/app.js
-```
-
-**باید فایل را ببینید**. اگر ندیدید:
-```bash
-# بررسی کنید که public/static/ دارای فایل‌ها است
-find /tmp/webapp/Titan/public/static -type f | wc -l
-# باید 116 باشد
-```
-
-### مشکل 3: خطای API (CORS یا Connection)
-
-**بررسی Backend**:
-```bash
-pm2 status
-pm2 logs titan-backend --lines 50
-```
-
-**بررسی که پورت 5000 listening است**:
-```bash
-sudo netstat -tlnp | grep 5000
-```
-
-### مشکل 4: SSL/HTTPS مشکل دارد
-
-**بررسی Certificate**:
-```bash
-sudo certbot certificates
-```
-
-**Renew کردن اگر expired است**:
-```bash
-sudo certbot renew
+# یا اگر reload کار نکرد:
+sudo systemctl restart nginx
 ```
 
 ---
 
-## 📊 لاگ‌های مفید
+## 🧪 تست عملکرد
 
-### Nginx Error Logs:
-```bash
-sudo tail -f /var/log/nginx/titan-ssl-error.log
+### تست 1: Token Flow Debugger
+1. باز کنید: `https://zala.ir/test-token-flow.html`
+2. روی دکمه‌ها به ترتیب کلیک کنید:
+   - Check localStorage Token
+   - Login as admin/admin
+   - Check Token Again (باید Token موجود باشد)
+   - Call API (باید 200 OK بگیرد)
+
+### تست 2: Dashboard اصلی
+1. باز کنید: `https://zala.ir`
+2. Login کنید با `admin/admin`
+3. کنسول مرورگر (F12) را باز کنید
+4. باید لاگ‌های زیر را ببینید:
+```
+🔐 [TokenManager] Initialized
+✅ Token Manager module loaded
+🔐 [AuthWrapper] Added token to axios request via interceptor
+🔐 [App] Login successful, saving token...
+✅ [App] Token saved successfully
 ```
 
-### Nginx Access Logs:
+5. Dashboard باید داده‌های واقعی نشان دهد (نه mock)
+
+---
+
+## 🔍 Troubleshooting
+
+### اگر Token هنوز Missing است:
+
+1. **Hard Refresh کنید** (Ctrl+Shift+R یا Cmd+Shift+R)
+2. **Cache مرورگر را پاک کنید**:
+   - Chrome: Settings > Privacy > Clear browsing data
+   - Firefox: Settings > Privacy > Clear Data
+3. **Incognito/Private Mode** را امتحان کنید
+4. **Console logs** را بررسی کنید برای error messages
+
+### اگر فایل‌ها لود نمی‌شوند:
+
 ```bash
-sudo tail -f /var/log/nginx/titan-ssl-access.log
+# بررسی permissions
+ls -la /tmp/webapp/Titan/public/static/lib/token-manager.js
+ls -la /tmp/webapp/Titan/public/static/lib/auth-wrapper.js
+
+# اگر 404 می‌دهد، permissions را درست کنید:
+chmod 644 /tmp/webapp/Titan/public/static/lib/*.js
 ```
 
-### Backend Logs:
-```bash
-pm2 logs titan-backend
-```
+### اگر Nginx فایل‌ها را serve نمی‌کند:
 
-### تمام Logs همزمان:
 ```bash
-# Terminal 1
-sudo tail -f /var/log/nginx/titan-ssl-error.log
+# تست مستقیم:
+curl -I https://zala.ir/static/lib/token-manager.js
+curl -I https://zala.ir/static/lib/auth-wrapper.js
 
-# Terminal 2
-pm2 logs titan-backend
+# باید 200 OK بگیرید، نه 404
 ```
 
 ---
 
-## 🔄 Rollback (برگشت به نسخه قبل)
+## 📊 معیارهای موفقیت
 
-اگر مشکلی پیش آمد:
+✅ **موفق** اگر:
+- Login کار می‌کند
+- Token در console log ظاهر می‌شود
+- Dashboard داده‌های real نشان می‌دهد
+- هیچ 401 error در console نیست
 
-```bash
-# پیدا کردن آخرین backup
-ls -lt /etc/nginx/sites-available/titan.backup.* | head -1
-
-# Restore کردن
-sudo cp /etc/nginx/sites-available/titan.backup.YYYYMMDD_HHMMSS /etc/nginx/sites-available/titan
-
-# Test و Reload
-sudo nginx -t && sudo systemctl reload nginx
-```
+❌ **ناموفق** اگر:
+- Token: Missing در console
+- 401 Unauthorized در API calls
+- Dashboard هنوز mock data نشان می‌دهد
 
 ---
 
-## ✅ Checklist نهایی
+## 🎯 چه انتظاری داشته باشید
 
-- [ ] Backup از nginx config گرفته شد
-- [ ] nginx-titan-updated.conf به /etc/nginx/sites-available/titan کپی شد
-- [ ] `nginx -t` موفقیت آمیز بود
-- [ ] nginx reload شد
-- [ ] Backend در حال اجرا است (pm2 status)
-- [ ] https://www.zala.ir صفحه Login را نمایش می‌دهد
-- [ ] دکمه "تست اتصال" کار می‌کند
-- [ ] Static files (/static/app.js) load می‌شوند
+بعد از deployment موفق:
 
----
+1. **Login Flow:**
+   - ورود سریع و روان
+   - Token ذخیره می‌شود (verification در console)
+   - Redirect به dashboard
 
-## 🎯 دستور تک‌خطی (یک دستور کامل)
+2. **Dashboard:**
+   - Data واقعی از backend
+   - بدون fallback به mock
+   - Source badge می‌گوید: "Real API"
 
-⚠️ **فقط اگر مطمئن هستید اجرا کنید**:
-
-```bash
-cd /tmp/webapp/Titan && \
-sudo cp /etc/nginx/sites-available/titan /etc/nginx/sites-available/titan.backup.$(date +%Y%m%d_%H%M%S) && \
-sudo cp nginx-titan-updated.conf /etc/nginx/sites-available/titan && \
-sudo nginx -t && \
-sudo systemctl reload nginx && \
-echo "✅ Deployment complete! Open https://www.zala.ir"
-```
+3. **Console Logs:**
+   ```
+   🔐 [TokenManager] Token saved successfully to all layers
+   ✅ [App] Token saved successfully
+   🔑 [HTTP] Token found via TokenManager
+   ✅ [Comprehensive Adapter] Got data from comprehensive endpoint
+   ```
 
 ---
 
-## 📞 تماس با من
+## 🚨 نکات مهم
 
-اگر هر مشکلی پیش آمد:
-1. لاگ‌های nginx و backend را بررسی کنید
-2. دستورات بالا را دنبال کنید
-3. اگر نیاز به کمک بیشتر بود، لاگ‌ها را برایم ارسال کنید
+1. **Load Order مهم است**: token-manager.js و auth-wrapper.js باید قبل از app.js لود شوند
+2. **Module Type**: فایل‌ها به عنوان ES6 modules لود می‌شوند (`type="module"`)
+3. **Cache Busting**: Version numbers در index.html باید unique باشند
+4. **Browser Compatibility**: Modern browsers فقط (ES6+ support)
 
 ---
 
-**تاریخ**: 2025-10-14  
-**نسخه**: 1.0.0  
-**وضعیت**: آماده برای deployment ✅
+## 📞 در صورت مشکل
+
+اگر بعد از deployment مشکل داشتید:
+
+1. Screenshot از console logs بفرستید
+2. Screenshot از Network tab (F12 > Network)
+3. نتیجه `test-token-flow.html` را بفرستید
+
+من فوراً مشکل را بررسی و حل می‌کنم.

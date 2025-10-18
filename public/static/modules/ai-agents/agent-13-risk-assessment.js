@@ -20,7 +20,7 @@
  * @version 2.0.0
  */
 
-class RiskAssessmentAgent {
+class RiskAssessmentAgentV2 {
     constructor() {
         this.agentId = 'AGENT_13_RISK';
         this.name = 'Risk Assessment Specialist';
@@ -1935,13 +1935,13 @@ class AdamOptimizer {
 }
 
 // Initialize and export the agent
-const riskAgent = new RiskAssessmentAgent();
+const riskAgent = new RiskAssessmentAgentV2();
 
 // Export for use in other modules
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = RiskAssessmentAgent;
+    module.exports = RiskAssessmentAgentV2;
 } else if (typeof window !== 'undefined') {
-    window.RiskAssessmentAgent = RiskAssessmentAgent;
+    window.RiskAssessmentAgentV2 = RiskAssessmentAgentV2;
     window.TitanAgents = window.TitanAgents || {};
-    window.TitanAgents.RiskAssessmentAgent = riskAgent;
+    window.TitanAgents.RiskAssessmentAgentV2 = riskAgent;
 }

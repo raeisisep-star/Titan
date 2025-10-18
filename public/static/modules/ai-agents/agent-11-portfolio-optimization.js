@@ -17,7 +17,7 @@
  * @version 2.1.0
  */
 
-class PortfolioOptimizationAgent {
+class PortfolioOptimizationAgentV2 {
     constructor(config = {}) {
         this.agentId = 'AGENT_11_PORTFOLIO_OPT';
         this.name = 'Portfolio Optimization Specialist';
@@ -140,25 +140,25 @@ class PortfolioOptimizationAgent {
     // API Client & Circuit Breaker Implementation
     async initializeAPIClients() {
         // Initialize Circuit Breakers for each API
-        this.circuitBreakers.set('binance', new CircuitBreaker({
+        this.circuitBreakers.set('binance', new CircuitBreakerAgent11({
             failureThreshold: 5,
             recoveryTimeout: 30000,
             monitoringPeriod: 60000
         }));
         
-        this.circuitBreakers.set('alphavantage', new CircuitBreaker({
+        this.circuitBreakers.set('alphavantage', new CircuitBreakerAgent11({
             failureThreshold: 3,
             recoveryTimeout: 60000,
             monitoringPeriod: 60000
         }));
         
-        this.circuitBreakers.set('finnhub', new CircuitBreaker({
+        this.circuitBreakers.set('finnhub', new CircuitBreakerAgent11({
             failureThreshold: 5,
             recoveryTimeout: 30000,
             monitoringPeriod: 60000
         }));
         
-        this.circuitBreakers.set('coingecko', new CircuitBreaker({
+        this.circuitBreakers.set('coingecko', new CircuitBreakerAgent11({
             failureThreshold: 5,
             recoveryTimeout: 30000,
             monitoringPeriod: 60000
@@ -2164,7 +2164,7 @@ class AssetAllocationNN {
 // CIRCUIT BREAKER IMPLEMENTATION
 // ============================================================================
 
-class CircuitBreaker {
+class CircuitBreakerAgent11 {
     constructor(config = {}) {
         this.failureThreshold = config.failureThreshold || 5;
         this.recoveryTimeout = config.recoveryTimeout || 30000; // 30 seconds
@@ -2227,6 +2227,6 @@ if (typeof module !== 'undefined' && module.exports) {
 
 // Auto-initialize if in browser
 if (typeof window !== 'undefined') {
-    window.PortfolioOptimizationAgent = PortfolioOptimizationAgent;
-    window.CircuitBreaker = CircuitBreaker;
+    window.PortfolioOptimizationAgentV2 = PortfolioOptimizationAgentV2;
+    window.CircuitBreakerAgent11 = CircuitBreakerAgent11;
 }

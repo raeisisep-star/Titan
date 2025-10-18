@@ -18,7 +18,7 @@
  * @version 2.0.0
  */
 
-class SentimentAnalysisAgent {
+class SentimentAnalysisAgentV2 {
     constructor() {
         this.agentId = 'AGENT_11_SENTIMENT';
         this.name = 'Sentiment Analysis Specialist';
@@ -1357,7 +1357,7 @@ const sentimentAgent = new SentimentAnalysisAgent();
 if (typeof module !== 'undefined' && module.exports) {
     module.exports = SentimentAnalysisAgent;
 } else if (typeof window !== 'undefined') {
-    window.SentimentAnalysisAgent = SentimentAnalysisAgent;
+    window.SentimentAnalysisAgentV2 = SentimentAnalysisAgentV2;
     window.TitanAgents = window.TitanAgents || {};
-    window.TitanAgents.SentimentAnalysisAgent = sentimentAgent;
+    window.TitanAgents.SentimentAnalysisAgentV2 = sentimentAgent;
 }

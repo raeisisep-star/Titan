@@ -135,12 +135,16 @@
         // 🌍 تنظیمات محیط برای Titan Trading System
         window.ENV = {
             API_URL: '',  // خالی یعنی same-origin
+            FORCE_REAL: 'true',  // 🔴 CRITICAL: Force real data in production (overrides USE_MOCK)
             USE_MOCK: 'false',  // پیش‌فرض: داده واقعی
-            DEBUG: 'false',  // حالت دیباگ
+            DEBUG: 'true',  // 🔍 Temporarily enabled for debugging (set to 'false' in production)
             API_TIMEOUT: '8000',  // timeout به میلی‌ثانیه
             ENABLE_RETRY: 'true',  // فعال‌سازی retry برای 502/503
             MAX_RETRIES: '1'  // حداکثر تلاش مجدد
         };
+        
+        // Log configuration for debugging
+        console.log('🌍 Environment Configuration:', window.ENV);
     </script>
 
     <!-- Scripts -->
@@ -213,21 +217,21 @@
         });
     </script>
     <!-- Load AI Agents -->
-    <script src="/static/modules/ai-agents/agent-01-technical-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-02-risk-management.js"></script>
-    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.js"></script>
-    <script src="/static/modules/ai-agents/agent-05-market-making.js"></script>
-    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.js"></script>
-    <script src="/static/modules/ai-agents/agent-07-news-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-08-hft.js"></script>
-    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-10-macro-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-11-portfolio-optimization.js"></script>
-    <script src="/static/modules/ai-agents/agent-12-risk-assessment.js"></script>
-    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js"></script>
-    <script src="/static/modules/ai-agents/agent-14-performance-analytics.js"></script>
-    <script src="/static/modules/ai-agents/agent-15-system-orchestrator.js"></script>
+    <script src="/static/modules/ai-agents/agent-01-technical-analysis.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-02-risk-management.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-05-market-making.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-07-news-analysis.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-08-hft.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-10-macro-analysis.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-11-portfolio-optimization.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-12-risk-assessment.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-14-performance-analytics.js?v=1760800624"></script>
+    <script src="/static/modules/ai-agents/agent-15-system-orchestrator.js?v=1760800624"></script>
     
     <!-- Load Configuration First -->
     <script src="/config.js?v=1760459731"></script>
@@ -247,11 +251,16 @@
         axios.defaults.timeout = 30000;
     </script>
     
+    <!-- Token Manager (MUST load before app.js) -->
+    <script type="module" src="/static/lib/token-manager.js?v=1760800000001"></script>
+    <!-- ⚠️ AuthWrapper DISABLED - caused infinite loop -->
+    <!-- <script type="module" src="/static/lib/auth-wrapper.js?v=1760800000002"></script> -->
+    
     <!-- Load Main Modules -->
-    <script src="/static/modules/ai-management.js"></script>
-    <script src="/static/modules/module-loader.js"></script>
-    <script src="/static/modules/alerts.js"></script>
-    <script src="/static/app.js?v=1729083300000"></script>
+    <script src="/static/modules/ai-management.js?v=1760804145"></script>
+    <script src="/static/modules/module-loader.js?v=1760800624"></script>
+    <script src="/static/modules/alerts.js?v=1760800624"></script>
+    <script src="/static/app.js?v=1760803116"></script>
     
     <!-- Login Button Fix - Comprehensive Fallback System -->
     <script src="/static/fix_login_button.js?v=1729083400000"></script>

@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Force Reload - TITAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-4xl font-bold mb-6 text-center">🔄 Force Reload Page</h1>
+        
+        <div class="bg-gray-800 p-6 rounded-lg mb-6">
+            <h2 class="text-2xl font-bold mb-4">⚠️ Important Instructions</h2>
+            <ol class="list-decimal list-inside space-y-3 text-lg">
+                <li class="mb-2">Close ALL browser tabs of zala.ir</li>
+                <li class="mb-2">Clear browser cache:
+                    <ul class="list-disc list-inside mr-6 mt-2 text-base text-gray-300">
+                        <li>Chrome/Edge: Ctrl+Shift+Delete → Clear cache</li>
+                        <li>Firefox: Ctrl+Shift+Delete → Clear cache</li>
+                        <li>Safari: Cmd+Option+E → Clear cache</li>
+                    </ul>
+                </li>
+                <li class="mb-2">OR use Incognito/Private mode</li>
+                <li class="mb-2">Visit this page again</li>
+                <li class="mb-2">Click button below to load fresh dashboard</li>
+            </ol>
+        </div>
+        
+        <div class="bg-blue-900 p-6 rounded-lg mb-6">
+            <h2 class="text-xl font-bold mb-4">📊 Current Status</h2>
+            <div id="status" class="space-y-2 text-sm"></div>
+        </div>
+        
+        <div class="text-center">
+            <button onclick="testEverything()" class="bg-green-500 hover:bg-green-600 text-white text-xl font-bold py-4 px-8 rounded-lg shadow-lg transform hover:scale-105 transition">
+                🚀 Test Dashboard Now
+            </button>
+        </div>
+        
+        <div class="mt-6 bg-gray-800 p-4 rounded-lg">
+            <h3 class="font-bold mb-2">📋 Test Results:</h3>
+            <div id="results" class="space-y-2 text-sm"></div>
+        </div>
+    </div>
+
+    <script>
+        // Force fresh configuration
+        window.ENV = {
+            API_URL: '',
+            FORCE_REAL: 'true',
+            USE_MOCK: 'false',
+            DEBUG: 'true',
+            API_TIMEOUT: '8000',
+            ENABLE_RETRY: 'true',
+            MAX_RETRIES: '1'
+        };
+        
+        function log(msg, color = 'white') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.style.color = color;
+            div.innerHTML = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            results.appendChild(div);
+            console.log(msg);
+        }
+        
+        function updateStatus() {
+            const status = document.getElementById('status');
+            const token = localStorage.getItem('titan_auth_token');
+            const timestamp = new Date().getTime();
+            
+            status.innerHTML = `
+                <div>🌍 <strong>FORCE_REAL:</strong> <span class="text-green-400">${window.ENV.FORCE_REAL}</span></div>
+                <div>🚫 <strong>USE_MOCK:</strong> <span class="text-green-400">${window.ENV.USE_MOCK}</span></div>
+                <div>🔑 <strong>Token:</strong> <span class="${token ? 'text-green-400' : 'text-red-400'}">${token ? 'Present' : 'Missing'}</span></div>
+                <div>⏰ <strong>Timestamp:</strong> ${timestamp}</div>
+                <div>🔄 <strong>Cache Buster:</strong> v${timestamp}</div>
+            `;
+        }
+        
+        async function testEverything() {
+            log('🔄 Starting comprehensive test...', 'yellow');
+            
+            // Step 1: Test login
+            log('Step 1: Testing login...', 'cyan');
+            try {
+                const loginRes = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: 'admin', password: 'admin' })
+                });
+                const loginData = await loginRes.json();
+                
+                if (loginData.token) {
+                    localStorage.setItem('titan_auth_token', loginData.token);
+                    log('✅ Login successful, token saved', 'lime');
+                    updateStatus();
+                } else {
+                    log('❌ Login failed: ' + JSON.stringify(loginData), 'red');
+                    return;
+                }
+            } catch (e) {
+                log('❌ Login error: ' + e.message, 'red');
+                return;
+            }
+            
+            // Step 2: Test API
+            log('Step 2: Testing Dashboard API...', 'cyan');
+            const token = localStorage.getItem('titan_auth_token');
+            try {
+                const apiRes = await fetch('/api/dashboard/comprehensive-real', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const apiData = await apiRes.json();
+                
+                if (apiRes.ok && apiData.success) {
+                    log('✅ API returned success', 'lime');
+                    log('📦 Data keys: ' + Object.keys(apiData.data || {}).join(', '), 'cyan');
+                } else {
+                    log('⚠️ API response: ' + JSON.stringify(apiData), 'orange');
+                }
+            } catch (e) {
+                log('❌ API error: ' + e.message, 'red');
+            }
+            
+            // Step 3: Test Adapter with cache busting
+            log('Step 3: Testing Adapter with cache busting...', 'cyan');
+            try {
+                const cacheBust = new Date().getTime();
+                log(`Loading adapter with v=${cacheBust}`, 'gray');
+                
+                const module = await import(`/static/data/dashboard/comprehensive.adapter.js?v=${cacheBust}`);
+                log('✅ Adapter module loaded', 'lime');
+                
+                const data = await module.getComprehensiveDashboard();
+                
+                if (data.meta) {
+                    log(`✅ Data source: ${data.meta.source}`, data.meta.source === 'real' ? 'lime' : 'orange');
+                    log(`Portfolio balance: ${data.portfolio?.totalBalance || 'N/A'}`, 'cyan');
+                } else {
+                    log('⚠️ No metadata in response', 'orange');
+                }
+                
+                log('✅ All tests completed!', 'lime');
+                log('', 'white');
+                log('🎯 If you see "Data source: real" above, it\'s working!', 'lime');
+                log('🎯 If you see "Data source: mock", browser cache is still active', 'orange');
+                
+            } catch (e) {
+                log('❌ Adapter error: ' + e.message, 'red');
+            }
+        }
+        
+        // Initialize
+        updateStatus();
+        log('✅ Force reload page loaded', 'lime');
+        log('📝 Click the button above to run tests', 'cyan');
+    </script>
+</body>
+</html>

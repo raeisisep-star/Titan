@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست Cache - TITAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 تست Cache و بارگذاری فایل‌ها</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-4">
+            <h2 class="text-xl mb-4">وضعیت فایل‌ها:</h2>
+            <div id="status" class="space-y-2"></div>
+        </div>
+
+        <div class="bg-blue-900 rounded-lg p-6 mb-4">
+            <h2 class="text-xl mb-4">دستورالعمل پاک کردن Cache:</h2>
+            <ol class="list-decimal list-inside space-y-2 text-sm">
+                <li>کلیدهای <kbd class="bg-gray-700 px-2 py-1 rounded">Ctrl + Shift + Delete</kbd> را فشار دهید</li>
+                <li>گزینه "Cached images and files" را انتخاب کنید</li>
+                <li>روی "Clear data" کلیک کنید</li>
+                <li>صفحه را با <kbd class="bg-gray-700 px-2 py-1 rounded">Ctrl + F5</kbd> بازخوانی کنید</li>
+            </ol>
+        </div>
+
+        <button onclick="window.location.href='/'" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg">
+            🏠 بازگشت به صفحه اصلی
+        </button>
+    </div>
+
+    <script>
+        const status = document.getElementById('status');
+        const timestamp = Date.now();
+        
+        // Test app.js version
+        fetch('/static/app.js?v=' + timestamp)
+            .then(response => response.text())
+            .then(text => {
+                const hasAiInsights = text.includes("loadModule('ai-insights')");
+                const msg = hasAiInsights 
+                    ? '❌ app.js قدیمی است - cache پاک نشده'
+                    : '✅ app.js جدید بارگذاری شد - ai-insights حذف شده';
+                status.innerHTML += `<div class="p-3 rounded ${hasAiInsights ? 'bg-red-900' : 'bg-green-900'}">${msg}</div>`;
+                
+                // Log for debugging
+                const aiInsightsCount = (text.match(/ai-insights/g) || []).length;
+                status.innerHTML += `<div class="p-3 rounded bg-gray-700 text-sm">تعداد 'ai-insights' در app.js: ${aiInsightsCount} (باید 3 یا کمتر باشد)</div>`;
+            });
+
+        // Check current version
+        status.innerHTML += '<div class="p-3 rounded bg-blue-900">⏱️ نسخه فعلی: v=1760803116</div>';
+    </script>
+</body>
+</html>

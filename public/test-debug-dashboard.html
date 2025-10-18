@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard Debug Test - TITAN</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: monospace; }
+        .log-entry { 
+            padding: 8px; 
+            margin: 4px 0; 
+            border-left: 3px solid #3b82f6;
+            background: #1f2937;
+        }
+        .error { border-left-color: #ef4444; background: #7f1d1d; }
+        .success { border-left-color: #10b981; background: #065f46; }
+        .warning { border-left-color: #f59e0b; background: #78350f; }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-6xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 Dashboard Debug Test</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-800 p-4 rounded">
+                <h2 class="text-xl font-bold mb-2">🌍 Environment Configuration</h2>
+                <div id="envConfig" class="space-y-1 text-sm"></div>
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded">
+                <h2 class="text-xl font-bold mb-2">🔑 Authentication Status</h2>
+                <div id="authStatus" class="space-y-1 text-sm"></div>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded mb-6">
+            <h2 class="text-xl font-bold mb-4">🧪 Test Actions</h2>
+            <div class="flex gap-2 flex-wrap">
+                <button onclick="testLogin()" class="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded">
+                    1. Test Login
+                </button>
+                <button onclick="testDashboardAPI()" class="bg-green-500 hover:bg-green-600 px-4 py-2 rounded">
+                    2. Test Dashboard API
+                </button>
+                <button onclick="testAdapter()" class="bg-purple-500 hover:bg-purple-600 px-4 py-2 rounded">
+                    3. Test Adapter
+                </button>
+                <button onclick="clearCache()" class="bg-yellow-500 hover:bg-yellow-600 px-4 py-2 rounded">
+                    Clear Cache & Reload
+                </button>
+                <button onclick="clearLogs()" class="bg-red-500 hover:bg-red-600 px-4 py-2 rounded">
+                    Clear Logs
+                </button>
+            </div>
+        </div>
+        
+        <div class="bg-gray-800 p-4 rounded">
+            <h2 class="text-xl font-bold mb-4">📋 Test Logs</h2>
+            <div id="logs" class="space-y-1 max-h-96 overflow-y-auto"></div>
+        </div>
+    </div>
+
+    <script>
+        // Environment Configuration
+        window.ENV = {
+            API_URL: '',
+            FORCE_REAL: 'true',
+            USE_MOCK: 'false',
+            DEBUG: 'true',
+            API_TIMEOUT: '8000',
+            ENABLE_RETRY: 'true',
+            MAX_RETRIES: '1'
+        };
+        
+        function log(message, type = 'info') {
+            const logsDiv = document.getElementById('logs');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.innerHTML = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logsDiv.appendChild(entry);
+            logsDiv.scrollTop = logsDiv.scrollHeight;
+            console.log(message);
+        }
+        
+        function clearLogs() {
+            document.getElementById('logs').innerHTML = '';
+        }
+        
+        function clearCache() {
+            localStorage.clear();
+            sessionStorage.clear();
+            log('✅ Cache cleared', 'success');
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 500);
+        }
+        
+        function updateEnvConfig() {
+            const envDiv = document.getElementById('envConfig');
+            envDiv.innerHTML = `
+                <div><strong>FORCE_REAL:</strong> <span class="${window.ENV.FORCE_REAL === 'true' ? 'text-green-400' : 'text-red-400'}">${window.ENV.FORCE_REAL}</span></div>
+                <div><strong>USE_MOCK:</strong> <span class="${window.ENV.USE_MOCK === 'false' ? 'text-green-400' : 'text-red-400'}">${window.ENV.USE_MOCK}</span></div>
+                <div><strong>DEBUG:</strong> ${window.ENV.DEBUG}</div>
+                <div><strong>API_TIMEOUT:</strong> ${window.ENV.API_TIMEOUT}ms</div>
+            `;
+        }
+        
+        function updateAuthStatus() {
+            const authDiv = document.getElementById('authStatus');
+            const token = localStorage.getItem('titan_auth_token');
+            authDiv.innerHTML = `
+                <div><strong>Token Present:</strong> <span class="${token ? 'text-green-400' : 'text-red-400'}">${token ? 'YES' : 'NO'}</span></div>
+                ${token ? `<div class="text-xs mt-2 break-all"><strong>Token:</strong> ${token.substring(0, 40)}...</div>` : ''}
+            `;
+        }
+        
+        async function testLogin() {
+            log('🔐 Testing admin login...', 'info');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        username: 'admin',
+                        password: 'admin'
+                    })
+                });
+                
+                const data = await response.json();
+                log(`Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Response: ${JSON.stringify(data, null, 2)}`, response.ok ? 'success' : 'error');
+                
+                if (data.token) {
+                    localStorage.setItem('titan_auth_token', data.token);
+                    log('✅ Token saved to localStorage', 'success');
+                    updateAuthStatus();
+                }
+            } catch (error) {
+                log(`❌ Login failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDashboardAPI() {
+            log('📊 Testing /api/dashboard/comprehensive-real...', 'info');
+            
+            const token = localStorage.getItem('titan_auth_token');
+            if (!token) {
+                log('⚠️ No token found. Please login first.', 'warning');
+                return;
+            }
+            
+            try {
+                const response = await fetch('/api/dashboard/comprehensive-real', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                log(`Response Status: ${response.status}`, response.ok ? 'success' : 'error');
+                log(`Response Keys: ${Object.keys(data).join(', ')}`, 'info');
+                
+                if (data.success && data.data) {
+                    log(`✅ Got data from API`, 'success');
+                    log(`Portfolio: ${JSON.stringify(data.data.portfolio, null, 2)}`, 'success');
+                } else {
+                    log(`Response: ${JSON.stringify(data, null, 2)}`, data.success ? 'success' : 'warning');
+                }
+            } catch (error) {
+                log(`❌ API call failed: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testAdapter() {
+            log('🎯 Testing comprehensive adapter...', 'info');
+            
+            try {
+                // Import adapter dynamically
+                const cacheBust = Date.now();
+                log(`Importing adapter with cache bust: ${cacheBust}`, 'info');
+                
+                const module = await import(`/static/data/dashboard/comprehensive.adapter.js?v=${cacheBust}`);
+                log('✅ Adapter module loaded', 'success');
+                
+                const data = await module.getComprehensiveDashboard();
+                log('✅ Adapter returned data', 'success');
+                log(`Data keys: ${Object.keys(data).join(', ')}`, 'info');
+                
+                if (data.noData) {
+                    log(`⚠️ NO-DATA response: ${data.meta?.reason}`, 'warning');
+                } else if (data.meta) {
+                    log(`Data source: ${data.meta.source}`, data.meta.source === 'real' ? 'success' : 'warning');
+                    log(`Meta: ${JSON.stringify(data.meta, null, 2)}`, 'info');
+                } else {
+                    log(`⚠️ No metadata in response`, 'warning');
+                }
+                
+                log(`Portfolio balance: ${data.portfolio?.totalBalance || 'N/A'}`, 'info');
+            } catch (error) {
+                log(`❌ Adapter test failed: ${error.message}`, 'error');
+                log(`Stack: ${error.stack}`, 'error');
+            }
+        }
+        
+        // Initialize
+        updateEnvConfig();
+        updateAuthStatus();
+        log('🚀 Debug test page loaded', 'success');
+        log('📝 Instructions:', 'info');
+        log('1. Click "Test Login" to authenticate as admin', 'info');
+        log('2. Click "Test Dashboard API" to test direct API call', 'info');
+        log('3. Click "Test Adapter" to test the frontend adapter', 'info');
+        log('4. Check browser console for detailed logs', 'info');
+        
+        // Listen to console
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            if (args[0] && args[0].includes && (args[0].includes('[Comprehensive Adapter]') || args[0].includes('[HTTP]'))) {
+                log(args.join(' '), 'info');
+            }
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            if (args[0] && args[0].includes && (args[0].includes('[Comprehensive Adapter]') || args[0].includes('[HTTP]'))) {
+                log(args.join(' '), 'warning');
+            }
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            if (args[0] && args[0].includes && (args[0].includes('[Comprehensive Adapter]') || args[0].includes('[HTTP]'))) {
+                log(args.join(' '), 'error');
+            }
+        };
+    </script>
+</body>
+</html>

@@ -1902,7 +1902,7 @@ class WorkflowOptimizationNN extends SystemOrchestrationNN {
 class EmergencyResponseNN extends SystemOrchestrationNN {}
 
 // Circuit Breaker Class (shared)
-class CircuitBreaker {
+class CircuitBreakerAgent15 {
     constructor(config = {}) {
         this.failureThreshold = config.failureThreshold || 5;
         this.recoveryTimeout = config.recoveryTimeout || 30000;
