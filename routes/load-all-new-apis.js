@@ -31,6 +31,11 @@ function loadAllNewAPIs(app, pool, redisClient) {
     autopilotReal(app, pool, redisClient);
     console.log('✅ Part 4 loaded: Real Autopilot System (Trading Engine)');
     
+    // Load Part 5: Real Market Data (Binance, MEXC)
+    const marketDataReal = require('./market-data-real');
+    marketDataReal(app, pool, redisClient);
+    console.log('✅ Part 5 loaded: Real Market Data (Binance, MEXC)');
+    
     console.log('');
     console.log('╔══════════════════════════════════════════════════════════════════════════╗');
     console.log('║  ✅ ALL NEW APIs LOADED SUCCESSFULLY                                     ║');
@@ -40,6 +45,7 @@ function loadAllNewAPIs(app, pool, redisClient) {
     console.log('   🤖 AI & Artemis APIs: 15+ endpoints');
     console.log('   🧠 Real AI Chatbot APIs: 8+ endpoints (OpenAI, Claude, Gemini)');
     console.log('   🤖 Real Autopilot APIs: 13 endpoints (Trading Engine)');
+    console.log('   📊 Real Market Data APIs: 12 endpoints (Binance, MEXC)');
     console.log('   🚀 Autopilot Mock APIs: 10+ endpoints');
     console.log('   🔔 Notifications & Alerts: 12+ endpoints');
     console.log('   📰 News APIs: 5+ endpoints');
@@ -51,9 +57,10 @@ function loadAllNewAPIs(app, pool, redisClient) {
     console.log('   📊 Analytics: 4+ endpoints');
     console.log('   🎮 Mode APIs: 4 endpoints');
     console.log('');
-    console.log('   📈 Total New Endpoints: 101+');
+    console.log('   📈 Total New Endpoints: 113+');
     console.log('   🤖 Real AI Integration: OpenAI GPT-4, Anthropic Claude 3, Google Gemini');
     console.log('   💹 Real Trading: Binance, MEXC (with Risk Management)');
+    console.log('   📊 Real Market Data: Binance & MEXC APIs, WebSocket Support');
     console.log('');
     
   } catch (error) {
