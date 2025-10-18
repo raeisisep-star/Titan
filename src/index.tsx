@@ -213,8 +213,8 @@ app.post('/api/auth/login', async (c) => {
     // Simple authentication for demo purposes
     if ((body.username === 'testuser' && body.password === 'testpass123') || 
         (body.username === 'demo' && body.password === 'demo123') ||
-        (body.email === 'demo@titan.dev' || body.email === 'admin@titan.com') && body.password === 'admin123') {
-      const user = {
+        (body.username === 'admin' && body.password === 'admin') ||
+      const user = {        ((body.email === 'demo@titan.dev' || body.email === 'admin@titan.com') && body.password === 'admin123')) {
         id: '1',
         username: 'demo_user', 
         email: body.email,
@@ -235,6 +235,8 @@ app.post('/api/auth/login', async (c) => {
       console.log('✅ Login successful for:', body.email)
       
       return c.json({ 
+        data: { token: accessToken },  // Frontend compatibility
+        
         success: true, 
         session: {
           accessToken: accessToken,
