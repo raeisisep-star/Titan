@@ -214,7 +214,8 @@ app.post('/api/auth/login', async (c) => {
     if ((body.username === 'testuser' && body.password === 'testpass123') || 
         (body.username === 'demo' && body.password === 'demo123') ||
         (body.username === 'admin' && body.password === 'admin') ||
-      const user = {        ((body.email === 'demo@titan.dev' || body.email === 'admin@titan.com') && body.password === 'admin123')) {
+        ((body.email === 'demo@titan.dev' || body.email === 'admin@titan.com') && body.password === 'admin123')) {
+      const user = {
         id: '1',
         username: 'demo_user', 
         email: body.email,
