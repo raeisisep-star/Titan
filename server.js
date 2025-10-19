@@ -64,25 +64,40 @@ app.get('/health', async (c) => {
 // Login
 app.post('/api/auth/login', async (c) => {
   try {
-    const { email, password } = await c.req.json();
+    const body = await c.req.json();
+    const { email, username, password } = body;
     
-    // Query user
+    // Accept either email or username
+    const identifier = email || username;
+    
+    if (!identifier || !password) {
+      return c.json({ success: false, error: 'نام کاربری/ایمیل و رمز عبور الزامی است' }, 400);
+    }
+    
+    // Query user by email or username
     const result = await pool.query(
-      'SELECT * FROM users WHERE email = $1 AND is_active = true',
-      [email]
+      'SELECT * FROM users WHERE (email = $1 OR username = $1) AND is_active = true',
+      [identifier]
     );
     
     if (result.rows.length === 0) {
-      return c.json({ success: false, error: 'Invalid credentials' }, 401);
+      return c.json({ success: false, error: 'نام کاربری یا رمز عبور اشتباه است' }, 401);
     }
     
     const user = result.rows[0];
     
     // TODO: Verify password with bcrypt
-    // For now, simple demo
+    // For now, accept any password for demo (INSECURE - FIX IN PRODUCTION)
+    console.log('✅ Login successful:', user.username);
     
     // Generate token (simplified)
     const token = `demo_token_${user.id}_${Date.now()}`;
+    
+    // Update last login
+    await pool.query(
+      'UPDATE users SET last_login_at = CURRENT_TIMESTAMP WHERE id = $1',
+      [user.id]
+    );
     
     return c.json({
       success: true,
@@ -99,7 +114,7 @@ app.post('/api/auth/login', async (c) => {
     });
   } catch (error) {
     console.error('Login error:', error);
-    return c.json({ success: false, error: error.message }, 500);
+    return c.json({ success: false, error: 'خطا در ورود به سیستم' }, 500);
   }
 });
 
