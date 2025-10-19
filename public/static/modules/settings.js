@@ -4725,36 +4725,19 @@ class SettingsModule {
         }
     }
 
-    async loadUserStats() {
+        async loadUserStats() {
         try {
-            // Try to load from server first
-            try {
-                const response = await axios.get('/api/admin/users/stats');
-                const stats = response.data;
-                
-                document.getElementById('total-users').textContent = stats.totalUsers || 0;
-                document.getElementById('online-users').textContent = stats.onlineUsers || 0;
-                document.getElementById('new-users').textContent = stats.newUsersThisMonth || 0;
-                document.getElementById('suspicious-activities').textContent = stats.suspiciousActivities || 0;
-            } catch (serverError) {
-                // Use mock data if server not available
-                const mockStats = {
-                    totalUsers: 1247,
-                    onlineUsers: 89,
-                    newUsersThisMonth: 156,
-                    suspiciousActivities: 3
-                };
-                
-                document.getElementById('total-users').textContent = mockStats.totalUsers;
-                document.getElementById('online-users').textContent = mockStats.onlineUsers;
-                document.getElementById('new-users').textContent = mockStats.newUsersThisMonth;
-                document.getElementById('suspicious-activities').textContent = mockStats.suspiciousActivities;
-                
-                console.log('📊 Using mock user stats data');
+            const response = await axios.get('/api/users/stats');
+            if (response.data.success) {
+                const stats = response.data.data;
+                document.getElementById('total-users').textContent = stats.total_users || 0;
+                document.getElementById('online-users').textContent = stats.online_now || 0;
+                document.getElementById('new-users').textContent = stats.new_this_month || 0;
+                document.getElementById('suspicious-activities').textContent = stats.suspended_users || 0;
+                console.log('✅ User stats loaded from real API');
             }
         } catch (error) {
-            console.error('Error loading user stats:', error);
-            // Set default values
+            console.error('❌ Error loading user stats:', error);
             document.getElementById('total-users').textContent = '0';
             document.getElementById('online-users').textContent = '0';
             document.getElementById('new-users').textContent = '0';
@@ -4768,8 +4751,8 @@ class SettingsModule {
             
             // Try to load from server first
             try {
-                const response = await axios.get('/api/admin/users/list?page=1&limit=10');
-                users = response.data.users || [];
+                const response = await axios.get('/api/users?page=1&limit=10');
+                if (response.data.success && response.data.data && response.data.data.users) { users = response.data.data.users; console.log('✅ Loaded', users.length, 'users from API'); } else { throw new Error('Invalid API response'); }
             } catch (serverError) {
                 // Use mock data if server not available
                 users = [
@@ -4914,8 +4897,8 @@ class SettingsModule {
             
             // Try to load from server first
             try {
-                const response = await axios.get('/api/admin/users/suspicious-activities');
-                activities = response.data.activities || [];
+                const response = await axios.get('/api/users/activities/suspicious');
+                if (response.data.success && response.data.data) { activities = response.data.data; console.log('✅ Loaded suspicious activities from API'); } else { throw new Error('Invalid API response'); }
             } catch (serverError) {
                 // Use mock data if server not available
                 activities = [
