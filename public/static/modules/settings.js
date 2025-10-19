@@ -4752,7 +4752,7 @@ class SettingsModule {
             // Try to load from server first
             try {
                 const response = await axios.get('/api/users?page=1&limit=10');
-                users = response.data.users || [];
+                if (response.data.success && response.data.data && response.data.data.users) { users = response.data.data.users; console.log('✅ Loaded', users.length, 'users from API'); } else { throw new Error('Invalid API response'); }
             } catch (serverError) {
                 // Use mock data if server not available
                 users = [
@@ -4898,7 +4898,7 @@ class SettingsModule {
             // Try to load from server first
             try {
                 const response = await axios.get('/api/users/activities/suspicious');
-                activities = response.data.activities || [];
+                if (response.data.success && response.data.data) { activities = response.data.data; console.log('✅ Loaded suspicious activities from API'); } else { throw new Error('Invalid API response'); }
             } catch (serverError) {
                 // Use mock data if server not available
                 activities = [

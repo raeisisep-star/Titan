@@ -1,8 +1,8 @@
 // TITAN Trading System - Production Configuration
 window.TITAN_CONFIG = {
-  // Backend API URLs - سرور شخصی (HTTPS)
-  API_BASE_URL: 'https://www.zala.ir',
-  API_BASE_URL_ALT: 'https://www.zala.ir',
+  // Backend API URLs - Local Development
+  API_BASE_URL: '',  // Empty means same-origin (relative URLs)
+  API_BASE_URL_ALT: '',
   
   // Environment
   ENVIRONMENT: 'production',
