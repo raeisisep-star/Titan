@@ -1,0 +1,33 @@
+--- a/public/static/modules/settings.js
++++ b/public/static/modules/settings.js
+@@ -4751,7 +4751,13 @@
+             
+             // Try to load from server first
+             try {
+                 const response = await axios.get('/api/users?page=1&limit=10');
+-                users = response.data.users || [];
++                if (response.data.success && response.data.data && response.data.data.users) {
++                    users = response.data.data.users;
++                    console.log('✅ Loaded', users.length, 'users from API');
++                } else {
++                    console.error('❌ Invalid API response:', response.data);
++                    throw new Error('Invalid API response structure');
++                }
+             } catch (serverError) {
+                 // Use mock data if server not available
+                 users = [
+@@ -4898,7 +4904,13 @@
+             // Try to load from server first
+             try {
+                 const response = await axios.get('/api/users/activities/suspicious');
+-                activities = response.data.activities || [];
++                if (response.data.success && response.data.data) {
++                    activities = response.data.data;
++                    console.log('✅ Loaded suspicious activities from API');
++                } else {
++                    console.error('❌ Invalid API response:', response.data);
++                    throw new Error('Invalid API response structure');
++                }
+             } catch (serverError) {
+                 // Use mock data if server not available
+                 activities = [
