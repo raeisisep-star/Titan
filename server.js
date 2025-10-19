@@ -38,7 +38,11 @@ app.use('/*', cors({
   credentials: true,
 }));
 
-// Health Check
+// ========================================================================
+// HEALTH CHECK & MONITORING
+// ========================================================================
+
+// Simple health check (root level)
 app.get('/health', async (c) => {
   try {
     const result = await pool.query('SELECT NOW()');
@@ -53,6 +57,73 @@ app.get('/health', async (c) => {
     return c.json({
       status: 'unhealthy',
       error: error.message
+    }, 500);
+  }
+});
+
+// Comprehensive health check (API level)
+app.get('/api/health', async (c) => {
+  const startTime = process.uptime();
+  
+  try {
+    // Test database connection
+    const dbStart = Date.now();
+    const dbResult = await pool.query('SELECT NOW(), pg_database_size(current_database()) as db_size');
+    const dbLatency = Date.now() - dbStart;
+    
+    // Test Redis connection
+    let redisStatus = 'disconnected';
+    let redisLatency = 0;
+    try {
+      const redisStart = Date.now();
+      await redisClient.ping();
+      redisLatency = Date.now() - redisStart;
+      redisStatus = 'connected';
+    } catch (e) {
+      redisStatus = 'error';
+    }
+    
+    // Get system info
+    const memUsage = process.memoryUsage();
+    
+    return c.json({
+      success: true,
+      data: {
+        status: 'healthy',
+        version: '1.0.0',
+        commit: 'c6b3b08',
+        environment: process.env.NODE_ENV || 'development',
+        uptime: Math.floor(startTime),
+        timestamp: new Date().toISOString(),
+        services: {
+          database: {
+            status: 'connected',
+            type: 'postgresql',
+            latency: dbLatency,
+            size_mb: Math.round(parseInt(dbResult.rows[0].db_size) / 1024 / 1024)
+          },
+          redis: {
+            status: redisStatus,
+            latency: redisLatency
+          }
+        },
+        memory: {
+          rss: Math.round(memUsage.rss / 1024 / 1024),
+          heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+          heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+          external: Math.round(memUsage.external / 1024 / 1024)
+        }
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      data: {
+        status: 'unhealthy',
+        error: error.message,
+        uptime: Math.floor(startTime),
+        timestamp: new Date().toISOString()
+      }
     }, 500);
   }
 });
@@ -292,6 +363,78 @@ app.get('/api/trading/exchange/balances', async (c) => {
     success: true,
     data: { total: 0, available: 0, assets: [] }
   });
+});
+
+// =============================================================================
+// INTEGRATION STATUS API
+// =============================================================================
+
+app.get('/api/integration/status', async (c) => {
+  try {
+    // Check database connection
+    let dbStatus = 'disconnected';
+    let dbStats = {};
+    try {
+      const dbResult = await pool.query(`
+        SELECT 
+          (SELECT COUNT(*) FROM users) as total_users,
+          (SELECT COUNT(*) FROM portfolios) as total_portfolios,
+          (SELECT COUNT(*) FROM trades) as total_trades,
+          pg_database_size(current_database()) as db_size
+      `);
+      dbStatus = 'connected';
+      dbStats = {
+        users: parseInt(dbResult.rows[0].total_users),
+        portfolios: parseInt(dbResult.rows[0].total_portfolios),
+        trades: parseInt(dbResult.rows[0].total_trades),
+        size_mb: Math.round(parseInt(dbResult.rows[0].db_size) / 1024 / 1024)
+      };
+    } catch (e) {
+      dbStatus = 'error';
+    }
+
+    // Check Redis connection
+    let redisStatus = 'disconnected';
+    try {
+      await redisClient.ping();
+      redisStatus = 'connected';
+    } catch (e) {
+      redisStatus = 'error';
+    }
+
+    // Check external APIs (stubbed for now)
+    const externalApis = {
+      binance: process.env.BINANCE_API_KEY ? 'configured' : 'not_configured',
+      mexc: process.env.MEXC_API_KEY ? 'configured' : 'not_configured',
+      openai: process.env.OPENAI_API_KEY ? 'configured' : 'not_configured',
+      telegram: process.env.TELEGRAM_BOT_TOKEN ? 'configured' : 'not_configured'
+    };
+
+    return c.json({
+      success: true,
+      data: {
+        status: dbStatus === 'connected' ? 'operational' : 'degraded',
+        timestamp: new Date().toISOString(),
+        components: {
+          database: {
+            status: dbStatus,
+            type: 'postgresql',
+            stats: dbStats
+          },
+          redis: {
+            status: redisStatus,
+            type: 'redis'
+          },
+          external_apis: externalApis
+        }
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500);
+  }
 });
 
 // =============================================================================

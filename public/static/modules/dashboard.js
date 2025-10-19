@@ -2558,23 +2558,23 @@ class DashboardModule {
     }
 
     /**
-     * 🏷️ Show source badge in DEBUG mode
+     * 🏷️ Show source badge (ALWAYS visible for data transparency)
      */
     showSourceBadge(source) {
-        if (!validationFunctions || !validationFunctions.DEBUG_MODE) return;
+        if (!validationFunctions) return;
         
         const existingBadge = document.getElementById('data-source-badge');
         if (existingBadge) existingBadge.remove();
         
         const badge = document.createElement('div');
         badge.id = 'data-source-badge';
-        badge.className = `fixed bottom-4 right-4 z-50 px-3 py-2 rounded-lg border text-xs font-mono ${validationFunctions.getSourceBadgeColor(source)}`;
+        badge.className = `fixed bottom-4 left-4 z-50 px-3 py-2 rounded-lg border text-xs font-mono ${validationFunctions.getSourceBadgeColor(source)} shadow-lg`;
         badge.innerHTML = `
             <div class="flex items-center gap-2">
                 <i class="fas fa-database"></i>
-                <span>Source: ${validationFunctions.getSourceDisplayName(source)}</span>
+                <span>منبع: ${validationFunctions.getSourceDisplayName(source)}</span>
                 <span class="text-gray-400">|</span>
-                <span class="text-gray-400">${new Date(this.dashboardData.meta.ts).toLocaleTimeString()}</span>
+                <span class="text-gray-400">${new Date(this.dashboardData.meta.ts).toLocaleTimeString('fa-IR')}</span>
             </div>
         `;
         document.body.appendChild(badge);
