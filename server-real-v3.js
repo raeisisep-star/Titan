@@ -48,6 +48,7 @@ const authMiddleware = async (c, next) => {
       // For development/testing: allow requests without token but use default user
       if (process.env.NODE_ENV === 'development') {
         c.set('userId', '07b18b25-fc41-4a4f-8774-d19bd15350b5'); // Default test user
+        c.set('userRole', 'admin'); // Default admin role for development
         return await next();
       }
       return c.json({ success: false, error: 'Unauthorized - No token provided' }, 401);
@@ -56,8 +57,9 @@ const authMiddleware = async (c, next) => {
     const token = authHeader.substring(7);
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     
-    // Set userId in context
+    // Set userId and role in context
     c.set('userId', decoded.userId || decoded.id);
+    c.set('userRole', decoded.role || 'user'); // Default to 'user' if role not in token
     
     await next();
   } catch (error) {
@@ -65,10 +67,34 @@ const authMiddleware = async (c, next) => {
     if (process.env.NODE_ENV === 'development') {
       console.warn('JWT verification failed, using default user:', error.message);
       c.set('userId', '07b18b25-fc41-4a4f-8774-d19bd15350b5');
+      c.set('userRole', 'admin');
       return await next();
     }
     return c.json({ success: false, error: 'Unauthorized - Invalid token' }, 401);
   }
+};
+
+// RBAC (Role-Based Access Control) Middleware
+const requireRole = (...allowedRoles) => {
+  return async (c, next) => {
+    const userRole = c.get('userRole');
+    
+    if (!userRole) {
+      return c.json({ 
+        success: false, 
+        error: 'Forbidden - Role not found in token' 
+      }, 403);
+    }
+    
+    if (!allowedRoles.includes(userRole)) {
+      return c.json({ 
+        success: false, 
+        error: `Forbidden - Requires one of: ${allowedRoles.join(', ')}. Your role: ${userRole}` 
+      }, 403);
+    }
+    
+    await next();
+  };
 };
 
 // ========================================================================
@@ -254,6 +280,95 @@ app.post('/api/auth/register', async (c) => {
     return c.json({ success: false, error: error.message }, 500);
   }
 });
+
+// ========================================================================
+// RBAC TEST ENDPOINTS (Phase 4)
+// ========================================================================
+
+// Admin-only endpoint - Test RBAC
+app.get('/api/admin/users', authMiddleware, requireRole('admin'), async (c) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, email, first_name, last_name, role, created_at, last_login_at FROM users ORDER BY created_at DESC LIMIT 50'
+    );
+    
+    return c.json({
+      success: true,
+      data: {
+        users: result.rows,
+        count: result.rows.length
+      },
+      meta: {
+        source: 'real',
+        requiredRole: 'admin',
+        userRole: c.get('userRole')
+      }
+    });
+  } catch (error) {
+    console.error('Admin users list error:', error);
+    return c.json({ success: false, error: 'Failed to fetch users' }, 500);
+  }
+});
+
+// Admin-only endpoint - System stats
+app.get('/api/admin/stats', authMiddleware, requireRole('admin'), async (c) => {
+  try {
+    const [usersCount, tradesCount, portfoliosCount] = await Promise.all([
+      pool.query('SELECT COUNT(*) FROM users'),
+      pool.query('SELECT COUNT(*) FROM trades'),
+      pool.query('SELECT COUNT(*) FROM portfolios')
+    ]);
+    
+    return c.json({
+      success: true,
+      data: {
+        totalUsers: parseInt(usersCount.rows[0].count),
+        totalTrades: parseInt(tradesCount.rows[0].count),
+        totalPortfolios: parseInt(portfoliosCount.rows[0].count)
+      },
+      meta: {
+        source: 'real',
+        requiredRole: 'admin',
+        userRole: c.get('userRole')
+      }
+    });
+  } catch (error) {
+    console.error('Admin stats error:', error);
+    return c.json({ success: false, error: 'Failed to fetch stats' }, 500);
+  }
+});
+
+// User profile endpoint - accessible to all authenticated users
+app.get('/api/user/profile', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId');
+    const result = await pool.query(
+      'SELECT id, username, email, first_name, last_name, role, created_at FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return c.json({ success: false, error: 'User not found' }, 404);
+    }
+    
+    return c.json({
+      success: true,
+      data: result.rows[0],
+      meta: {
+        source: 'real',
+        requiredRole: 'any authenticated user',
+        userRole: c.get('userRole')
+      }
+    });
+  } catch (error) {
+    console.error('User profile error:', error);
+    return c.json({ success: false, error: 'Failed to fetch profile' }, 500);
+  }
+});
+
+// ========================================================================
+// AUTHENTICATION ENDPOINTS
+// ========================================================================
 
 // Verify Token (for auto-login)
 app.post('/api/auth/verify', async (c) => {
