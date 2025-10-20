@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Navigation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto p-4">
+        <h1 class="text-2xl font-bold mb-4">Test Navigation to Settings</h1>
+        
+        <div class="space-y-4">
+            <button onclick="testLogin()" class="bg-blue-500 text-white px-4 py-2 rounded">Test Login</button>
+            <button onclick="navigateToSettings()" class="bg-green-500 text-white px-4 py-2 rounded">Navigate to Settings</button>
+            <button onclick="testExchangeAPI()" class="bg-orange-500 text-white px-4 py-2 rounded">Test Exchange API</button>
+        </div>
+        
+        <div id="result" class="mt-4 p-4 border rounded bg-white"></div>
+    </div>
+
+    <script>
+        async function testLogin() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await axios.post('/api/login', {
+                    username: 'demo_user',
+                    password: 'demo123'
+                });
+                
+                resultDiv.innerHTML = `<div class="text-green-600">Login Success: ${JSON.stringify(response.data, null, 2)}</div>`;
+                
+                // Store token
+                if (response.data.session && response.data.session.accessToken) {
+                    localStorage.setItem('titan_auth_token', response.data.session.accessToken);
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.session.accessToken}`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-600">Login Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function navigateToSettings() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                // Redirect to main app with settings module
+                window.location.href = '/?module=settings';
+                resultDiv.innerHTML = `<div class="text-blue-600">Redirecting to settings...</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-600">Navigation Error: ${error.message}</div>`;
+            }
+        }
+        
+        async function testExchangeAPI() {
+            const resultDiv = document.getElementById('result');
+            
+            try {
+                const response = await axios.post('/api/exchanges/test', {
+                    exchange: 'binance',
+                    apiKey: 'test_key',
+                    apiSecret: 'test_secret',
+                    testnet: true
+                });
+                
+                resultDiv.innerHTML = `<div class="text-green-600">Exchange Test: ${JSON.stringify(response.data, null, 2)}</div>`;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="text-red-600">Exchange API Error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto test on page load
+        setTimeout(async () => {
+            await testLogin();
+            setTimeout(() => {
+                navigateToSettings();
+            }, 2000);
+        }, 1000);
+    </script>
+</body>
+</html>

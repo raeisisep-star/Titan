@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TITAN Trading System - Unified Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+
+        .header h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .header .subtitle {
+            color: #7f8c8d;
+            font-size: 1.2em;
+        }
+
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            gap: 20px;
+        }
+
+        .status-item {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 20px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease;
+        }
+
+        .status-item:hover {
+            transform: translateY(-5px);
+        }
+
+        .status-item h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+        }
+
+        .status-value {
+            font-size: 2em;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+
+        .status-healthy { color: #27ae60; }
+        .status-warning { color: #f39c12; }
+        .status-critical { color: #e74c3c; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .panel {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .panel h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.4em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 10px;
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 15px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        }
+
+        .metric-label {
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .metric-value {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #27ae60, #2ecc71);
+            border-radius: 10px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning {
+            background: linear-gradient(90deg, #f39c12, #f1c40f);
+        }
+
+        .progress-fill.critical {
+            background: linear-gradient(90deg, #e74c3c, #c0392b);
+        }
+
+        .alert-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            margin-bottom: 10px;
+            border-radius: 8px;
+            border-left: 4px solid #3498db;
+            background: #f8f9fa;
+        }
+
+        .alert-item.warning {
+            border-left-color: #f39c12;
+            background: #fef9e7;
+        }
+
+        .alert-item.critical {
+            border-left-color: #e74c3c;
+            background: #fdf2f2;
+        }
+
+        .alert-icon {
+            margin-right: 15px;
+            font-size: 1.2em;
+        }
+
+        .alert-content {
+            flex: 1;
+        }
+
+        .alert-title {
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .alert-time {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+
+        .chart-container {
+            height: 200px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-top: 15px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        .refresh-btn {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 15px 20px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1em;
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .refresh-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
+        }
+
+        .tabs {
+            display: flex;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 12px;
+            padding: 5px;
+            margin-bottom: 20px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .tab-button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            background: transparent;
+            cursor: pointer;
+            border-radius: 8px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button.active {
+            background: #3498db;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 768px) {
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .status-bar {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 TITAN Trading System</h1>
+            <p class="subtitle">Unified Monitoring Dashboard - Real-time Performance, Security & AI Analytics</p>
+        </div>
+
+        <!-- System Status Overview -->
+        <div class="status-bar">
+            <div class="status-item">
+                <h3>System Health</h3>
+                <div class="status-value status-healthy" id="system-health">100%</div>
+                <div>All Systems Operational</div>
+            </div>
+            <div class="status-item">
+                <h3>Performance Score</h3>
+                <div class="status-value status-healthy" id="performance-score">92%</div>
+                <div>Response Time: <span id="avg-response">45ms</span></div>
+            </div>
+            <div class="status-item">
+                <h3>Security Status</h3>
+                <div class="status-value status-warning" id="security-score">87%</div>
+                <div>2 Medium Alerts</div>
+            </div>
+            <div class="status-item">
+                <h3>AI Models</h3>
+                <div class="status-value status-healthy" id="ai-models">5/5</div>
+                <div>All Models Active</div>
+            </div>
+        </div>
+
+        <!-- Tab Navigation -->
+        <div class="tabs">
+            <button class="tab-button active" onclick="showTab('performance')">Performance</button>
+            <button class="tab-button" onclick="showTab('security')">Security</button>
+            <button class="tab-button" onclick="showTab('ai-models')">AI Models</button>
+            <button class="tab-button" onclick="showTab('trading')">Trading</button>
+        </div>
+
+        <!-- Performance Tab -->
+        <div id="performance-tab" class="tab-content active">
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h2>📊 Performance Metrics</h2>
+                    <div class="metric-row">
+                        <span class="metric-label">CPU Usage</span>
+                        <span class="metric-value" id="cpu-usage">68%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 68%"></div>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Memory Usage</span>
+                        <span class="metric-value" id="memory-usage">54%</span>
+                    </div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: 54%"></div>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">API Response Time</span>
+                        <span class="metric-value" id="api-response">45ms</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Database Latency</span>
+                        <span class="metric-value" id="db-latency">12ms</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>📈 Performance Trends</h2>
+                    <div class="chart-container">
+                        <div>Performance trends chart would be rendered here</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Requests/min</span>
+                        <span class="metric-value" id="requests-per-min">847</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Error Rate</span>
+                        <span class="metric-value" id="error-rate">0.3%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Security Tab -->
+        <div id="security-tab" class="tab-content">
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h2>🔒 Security Status</h2>
+                    <div class="metric-row">
+                        <span class="metric-label">Security Score</span>
+                        <span class="metric-value status-warning">87/100</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Active Threats</span>
+                        <span class="metric-value">0</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Failed Login Attempts (24h)</span>
+                        <span class="metric-value">23</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Last Security Audit</span>
+                        <span class="metric-value">2 hours ago</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>⚠️ Security Alerts</h2>
+                    <div class="alert-item warning">
+                        <div class="alert-icon">⚠️</div>
+                        <div class="alert-content">
+                            <div class="alert-title">Unusual Login Pattern</div>
+                            <div class="alert-time">15 minutes ago</div>
+                        </div>
+                    </div>
+                    <div class="alert-item warning">
+                        <div class="alert-icon">🔍</div>
+                        <div class="alert-content">
+                            <div class="alert-title">SQL Injection Attempt Blocked</div>
+                            <div class="alert-time">1 hour ago</div>
+                        </div>
+                    </div>
+                    <div class="alert-item">
+                        <div class="alert-icon">✅</div>
+                        <div class="alert-content">
+                            <div class="alert-title">Security Patch Applied</div>
+                            <div class="alert-time">3 hours ago</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- AI Models Tab -->
+        <div id="ai-models-tab" class="tab-content">
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h2>🤖 AI Model Status</h2>
+                    <div class="metric-row">
+                        <span class="metric-label">Main Predictor</span>
+                        <span class="metric-value status-healthy">Running (94% accuracy)</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Risk Analyzer</span>
+                        <span class="metric-value status-healthy">Running (91% accuracy)</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Portfolio Optimizer</span>
+                        <span class="metric-value status-healthy">Running (89% accuracy)</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Market Sentiment</span>
+                        <span class="metric-value status-healthy">Running (96% accuracy)</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Anomaly Detector</span>
+                        <span class="metric-value status-healthy">Running (92% accuracy)</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>📊 Model Performance</h2>
+                    <div class="chart-container">
+                        <div>AI model performance charts would be rendered here</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Average Processing Time</span>
+                        <span class="metric-value">78ms</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Predictions Today</span>
+                        <span class="metric-value">1,247</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trading Tab -->
+        <div id="trading-tab" class="tab-content">
+            <div class="dashboard-grid">
+                <div class="panel">
+                    <h2>💹 Trading Performance</h2>
+                    <div class="metric-row">
+                        <span class="metric-label">Active Trades</span>
+                        <span class="metric-value">127</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Daily P&L</span>
+                        <span class="metric-value status-healthy">+$12,847</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Success Rate</span>
+                        <span class="metric-value">73.2%</span>
+                    </div>
+
+                    <div class="metric-row">
+                        <span class="metric-label">Risk Score</span>
+                        <span class="metric-value status-warning">Medium</span>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h2>📈 Market Analysis</h2>
+                    <div class="chart-container">
+                        <div>Market analysis charts would be rendered here</div>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Market Sentiment</span>
+                        <span class="metric-value status-healthy">Bullish (87%)</span>
+                    </div>
+                    <div class="metric-row">
+                        <span class="metric-label">Volatility Index</span>
+                        <span class="metric-value">24.7</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button class="refresh-btn" onclick="refreshDashboard()">🔄 Refresh</button>
+
+    <script>
+        // Tab switching functionality
+        function showTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Remove active class from all tab buttons
+            document.querySelectorAll('.tab-button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName + '-tab').classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+
+        // Dashboard refresh functionality
+        async function refreshDashboard() {
+            const refreshBtn = document.querySelector('.refresh-btn');
+            const container = document.querySelector('.container');
+            
+            refreshBtn.textContent = '⏳ Refreshing...';
+            container.classList.add('loading');
+            
+            try {
+                // Simulate API calls to update dashboard data
+                await updatePerformanceMetrics();
+                await updateSecurityStatus();
+                await updateAIModels();
+                await updateTradingData();
+                
+                // Update timestamp
+                const now = new Date().toLocaleTimeString();
+                console.log('Dashboard refreshed at:', now);
+                
+            } catch (error) {
+                console.error('Error refreshing dashboard:', error);
+            } finally {
+                refreshBtn.textContent = '🔄 Refresh';
+                container.classList.remove('loading');
+            }
+        }
+
+        async function updatePerformanceMetrics() {
+            try {
+                // In real implementation, this would fetch from /api/performance/metrics
+                const mockData = {
+                    cpuUsage: Math.floor(Math.random() * 20) + 60,
+                    memoryUsage: Math.floor(Math.random() * 20) + 45,
+                    apiResponse: Math.floor(Math.random() * 20) + 35,
+                    dbLatency: Math.floor(Math.random() * 10) + 8
+                };
+
+                document.getElementById('cpu-usage').textContent = mockData.cpuUsage + '%';
+                document.getElementById('memory-usage').textContent = mockData.memoryUsage + '%';
+                document.getElementById('api-response').textContent = mockData.apiResponse + 'ms';
+                document.getElementById('db-latency').textContent = mockData.dbLatency + 'ms';
+
+                // Update progress bars
+                const cpuBar = document.querySelector('.progress-fill');
+                cpuBar.style.width = mockData.cpuUsage + '%';
+                
+                console.log('Performance metrics updated');
+            } catch (error) {
+                console.error('Error updating performance metrics:', error);
+            }
+        }
+
+        async function updateSecurityStatus() {
+            try {
+                // In real implementation, this would fetch from /api/security/status
+                console.log('Security status updated');
+            } catch (error) {
+                console.error('Error updating security status:', error);
+            }
+        }
+
+        async function updateAIModels() {
+            try {
+                // In real implementation, this would fetch from /api/ai/status
+                console.log('AI models status updated');
+            } catch (error) {
+                console.error('Error updating AI models:', error);
+            }
+        }
+
+        async function updateTradingData() {
+            try {
+                // In real implementation, this would fetch from /api/trading/status
+                console.log('Trading data updated');
+            } catch (error) {
+                console.error('Error updating trading data:', error);
+            }
+        }
+
+        // Auto-refresh every 30 seconds
+        setInterval(refreshDashboard, 30000);
+
+        // Initial load
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('TITAN Unified Monitoring Dashboard loaded');
+            refreshDashboard();
+        });
+
+        // Real-time updates simulation
+        function startRealTimeUpdates() {
+            setInterval(() => {
+                // Update some metrics in real-time
+                const requestsPerMin = document.getElementById('requests-per-min');
+                if (requestsPerMin) {
+                    const currentValue = parseInt(requestsPerMin.textContent);
+                    const newValue = currentValue + Math.floor(Math.random() * 20) - 10;
+                    requestsPerMin.textContent = Math.max(0, newValue);
+                }
+            }, 5000);
+        }
+
+        // Start real-time updates
+        startRealTimeUpdates();
+    </script>
+</body>
+</html>

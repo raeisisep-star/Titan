@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست اتصال فرانت‌اند و بک‌اند - تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+        .test-success { background-color: rgba(16, 185, 129, 0.1); border-color: rgb(16, 185, 129); }
+        .test-error { background-color: rgba(239, 68, 68, 0.1); border-color: rgb(239, 68, 68); }
+        .loading-spinner {
+            border: 4px solid #374151;
+            border-top: 4px solid #3b82f6;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                <i class="fas fa-link mr-2"></i>
+                تست اتصال فرانت‌اند و بک‌اند تایتان
+            </h1>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <div id="connectionStatus" class="text-gray-300">در حال بررسی...</div>
+                <a href="/" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        
+        <!-- Test Control Panel -->
+        <div class="mb-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-play-circle text-green-400 mr-2"></i>
+                پنل کنترل تست‌ها
+            </h2>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <button onclick="runAllTests()" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-play mr-2"></i>
+                    اجرای همه تست‌ها
+                </button>
+                <button onclick="testDashboardConnection()" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-chart-pie mr-2"></i>
+                    تست داشبورد
+                </button>
+                <button onclick="testWatchlistConnection()" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-medium">
+                    <i class="fas fa-star mr-2"></i>
+                    تست مورد علاقه
+                </button>
+            </div>
+        </div>
+
+        <!-- Test Results -->
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            
+            <!-- Authentication Test -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <i class="fas fa-shield-alt text-yellow-400 mr-2"></i>
+                    تست احراز هویت
+                </h3>
+                <div id="authTest" class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>ورود کاربر</span>
+                        <div id="authLogin" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>دریافت Token</span>
+                        <div id="authToken" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>تأیید دسترسی</span>
+                        <div id="authAccess" class="text-gray-400">در انتظار...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard API Test -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <i class="fas fa-chart-pie text-blue-400 mr-2"></i>
+                    تست API داشبورد
+                </h3>
+                <div id="dashboardTest" class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>دریافت آمار کلی</span>
+                        <div id="dashOverview" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>لیست پرتفوی</span>
+                        <div id="dashPortfolio" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>فعالیت‌های اخیر</span>
+                        <div id="dashActivity" class="text-gray-400">در انتظار...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Watchlist API Test -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <i class="fas fa-star text-purple-400 mr-2"></i>
+                    تست API مورد علاقه
+                </h3>
+                <div id="watchlistTest" class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>لیست مورد علاقه</span>
+                        <div id="watchList" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>قیمت‌های بازار</span>
+                        <div id="watchPrices" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>آمار بازار</span>
+                        <div id="watchMarket" class="text-gray-400">در انتظار...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Module Loading Test -->
+            <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
+                <h3 class="text-lg font-bold mb-4 flex items-center">
+                    <i class="fas fa-puzzle-piece text-orange-400 mr-2"></i>
+                    تست بارگذاری ماژول‌ها
+                </h3>
+                <div id="moduleTest" class="space-y-3">
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>ماژول داشبورد</span>
+                        <div id="moduleDash" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>ماژول مورد علاقه</span>
+                        <div id="moduleWatch" class="text-gray-400">در انتظار...</div>
+                    </div>
+                    <div class="flex items-center justify-between p-3 bg-gray-700 rounded">
+                        <span>اتصال API</span>
+                        <div id="moduleApi" class="text-gray-400">در انتظار...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Section -->
+        <div class="mt-8 bg-gray-800 rounded-lg p-6 border border-gray-700">
+            <h3 class="text-lg font-bold mb-4 flex items-center">
+                <i class="fas fa-clipboard-check text-green-400 mr-2"></i>
+                خلاصه نتایج تست
+            </h3>
+            <div id="testSummary" class="text-gray-400">
+                برای شروع تست‌ها، روی دکمه "اجرای همه تست‌ها" کلیک کنید.
+            </div>
+        </div>
+
+        <!-- Direct Access Links -->
+        <div class="mt-8 bg-gradient-to-r from-blue-900 to-purple-900 rounded-lg p-6 border border-blue-700">
+            <h3 class="text-lg font-bold mb-4 flex items-center text-white">
+                <i class="fas fa-external-link-alt text-blue-400 mr-2"></i>
+                دسترسی مستقیم
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <a href="/" target="_blank" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg text-center block transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    برنامه اصلی تایتان
+                </a>
+                <a href="/static/test-dashboard.html" target="_blank" class="bg-green-600 hover:bg-green-700 text-white px-6 py-3 rounded-lg text-center block transition-colors">
+                    <i class="fas fa-chart-pie mr-2"></i>
+                    تست داشبورد مستقل
+                </a>
+                <a href="/static/test-watchlist.html" target="_blank" class="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg text-center block transition-colors">
+                    <i class="fas fa-star mr-2"></i>
+                    تست مورد علاقه مستقل
+                </a>
+                <button onclick="openMainAppAndNavigate()" class="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg transition-colors">
+                    <i class="fas fa-mouse-pointer mr-2"></i>
+                    تست نویگیشن در برنامه
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script>
+        let authToken = null;
+        let testResults = {
+            auth: false,
+            dashboard: false,
+            watchlist: false,
+            modules: false
+        };
+
+        // Test helper functions
+        function setTestStatus(elementId, status, message = '') {
+            const element = document.getElementById(elementId);
+            if (!element) return;
+            
+            if (status === 'loading') {
+                element.innerHTML = '<div class="loading-spinner"></div>';
+            } else if (status === 'success') {
+                element.innerHTML = '<i class="fas fa-check-circle text-green-400"></i>';
+                element.title = message;
+            } else if (status === 'error') {
+                element.innerHTML = '<i class="fas fa-times-circle text-red-400"></i>';
+                element.title = message;
+            }
+        }
+
+        // Authentication test
+        async function testAuthentication() {
+            try {
+                setTestStatus('authLogin', 'loading');
+                setTestStatus('authToken', 'loading');
+                setTestStatus('authAccess', 'loading');
+
+                // Test login
+                const loginResponse = await axios.post('/api/auth/login', {
+                    username: 'test@example.com',
+                    password: 'password'
+                });
+
+                if (loginResponse.data.success) {
+                    setTestStatus('authLogin', 'success', 'ورود موفق');
+                    
+                    authToken = loginResponse.data.session.accessToken;
+                    axios.defaults.headers.common['Authorization'] = `Bearer ${authToken}`;
+                    setTestStatus('authToken', 'success', 'Token دریافت شد');
+
+                    // Test access
+                    const accessResponse = await axios.get('/api/dashboard/overview');
+                    if (accessResponse.data.success) {
+                        setTestStatus('authAccess', 'success', 'دسترسی تأیید شد');
+                        testResults.auth = true;
+                        return true;
+                    }
+                }
+                
+                throw new Error('Authentication failed');
+
+            } catch (error) {
+                setTestStatus('authLogin', 'error', error.message);
+                setTestStatus('authToken', 'error', error.message);
+                setTestStatus('authAccess', 'error', error.message);
+                return false;
+            }
+        }
+
+        // Dashboard connection test
+        async function testDashboardConnection() {
+            if (!authToken) {
+                await testAuthentication();
+            }
+
+            try {
+                setTestStatus('dashOverview', 'loading');
+                setTestStatus('dashPortfolio', 'loading');
+                setTestStatus('dashActivity', 'loading');
+
+                // Test dashboard overview
+                const overviewResponse = await axios.get('/api/dashboard/overview');
+                if (overviewResponse.data.success) {
+                    setTestStatus('dashOverview', 'success', `موجودی: $${overviewResponse.data.data.portfolio.totalBalance}`);
+                } else {
+                    throw new Error('Dashboard overview failed');
+                }
+
+                // Test portfolio list
+                const portfolioResponse = await axios.get('/api/portfolio/list');
+                if (portfolioResponse.data.success) {
+                    setTestStatus('dashPortfolio', 'success', `پرتفوی‌ها: ${portfolioResponse.data.data.portfolios.length}`);
+                } else {
+                    throw new Error('Portfolio list failed');
+                }
+
+                // Test recent activity
+                const activityResponse = await axios.get('/api/dashboard/recent-activity');
+                if (activityResponse.data.success) {
+                    setTestStatus('dashActivity', 'success', `فعالیت‌ها: ${activityResponse.data.data.length}`);
+                } else {
+                    throw new Error('Recent activity failed');
+                }
+
+                testResults.dashboard = true;
+                return true;
+
+            } catch (error) {
+                setTestStatus('dashOverview', 'error', error.message);
+                setTestStatus('dashPortfolio', 'error', error.message);
+                setTestStatus('dashActivity', 'error', error.message);
+                return false;
+            }
+        }
+
+        // Watchlist connection test
+        async function testWatchlistConnection() {
+            if (!authToken) {
+                await testAuthentication();
+            }
+
+            try {
+                setTestStatus('watchList', 'loading');
+                setTestStatus('watchPrices', 'loading');
+                setTestStatus('watchMarket', 'loading');
+
+                // Test watchlist
+                const listResponse = await axios.get('/api/watchlist/list/demo_user');
+                if (listResponse.data.success) {
+                    setTestStatus('watchList', 'success', `آیتم‌ها: ${listResponse.data.data.length}`);
+                } else {
+                    throw new Error('Watchlist failed');
+                }
+
+                // Test market prices
+                const pricesResponse = await axios.post('/api/market/prices', {
+                    symbols: ['BTCUSDT', 'ETHUSDT']
+                });
+                if (pricesResponse.data.success) {
+                    setTestStatus('watchPrices', 'success', `قیمت‌ها: ${Object.keys(pricesResponse.data.data).length}`);
+                } else {
+                    throw new Error('Market prices failed');
+                }
+
+                // Test market overview
+                const marketResponse = await axios.get('/api/market/overview');
+                if (marketResponse.data.success) {
+                    setTestStatus('watchMarket', 'success', `بازار: $${(marketResponse.data.data.total_market_cap / 1e12).toFixed(1)}T`);
+                } else {
+                    throw new Error('Market overview failed');
+                }
+
+                testResults.watchlist = true;
+                return true;
+
+            } catch (error) {
+                setTestStatus('watchList', 'error', error.message);
+                setTestStatus('watchPrices', 'error', error.message);
+                setTestStatus('watchMarket', 'error', error.message);
+                return false;
+            }
+        }
+
+        // Module loading test
+        async function testModuleLoading() {
+            try {
+                setTestStatus('moduleDash', 'loading');
+                setTestStatus('moduleWatch', 'loading');
+                setTestStatus('moduleApi', 'loading');
+
+                // Test dashboard module
+                try {
+                    const dashResponse = await fetch('/static/modules/dashboard.js');
+                    if (dashResponse.ok) {
+                        setTestStatus('moduleDash', 'success', 'ماژول بارگذاری شد');
+                    } else {
+                        throw new Error('Dashboard module not found');
+                    }
+                } catch (error) {
+                    setTestStatus('moduleDash', 'error', error.message);
+                }
+
+                // Test watchlist module
+                try {
+                    const watchResponse = await fetch('/static/modules/watchlist.js');
+                    if (watchResponse.ok) {
+                        setTestStatus('moduleWatch', 'success', 'ماژول بارگذاری شد');
+                    } else {
+                        throw new Error('Watchlist module not found');
+                    }
+                } catch (error) {
+                    setTestStatus('moduleWatch', 'error', error.message);
+                }
+
+                // Test API connection
+                try {
+                    const apiResponse = await fetch('/test');
+                    if (apiResponse.ok) {
+                        setTestStatus('moduleApi', 'success', 'اتصال برقرار است');
+                        testResults.modules = true;
+                    } else {
+                        throw new Error('API connection failed');
+                    }
+                } catch (error) {
+                    setTestStatus('moduleApi', 'error', error.message);
+                }
+
+                return true;
+
+            } catch (error) {
+                console.error('Module loading test failed:', error);
+                return false;
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            document.getElementById('connectionStatus').innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>در حال اجرای تست‌ها...';
+
+            const authResult = await testAuthentication();
+            const dashboardResult = await testDashboardConnection();
+            const watchlistResult = await testWatchlistConnection();
+            const moduleResult = await testModuleLoading();
+
+            updateSummary();
+
+            const allPassed = authResult && dashboardResult && watchlistResult && moduleResult;
+            const statusColor = allPassed ? 'text-green-400' : 'text-yellow-400';
+            const statusIcon = allPassed ? 'fa-check-circle' : 'fa-exclamation-triangle';
+            
+            document.getElementById('connectionStatus').innerHTML = `<i class="fas ${statusIcon} ${statusColor} mr-2"></i>${allPassed ? 'همه تست‌ها موفق' : 'برخی تست‌ها نیاز به بررسی دارند'}`;
+        }
+
+        // Update summary
+        function updateSummary() {
+            const summary = document.getElementById('testSummary');
+            const passCount = Object.values(testResults).filter(Boolean).length;
+            const totalCount = Object.keys(testResults).length;
+            
+            let statusClass = 'text-green-400';
+            let statusIcon = 'fa-check-circle';
+            let statusText = 'همه تست‌ها موفقیت‌آمیز';
+
+            if (passCount < totalCount) {
+                statusClass = passCount > 0 ? 'text-yellow-400' : 'text-red-400';
+                statusIcon = passCount > 0 ? 'fa-exclamation-triangle' : 'fa-times-circle';
+                statusText = `${passCount} از ${totalCount} تست موفقیت‌آمیز`;
+            }
+
+            summary.innerHTML = `
+                <div class="flex items-center ${statusClass}">
+                    <i class="fas ${statusIcon} mr-3 text-2xl"></i>
+                    <div>
+                        <div class="text-lg font-bold">${statusText}</div>
+                        <div class="text-sm text-gray-400 mt-1">
+                            احراز هویت: ${testResults.auth ? '✅' : '❌'} | 
+                            داشبورد: ${testResults.dashboard ? '✅' : '❌'} | 
+                            مورد علاقه: ${testResults.watchlist ? '✅' : '❌'} | 
+                            ماژول‌ها: ${testResults.modules ? '✅' : '❌'}
+                        </div>
+                    </div>
+                </div>
+                
+                ${passCount === totalCount ? `
+                    <div class="mt-4 p-4 bg-green-900/20 border border-green-600 rounded-lg">
+                        <h4 class="font-bold text-green-400 mb-2">🎉 عالی! فرانت‌اند و بک‌اند کاملاً متصل هستند</h4>
+                        <ul class="text-sm text-gray-300 space-y-1">
+                            <li>✅ احراز هویت با JWT Token کار می‌کند</li>
+                            <li>✅ API های داشبورد به درستی پاسخ می‌دهند</li>
+                            <li>✅ API های مورد علاقه فعال هستند</li>
+                            <li>✅ ماژول‌های فرانت‌اند قابل بارگذاری هستند</li>
+                        </ul>
+                        <div class="mt-3">
+                            <a href="/" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg text-sm inline-block">
+                                <i class="fas fa-rocket mr-2"></i>
+                                ورود به برنامه اصلی
+                            </a>
+                        </div>
+                    </div>
+                ` : ''}
+            `;
+        }
+
+        // Open main app and navigate
+        function openMainAppAndNavigate() {
+            const instructions = `
+                🎯 مراحل تست نویگیشن در برنامه اصلی:
+                
+                1️⃣ وارد برنامه شوید (ورود خودکار موجود است)
+                2️⃣ از منوی کناری "داشبورد" را کلیک کنید
+                3️⃣ بررسی کنید که داده‌ها بارگذاری می‌شوند
+                4️⃣ از منوی کناری "مورد علاقه" را کلیک کنید
+                5️⃣ بررسی کنید که قیمت‌ها و آمار نمایش داده می‌شوند
+                
+                ✅ اگر همه مراحل کار کرد، اتصال کامل است!
+            `;
+            
+            alert(instructions);
+            window.open('/', '_blank');
+        }
+
+        // Auto-run basic test on load
+        window.addEventListener('load', function() {
+            setTimeout(() => {
+                testModuleLoading();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

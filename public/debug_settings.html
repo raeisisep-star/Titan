@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Settings</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🐛 Settings Debug Tool</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">بررسی وضعیت</h2>
+            
+            <button onclick="checkStatus()" class="mb-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                ✅ بررسی وضعیت
+            </button>
+            
+            <pre id="status" class="bg-gray-900 p-4 rounded text-xs overflow-auto max-h-96"></pre>
+        </div>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-xl font-semibold mb-4">تست دکمه‌های تب Exchanges</h2>
+            
+            <div class="space-y-2 mb-4">
+                <button onclick="testMEXC()" class="w-full px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded">
+                    🚀 تست اتصال MEXC
+                </button>
+                <button onclick="testMEXCAccount()" class="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded">
+                    👤 اطلاعات حساب MEXC
+                </button>
+                <button onclick="testSave()" class="w-full px-4 py-2 bg-green-600 hover:bg-green-700 rounded">
+                    💾 تست ذخیره تنظیمات
+                </button>
+            </div>
+            
+            <pre id="test-result" class="bg-gray-900 p-4 rounded text-xs overflow-auto max-h-64"></pre>
+        </div>
+        
+        <div class="bg-yellow-900 bg-opacity-30 border border-yellow-600 rounded-lg p-4">
+            <h3 class="font-bold mb-2">⚠️ راهنما:</h3>
+            <ol class="text-sm space-y-1">
+                <li>1. این صفحه را در تب جدید باز کنید</li>
+                <li>2. در تب دیگر به صفحه اصلی بروید و Login کنید</li>
+                <li>3. به Settings → Exchanges بروید</li>
+                <li>4. بعد به این صفحه برگردید و "بررسی وضعیت" را بزنید</li>
+                <li>5. مشکلات را در console ببینید</li>
+            </ol>
+        </div>
+    </div>
+    
+    <script>
+        function log(message, data = null) {
+            console.log(message, data);
+            const statusEl = document.getElementById('status');
+            const testEl = document.getElementById('test-result');
+            const targetEl = testEl.textContent ? testEl : statusEl;
+            
+            const timestamp = new Date().toLocaleTimeString('fa-IR');
+            targetEl.textContent += `[${timestamp}] ${message}\n`;
+            
+            if (data) {
+                targetEl.textContent += JSON.stringify(data, null, 2) + '\n';
+            }
+            targetEl.textContent += '\n';
+        }
+        
+        function checkStatus() {
+            document.getElementById('status').textContent = '';
+            document.getElementById('test-result').textContent = '';
+            
+            log('=== شروع بررسی ===');
+            
+            // Check window.unifiedSettings
+            log('1. window.unifiedSettings:', window.unifiedSettings);
+            if (window.unifiedSettings) {
+                log('   - currentTab:', window.unifiedSettings.currentTab);
+                log('   - isLoading:', window.unifiedSettings.isLoading);
+                log('   - settings:', window.unifiedSettings.settings);
+            }
+            
+            // Check window.exchangesTab
+            log('2. window.exchangesTab:', window.exchangesTab);
+            if (window.exchangesTab) {
+                log('   - has saveSettings:', typeof window.exchangesTab.saveSettings === 'function');
+                log('   - has initialize:', typeof window.exchangesTab.initialize === 'function');
+                log('   - has testMEXCConnection:', typeof window.exchangesTab.testMEXCConnection === 'function');
+                log('   - settings:', window.exchangesTab.settings);
+            }
+            
+            // Check UnifiedSettingsModule
+            log('3. window.UnifiedSettingsModule:', window.UnifiedSettingsModule);
+            
+            // Check ExchangesTab class
+            log('4. تلاش برای بارگذاری ExchangesTab...');
+            try {
+                const script = document.createElement('script');
+                script.type = 'module';
+                script.textContent = `
+                    import ExchangesTab from '/static/modules/settings/tabs/exchanges-tab.js';
+                    window.testExchangesTab = ExchangesTab;
+                    console.log('ExchangesTab loaded:', ExchangesTab);
+                `;
+                document.head.appendChild(script);
+                log('   - Script اضافه شد، console را بررسی کنید');
+            } catch (error) {
+                log('   - خطا:', error.message);
+            }
+            
+            // Check localStorage token
+            const token = localStorage.getItem('titan_auth_token');
+            log('5. Token موجود است:', !!token);
+            if (token) {
+                log('   - Token length:', token.length);
+            }
+            
+            // Check if settings page is open
+            const settingsContent = document.getElementById('unified-settings-content');
+            log('6. Settings page باز است:', !!settingsContent);
+            
+            log('=== پایان بررسی ===');
+        }
+        
+        async function testMEXC() {
+            document.getElementById('test-result').textContent = '';
+            log('🚀 تست اتصال MEXC...');
+            
+            if (!window.exchangesTab) {
+                log('❌ window.exchangesTab موجود نیست!');
+                log('راه‌حل: به صفحه Settings → Exchanges بروید');
+                return;
+            }
+            
+            if (typeof window.exchangesTab.testMEXCConnection !== 'function') {
+                log('❌ متد testMEXCConnection موجود نیست!');
+                return;
+            }
+            
+            try {
+                await window.exchangesTab.testMEXCConnection();
+                log('✅ تابع فراخوانی شد');
+            } catch (error) {
+                log('❌ خطا:', error.message);
+            }
+        }
+        
+        async function testMEXCAccount() {
+            document.getElementById('test-result').textContent = '';
+            log('👤 دریافت اطلاعات حساب MEXC...');
+            
+            if (!window.exchangesTab) {
+                log('❌ window.exchangesTab موجود نیست!');
+                return;
+            }
+            
+            if (typeof window.exchangesTab.getMEXCAccountInfo !== 'function') {
+                log('❌ متد getMEXCAccountInfo موجود نیست!');
+                return;
+            }
+            
+            try {
+                await window.exchangesTab.getMEXCAccountInfo();
+                log('✅ تابع فراخوانی شد');
+            } catch (error) {
+                log('❌ خطا:', error.message);
+            }
+        }
+        
+        async function testSave() {
+            document.getElementById('test-result').textContent = '';
+            log('💾 تست ذخیره تنظیمات...');
+            
+            if (!window.unifiedSettings) {
+                log('❌ window.unifiedSettings موجود نیست!');
+                return;
+            }
+            
+            log('Tab فعلی:', window.unifiedSettings.currentTab);
+            
+            if (!window.exchangesTab) {
+                log('❌ window.exchangesTab موجود نیست!');
+                log('راه‌حل: به تب Exchanges بروید');
+                return;
+            }
+            
+            if (typeof window.exchangesTab.saveSettings !== 'function') {
+                log('❌ متد saveSettings موجود نیست!');
+                log('موارد موجود:', Object.keys(window.exchangesTab));
+                return;
+            }
+            
+            try {
+                log('📤 فراخوانی saveSettings...');
+                const result = await window.exchangesTab.saveSettings();
+                log('✅ نتیجه:', result);
+            } catch (error) {
+                log('❌ خطا:', error.message);
+                log('Stack:', error.stack);
+            }
+        }
+        
+        // Auto check on load
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('صفحه بارگذاری شد. برای بررسی دکمه را بزنید.');
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Chart.js</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🧪 تست Chart.js</h1>
+        
+        <div id="status" class="mb-6 p-4 rounded-lg bg-gray-800">
+            <p>در حال بررسی Chart.js...</p>
+        </div>
+        
+        <div class="bg-gray-800 p-6 rounded-lg">
+            <h2 class="text-xl font-semibold mb-4">نمودار تست</h2>
+            <canvas id="testChart" width="400" height="200"></canvas>
+        </div>
+    </div>
+
+    <script>
+        console.log('🧪 Testing Chart.js availability...');
+        
+        const statusEl = document.getElementById('status');
+        
+        if (typeof Chart !== 'undefined') {
+            statusEl.innerHTML = '<p class="text-green-400">✅ Chart.js بارگذاری شده و آماده استفاده است!</p>';
+            console.log('✅ Chart.js is available');
+            
+            // Create test chart
+            const ctx = document.getElementById('testChart').getContext('2d');
+            const testChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['یکشنبه', 'دوشنبه', 'سه‌شنبه', 'چهارشنبه', 'پنج‌شنبه', 'جمعه', 'شنبه'],
+                    datasets: [{
+                        label: 'سود روزانه',
+                        data: [120, 190, 300, 500, 200, 300, 450],
+                        borderColor: '#3b82f6',
+                        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                        tension: 0.4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            labels: {
+                                color: '#ffffff'
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#374151'
+                            }
+                        },
+                        x: {
+                            ticks: {
+                                color: '#ffffff'
+                            },
+                            grid: {
+                                color: '#374151'
+                            }
+                        }
+                    }
+                }
+            });
+            
+            statusEl.innerHTML += '<p class="text-blue-400 mt-2">📊 نمودار تست با موفقیت ایجاد شد!</p>';
+        } else {
+            statusEl.innerHTML = '<p class="text-red-400">❌ Chart.js بارگذاری نشده است</p>';
+            console.error('❌ Chart.js is NOT available');
+        }
+    </script>
+</body>
+</html>

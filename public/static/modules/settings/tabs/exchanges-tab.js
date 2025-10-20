@@ -171,11 +171,11 @@ export default class ExchangesTab {
                 </div>
                 
                 <div class="mt-4 flex space-x-2 space-x-reverse">
-                    <button onclick="exchangesTab.testMEXCConnection()" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.testMEXCConnection()" class="flex-1 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
                         <i class="fas fa-plug mr-2"></i>
                         تست اتصال MEXC
                     </button>
-                    <button onclick="exchangesTab.getMEXCAccountInfo()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.getMEXCAccountInfo()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-user mr-2"></i>
                         اطلاعات حساب
                     </button>
@@ -256,11 +256,11 @@ export default class ExchangesTab {
                 </div>
                 
                 <div class="mt-4 flex space-x-2 space-x-reverse">
-                    <button onclick="exchangesTab.testBinanceConnection()" class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.testBinanceConnection()" class="flex-1 px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 transition-colors">
                         <i class="fas fa-plug mr-2"></i>
                         تست اتصال
                     </button>
-                    <button onclick="exchangesTab.getBinanceAccount()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.getBinanceAccount()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-wallet mr-2"></i>
                         اطلاعات کیف پول
                     </button>
@@ -346,11 +346,11 @@ export default class ExchangesTab {
                 </div>
                 
                 <div class="mt-4 flex space-x-2 space-x-reverse">
-                    <button onclick="exchangesTab.testCoinbaseConnection()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.testCoinbaseConnection()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-plug mr-2"></i>
                         تست اتصال
                     </button>
-                    <button onclick="exchangesTab.getCoinbaseAccounts()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.getCoinbaseAccounts()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-list mr-2"></i>
                         لیست حساب‌ها
                     </button>
@@ -437,11 +437,11 @@ export default class ExchangesTab {
                 </div>
                 
                 <div class="mt-4 flex space-x-2 space-x-reverse">
-                    <button onclick="exchangesTab.testKuCoinConnection()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.testKuCoinConnection()" class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-plug mr-2"></i>
                         تست اتصال
                     </button>
-                    <button onclick="exchangesTab.getKuCoinAccount()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <button type="button" onclick="exchangesTab.getKuCoinAccount()" class="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                         <i class="fas fa-chart-bar mr-2"></i>
                         آمار معاملات
                     </button>
@@ -530,15 +530,15 @@ export default class ExchangesTab {
                 
                 <!-- OKX Action Buttons -->
                 <div class="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-700">
-                    <button onclick="settingsModule.testOKXConnection()" 
+                    <button type="button" onclick="settingsModule.testOKXConnection()" 
                             class="px-6 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
                         <i class="fas fa-plug mr-2"></i>تست اتصال
                     </button>
-                    <button onclick="settingsModule.getOKXAccount()" 
+                    <button type="button" onclick="settingsModule.getOKXAccount()" 
                             class="px-6 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
                         <i class="fas fa-user mr-2"></i>آمار حساب
                     </button>
-                    <button onclick="settingsModule.saveOKXSettings()" 
+                    <button type="button" onclick="settingsModule.saveOKXSettings()" 
                             class="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-all duration-200 hover:scale-105">
                         <i class="fas fa-save mr-2"></i>ذخیره تنظیمات
                     </button>
@@ -654,16 +654,74 @@ export default class ExchangesTab {
                 api_secret: document.getElementById('kucoin-api-secret')?.value || '',
                 passphrase: document.getElementById('kucoin-passphrase')?.value || '',
                 sandbox: document.getElementById('kucoin-sandbox')?.checked || false
+            },
+            okx: {
+                enabled: document.getElementById('okx-enabled')?.checked || false,
+                api_key: document.getElementById('okx-api-key')?.value || '',
+                api_secret: document.getElementById('okx-api-secret')?.value || '',
+                passphrase: document.getElementById('okx-passphrase')?.value || '',
+                testnet: document.getElementById('okx-testnet')?.checked || false,
+                rate_limit: parseInt(document.getElementById('okx-rate-limit')?.value || 2000)
             }
         };
+    }
+
+    // Save settings to backend
+    async saveSettings() {
+        try {
+            console.log('💾 Saving exchange settings...');
+            
+            // Collect form data
+            const exchangeData = this.collectData();
+            console.log('Exchange data to save:', exchangeData);
+            
+            // Send to backend API
+            const response = await fetch('/api/settings/exchanges', {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ exchanges: exchangeData })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'خطا در ارتباط با سرور');
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                this.showNotification('✅ تنظیمات صرافی‌ها با موفقیت ذخیره شد!', 'success');
+                
+                // Update local settings
+                if (this.settings) {
+                    this.settings.exchanges = exchangeData;
+                }
+                
+                return { success: true, message: 'تنظیمات ذخیره شد' };
+            } else {
+                throw new Error(result.message || 'خطا در ذخیره تنظیمات');
+            }
+            
+        } catch (error) {
+            console.error('خطا در ذخیره تنظیمات صرافی:', error);
+            this.showNotification(`❌ خطا: ${error.message}`, 'error');
+            return { success: false, error: error.message };
+        }
     }
 
     // Initialize tab functionality
     initialize() {
         console.log('🔧 Exchanges tab initialized with MEXC support');
+        console.log('🔧 Available methods:', Object.keys(this));
+        console.log('🔧 Has saveSettings:', typeof this.saveSettings === 'function');
+        console.log('🔧 Has testMEXCConnection:', typeof this.testMEXCConnection === 'function');
         
         // Set up global instance
         window.exchangesTab = this;
+        console.log('✅ window.exchangesTab set to:', window.exchangesTab);
     }
 
     // MEXC Exchange Methods
@@ -774,7 +832,19 @@ export default class ExchangesTab {
     }
 
     showNotification(message, type = 'info') {
-        // Simple notification - would integrate with main notification system
         console.log(`${type.toUpperCase()}: ${message}`);
+        
+        // Try to use unified settings toast if available
+        if (window.unifiedSettings && typeof window.unifiedSettings.showToast === 'function') {
+            window.unifiedSettings.showToast(message, type);
+        } 
+        // Fallback to app.showAlert if available
+        else if (window.app && typeof window.app.showAlert === 'function') {
+            window.app.showAlert(message, type);
+        }
+        // Fallback to console
+        else {
+            console.log(`[${type}] ${message}`);
+        }
     }
 }

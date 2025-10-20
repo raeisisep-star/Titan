@@ -1,0 +1,30 @@
+--- public/static/app.js.orig
++++ public/static/app.js
+@@ -4674,18 +4674,21 @@
+     async renderPortfolioSummaryWidget(widget) {
+         try {
+-            // Mock portfolio data instead of API call
+-            const mockData = {
+-                totalValue: 125000 + (Math.random() - 0.5) * 20000,
+-                totalPnL: (Math.random() - 0.3) * 5000,
+-                roi: (Math.random() - 0.2) * 15,
+-                dailyChange: (Math.random() - 0.4) * 1000
++            // Get real portfolio data from API
++            const response = await this.apiCall('/api/dashboard/comprehensive');
++            const portfolio = response.data?.portfolio || {
++                totalBalance: 0,
++                totalPnL: 0,
++                dailyChange: 0
+             };
+     
+-            const changeClass = mockData.totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
+-            const changeIcon = mockData.totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
++            const totalValue = portfolio.totalBalance || 0;
++            const totalPnL = portfolio.totalPnL || 0;
++            const roi = totalValue > 0 ? (totalPnL / totalValue * 100) : 0;
++            
++            const changeClass = totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
++            const changeIcon = totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+     
+             return \`
+                 <div class="widget-metric">

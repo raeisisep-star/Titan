@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>آزمایش یکپارچگی وضعیت سیستم - تایتان</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <link href="/static/css/system-status.css" rel="stylesheet">
+    <style>
+        body { font-family: 'Vazir', sans-serif; }
+        .status-widget {
+            transition: all 0.3s ease;
+        }
+        .status-widget:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        }
+        .pulse-error {
+            animation: pulseError 1.5s infinite;
+        }
+        @keyframes pulseError {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .integration-status {
+            border: 2px solid transparent;
+            transition: border-color 0.3s ease;
+        }
+        .integration-status.connected {
+            border-color: #10B981;
+        }
+        .integration-status.warning {
+            border-color: #F59E0B;
+        }
+        .integration-status.error {
+            border-color: #EF4444;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white min-h-screen">
+    <!-- Header -->
+    <header class="bg-gray-800 border-b border-gray-700 p-4">
+        <div class="max-w-7xl mx-auto flex items-center justify-between">
+            <div class="flex items-center">
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                    <i class="fas fa-server mr-2"></i>
+                    آزمایش یکپارچگی وضعیت سیستم
+                </h1>
+            </div>
+            
+            <div class="flex items-center space-x-4 space-x-reverse">
+                <!-- System Status Button -->
+                <button id="systemStatusBtn" 
+                        onclick="showSystemStatusModal()"
+                        class="system-status-button flex items-center px-4 py-2 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors">
+                    <i class="fas fa-circle text-green-400 mr-2"></i>
+                    <span>وضعیت سیستم</span>
+                </button>
+                
+                <!-- Refresh All -->
+                <button onclick="refreshAllWidgets()" 
+                        class="px-4 py-2 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-refresh mr-2"></i>
+                    بروزرسانی همه
+                </button>
+                
+                <!-- Back to Main -->
+                <a href="/" class="px-4 py-2 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-home mr-2"></i>
+                    بازگشت
+                </a>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto p-6">
+        <!-- Integration Status Overview -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-plug text-green-400 mr-2"></i>
+                وضعیت یکپارچگی ماژول‌ها
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- System Status Manager -->
+                <div id="systemStatusIntegration" class="integration-status bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2 flex items-center">
+                        <i class="fas fa-heartbeat text-red-400 mr-2"></i>
+                        مدیر وضعیت سیستم
+                    </h3>
+                    <div id="systemStatusInfo" class="text-sm text-gray-400">
+                        در حال بررسی...
+                    </div>
+                </div>
+                
+                <!-- Settings Integration -->
+                <div id="settingsIntegration" class="integration-status bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2 flex items-center">
+                        <i class="fas fa-cog text-blue-400 mr-2"></i>
+                        یکپارچگی تنظیمات
+                    </h3>
+                    <div id="settingsIntegrationInfo" class="text-sm text-gray-400">
+                        در حال بررسی...
+                    </div>
+                </div>
+                
+                <!-- Status Widgets -->
+                <div id="statusWidgetsIntegration" class="integration-status bg-gray-800 rounded-lg p-4">
+                    <h3 class="font-semibold mb-2 flex items-center">
+                        <i class="fas fa-th-large text-purple-400 mr-2"></i>
+                        ویجت‌های وضعیت
+                    </h3>
+                    <div id="statusWidgetsInfo" class="text-sm text-gray-400">
+                        در حال بررسی...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Widget Showcase -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-th-large text-purple-400 mr-2"></i>
+                نمایش ویجت‌های وضعیت
+            </h2>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <!-- System Overview Widget -->
+                <div id="systemOverviewWidget" class="status-widget">
+                    <!-- Will be populated by StatusWidgets -->
+                </div>
+                
+                <!-- Performance Widget -->
+                <div id="performanceWidget" class="status-widget">
+                    <!-- Will be populated by StatusWidgets -->
+                </div>
+                
+                <!-- Service Health Widget -->
+                <div id="serviceHealthWidget" class="status-widget">
+                    <!-- Will be populated by StatusWidgets -->
+                </div>
+                
+                <!-- Connection Status Widget -->
+                <div id="connectionStatusWidget" class="status-widget">
+                    <!-- Will be populated by StatusWidgets -->
+                </div>
+                
+                <!-- Trading Status Widget -->
+                <div id="tradingStatusWidget" class="status-widget">
+                    <!-- Will be populated by StatusWidgets -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Real-time Updates Test -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-bolt text-yellow-400 mr-2"></i>
+                آزمایش بروزرسانی‌های Real-time
+            </h2>
+            
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- Connection Status -->
+                    <div>
+                        <h3 class="font-semibold mb-3 flex items-center">
+                            <i class="fas fa-wifi text-green-400 mr-2"></i>
+                            وضعیت اتصال Real-time
+                        </h3>
+                        <div id="realTimeConnectionStatus" class="space-y-2 text-sm">
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Server-Sent Events:</span>
+                                <span id="sseStatus" class="text-yellow-400">در حال بررسی...</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">WebSocket Fallback:</span>
+                                <span id="wsStatus" class="text-yellow-400">در حال بررسی...</span>
+                            </div>
+                            <div class="flex justify-between">
+                                <span class="text-gray-300">Polling Fallback:</span>
+                                <span id="pollingStatus" class="text-green-400">فعال</span>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Update Log -->
+                    <div>
+                        <h3 class="font-semibold mb-3 flex items-center">
+                            <i class="fas fa-list text-blue-400 mr-2"></i>
+                            لاگ بروزرسانی‌ها
+                        </h3>
+                        <div id="updateLog" class="bg-gray-700 rounded p-3 h-32 overflow-y-auto text-xs font-mono">
+                            <div class="text-green-400">[INIT] سیستم آزمایش یکپارچگی آماده شد</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Controls -->
+                <div class="mt-6 flex items-center space-x-4 space-x-reverse">
+                    <button onclick="testRealTimeConnection()" 
+                            class="px-4 py-2 bg-green-600 rounded hover:bg-green-700 transition-colors">
+                        <i class="fas fa-play mr-2"></i>
+                        آزمایش اتصال Real-time
+                    </button>
+                    
+                    <button onclick="simulateStatusChange()" 
+                            class="px-4 py-2 bg-yellow-600 rounded hover:bg-yellow-700 transition-colors">
+                        <i class="fas fa-random mr-2"></i>
+                        شبیه‌سازی تغییر وضعیت
+                    </button>
+                    
+                    <button onclick="clearUpdateLog()" 
+                            class="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700 transition-colors">
+                        <i class="fas fa-trash mr-2"></i>
+                        پاک کردن لاگ
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Settings Tab Simulation -->
+        <div class="mb-8">
+            <h2 class="text-xl font-bold mb-4 flex items-center">
+                <i class="fas fa-cogs text-blue-400 mr-2"></i>
+                شبیه‌سازی تب‌های تنظیمات
+            </h2>
+            
+            <div class="bg-gray-800 rounded-lg p-6">
+                <div class="flex border-b border-gray-700 mb-6">
+                    <button onclick="switchSettingsTab('general')" 
+                            class="settings-tab-btn px-4 py-2 border-b-2 border-transparent hover:border-blue-400 transition-colors active"
+                            data-tab="general">
+                        عمومی
+                    </button>
+                    <button onclick="switchSettingsTab('system')" 
+                            class="settings-tab-btn px-4 py-2 border-b-2 border-transparent hover:border-blue-400 transition-colors ml-4"
+                            data-tab="system">
+                        سیستم
+                    </button>
+                    <button onclick="switchSettingsTab('trading')" 
+                            class="settings-tab-btn px-4 py-2 border-b-2 border-transparent hover:border-blue-400 transition-colors ml-4"
+                            data-tab="trading">
+                        معاملات
+                    </button>
+                </div>
+                
+                <!-- Tab Content -->
+                <div id="settingsTabContent" class="min-h-64">
+                    <!-- Will be populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+    <script src="/static/modules/system-status.js"></script>
+    <script src="/static/modules/settings-status-integration.js"></script>
+    <script src="/static/modules/status-widgets.js"></script>
+    
+    <script>
+        // Global test state
+        let testState = {
+            integrationChecked: false,
+            widgetsCreated: false,
+            realTimeConnected: false,
+            currentTab: 'general'
+        };
+
+        // Initialize test page
+        document.addEventListener('DOMContentLoaded', async function() {
+            logUpdate('[INIT] صفحه آزمایش بارگذاری شد');
+            
+            // Wait for modules to load
+            await waitForModules();
+            
+            // Check integrations
+            await checkIntegrations();
+            
+            // Create widgets
+            await createWidgets();
+            
+            // Setup real-time monitoring
+            setupRealTimeMonitoring();
+            
+            // Load default settings tab
+            switchSettingsTab('general');
+            
+            logUpdate('[SUCCESS] همه ماژول‌ها با موفقیت یکپارچه شدند');
+        });
+
+        // Wait for all modules to be available
+        async function waitForModules() {
+            logUpdate('[WAIT] انتظار برای بارگذاری ماژول‌ها...');
+            
+            let attempts = 0;
+            while (attempts < 30) {
+                if (window.systemStatusManager && 
+                    window.settingsStatusIntegration && 
+                    window.statusWidgets) {
+                    logUpdate('[SUCCESS] همه ماژول‌ها بارگذاری شدند');
+                    return;
+                }
+                
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            logUpdate('[ERROR] برخی ماژول‌ها بارگذاری نشدند', 'error');
+        }
+
+        // Check integration status
+        async function checkIntegrations() {
+            logUpdate('[CHECK] بررسی وضعیت یکپارچگی...');
+            
+            // Check System Status Manager
+            const systemStatus = checkSystemStatusManager();
+            updateIntegrationStatus('systemStatusIntegration', systemStatus);
+            
+            // Check Settings Integration
+            const settingsIntegration = checkSettingsIntegration();
+            updateIntegrationStatus('settingsIntegration', settingsIntegration);
+            
+            // Check Status Widgets
+            const statusWidgets = checkStatusWidgets();
+            updateIntegrationStatus('statusWidgetsIntegration', statusWidgets);
+            
+            testState.integrationChecked = true;
+            logUpdate('[SUCCESS] بررسی یکپارچگی کامل شد');
+        }
+
+        function checkSystemStatusManager() {
+            if (!window.systemStatusManager) {
+                return { status: 'error', message: 'مدیر وضعیت سیستم یافت نشد' };
+            }
+            
+            const manager = window.systemStatusManager;
+            const isInitialized = manager.isInitialized;
+            const hasData = !!manager.statusData;
+            const subscriberCount = manager.subscribers ? manager.subscribers.size : 0;
+            
+            return {
+                status: isInitialized ? 'connected' : 'warning',
+                message: isInitialized ? 
+                    `فعال | ${subscriberCount} subscriber | داده: ${hasData ? '✅' : '❌'}` :
+                    'در حال راه‌اندازی...'
+            };
+        }
+
+        function checkSettingsIntegration() {
+            if (!window.settingsStatusIntegration) {
+                return { status: 'error', message: 'یکپارچگی تنظیمات یافت نشد' };
+            }
+            
+            const integration = window.settingsStatusIntegration;
+            const status = integration.getIntegrationStatus();
+            
+            return {
+                status: status.isInitialized ? 'connected' : 'warning',
+                message: status.isInitialized ?
+                    `فعال | ${status.widgetCount} ویجت | ${status.subscriptionCount} اشتراک` :
+                    'در حال راه‌اندازی...'
+            };
+        }
+
+        function checkStatusWidgets() {
+            if (!window.statusWidgets) {
+                return { status: 'error', message: 'ویجت‌های وضعیت یافت نشد' };
+            }
+            
+            const widgets = window.statusWidgets;
+            const isInitialized = widgets.isInitialized;
+            const widgetCount = widgets.widgetCache ? widgets.widgetCache.size : 0;
+            
+            return {
+                status: isInitialized ? 'connected' : 'warning',
+                message: isInitialized ?
+                    `فعال | ${widgetCount} ویجت در کش` :
+                    'در حال راه‌اندازی...'
+            };
+        }
+
+        function updateIntegrationStatus(elementId, status) {
+            const element = document.getElementById(elementId);
+            const infoElement = document.getElementById(elementId.replace('Integration', 'Info'));
+            
+            if (element && infoElement) {
+                element.className = `integration-status bg-gray-800 rounded-lg p-4 ${status.status}`;
+                infoElement.textContent = status.message;
+                
+                const statusColor = {
+                    'connected': 'text-green-400',
+                    'warning': 'text-yellow-400',
+                    'error': 'text-red-400'
+                };
+                
+                infoElement.className = `text-sm ${statusColor[status.status] || 'text-gray-400'}`;
+            }
+        }
+
+        // Create test widgets
+        async function createWidgets() {
+            if (!window.statusWidgets) {
+                logUpdate('[ERROR] StatusWidgets غیرفعال است', 'error');
+                return;
+            }
+            
+            logUpdate('[CREATE] ایجاد ویجت‌های آزمایشی...');
+            
+            try {
+                const widgets = window.statusWidgets;
+                
+                // Create different widget types
+                document.getElementById('systemOverviewWidget').innerHTML = 
+                    widgets.createSystemOverviewWidget('systemOverview');
+                
+                document.getElementById('performanceWidget').innerHTML = 
+                    widgets.createPerformanceWidget('performance');
+                
+                document.getElementById('serviceHealthWidget').innerHTML = 
+                    widgets.createServiceHealthWidget('serviceHealth');
+                
+                document.getElementById('connectionStatusWidget').innerHTML = 
+                    widgets.createConnectionStatusWidget('connectionStatus');
+                
+                document.getElementById('tradingStatusWidget').innerHTML = 
+                    widgets.createTradingStatusWidget('tradingStatus');
+                
+                testState.widgetsCreated = true;
+                logUpdate('[SUCCESS] همه ویجت‌ها ایجاد شدند');
+                
+            } catch (error) {
+                logUpdate(`[ERROR] خطا در ایجاد ویجت‌ها: ${error.message}`, 'error');
+            }
+        }
+
+        // Setup real-time monitoring
+        function setupRealTimeMonitoring() {
+            logUpdate('[REALTIME] راه‌اندازی نظارت real-time...');
+            
+            // Check SSE connection status
+            if (window.systemStatusManager && window.systemStatusManager.sseConnection) {
+                updateConnectionStatus('sseStatus', 'connected', 'متصل');
+            }
+            
+            // Monitor status updates
+            if (window.systemStatusManager) {
+                window.systemStatusManager.subscribe((statusData) => {
+                    logUpdate(`[UPDATE] وضعیت به‌روزرسانی شد: ${statusData.overall}`);
+                    updateConnectionStatus('realTimeStatus', 'connected', 'فعال');
+                });
+            }
+            
+            testState.realTimeConnected = true;
+        }
+
+        // Settings tab simulation
+        function switchSettingsTab(tabName) {
+            logUpdate(`[TAB] تغییر به تب ${tabName}`);
+            
+            // Update active tab
+            document.querySelectorAll('.settings-tab-btn').forEach(btn => {
+                if (btn.dataset.tab === tabName) {
+                    btn.classList.add('active', 'border-blue-400', 'text-blue-400');
+                } else {
+                    btn.classList.remove('active', 'border-blue-400', 'text-blue-400');
+                }
+            });
+            
+            // Generate tab content with status widgets
+            const tabContent = generateTabContent(tabName);
+            document.getElementById('settingsTabContent').innerHTML = tabContent;
+            
+            testState.currentTab = tabName;
+        }
+
+        function generateTabContent(tabName) {
+            const widgets = window.settingsStatusIntegration?.getTabWidgets(tabName) || {};
+            
+            let content = `<h3 class="text-lg font-semibold mb-4">تنظیمات ${tabName}</h3>`;
+            
+            if (Object.keys(widgets).length > 0) {
+                content += '<div class="grid grid-cols-1 md:grid-cols-2 gap-4">';
+                Object.entries(widgets).forEach(([widgetId, widgetHtml]) => {
+                    content += `<div class="widget-container">${widgetHtml}</div>`;
+                });
+                content += '</div>';
+            } else {
+                content += `
+                    <div class="text-center text-gray-400 py-8">
+                        <i class="fas fa-info-circle text-2xl mb-2"></i>
+                        <p>ویجت‌های وضعیت برای تب ${tabName} در حال بارگذاری...</p>
+                    </div>
+                `;
+            }
+            
+            return content;
+        }
+
+        // Test functions
+        async function testRealTimeConnection() {
+            logUpdate('[TEST] آزمایش اتصال real-time...');
+            
+            try {
+                const response = await fetch('/api/status/poll');
+                const data = await response.json();
+                
+                if (data.success) {
+                    logUpdate('[TEST] اتصال real-time موفق', 'success');
+                    updateConnectionStatus('pollingStatus', 'connected', 'موفق');
+                } else {
+                    throw new Error(data.error);
+                }
+            } catch (error) {
+                logUpdate(`[TEST] خطا در اتصال: ${error.message}`, 'error');
+                updateConnectionStatus('pollingStatus', 'error', 'خطا');
+            }
+        }
+
+        function simulateStatusChange() {
+            logUpdate('[SIMULATE] شبیه‌سازی تغییر وضعیت...');
+            
+            if (window.systemStatusManager) {
+                // Simulate a status update
+                const fakeUpdate = {
+                    type: 'status_update',
+                    component: 'overall',
+                    status: {
+                        overall: Math.random() > 0.5 ? 'online' : 'warning',
+                        timestamp: new Date().toISOString(),
+                        services: [
+                            { name: 'Test Service', status: 'online' }
+                        ]
+                    }
+                };
+                
+                window.systemStatusManager.handleWebSocketUpdate(fakeUpdate);
+                logUpdate('[SIMULATE] تغییر وضعیت شبیه‌سازی شد', 'success');
+            }
+        }
+
+        function refreshAllWidgets() {
+            logUpdate('[REFRESH] بروزرسانی همه ویجت‌ها...');
+            
+            if (window.statusWidgets) {
+                ['systemOverview', 'performance', 'serviceHealth', 'connectionStatus', 'tradingStatus'].forEach(widgetId => {
+                    window.statusWidgets.refreshWidget(widgetId);
+                });
+                logUpdate('[REFRESH] همه ویجت‌ها بروزرسانی شدند', 'success');
+            }
+        }
+
+        function showSystemStatusModal() {
+            if (window.systemStatusManager && window.systemStatusManager.showStatusModal) {
+                window.systemStatusManager.showStatusModal();
+            }
+        }
+
+        // Utility functions
+        function updateConnectionStatus(elementId, status, text) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                const colors = {
+                    'connected': 'text-green-400',
+                    'warning': 'text-yellow-400',
+                    'error': 'text-red-400'
+                };
+                
+                element.className = colors[status] || 'text-gray-400';
+                element.textContent = text;
+            }
+        }
+
+        function logUpdate(message, type = 'info') {
+            const log = document.getElementById('updateLog');
+            if (log) {
+                const timestamp = new Date().toLocaleTimeString('fa-IR');
+                const colors = {
+                    'info': 'text-blue-400',
+                    'success': 'text-green-400',
+                    'warning': 'text-yellow-400',
+                    'error': 'text-red-400'
+                };
+                
+                const color = colors[type] || 'text-gray-300';
+                const logEntry = `<div class="${color}">[${timestamp}] ${message}</div>`;
+                
+                log.innerHTML += logEntry;
+                log.scrollTop = log.scrollHeight;
+            }
+            
+            console.log(`[SYSTEM-STATUS-TEST] ${message}`);
+        }
+
+        function clearUpdateLog() {
+            const log = document.getElementById('updateLog');
+            if (log) {
+                log.innerHTML = '<div class="text-green-400">[CLEAR] لاگ پاک شد</div>';
+            }
+        }
+
+        // Listen for status widget updates
+        window.addEventListener('statusWidgetUpdate', (event) => {
+            logUpdate(`[WIDGET] ویجت‌ها به‌روزرسانی شدند: ${event.detail.timestamp}`, 'info');
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ورود به سیستم</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-md mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🧪 تست ورود به سیستم</h1>
+        
+        <div class="bg-gray-800 rounded-lg p-6 mb-6">
+            <form id="testLoginForm" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium mb-2">نام کاربری یا ایمیل</label>
+                    <input type="text" id="testUsername" 
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md" 
+                           value="sepehr.raeisi@gmail.com"
+                           required>
+                </div>
+                
+                <div>
+                    <label class="block text-sm font-medium mb-2">رمز عبور</label>
+                    <input type="password" id="testPassword" 
+                           class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md" 
+                           value="Zala-2024"
+                           required>
+                </div>
+                
+                <button type="submit" 
+                        class="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-md">
+                    ورود
+                </button>
+            </form>
+        </div>
+
+        <div class="bg-gray-800 rounded-lg p-6">
+            <h2 class="text-xl font-bold mb-4">نتیجه</h2>
+            <div id="result" class="text-gray-400">هنوز وارد نشده‌اید...</div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('testLoginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const resultEl = document.getElementById('result');
+            const username = document.getElementById('testUsername').value;
+            const password = document.getElementById('testPassword').value;
+            
+            resultEl.innerHTML = '<div class="text-yellow-400">⏳ در حال ورود...</div>';
+            
+            try {
+                const isEmail = username.includes('@');
+                const loginData = { password };
+                
+                if (isEmail) {
+                    loginData.email = username;
+                } else {
+                    loginData.username = username;
+                }
+                
+                console.log('Sending login request:', loginData);
+                
+                const response = await axios.post('/api/auth/login', loginData);
+                
+                console.log('Login response:', response.data);
+                
+                if (response.data.success) {
+                    const token = response.data.data.token;
+                    const user = response.data.data.user;
+                    
+                    localStorage.setItem('titan_auth_token', token);
+                    
+                    resultEl.innerHTML = `
+                        <div class="text-green-400 space-y-2">
+                            <div class="text-xl font-bold">✅ ورود موفقیت‌آمیز!</div>
+                            <div class="text-sm">
+                                <div>👤 نام: ${user.firstName} ${user.lastName}</div>
+                                <div>📧 ایمیل: ${user.email}</div>
+                                <div>🔑 نقش: ${user.role}</div>
+                                <div class="mt-2 text-xs text-gray-400 break-all">Token: ${token.substring(0, 50)}...</div>
+                            </div>
+                            <a href="/" class="inline-block mt-4 bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">
+                                رفتن به داشبورد
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    resultEl.innerHTML = `
+                        <div class="text-red-400">
+                            ❌ خطا: ${response.data.error || 'خطای نامشخص'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                resultEl.innerHTML = `
+                    <div class="text-red-400 space-y-2">
+                        <div>❌ خطا در ورود</div>
+                        <div class="text-sm">${error.message}</div>
+                        ${error.response ? `
+                            <div class="text-xs mt-2">
+                                <div>Status: ${error.response.status}</div>
+                                <div>Error: ${error.response.data?.error || 'Unknown'}</div>
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+        });
+        
+        // Check if already logged in
+        const token = localStorage.getItem('titan_auth_token');
+        if (token) {
+            document.getElementById('result').innerHTML = `
+                <div class="text-blue-400">
+                    ℹ️ قبلاً وارد شده‌اید. Token در localStorage موجود است.
+                    <button onclick="localStorage.removeItem('titan_auth_token'); location.reload();" 
+                            class="mt-2 bg-red-600 hover:bg-red-700 px-3 py-1 rounded text-sm">
+                        خروج و تست دوباره
+                    </button>
+                </div>
+            `;
+        }
+    </script>
+</body>
+</html>

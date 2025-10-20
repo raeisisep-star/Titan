@@ -14,17 +14,11 @@ class TitanApp {
     async init() {
         // Initialize module loader first
         await this.initializeModuleLoader();
-        
+
         // Check for existing session
         let token = localStorage.getItem('titan_auth_token');
-        
-        // If no token exists, set up demo token for development
-        if (!token) {
-            token = 'demo_token_' + Math.random().toString(36).substring(7);
-            localStorage.setItem('titan_auth_token', token);
-            console.log('🔧 Demo authentication token set up:', token);
-        }
-        
+
+
         if (token) {
             // Set axios default header
             axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
@@ -32,12 +26,12 @@ class TitanApp {
         } else {
             this.showLoginScreen();
         }
-        
+
         // Setup event listeners with a delay to ensure DOM is ready
         setTimeout(() => {
             this.setupEventListeners();
         }, 100);
-        
+
         this.loadSavedTheme();
     }
 
@@ -70,16 +64,34 @@ class TitanApp {
     }
 
     setupEventListeners() {
-        // Login form
+        // Login form - Multiple ways to ensure it works
         const loginForm = document.getElementById('loginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        
         console.log('Setting up login form listener, form found:', !!loginForm);
+        console.log('Login button found:', !!loginBtn);
+        
         if (loginForm) {
+            // Method 1: Form submit event
             loginForm.addEventListener('submit', (e) => {
-                console.log('Login form submitted!', e);
+                e.preventDefault();
+                console.log('Login form submitted via form event!');
                 this.handleLogin(e);
             });
         }
         
+        if (loginBtn) {
+            // Method 2: Button click event (backup)
+            loginBtn.addEventListener('click', (e) => {
+                const form = document.getElementById('loginForm');
+                if (form) {
+                    e.preventDefault();
+                    console.log('Login button clicked directly!');
+                    this.handleLogin(e);
+                }
+            });
+        }
+
         // Close dropdowns when clicking outside
         document.addEventListener('click', (e) => {
             const modeSelector = document.getElementById('mode-selector');
@@ -87,12 +99,12 @@ class TitanApp {
             const alertsPanel = document.getElementById('alerts-panel');
             const alertsButton = e.target.closest('button[onclick="app.toggleAlertsPanel()"]');
             const modeButton = e.target.closest('#mode-toggle');
-            
+    
             // Close mode selector if clicking outside
             if (modeSelector && !modeSelector.classList.contains('hidden') && !modeButton) {
                 modeSelector.classList.add('hidden');
             }
-            
+    
             // Close alerts panel if clicking outside
             if (alertsPanel && !alertsPanel.classList.contains('hidden') && !alertsButton) {
                 alertsPanel.classList.add('hidden');
@@ -103,11 +115,11 @@ class TitanApp {
     async handleLogin(e) {
         console.log('handleLogin called with event:', e);
         e.preventDefault();
-        
+
         const usernameOrEmail = document.getElementById('username').value;
         const password = document.getElementById('password').value;
         console.log('Login attempt:', { username: usernameOrEmail, hasPassword: !!password });
-        
+
         if (!usernameOrEmail || !password) {
             this.showAlert('لطفاً نام کاربری و رمز عبور را وارد کنید', 'error');
             return;
@@ -119,7 +131,7 @@ class TitanApp {
             const loginData = {
                 password
             };
-            
+    
             // Send as email or username based on format
             if (isEmail) {
                 loginData.email = usernameOrEmail;
@@ -131,15 +143,15 @@ class TitanApp {
 
             if (response.data.success) {
                 // Fix: Use accessToken instead of token
-                const token = response.data.session.accessToken;
+                const token = response.data.data.token;
                 localStorage.setItem('titan_auth_token', token);
-                
+        
                 // Set axios default header for authenticated requests
                 axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-                
-                this.currentUser = response.data.session.user;
+        
+                this.currentUser = response.data.data.user;
                 this.showMainApp();
-                
+        
                 this.showAlert('ورود موفقیت‌آمیز', 'success');
             } else {
                 this.showAlert(response.data.error || 'خطا در ورود', 'error');
@@ -153,9 +165,9 @@ class TitanApp {
     async verifyToken(token) {
         try {
             const response = await axios.post('/api/auth/verify', { token });
-            
+    
             if (response.data.success) {
-                this.currentUser = response.data.user;
+                this.currentUser = response.data.data.user;
                 this.showMainApp();
             } else {
                 localStorage.removeItem('titan_auth_token');
@@ -170,7 +182,7 @@ class TitanApp {
     showLoginScreen() {
         document.getElementById('loginScreen').classList.remove('hidden');
         document.getElementById('mainApp').classList.add('hidden');
-        
+
         // Dispatch logout event for floating sidebar
         document.dispatchEvent(new CustomEvent('user-logged-out'));
     }
@@ -179,10 +191,10 @@ class TitanApp {
         // Clear user data
         localStorage.removeItem('titan_auth_token');
         this.currentUser = null;
-        
+
         // Show login screen
         this.showLoginScreen();
-        
+
         // Show logout alert
         this.showAlert('خروج موفقیت‌آمیز', 'info');
     }
@@ -190,16 +202,16 @@ class TitanApp {
     showMainApp() {
         const loginScreen = document.getElementById('loginScreen');
         const mainApp = document.getElementById('mainApp');
-        
+
         if (loginScreen) loginScreen.classList.add('hidden');
         if (mainApp) mainApp.classList.remove('hidden');
-        
+
         // Dispatch login event for floating sidebar
         document.dispatchEvent(new CustomEvent('user-logged-in'));
-        
+
         // Simplified approach: Load navigation and then trigger dashboard module
         this.loadDashboardModule();
-        
+
         // Auto-click dashboard menu item to load comprehensive dashboard
         setTimeout(() => {
             const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
@@ -211,12 +223,12 @@ class TitanApp {
                 this.loadModule('dashboard');
             }
         }, 500);
-        
+
         // Floating buttons already exist in HTML, no need to create
-        
+
         // Initialize in-app notifications
         this.initInAppNotifications();
-        
+
         // Initialize trading mode toggle
         this.initializeModeToggle();
     }
@@ -232,12 +244,12 @@ class TitanApp {
                 resolve();
                 return;
             }
-            
+    
             // Create script element
             const script = document.createElement('script');
             script.src = `/static/modules/dashboard.js?v=${Date.now()}`;
             script.async = true;
-            
+    
             script.onload = () => {
                 console.log('✅ Dashboard script loaded successfully');
                 // Wait a bit for class to be registered
@@ -249,12 +261,12 @@ class TitanApp {
                     }
                 }, 100);
             };
-            
+    
             script.onerror = () => {
                 console.error('❌ Failed to load dashboard script');
                 reject(new Error('Failed to load dashboard script'));
             };
-            
+    
             document.head.appendChild(script);
         });
     }
@@ -284,7 +296,7 @@ class TitanApp {
     async loadDashboardModule() {
         const app = document.getElementById('app');
         app.innerHTML = this.getDashboardHTML();
-        
+
         // Wait for DOM to be ready, then load comprehensive dashboard using module loader
         setTimeout(async () => {
             const mainContent = document.getElementById('main-content');
@@ -292,18 +304,18 @@ class TitanApp {
                 try {
                     // Load dashboard module properly
                     const dashboardModule = await window.moduleLoader.loadModule('dashboard');
-                    
+            
                     if (dashboardModule && typeof dashboardModule.getContent === 'function') {
                         // Get comprehensive dashboard content
                         const dashboardContent = await dashboardModule.getContent();
                         mainContent.innerHTML = dashboardContent;
-                        
+                
                         // Initialize the dashboard module
                         await dashboardModule.initialize();
-                        
+                
                         // Set global instance for onclick handlers
                         window.dashboardModule = dashboardModule;
-                        
+                
                         console.log('✅ Comprehensive Dashboard loaded and initialized successfully');
                     } else {
                         console.error('❌ Dashboard module not loaded properly');
@@ -317,7 +329,7 @@ class TitanApp {
                 console.error('❌ Main content element or module loader not found');
             }
         }, 500); // Increased delay to ensure all modules are loaded
-        
+
         this.setupDashboardEvents();
     }
 
@@ -355,7 +367,7 @@ class TitanApp {
                                 </div>
                             </div>
                         </div>
-                        
+                
                         <!-- Desktop Navigation Menu -->
                         <div class="hidden lg:block">
                             <div class="mr-8 flex items-center space-x-1 space-x-reverse">
@@ -383,8 +395,12 @@ class TitanApp {
                                     <i class="fas fa-brain ml-1 text-purple-400"></i>
                                     آرتمیس AI
                                 </a>
+                                <a href="#" onclick="app.loadModule('ai-insights')" class="nav-link">
+                                    <i class="fas fa-robot ml-1 text-cyan-400"></i>
+                                    هوش مصنوعی
+                                </a>
 
-                                
+                        
                                 <!-- More Menu Dropdown -->
                                 <div class="relative">
                                     <button onclick="app.toggleMoreMenu()" class="nav-link flex items-center" id="more-menu-btn">
@@ -413,7 +429,7 @@ class TitanApp {
                                 </div>
                             </div>
                         </div>
-                        
+                
                         <!-- Mobile Menu Button -->
                         <div class="lg:hidden mr-4">
                             <button onclick="app.toggleMobileMenu()" class="text-gray-300 hover:text-white p-2 rounded-md" id="mobile-menu-btn">
@@ -436,14 +452,14 @@ class TitanApp {
                                     <div id="header-daily-profit" class="text-sm font-semibold text-green-400">+$0</div>
                                 </div>
                             </div>
-                            
+                    
                             <!-- Alerts Button -->
                             <div class="relative">
                                 <button onclick="app.toggleAlertsPanel()" class="relative p-2.5 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg transition-all duration-200 group">
                                     <i class="fas fa-bell text-lg group-hover:animate-pulse"></i>
                                     <span id="alerts-badge" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center hidden animate-bounce">0</span>
                                 </button>
-                                
+                        
                                 <!-- Alerts Dropdown Panel -->
                                 <div id="alerts-panel" class="absolute left-0 mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 hidden">
                                     <div class="px-4 py-3 border-b border-gray-700">
@@ -464,7 +480,7 @@ class TitanApp {
                                     </div>
                                 </div>
                             </div>
-                            
+                    
                             <!-- Demo/Live Mode Toggle -->
                             <div class="hidden sm:flex items-center">
                                 <div id="mode-toggle" class="relative">
@@ -475,13 +491,13 @@ class TitanApp {
                                         <span id="mode-text" class="text-sm font-semibold">حالت دمو</span>
                                         <i class="fas fa-chevron-down mr-2 text-xs group-hover:rotate-180 transition-transform duration-200"></i>
                                     </button>
-                                    
+                            
                                     <!-- Mode Selector Dropdown -->
                                     <div id="mode-selector" class="absolute left-0 mt-2 w-64 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-50 hidden">
                                         <div class="px-4 py-3 border-b border-gray-700">
                                             <h3 class="text-sm font-semibold text-white">انتخاب حالت معاملات</h3>
                                         </div>
-                                        
+                                
                                         <div class="p-2">
                                             <!-- Demo Mode Option -->
                                             <button onclick="app.switchTradingMode('demo')" 
@@ -498,7 +514,7 @@ class TitanApp {
                                                     <i class="fas fa-check hidden demo-selected"></i>
                                                 </div>
                                             </button>
-                                            
+                                    
                                             <!-- Live Mode Option -->
                                             <button onclick="app.switchTradingMode('live')" 
                                                     class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-gray-700 transition-colors"
@@ -515,7 +531,7 @@ class TitanApp {
                                                 </div>
                                             </button>
                                         </div>
-                                        
+                                
                                         <div class="px-4 py-3 border-t border-gray-700">
                                             <div class="flex items-center justify-between text-xs">
                                                 <span class="text-gray-400">موجودی دمو:</span>
@@ -529,7 +545,7 @@ class TitanApp {
                                     </div>
                                 </div>
                             </div>
-                            
+                    
                             <!-- User Profile -->
                             <div class="relative">
                                 <button onclick="app.showUserProfile()" 
@@ -546,13 +562,13 @@ class TitanApp {
                                     <i class="fas fa-chevron-down text-gray-400 group-hover:text-white transition-all duration-200 group-hover:rotate-180"></i>
                                 </button>
                             </div>
-                            
+                    
                             <!-- Logout Button -->
                             <button onclick="app.logout()" class="bg-red-600/80 hover:bg-red-600 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 hover:shadow-lg hidden sm:block">
                                 <i class="fas fa-sign-out-alt ml-1"></i>
                                 خروج
                             </button>
-                            
+                    
                             <!-- Mobile Actions Menu -->
                             <div class="sm:hidden">
                                 <button onclick="app.toggleMobileActions()" class="p-2 text-gray-300 hover:text-white hover:bg-gray-700 rounded-lg">
@@ -563,12 +579,12 @@ class TitanApp {
                     </div>
                 </div>
             </div>
-            
+    
         </nav>
 
         <!-- Mobile Menu Overlay -->
         <div id="mobile-menu-overlay" class="mobile-menu-overlay lg:hidden"></div>
-        
+
         <!-- Mobile Menu -->
         <div id="mobile-menu" class="lg:hidden">
             <!-- Mobile Menu Header -->
@@ -583,7 +599,7 @@ class TitanApp {
                     <i class="fas fa-times text-xl"></i>
                 </button>
             </div>
-            
+    
             <!-- Mobile Menu Content -->
             <div class="overflow-y-auto h-full pb-20">
                 <!-- Main Navigation Links -->
@@ -609,12 +625,16 @@ class TitanApp {
                         <span>تحلیل</span>
                     </a>
                 </div>
-                
+        
                 <!-- Secondary Links -->
                 <div class="py-2">
                     <a href="#" onclick="app.loadModule('artemis'); app.closeMobileMenu();" class="mobile-nav-link">
                         <i class="fas fa-robot text-purple-400"></i>
                         <span>آرتمیس AI</span>
+                    </a>
+                    <a href="#" onclick="app.loadModule('ai-insights'); app.closeMobileMenu();" class="mobile-nav-link">
+                        <i class="fas fa-brain text-cyan-400"></i>
+                        <span>هوش مصنوعی</span>
                     </a>
 
                     <a href="#" onclick="app.loadModule('news'); app.closeMobileMenu();" class="mobile-nav-link">
@@ -631,7 +651,7 @@ class TitanApp {
                     </a>
 
                 </div>
-                
+        
                 <!-- Mode Toggle (Mobile) -->
                 <div class="px-6 py-4 border-t border-gray-700">
                     <div class="flex items-center justify-between p-4 bg-gray-700/50 rounded-xl backdrop-blur-sm">
@@ -644,7 +664,7 @@ class TitanApp {
                         </button>
                     </div>
                 </div>
-                
+        
                 <!-- Quick Stats Mobile -->
                 <div class="px-6 py-2">
                     <div class="grid grid-cols-2 gap-3">
@@ -658,7 +678,7 @@ class TitanApp {
                         </div>
                     </div>
                 </div>
-                
+        
                 <!-- Logout (Mobile) -->
                 <div class="px-6 py-4">
                     <button onclick="app.logout(); app.closeMobileMenu();" class="w-full flex items-center justify-center p-4 bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 rounded-xl text-white font-medium transition-all transform hover:scale-105">
@@ -705,7 +725,7 @@ class TitanApp {
                         </div>
                     </div>
                 </div>
-                
+        
                 <!-- Mobile Status Bar -->
                 <div class="md:hidden flex items-center justify-between text-white text-xs">
                     <div class="flex items-center space-x-3 space-x-reverse">
@@ -815,7 +835,7 @@ class TitanApp {
                     </div>
                 </div>
             </div>
-            
+    
             <!-- Chat Messages -->
             <div id="chat-messages" class="h-80 p-4 overflow-y-auto bg-gray-900/50 backdrop-blur-sm">
                 <div class="mb-4">
@@ -836,7 +856,7 @@ class TitanApp {
                         </div>
                     </div>
                 </div>
-                
+        
                 <div class="mb-4">
                     <div class="flex items-start gap-3">
                         <div class="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center flex-shrink-0">
@@ -856,7 +876,7 @@ class TitanApp {
                     </div>
                 </div>
             </div>
-            
+    
             <!-- Quick Actions -->
             <div class="px-4 py-2 border-t border-white/10">
                 <div class="grid grid-cols-2 gap-2 mb-3">
@@ -878,7 +898,7 @@ class TitanApp {
                     </button>
                 </div>
             </div>
-            
+    
             <!-- Input Area -->
             <div class="p-4 border-t border-white/10">
                 <div class="flex items-center gap-2">
@@ -907,7 +927,7 @@ class TitanApp {
                     title="چت با آرتمیس">
                 <i class="fas fa-robot text-xl group-hover:animate-bounce"></i>
             </button>
-            
+    
             <!-- System Status Button -->
             <button id="system-status-toggle" 
                     onclick="app.toggleSystemStatus()" 
@@ -934,7 +954,7 @@ class TitanApp {
                     <span class="text-green-400 text-sm font-medium">وضعیت کل: آنلاین</span>
                 </div>
             </div>
-            
+    
             <!-- Performance Metrics -->
             <div class="p-4 border-b border-gray-700/50">
                 <h5 class="text-white text-sm font-medium mb-3">متریک‌های عملکرد:</h5>
@@ -968,7 +988,7 @@ class TitanApp {
                     </div>
                 </div>
             </div>
-            
+    
             <!-- Component Status -->
             <div class="p-4 border-b border-gray-700/50">
                 <h5 class="text-white text-sm font-medium mb-3">وضعیت اجزاء:</h5>
@@ -1010,7 +1030,7 @@ class TitanApp {
                     </div>
                 </div>
             </div>
-            
+    
             <!-- Current Activity -->
             <div class="p-4">
                 <h5 class="text-white text-sm font-medium mb-3">فعالیت جاری:</h5>
@@ -1167,15 +1187,15 @@ class TitanApp {
         const chatAssistant = document.getElementById('chat-assistant');
         const systemStatus = document.getElementById('system-status-panel');
         const floatingButtons = document.getElementById('floating-buttons');
-        
+
         if (chatAssistant) {
             chatAssistant.classList.toggle('hidden');
-            
+    
             // Hide system status if it's open
             if (systemStatus && !systemStatus.classList.contains('hidden')) {
                 systemStatus.classList.add('hidden');
             }
-            
+    
             // Move floating buttons to avoid overlap
             if (floatingButtons) {
                 if (!chatAssistant.classList.contains('hidden')) {
@@ -1188,7 +1208,7 @@ class TitanApp {
                     floatingButtons.classList.add('right-4');
                 }
             }
-            
+    
             // Focus on input when opened
             if (!chatAssistant.classList.contains('hidden')) {
                 setTimeout(() => {
@@ -1206,10 +1226,10 @@ class TitanApp {
         const systemStatus = document.getElementById('system-status-panel');
         const chatAssistant = document.getElementById('chat-assistant');
         const floatingButtons = document.getElementById('floating-buttons');
-        
+
         if (systemStatus) {
             systemStatus.classList.toggle('hidden');
-            
+    
             // Hide chat assistant if it's open
             if (chatAssistant && !chatAssistant.classList.contains('hidden')) {
                 chatAssistant.classList.add('hidden');
@@ -1219,7 +1239,7 @@ class TitanApp {
                     floatingButtons.classList.add('right-4');
                 }
             }
-            
+    
             // Load real-time system data when opened
             if (!systemStatus.classList.contains('hidden')) {
                 this.loadSystemMetrics();
@@ -1372,7 +1392,7 @@ class TitanApp {
         if (this.metricsInterval) {
             clearInterval(this.metricsInterval);
         }
-        
+
         // Update every 3 seconds
         this.metricsInterval = setInterval(() => {
             this.loadSystemMetrics();
@@ -1395,18 +1415,18 @@ class TitanApp {
     async sendArtemisMessage() {
         const input = document.getElementById('chat-input');
         const message = input.value.trim();
-        
+
         if (!message) return;
 
         const messagesContainer = document.getElementById('chat-messages');
-        
+
         // Add user message
         this.addChatMessage('user', message);
         input.value = '';
-        
+
         // Show typing indicator
         this.addChatMessage('artemis', 'در حال پردازش...', true);
-        
+
         try {
             const token = localStorage.getItem('titan_auth_token');
             const response = await fetch('/api/artemis/chat-basic', {
@@ -1433,7 +1453,7 @@ class TitanApp {
                 if (data.success) {
                     // Add Artemis response with actions
                     this.addChatMessage('artemis', data.response, false, data.actions);
-                    
+            
                     // Execute any actions returned by Artemis
                     if (data.actions && data.actions.length > 0) {
                         this.executeArtemisActions(data.actions);
@@ -1491,23 +1511,23 @@ class TitanApp {
                         this.loadModule('wallets');
                     }
                     break;
-                
+        
                 case 'open_tab':
                     console.log('📂 Artemis tab opening:', action.tab);
                     // Open specific tabs in modules (will implement based on module structure)
                     break;
-                
+        
                 case 'show_system_status':
                     console.log('🔍 Artemis showing system status');
                     this.toggleSystemStatus();
                     break;
-                
+        
                 case 'refresh_data':
                     console.log('🔄 Artemis data refresh');
                     // Refresh current module data
                     this.refreshCurrentModuleData();
                     break;
-                
+        
                 default:
                     console.log('🤖 Artemis action:', action);
             }
@@ -1519,18 +1539,18 @@ class TitanApp {
      */
     getEnhancedArtemisResponse(message) {
         const messageText = message.toLowerCase();
-        
+
         // Navigation commands
         if (messageText.includes('dashboard') || messageText.includes('داشبورد') || messageText.includes('صفحه اصلی')) {
             this.loadModule('dashboard');
             return '🏠 در حال انتقال به داشبورد...';
         }
-        
+
         if (messageText.includes('portfolio') || messageText.includes('پورتفولیو') || messageText.includes('دارایی')) {
             this.loadModule('portfolio');
             return '📊 در حال بارگذاری پورتفولیو...';
         }
-        
+
         if (messageText.includes('trade') || messageText.includes('معامله')) {
             if (messageText.includes('manual') || messageText.includes('دستی')) {
                 this.loadModule('trading');
@@ -1545,53 +1565,53 @@ class TitanApp {
                 return '📈 در حال بارگذاری بخش معاملات...';
             }
         }
-        
+
         if (messageText.includes('strategies') || messageText.includes('استراتژی')) {
             this.loadModule('trading');
             setTimeout(() => this.loadStrategiesTab(), 1000);
             return '🧠 در حال بارگذاری استراتژی‌های معاملاتی...';
         }
-        
+
         if (messageText.includes('settings') || messageText.includes('تنظیمات')) {
             this.loadModule('settings');
             return '⚙️ در حال بارگذاری تنظیمات...';
         }
-        
+
         if (messageText.includes('alerts') || messageText.includes('هشدار')) {
             this.loadModule('alerts');
             return '🚨 در حال بارگذاری بخش هشدارها...';
         }
-        
+
         if (messageText.includes('news') || messageText.includes('اخبار')) {
             this.loadModule('news');
             return '📰 در حال بارگذاری اخبار بازار...';
         }
-        
+
         if (messageText.includes('watchlist') || messageText.includes('مورد علاقه')) {
             this.loadModule('watchlist');
             return '❤️ در حال بارگذاری لیست مورد علاقه...';
         }
-        
+
         if (messageText.includes('ai') || messageText.includes('هوش مصنوعی')) {
             this.loadModule('ai-management');
             return '🤖 در حال بارگذاری مدیریت AI...';
         }
-        
+
         if (messageText.includes('analytics') || messageText.includes('تحلیل') || messageText.includes('گزارش')) {
             this.loadModule('analytics');
             return '📊 در حال بارگذاری آنالیز و گزارشات...';
         }
-        
+
         if (messageText.includes('wallet') || messageText.includes('کیف پول')) {
             this.loadModule('wallets');
             return '💰 در حال بارگذاری مدیریت کیف‌پول...';
         }
-        
+
         if (messageText.includes('status') || messageText.includes('وضعیت') || messageText.includes('سیستم')) {
             this.toggleSystemStatus();
             return '🔍 نمایش وضعیت سیستم...';
         }
-        
+
         if (messageText.includes('help') || messageText.includes('کمک') || messageText.includes('راهنما')) {
             return `❓ راهنمای سیستم تایتان:
 
@@ -1606,7 +1626,7 @@ class TitanApp {
 
 💡 کافیست به زبان ساده بگویید چه کاری می‌خواهید انجام دهید!`;
         }
-        
+
         // Default helpful response
         return `🤖 سلام! من آرتمیس هستم، دستیار هوشمند شما.
 
@@ -1647,7 +1667,7 @@ class TitanApp {
     refreshCurrentModuleData() {
         const currentModule = this.getCurrentModule();
         console.log(`🔄 Refreshing data for module: ${currentModule}`);
-        
+
         // Trigger refresh based on current module
         switch (currentModule) {
             case 'portfolio':
@@ -1676,7 +1696,7 @@ class TitanApp {
         const messagesContainer = document.getElementById('chat-messages');
         const messageDiv = document.createElement('div');
         messageDiv.className = `mb-4 ${isTyping ? 'typing-indicator' : ''}`;
-        
+
         if (sender === 'user') {
             messageDiv.innerHTML = `
                 <div class="flex items-start gap-3 justify-end">
@@ -1703,7 +1723,7 @@ class TitanApp {
                 </div>
             `;
         }
-        
+
         messagesContainer.appendChild(messageDiv);
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
@@ -1726,23 +1746,23 @@ class TitanApp {
      */
     getArtemisResponse(message) {
         const lowerMessage = message.toLowerCase();
-        
+
         if (lowerMessage.includes('پورتفولیو') || lowerMessage.includes('موجودی')) {
             return 'پورتفولیو شما در حال حاضر $125,430 ارزش دارد. سود این هفته +5.67% بوده است. آیا می‌خواهید جزئیات بیشتری ببینید؟';
         }
-        
+
         if (lowerMessage.includes('معامله') || lowerMessage.includes('خرید') || lowerMessage.includes('فروش')) {
             return 'برای شروع معامله، لطفاً مشخص کنید:\n• کدام ارز دیجیتال؟\n• مقدار سرمایه؟\n• استراتژی مورد نظر (DCA، Scalping، ...)؟';
         }
-        
+
         if (lowerMessage.includes('آمار') || lowerMessage.includes('گزارش')) {
             return 'آمار امروز شما:\n📈 سود: +$2,340\n📊 معاملات موفق: 8/10\n⚡ نرخ موفقیت: 80%\n\nآیا گزارش تفصیلی می‌خواهید؟';
         }
-        
+
         if (lowerMessage.includes('اتوپایلت') || lowerMessage.includes('خودکار')) {
             return 'اتوپایلت آرتمیس آماده فعال‌سازی است. می‌توانم:\n🤖 معاملات خودکار DCA\n📊 تحلیل تکنیکال\n⚠️ مدیریت ریسک\n\nکدام عملکرد را فعال کنم؟';
         }
-        
+
         return 'متوجه شدم. در حال پردازش درخواست شما هستم. لطفاً کمی صبر کنید...';
     }
 
@@ -1757,18 +1777,18 @@ class TitanApp {
                     this.addChatMessage('artemis', '📊 پورتفولیو شما:\n💰 ارزش کل: $125,430\n📈 سود هفتگی: +5.67%\n🔢 تعداد دارایی‌ها: 8\n⭐ عملکرد: عالی');
                 }, 1000);
                 break;
-                
+        
             case 'opportunities':
                 this.addChatMessage('artemis', 'در حال اسکن بازار برای فرصت‌های معاملاتی...');
                 setTimeout(() => {
                     this.addChatMessage('artemis', '🎯 فرصت‌های شناسایی شده:\n\n🔥 BTC/USDT: سیگنال خرید قوی\n📊 RSI: 32 (Oversold)\n💡 توصیه: خرید تدریجی DCA\n\nآیا می‌خواهید معامله را شروع کنم؟');
                 }, 2000);
                 break;
-                
+        
             case 'automation':
                 this.addChatMessage('artemis', 'تنظیمات اتوماسیون فعلی:\n\n🤖 DCA Bot: فعال\n⚡ Scalping: غیرفعال\n🛡️ Stop Loss: 5%\n💰 حداکثر ریسک: 2%\n\nکدام تنظیم را تغییر می‌دهید؟');
                 break;
-                
+        
             case 'report':
                 this.addChatMessage('artemis', 'گزارش سود امروز:\n\n💰 سود خالص: +$2,340\n📈 بازدهی: +1.87%\n🎯 معاملات موفق: 8/10\n⏱️ زمان فعال: 6 ساعت\n\n🏆 عملکرد بهتر از 89% کاربران!');
                 break;
@@ -1797,14 +1817,14 @@ class TitanApp {
 
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         this.recognition = new SpeechRecognition();
-        
+
         this.recognition.lang = 'fa-IR'; // Persian language
         this.recognition.continuous = false;
         this.recognition.interimResults = false;
         this.recognition.maxAlternatives = 1;
 
         const voiceButton = document.querySelector('#chat-assistant button[onclick="app.toggleVoiceInput()"]');
-        
+
         this.recognition.onstart = () => {
             this.isListening = true;
             if (voiceButton) {
@@ -1823,7 +1843,7 @@ class TitanApp {
             }
             this.removeChatMessage('typing');
             this.addChatMessage('artemis', `✅ شنیدم: "${transcript}"`);
-            
+    
             // Auto-send the recognized text
             setTimeout(() => {
                 this.sendArtemisMessage();
@@ -1833,7 +1853,7 @@ class TitanApp {
         this.recognition.onerror = (event) => {
             this.removeChatMessage('typing');
             let errorMessage = 'خطا در تشخیص صدا';
-            
+    
             switch (event.error) {
                 case 'no-speech':
                     errorMessage = 'صدایی دریافت نشد. دوباره تلاش کنید.';
@@ -1845,7 +1865,7 @@ class TitanApp {
                     errorMessage = 'لطفاً اجازه استفاده از میکروفون را بدهید.';
                     break;
             }
-            
+    
             this.addChatMessage('artemis', `❌ ${errorMessage}`);
             this.stopVoiceRecognition();
         };
@@ -1866,7 +1886,7 @@ class TitanApp {
      */
     stopVoiceRecognition() {
         this.isListening = false;
-        
+
         if (this.recognition) {
             this.recognition.stop();
         }
@@ -1890,14 +1910,14 @@ class TitanApp {
     async loadDashboardContentModule() {
         const mainContent = document.getElementById('main-content');
         if (!mainContent) return;
-        
+
         mainContent.innerHTML = `
             <div class="space-y-6">
                 <div class="mb-8">
                     <h1 class="text-3xl font-bold text-white mb-2">داشبورد تایتان</h1>
                     <p class="text-gray-400">نمای کلی از عملکرد و وضعیت حساب شما</p>
                 </div>
-                
+        
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     <!-- Balance Card -->
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
@@ -1909,7 +1929,7 @@ class TitanApp {
                             </div>
                         </div>
                     </div>
-                    
+            
                     <!-- Today's P&L -->
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <div class="flex items-center">
@@ -1920,7 +1940,7 @@ class TitanApp {
                             </div>
                         </div>
                     </div>
-                    
+            
                     <!-- Open Positions -->
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <div class="flex items-center">
@@ -1931,7 +1951,7 @@ class TitanApp {
                             </div>
                         </div>
                     </div>
-                    
+            
                     <!-- Win Rate -->
                     <div class="bg-gray-800 rounded-lg p-6 border border-gray-700">
                         <div class="flex items-center">
@@ -1952,7 +1972,7 @@ class TitanApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        
+
         // Add active class to current module if event exists, otherwise find by onclick
         if (typeof event !== 'undefined' && event.target) {
             event.target.classList.add('active');
@@ -1963,27 +1983,27 @@ class TitanApp {
                 navLink.classList.add('active');
             }
         }
-        
+
         const mainContent = document.getElementById('main-content');
-        
+
         try {
             switch (moduleName) {
                 case 'dashboard':
                     try {
                         console.log('🏠 Starting Dashboard module loading...');
-                        
+                
                         // Check if module loader is available
                         if (!this.moduleLoader) {
                             console.log('⚠️ Module loader not available, trying to reinitialize...');
                             await this.initializeModuleLoader();
                         }
-                        
+                
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, loading dashboard');
                             const dashboardModule = await this.moduleLoader.loadModule('dashboard', {
                                 showLoading: true
                             });
-                            
+                    
                             if (dashboardModule) {
                                 console.log('✅ Dashboard module loaded, getting content');
                                 mainContent.innerHTML = await dashboardModule.getContent();
@@ -2007,14 +2027,14 @@ class TitanApp {
                 case 'trading':
                     try {
                         console.log('🚀 Starting Trading module loading...');
-                        
+                
                         // Try modular approach first
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const tradingModule = await this.moduleLoader.loadModule('trading', {
                                 showLoading: true
                             });
-                            
+                    
                             if (tradingModule) {
                                 console.log('✅ Trading module loaded, getting content');
                                 mainContent.innerHTML = await tradingModule.getContent();
@@ -2038,14 +2058,14 @@ class TitanApp {
                 case 'portfolio':
                     try {
                         console.log('🚀 Starting Portfolio module loading...');
-                        
+                
                         // Try modular approach first
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const portfolioModule = await this.moduleLoader.loadModule('portfolio', {
                                 showLoading: true
                             });
-                            
+                    
                             if (portfolioModule) {
                                 console.log('✅ Portfolio module loaded, getting content');
                                 mainContent.innerHTML = await portfolioModule.getContent();
@@ -2069,14 +2089,14 @@ class TitanApp {
                 case 'analytics':
                     try {
                         console.log('📊 Starting Analytics module loading...');
-                        
+                
                         // Try modular approach first
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const analyticsModule = await this.moduleLoader.loadModule('analytics', {
                                 showLoading: true
                             });
-                            
+                    
                             if (analyticsModule) {
                                 console.log('✅ Analytics module loaded, getting content');
                                 mainContent.innerHTML = await analyticsModule.getContent();
@@ -2100,14 +2120,14 @@ class TitanApp {
                 case 'watchlist':
                     try {
                         console.log('🎯 Starting Watchlist module loading...');
-                        
+                
                         // Try modular approach first
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const watchlistModule = await this.moduleLoader.loadModule('watchlist', {
                                 showLoading: true
                             });
-                            
+                    
                             if (watchlistModule) {
                                 console.log('✅ Watchlist module loaded, getting content');
                                 mainContent.innerHTML = await watchlistModule.getContent();
@@ -2131,14 +2151,14 @@ class TitanApp {
                 case 'artemis':
                     try {
                         console.log('🧠 Starting Artemis AI module loading...');
-                        
+                
                         // Try modular approach first
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const artemisModule = await this.moduleLoader.loadModule('artemis', {
                                 showLoading: true
                             });
-                            
+                    
                             if (artemisModule) {
                                 console.log('✅ Artemis module loaded, getting content');
                                 mainContent.innerHTML = await artemisModule.getContent();
@@ -2158,16 +2178,66 @@ class TitanApp {
                     }
                     break;
 
+                case 'ai-insights':
+                    try {
+                        console.log('🧠 Starting AI Insights Dashboard module loading...');
+                        
+                        // Load AI Insights module directly (it's self-contained)
+                        const script = document.createElement('script');
+                        script.src = `/static/modules/ai-insights.js?v=${Date.now()}`;
+                        
+                        await new Promise((resolve, reject) => {
+                            script.onload = resolve;
+                            script.onerror = reject;
+                            document.head.appendChild(script);
+                        });
+                        
+                        // Wait a moment for script to be parsed
+                        await new Promise(resolve => setTimeout(resolve, 100));
+                        
+                        if (typeof AIInsightsDashboard !== 'undefined') {
+                            console.log('✅ AI Insights Dashboard class loaded');
+                            
+                            // Create and initialize AI Insights Dashboard
+                            const aiInsightsDashboard = new AIInsightsDashboard();
+                            await aiInsightsDashboard.initialize();
+                            
+                            console.log('✅ AI Insights Dashboard initialized successfully');
+                        } else {
+                            throw new Error('AIInsightsDashboard class not found after loading');
+                        }
+                        
+                    } catch (error) {
+                        console.error('❌ AI Insights loading error:', error);
+                        this.showAlert('خطا در بارگذاری ماژول هوش مصنوعی: ' + error.message, 'error');
+                        
+                        // Show fallback content
+                        mainContent.innerHTML = `
+                            <div class="text-center p-8">
+                                <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-6 max-w-md mx-auto">
+                                    <i class="fas fa-exclamation-triangle text-red-400 text-4xl mb-4"></i>
+                                    <h3 class="text-red-400 text-lg font-bold mb-2">خطا در بارگذاری هوش مصنوعی</h3>
+                                    <p class="text-gray-300 text-sm mb-4">سرویس‌های هوش مصنوعی در حال حاضر در دسترس نیستند.</p>
+                                    <button onclick="app.loadModule('ai-insights')" class="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg">
+                                        <i class="fas fa-retry mr-2"></i>
+                                        تلاش مجدد
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                    }
+                    break;
+
                 case 'news':
                     try {
                         console.log('📰 Starting News module loading...');
-                        
+                
                         if (this.moduleLoader) {
                             console.log('📦 Module loader available, trying modular approach');
                             const newsModule = await this.moduleLoader.loadModule('news', {
                                 showLoading: true
                             });
-                            
+                    
                             if (newsModule) {
                                 console.log('✅ News module loaded, getting content');
                                 mainContent.innerHTML = await newsModule.getContent();
@@ -2209,7 +2279,7 @@ class TitanApp {
                 case 'settings':
                     try {
                         console.log('⚙️ Starting Unified Settings module loading...');
-                        
+                
                         // Show loading state
                         mainContent.innerHTML = `
                             <div class="space-y-6">
@@ -2222,30 +2292,30 @@ class TitanApp {
                                 </div>
                             </div>
                         `;
-                        
+                
                         // Load unified settings module
                         if (!window.UnifiedSettingsModule) {
                             const script = document.createElement('script');
                             script.src = '/static/modules/settings-unified.js?v=' + Date.now();
-                            
+                    
                             await new Promise((resolve, reject) => {
                                 script.onload = resolve;
                                 script.onerror = () => reject(new Error('خطا در بارگذاری فایل settings-unified.js'));
                                 document.head.appendChild(script);
                             });
                         }
-                        
+                
                         // Create and initialize unified settings instance
                         window.unifiedSettings = new window.UnifiedSettingsModule();
                         await window.unifiedSettings.init();
-                        
+                
                         // Render unified settings content
                         const settingsContent = await window.unifiedSettings.render();
                         mainContent.innerHTML = settingsContent;
-                        
+                
                         console.log('✅ Unified Settings module loaded successfully');
                         this.showAlert('تنظیمات یکپارچه بارگذاری شد', 'success');
-                        
+                
                     } catch (error) {
                         console.error('❌ Unified Settings loading error:', error);
                         this.showAlert('خطا در بارگذاری تنظیمات: ' + error.message, 'error');
@@ -2272,7 +2342,7 @@ class TitanApp {
                     break;
 
 
-                    
+            
                 default:
                     this.showAlert(`ماژول ${moduleName} یافت نشد`, 'error');
             }
@@ -2309,7 +2379,7 @@ class TitanApp {
     renderActiveTrades(trades) {
         const container = document.getElementById('active-trades-list');
         if (!container) return;
-        
+
         container.innerHTML = trades.map(trade => `
             <div class="bg-gray-700 rounded-lg p-4 mb-3">
                 <div class="flex items-center justify-between">
@@ -2332,7 +2402,7 @@ class TitanApp {
     renderTradingOpportunities(opportunities) {
         const container = document.getElementById('trading-opportunities');
         if (!container) return;
-        
+
         container.innerHTML = opportunities.map(opp => `
             <div class="bg-gray-700 rounded-lg p-4 mb-3">
                 <div class="flex items-center justify-between">
@@ -2356,7 +2426,7 @@ class TitanApp {
     renderPortfolioHoldings(holdings) {
         const container = document.getElementById('portfolio-holdings');
         if (!container) return;
-        
+
         container.innerHTML = `
             <table class="min-w-full">
                 <thead class="bg-gray-700">
@@ -2386,7 +2456,7 @@ class TitanApp {
     renderArtemisAgents(agents) {
         const container = document.querySelector('.grid.grid-cols-1.md\\:grid-cols-3.lg\\:grid-cols-5');
         if (!container) return;
-        
+
         container.innerHTML = agents.map(agent => `
             <div class="bg-gray-800 rounded-lg p-4 border border-gray-700 text-center">
                 <div class="text-2xl mb-2">${agent.icon}</div>
@@ -2400,7 +2470,7 @@ class TitanApp {
     renderNewsList(news) {
         const container = document.getElementById('news-list');
         if (!container) return;
-        
+
         container.innerHTML = news.map(item => `
             <div class="bg-gray-700 rounded-lg p-4 mb-4 border-r-4 border-${item.sentiment === 'positive' ? 'green' : item.sentiment === 'negative' ? 'red' : 'yellow'}-400">
                 <div class="flex items-start justify-between">
@@ -2426,14 +2496,14 @@ class TitanApp {
     renderEconomicCalendar(events) {
         const container = document.getElementById('economic-calendar');
         if (!container) return;
-        
+
         // Show demo calendar if no events provided
         const demoEvents = events || [
             { time: '14:30', event: 'اعلام نرخ تورم آمریکا', impact: 'high' },
             { time: '16:00', event: 'نرخ بهره بانک مرکزی اروپا', impact: 'medium' },
             { time: '20:00', event: 'گزارش اشتغال غیرکشاورزی', impact: 'high' }
         ];
-        
+
         container.innerHTML = `
             <div class="space-y-3">
                 ${demoEvents.map(event => `
@@ -2463,7 +2533,7 @@ class TitanApp {
                 this.showAlert(this.isDemo ? 'حالت دمو فعال شد' : 'حالت دمو غیرفعال شد', 'info');
             });
         }
-        
+
         // Load exchange status when settings page loads
         this.loadExchangeStatus();
     }
@@ -2472,7 +2542,7 @@ class TitanApp {
     async loadExchangeStatus() {
         try {
             const response = await axios.get('/api/trading/exchange/exchanges');
-            
+    
             if (response.data.success) {
                 this.renderExchangeCards(response.data.data);
             } else {
@@ -2489,12 +2559,12 @@ class TitanApp {
         if (!container) return;
 
         container.innerHTML = '';
-        
+
         for (const [exchangeId, config] of Object.entries(exchangeData)) {
             const statusClass = config.configured ? 
                 (config.hasApiKey && config.hasApiSecret ? 'bg-green-600' : 'bg-red-600') : 
                 'bg-gray-600';
-            
+    
             const statusText = config.configured ? 
                 (config.hasApiKey && config.hasApiSecret ? 'متصل' : 'خطا') : 
                 'پیکربندی نشده';
@@ -2545,11 +2615,11 @@ class TitanApp {
 
         try {
             const response = await axios.post('/api/trading/exchange/test-all');
-            
+    
             if (response.data.success) {
                 const results = response.data.data.results;
                 const summary = response.data.data.summary;
-                
+        
                 let html = `
                     <div class="bg-gray-700 rounded-lg p-4">
                         <h5 class="font-semibold text-white mb-3">نتایج تست صرافی‌ها:</h5>
@@ -2573,7 +2643,7 @@ class TitanApp {
                         </div>
                         <div class="space-y-2">
                 `;
-                
+        
                 for (const [exchange, result] of Object.entries(results)) {
                     const statusIcon = result.success ? '✅' : '❌';
                     html += `
@@ -2583,7 +2653,7 @@ class TitanApp {
                         </div>
                     `;
                 }
-                
+        
                 html += '</div></div>';
                 summaryContainer.innerHTML = html;
                 this.showAlert(`تست تکمیل شد - ${summary.successful}/${summary.total} موفق`, 'success');
@@ -2599,11 +2669,11 @@ class TitanApp {
             const response = await axios.post('/api/trading/exchange/test-connection', {
                 exchange: exchange
             });
-            
+    
             const message = response.data.success ? 
                 `تست ${exchange} موفق بود` : 
                 `تست ${exchange} ناموفق: ${response.data.message}`;
-                
+        
             this.showAlert(message, response.data.success ? 'success' : 'error');
         } catch (error) {
             this.showAlert(`خطا در تست ${exchange}`, 'error');
@@ -2613,11 +2683,11 @@ class TitanApp {
     async getExchangeBalances(exchange) {
         try {
             const response = await axios.get(`/api/trading/exchange/balances?exchange=${exchange}`);
-            
+    
             if (response.data.success) {
                 const balances = response.data.data;
                 let html = `<h4 class="font-semibold mb-3 text-white">موجودی ${exchange}:</h4>`;
-                
+        
                 if (balances.length > 0) {
                     html += '<div class="space-y-2 max-h-60 overflow-y-auto">';
                     balances.forEach(balance => {
@@ -2636,7 +2706,7 @@ class TitanApp {
                 } else {
                     html += '<p class="text-gray-400">موجودی یافت نشد</p>';
                 }
-                
+        
                 this.showModal('موجودی حساب', html);
             } else {
                 this.showAlert(`خطا در دریافت موجودی ${exchange}`, 'error');
@@ -2704,7 +2774,7 @@ class TitanApp {
         `;
 
         document.body.appendChild(modal);
-        
+
         // Close on outside click
         modal.addEventListener('click', (e) => {
             if (e.target === modal) {
@@ -2732,17 +2802,17 @@ class TitanApp {
     async sendChatMessage() {
         const input = document.querySelector('#artemis-chat #chat-input, #chat-input');
         const message = input?.value.trim();
-        
+
         if (!message) return;
 
         const messagesContainer = document.querySelector('#artemis-chat #chat-messages, #chat-messages');
-        
+
         // Add user message
         const userMsg = document.createElement('div');
         userMsg.className = 'flex justify-end mb-2';
         userMsg.innerHTML = `<div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">${message}</div>`;
         messagesContainer.appendChild(userMsg);
-        
+
         input.value = '';
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -2754,9 +2824,9 @@ class TitanApp {
                 'سیستم مدیریت ریسک فعال است و تمام معاملات تحت نظارت می‌باشند.',
                 'احساسات بازار مثبت است و فرصت‌های خوبی برای ورود وجود دارد.'
             ];
-            
+    
             const response = responses[Math.floor(Math.random() * responses.length)];
-            
+    
             const aiMsg = document.createElement('div');
             aiMsg.className = 'flex items-start mb-2';
             aiMsg.innerHTML = `
@@ -2774,10 +2844,10 @@ class TitanApp {
         this.notificationPollingInterval = setInterval(() => {
             this.pollInAppNotifications();
         }, 3000); // Poll every 3 seconds
-        
+
         // Initialize alerts auto-refresh
         this.initAlertsAutoRefresh();
-        
+
         console.log('📱 In-app notification polling started');
         console.log('🔔 Alerts auto-refresh initialized');
     }
@@ -2803,10 +2873,10 @@ class TitanApp {
             'bottom-right': 'fixed bottom-4 right-4',
             'bottom-left': 'fixed bottom-4 left-4'
         };
-        
+
         container.className = `${positions[notification.position]} bg-gray-800 border-l-4 rounded-lg shadow-2xl z-50 max-w-sm transform translate-x-full transition-all duration-300`;
         container.style.borderColor = notification.color;
-        
+
         container.innerHTML = `
             <div class="p-4">
                 <div class="flex items-start">
@@ -2911,7 +2981,7 @@ class TitanApp {
         const symbol = document.getElementById('analysis-symbol')?.value;
         const type = document.getElementById('analysis-type')?.value;
         const resultsContainer = document.getElementById('analysis-results');
-        
+
         if (!symbol || !type || !resultsContainer) return;
 
         // Show loading state
@@ -2928,10 +2998,10 @@ class TitanApp {
             if (response.data.success) {
                 this.displayAnalysisResults(response.data.data, symbol, type);
                 this.showAlert(`تحلیل ${symbol} تکمیل شد`, 'success');
-                
+        
                 // Store in database
                 await this.storeAnalysisInDB(response.data.data);
-                
+        
                 // Refresh recent analyses
                 await this.loadRecentAnalyses();
             } else {
@@ -2980,13 +3050,13 @@ class TitanApp {
                         <span class="text-sm font-medium text-blue-400">${analysis.analysis.confidence}%</span>
                     </div>
                 </div>
-                
+        
                 <div class="space-y-3">
                     <div>
                         <h6 class="text-gray-300 text-sm mb-1">خلاصه تحلیل:</h6>
                         <p class="text-white text-sm leading-relaxed">${analysis.analysis.summary}</p>
                     </div>
-                    
+            
                     <div class="grid grid-cols-3 gap-3 bg-gray-800 rounded p-3">
                         <div class="text-center">
                             <div class="text-green-400 font-bold">${analysis.analysis.signals.buy}%</div>
@@ -3001,7 +3071,7 @@ class TitanApp {
                             <div class="text-xs text-gray-400">فروش</div>
                         </div>
                     </div>
-                    
+            
                     ${analysis.analysis.price_targets ? `
                     <div>
                         <h6 class="text-gray-300 text-sm mb-2">اهداف قیمتی:</h6>
@@ -3021,14 +3091,14 @@ class TitanApp {
                         </div>
                     </div>
                     ` : ''}
-                    
+            
                     <div>
                         <h6 class="text-gray-300 text-sm mb-1">توصیه‌ها:</h6>
                         <ul class="text-sm text-gray-300 space-y-1">
                             ${analysis.analysis.recommendations.map(rec => `<li>• ${rec}</li>`).join('')}
                         </ul>
                     </div>
-                    
+            
                     <div class="flex items-center justify-between text-xs text-gray-400 pt-2 border-t border-gray-600">
                         <div>سطح ریسک: <span class="${riskColors[analysis.analysis.risk_level]}">${analysis.analysis.risk_level}</span></div>
                         <div>مدل: ${analysis.metadata.model_used}</div>
@@ -3085,7 +3155,7 @@ class TitanApp {
             const result = typeof analysis.analysis_result === 'string' 
                 ? JSON.parse(analysis.analysis_result) 
                 : analysis.analysis_result;
-            
+    
             return `
                 <div class="bg-gray-700 rounded-lg p-4 hover:bg-gray-600 cursor-pointer" 
                      onclick="app.showAnalysisDetails(${analysis.id})">
@@ -3111,7 +3181,7 @@ class TitanApp {
                 const result = typeof analysis.analysis_result === 'string' 
                     ? JSON.parse(analysis.analysis_result) 
                     : analysis.analysis_result;
-                
+        
                 // Show detailed analysis in a modal or dedicated area
                 console.log('Analysis details:', { analysis, result });
                 this.showAlert(`جزئیات تحلیل ${analysis.symbol} نمایش داده شد`, 'info');
@@ -3126,17 +3196,17 @@ class TitanApp {
     async sendChatMessage() {
         const input = document.querySelector('#artemis-chat #chat-input, #chat-input');
         const message = input?.value.trim();
-        
+
         if (!message) return;
 
         const messagesContainer = document.querySelector('#artemis-chat #chat-messages, #chat-messages');
-        
+
         // Add user message
         const userMsg = document.createElement('div');
         userMsg.className = 'flex justify-end mb-2';
         userMsg.innerHTML = `<div class="bg-blue-600 text-white p-3 rounded-lg max-w-xs">${message}</div>`;
         messagesContainer.appendChild(userMsg);
-        
+
         input.value = '';
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
@@ -3187,7 +3257,7 @@ class TitanApp {
         } catch (error) {
             // Remove typing indicator
             messagesContainer.removeChild(typingIndicator);
-            
+    
             const errorMsg = document.createElement('div');
             errorMsg.className = 'flex items-start mb-2';
             errorMsg.innerHTML = `
@@ -3198,7 +3268,7 @@ class TitanApp {
             `;
             messagesContainer.appendChild(errorMsg);
         }
-        
+
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
     }
 
@@ -3208,7 +3278,7 @@ class TitanApp {
             const response = await axios.get('/api/system/env-vars');
             if (response.data.success) {
                 const vars = response.data.variables;
-                
+        
                 // Populate all environment variable fields
                 Object.keys(vars).forEach(key => {
                     const element = document.getElementById(`env-${key}`);
@@ -3220,7 +3290,7 @@ class TitanApp {
                         }
                     }
                 });
-                
+        
                 this.showAlert('تنظیمات بارگذاری شد', 'success');
             } else {
                 this.showAlert('خطا در بارگذاری تنظیمات', 'error');
@@ -3234,7 +3304,7 @@ class TitanApp {
     async saveEnvVars() {
         try {
             const envVars = {};
-            
+    
             // Collect all environment variables from form
             const envInputs = document.querySelectorAll('[id^="env-"]');
             envInputs.forEach(input => {
@@ -3252,7 +3322,7 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert('تنظیمات ذخیره شد', 'success');
-                
+        
                 // Show status message
                 const statusDiv = document.getElementById('env-vars-status');
                 statusDiv.className = 'mt-4 p-4 bg-green-900/50 border border-green-600 rounded-lg';
@@ -3358,7 +3428,7 @@ class TitanApp {
         try {
             const userId = this.currentUser?.id || 'demo_user';
             const response = await axios.get(`/api/watchlist/list/${userId}`);
-            
+    
             if (response.data.success) {
                 this.watchlistItems = response.data.data;
                 this.renderWatchlistTable();
@@ -3382,12 +3452,12 @@ class TitanApp {
         try {
             const userId = this.currentUser?.id || 'demo_user';
             const response = await axios.get(`/api/watchlist/prices/${userId}`);
-            
+    
             if (response.data.success) {
                 this.watchlistPrices = response.data.data;
                 this.renderWatchlistTable();
                 this.updateWatchlistStats();
-                
+        
                 // Update last update time
                 document.getElementById('last-update').textContent = 
                     new Date().toLocaleTimeString('fa-IR');
@@ -3425,12 +3495,12 @@ class TitanApp {
             const price = priceData.price || 0;
             const change = priceData.change_percentage_24h || 0;
             const volume = priceData.volume_24h || 0;
-            
+    
             const changeClass = change >= 0 ? 'text-green-400' : 'text-red-400';
             const changeIcon = change >= 0 ? '🟢' : '🔴';
-            
+    
             const alertStatus = this.getAlertStatus(item, price);
-            
+    
             return `
                 <tr class="hover:bg-gray-700 transition-colors">
                     <td class="px-6 py-4 whitespace-nowrap">
@@ -3543,16 +3613,16 @@ class TitanApp {
 
     countActiveAlerts() {
         if (!this.watchlistItems || !this.watchlistPrices) return 0;
-        
+
         let count = 0;
         this.watchlistItems.forEach(item => {
             const priceData = this.watchlistPrices.find(p => p.symbol === item.symbol);
             if (!priceData) return;
-            
+    
             if (item.price_alert_high && priceData.price >= item.price_alert_high) count++;
             if (item.price_alert_low && priceData.price <= item.price_alert_low) count++;
         });
-        
+
         return count;
     }
 
@@ -3561,18 +3631,18 @@ class TitanApp {
         if (this.watchlistRefreshInterval) {
             clearInterval(this.watchlistRefreshInterval);
         }
-        
+
         this.watchlistRefreshInterval = setInterval(() => {
             if (document.getElementById('watchlist-table')) {
                 this.refreshWatchlistPrices();
             }
         }, 30000);
-        
+
         // Refresh market data every 2 minutes
         if (this.marketRefreshInterval) {
             clearInterval(this.marketRefreshInterval);
         }
-        
+
         this.marketRefreshInterval = setInterval(() => {
             if (document.getElementById('top-gainers')) {
                 this.loadMarketOverview();
@@ -3620,7 +3690,7 @@ class TitanApp {
 
         try {
             let symbol, name;
-            
+    
             // If user selected from search results
             if (this.selectedCoin) {
                 symbol = this.selectedCoin.symbol;
@@ -3642,7 +3712,7 @@ class TitanApp {
             };
 
             const response = await axios.post('/api/watchlist/add', data);
-            
+    
             if (response.data.success) {
                 this.showAlert(`${name} (${symbol}) به watchlist اضافه شد`, 'success');
                 this.hideAddToWatchlistModal();
@@ -3660,7 +3730,7 @@ class TitanApp {
 
         try {
             const response = await axios.delete(`/api/watchlist/remove/${itemId}`);
-            
+    
             if (response.data.success) {
                 this.showAlert('آیتم از watchlist حذف شد', 'success');
                 await this.loadUserWatchlist();
@@ -3718,7 +3788,7 @@ class TitanApp {
             };
 
             const response = await axios.put(`/api/watchlist/update/${this.currentEditItemId}`, data);
-            
+    
             if (response.data.success) {
                 this.showAlert('watchlist به‌روزرسانی شد', 'success');
                 this.hideEditWatchlistModal();
@@ -3742,7 +3812,7 @@ class TitanApp {
     async loadMarketOverview() {
         try {
             const response = await axios.get('/api/market/overview');
-            
+    
             if (response.data.success) {
                 this.updateMarketOverview(response.data.data);
             }
@@ -3755,17 +3825,17 @@ class TitanApp {
         // Format market cap
         const marketCap = this.formatLargeNumber(data.total_market_cap);
         document.getElementById('total-market-cap').textContent = `$${marketCap}`;
-        
+
         // Format volume
         const volume = this.formatLargeNumber(data.total_volume_24h);
         document.getElementById('total-volume').textContent = `$${volume}`;
-        
+
         // Market cap change
         const changeElement = document.getElementById('market-cap-change');
         const change = data.market_cap_change_24h;
         changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(1)}%`;
         changeElement.className = change >= 0 ? 'text-sm text-green-400' : 'text-sm text-red-400';
-        
+
         // Dominance
         document.getElementById('btc-dominance').textContent = `${data.btc_dominance.toFixed(1)}%`;
         document.getElementById('eth-dominance').textContent = `${data.eth_dominance.toFixed(1)}%`;
@@ -3777,11 +3847,11 @@ class TitanApp {
                 axios.get('/api/market/movers?type=gainers&limit=5'),
                 axios.get('/api/market/movers?type=losers&limit=5')
             ]);
-            
+    
             if (gainersResponse.data.success) {
                 this.renderMarketMovers('top-gainers', gainersResponse.data.data, 'gainers');
             }
-            
+    
             if (losersResponse.data.success) {
                 this.renderMarketMovers('top-losers', losersResponse.data.data, 'losers');
             }
@@ -3793,12 +3863,12 @@ class TitanApp {
     renderMarketMovers(containerId, data, type) {
         const container = document.getElementById(containerId);
         if (!container) return;
-        
+
         const html = data.slice(0, 5).map(coin => {
             const change = coin.price_change_percentage_24h;
             const changeClass = change >= 0 ? 'text-green-400' : 'text-red-400';
             const changeIcon = change >= 0 ? '🟢' : '🔴';
-            
+    
             return `
                 <div class="flex items-center justify-between py-2 border-b border-gray-700 last:border-b-0">
                     <div class="flex items-center">
@@ -3818,14 +3888,14 @@ class TitanApp {
                 </div>
             `;
         }).join('');
-        
+
         container.innerHTML = html;
     }
 
     async loadFearGreedIndex() {
         try {
             const response = await axios.get('/api/market/fear-greed');
-            
+    
             if (response.data.success) {
                 this.updateFearGreedIndex(response.data.data);
             }
@@ -3837,20 +3907,20 @@ class TitanApp {
     updateFearGreedIndex(data) {
         const value = data.value;
         const classification = data.classification;
-        
+
         // Update value and status
         document.getElementById('fear-greed-value').textContent = value;
         document.getElementById('fear-greed-status').textContent = this.translateFearGreed(classification);
-        
+
         // Update emoji
         const emoji = this.getFearGreedEmoji(value);
         document.getElementById('fear-greed-emoji').textContent = emoji;
-        
+
         // Update progress bar
         const bar = document.getElementById('fear-greed-bar');
         bar.style.width = `${value}%`;
         bar.className = `h-3 rounded-full transition-all duration-500 ${this.getFearGreedColor(value)}`;
-        
+
         // Update timestamp
         const updateTime = new Date(data.timestamp).toLocaleTimeString('fa-IR');
         document.getElementById('fear-greed-update').textContent = `آپدیت: ${updateTime}`;
@@ -3886,7 +3956,7 @@ class TitanApp {
     async loadTrendingCoins() {
         try {
             const response = await axios.get('/api/market/trending');
-            
+    
             if (response.data.success) {
                 this.renderTrendingCoins(response.data.data);
             }
@@ -3898,7 +3968,7 @@ class TitanApp {
     renderTrendingCoins(data) {
         const container = document.getElementById('trending-coins');
         if (!container) return;
-        
+
         const html = data.slice(0, 7).map((coin, index) => {
             return `
                 <div class="inline-block bg-gray-700 rounded-lg p-3 mr-3 mb-3 hover:bg-gray-600 cursor-pointer transition-colors"
@@ -3914,7 +3984,7 @@ class TitanApp {
                 </div>
             `;
         }).join('');
-        
+
         container.innerHTML = html;
     }
 
@@ -3931,7 +4001,7 @@ class TitanApp {
             // Show loading state
             document.querySelector('#top-gainers').innerHTML = '<div class="text-center text-gray-400 py-4">در حال بارگذاری...</div>';
             document.querySelector('#top-losers').innerHTML = '<div class="text-center text-gray-400 py-4">در حال بارگذاری...</div>';
-            
+    
             // Reload all market data
             await Promise.all([
                 this.loadMarketOverview(),
@@ -3939,7 +4009,7 @@ class TitanApp {
                 this.loadFearGreedIndex(),
                 this.loadTrendingCoins()
             ]);
-            
+    
             this.showAlert('داده‌های بازار بروزرسانی شد', 'success');
         } catch (error) {
             console.error('Error refreshing market data:', error);
@@ -3958,7 +4028,7 @@ class TitanApp {
             };
 
             const response = await axios.post('/api/watchlist/add', data);
-            
+    
             if (response.data.success) {
                 this.showAlert(`${name} (${symbol.toUpperCase()}) به watchlist اضافه شد`, 'success');
                 await this.loadUserWatchlist();
@@ -3980,7 +4050,7 @@ class TitanApp {
         // Populate trading form
         document.getElementById('trading-symbol').textContent = symbol;
         document.getElementById('trading-price').textContent = `$${priceData.price.toLocaleString()}`;
-        
+
         const change = priceData.change_percentage_24h;
         const changeElement = document.getElementById('trading-change');
         changeElement.textContent = `${change >= 0 ? '+' : ''}${change.toFixed(2)}%`;
@@ -4011,15 +4081,15 @@ class TitanApp {
 
     setTradeType(type) {
         this.currentTradeType = type;
-        
+
         // Update buttons
         document.querySelectorAll('.trade-type-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        
+
         const activeBtn = type === 'buy' ? 'buy-btn' : 'sell-btn';
         document.getElementById(activeBtn).classList.add('active');
-        
+
         // Update execute button
         const executeBtn = document.getElementById('execute-trade-btn');
         if (type === 'buy') {
@@ -4035,7 +4105,7 @@ class TitanApp {
         const amount = parseFloat(document.getElementById('trade-amount').value) || 0;
         const price = this.currentTradingPrice || 1;
         const quantity = amount / price;
-        
+
         document.getElementById('trade-quantity').value = quantity.toFixed(8);
     }
 
@@ -4114,7 +4184,7 @@ class TitanApp {
 
         try {
             const response = await axios.get(`/api/watchlist/search/${encodeURIComponent(query)}`);
-            
+    
             if (response.data.success && response.data.data.length > 0) {
                 this.renderSearchResults(response.data.data);
             } else {
@@ -4128,7 +4198,7 @@ class TitanApp {
 
     renderSearchResults(results) {
         const container = document.getElementById('search-results');
-        
+
         if (results.length === 0) {
             container.innerHTML = '<div class="p-3 text-gray-400 text-center">نتیجه‌ای یافت نشد</div>';
             container.classList.remove('hidden');
@@ -4157,7 +4227,7 @@ class TitanApp {
     selectSearchResult(symbol, name, coinId) {
         document.getElementById('symbol-search').value = `${symbol} - ${name}`;
         document.getElementById('search-results').classList.add('hidden');
-        
+
         // Store selected coin data
         this.selectedCoin = { symbol, name, coinId };
     }
@@ -4172,10 +4242,10 @@ class TitanApp {
             const alertDate = new Date(alert.timestamp);
             return alertDate.toDateString() === today.toDateString();
         }).length;
-        
+
         document.getElementById('new-alerts-count').textContent = newAlertsCount;
         document.getElementById('today-alerts-count').textContent = todayAlerts;
-        
+
         // These will be updated when rules are loaded
         setTimeout(() => {
             document.getElementById('active-rules-count').textContent = '4';
@@ -4186,11 +4256,11 @@ class TitanApp {
     updateAlertRulesTable(rules) {
         const tableBody = document.getElementById('alert-rules-table');
         if (!tableBody) return;
-        
+
         tableBody.innerHTML = rules.map(rule => {
             const statusClass = rule.isActive ? 'text-green-400' : 'text-gray-400';
             const statusText = rule.isActive ? 'فعال' : 'غیرفعال';
-            
+    
             return `
                 <tr class="hover:bg-gray-700">
                     <td class="px-4 py-3 text-sm text-white">${this.getAlertTypeText(rule.type)}</td>
@@ -4221,12 +4291,12 @@ class TitanApp {
     updateAlertsHistory(alerts) {
         const container = document.getElementById('alerts-history-list');
         if (!container) return;
-        
+
         if (alerts.length === 0) {
             container.innerHTML = '<div class="text-center text-gray-400">هشداری یافت نشد</div>';
             return;
         }
-        
+
         container.innerHTML = alerts.map(alert => {
             const severityColors = {
                 low: 'border-l-blue-500',
@@ -4234,16 +4304,16 @@ class TitanApp {
                 high: 'border-l-orange-500',
                 critical: 'border-l-red-500'
             };
-            
+    
             const severityIcons = {
                 low: '📘',
                 medium: '⚠️',
                 high: '🔥',
                 critical: '🚨'
             };
-            
+    
             const timeAgo = this.getTimeAgo(alert.timestamp);
-            
+    
             return `
                 <div class="bg-gray-700 rounded-lg p-4 border-l-4 ${severityColors[alert.severity]} ${alert.isRead ? 'opacity-75' : ''}">
                     <div class="flex items-start justify-between">
@@ -4270,12 +4340,12 @@ class TitanApp {
     async toggleAlertsPanel() {
         const panel = document.getElementById('alerts-panel');
         if (!panel) return;
-        
+
         if (panel.classList.contains('hidden')) {
             // Load recent alerts
             await this.loadRecentAlerts();
             panel.classList.remove('hidden');
-            
+    
             // Close on outside click
             setTimeout(() => {
                 document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
@@ -4288,7 +4358,7 @@ class TitanApp {
     closeAlertsPanel(event) {
         const panel = document.getElementById('alerts-panel');
         const button = event.target.closest('button');
-        
+
         if (panel && !panel.contains(event.target) && !button?.onclick?.toString().includes('toggleAlertsPanel')) {
             panel.classList.add('hidden');
         }
@@ -4296,19 +4366,19 @@ class TitanApp {
 
     async loadRecentAlerts() {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.get(`/api/alerts/alerts/${userId}?limit=5`);
-            
+    
             if (response.data.success) {
                 const alertsList = document.getElementById('alerts-list');
                 if (!alertsList) return;
-                
+        
                 if (response.data.data.length === 0) {
                     alertsList.innerHTML = '<div class="p-4 text-center text-gray-400 text-sm">هشداری وجود ندارد</div>';
                     return;
                 }
-                
+        
                 alertsList.innerHTML = response.data.data.map(alert => {
                     const timeAgo = this.getTimeAgo(alert.timestamp);
                     return `
@@ -4331,7 +4401,7 @@ class TitanApp {
     updateAlertsBadge(count) {
         const badge = document.getElementById('alerts-badge');
         if (!badge) return;
-        
+
         if (count > 0) {
             badge.textContent = count > 99 ? '99+' : count.toString();
             badge.classList.remove('hidden');
@@ -4345,14 +4415,14 @@ class TitanApp {
         const symbol = document.getElementById('alert-symbol').value;
         const condition = document.getElementById('alert-condition').value;
         const target = parseFloat(document.getElementById('alert-target').value);
-        
+
         if (!target || isNaN(target)) {
             this.showAlert('لطفاً مقدار هدف معتبری وارد کنید', 'error');
             return;
         }
-        
+
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.post('/api/alerts/rules', {
                 userId,
@@ -4362,13 +4432,13 @@ class TitanApp {
                 target,
                 operator: condition
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('قانون هشدار با موفقیت ایجاد شد', 'success');
-                
+        
                 // Clear form
                 document.getElementById('alert-target').value = '';
-                
+        
                 // Refresh rules
                 await this.refreshAlertRules();
             }
@@ -4385,10 +4455,10 @@ class TitanApp {
 
     async loadAlerts(unreadOnly = false) {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.get(`/api/alerts/alerts/${userId}?limit=50${unreadOnly ? '&unread=true' : ''}`);
-            
+    
             if (response.data.success) {
                 this.updateAlertsHistory(response.data.data);
             }
@@ -4401,7 +4471,7 @@ class TitanApp {
     async markAlertRead(alertId) {
         try {
             const response = await axios.patch(`/api/alerts/alerts/${alertId}/read`);
-            
+    
             if (response.data.success) {
                 // Refresh alerts
                 await this.loadAlerts();
@@ -4414,7 +4484,7 @@ class TitanApp {
 
     async markAllAlertsRead() {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             // In real app, would call API to mark all as read
             this.showAlert('همه هشدارها به عنوان خوانده شده علامت‌گذاری شدند', 'success');
@@ -4452,7 +4522,7 @@ class TitanApp {
         const minutes = Math.floor(diff / (1000 * 60));
         const hours = Math.floor(minutes / 60);
         const days = Math.floor(hours / 24);
-        
+
         if (minutes < 1) return 'اکنون';
         if (minutes < 60) return `${minutes} دقیقه پیش`;
         if (hours < 24) return `${hours} ساعت پیش`;
@@ -4469,7 +4539,7 @@ class TitanApp {
         if (!confirm('آیا از حذف این قانون هشدار مطمئن هستید؟')) {
             return;
         }
-        
+
         // In real app, would call API to delete rule
         this.showAlert('قانون هشدار حذف شد', 'success');
         await this.refreshAlertRules();
@@ -4522,10 +4592,10 @@ class TitanApp {
 
     async loadDashboardLayout() {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.get(`/api/widgets/layout/${userId}`);
-            
+    
             if (response.data.success) {
                 this.dashboardLayout = response.data.data;
                 this.renderDashboardGrid();
@@ -4617,7 +4687,7 @@ class TitanApp {
         if (!this.dashboardLayout) return;
 
         const visibleWidgets = this.dashboardLayout.widgets.filter(w => w.isVisible);
-        
+
         // Load widget data in parallel
         const widgetPromises = visibleWidgets.map(widget => this.loadWidgetData(widget));
         await Promise.all(widgetPromises);
@@ -4680,64 +4750,88 @@ class TitanApp {
 
     async renderPortfolioSummaryWidget(widget) {
         try {
-            // Mock portfolio data instead of API call
-            const mockData = {
-                totalValue: 125000 + (Math.random() - 0.5) * 20000,
-                totalPnL: (Math.random() - 0.3) * 5000,
-                roi: (Math.random() - 0.2) * 15,
-                dailyChange: (Math.random() - 0.4) * 1000
-            };
+            // Get real portfolio data from API
+            const fetchResponse = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
             
-            const changeClass = mockData.totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
-            const changeIcon = mockData.totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+            if (!fetchResponse.ok) {
+                console.warn('Portfolio API failed');
+                return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
+            }
             
+            const response = await fetchResponse.json();
+            
+            if (!response.success || !response.data?.portfolio) {
+                console.warn('Portfolio API failed, using fallback');
+                return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
+            }
+            
+            const portfolio = response.data.portfolio;
+            const totalValue = portfolio.totalBalance || 0;
+            const totalPnL = portfolio.totalPnL || 0;
+            const roi = totalValue > 0 ? (totalPnL / totalValue * 100) : 0;
+    
+            const changeClass = totalPnL >= 0 ? 'text-green-400' : 'text-red-400';
+            const changeIcon = totalPnL >= 0 ? 'fa-arrow-up' : 'fa-arrow-down';
+    
             return `
                 <div class="widget-metric">
-                    <div class="widget-metric-value">$${mockData.totalValue.toLocaleString()}</div>
+                    <div class="widget-metric-value">$${totalValue.toLocaleString()}</div>
                     <div class="widget-metric-label">ارزش کل پورتفولیو</div>
                     <div class="widget-metric-change ${changeClass}">
                         <i class="fas ${changeIcon}"></i>
-                        ${mockData.totalPnL >= 0 ? '+' : ''}$${Math.abs(mockData.totalPnL).toFixed(2)} (${mockData.roi.toFixed(2)}%)
+                        ${totalPnL >= 0 ? '+' : ''}$${Math.abs(totalPnL).toFixed(2)} (${roi.toFixed(2)}%)
                     </div>
                 </div>
             `;
         } catch (error) {
             console.error('Portfolio summary widget error:', error);
-            return '<div class="text-center text-gray-400">خطا در بارگذاری پرتفولیو</div>';
+            return '<div class="text-center text-gray-400">خطا در بارگذاری پورتفولیو</div>';
         }
     }
 
     async renderMarketOverviewWidget(widget) {
         try {
-            // Mock market overview data
-            const mockData = {
-                total_market_cap: (2.5 + Math.random() * 0.5) * 1e12,
-                total_volume_24h: (50 + Math.random() * 30) * 1e9,
-                market_cap_change_24h: (Math.random() - 0.4) * 8,
-                btc_dominance: 45 + Math.random() * 10
+            // Get real market data from API
+            const response = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            const marketData = data.data?.market || {
+                total_market_cap: 0,
+                total_volume_24h: 0,
+                market_cap_change_24h: 0,
+                btc_dominance: 0
             };
-            
-            const changeClass = mockData.market_cap_change_24h >= 0 ? 'text-green-400' : 'text-red-400';
-            
+    
+            const changeClass = marketData.market_cap_change_24h >= 0 ? 'text-green-400' : 'text-red-400';
+    
             return `
                 <div class="space-y-3">
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">کل بازار:</span>
-                        <span class="text-white font-semibold">$${(mockData.total_market_cap / 1e12).toFixed(2)}T</span>
+                        <span class="text-white font-semibold">$${(marketData.total_market_cap / 1e12).toFixed(2)}T</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">حجم 24ساعته:</span>
-                        <span class="text-white font-semibold">$${(mockData.total_volume_24h / 1e9).toFixed(1)}B</span>
+                        <span class="text-white font-semibold">$${(marketData.total_volume_24h / 1e9).toFixed(1)}B</span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">تغییر 24ساعته:</span>
                         <span class="${changeClass} font-semibold">
-                            ${mockData.market_cap_change_24h >= 0 ? '+' : ''}${mockData.market_cap_change_24h.toFixed(2)}%
+                            ${marketData.market_cap_change_24h >= 0 ? '+' : ''}${marketData.market_cap_change_24h.toFixed(2)}%
                         </span>
                     </div>
                     <div class="flex justify-between text-sm">
                         <span class="text-gray-400">غالبیت BTC:</span>
-                        <span class="text-orange-400 font-semibold">${mockData.btc_dominance.toFixed(1)}%</span>
+                        <span class="text-orange-400 font-semibold">${marketData.btc_dominance.toFixed(1)}%</span>
                     </div>
                     <div class="mt-3 pt-3 border-t border-gray-700 text-center">
                         <div class="text-xs text-gray-400">آخرین بروزرسانی</div>
@@ -4753,18 +4847,31 @@ class TitanApp {
 
     async renderFearGreedWidget(widget) {
         try {
-            // Mock data for now - in real implementation, this would come from CoinGecko or similar API
-            const mockData = {
-                value: Math.floor(Math.random() * 100),
-                value_classification: 'متعادل',
+            // Fetch real Fear & Greed Index from API
+            let data = {
+                value: 50,
+                value_classification: 'Neutral',
                 last_updated: new Date().toISOString()
             };
             
-            const data = mockData;
+            try {
+                const response = await fetch('/api/market/fear-greed', {
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                
+                if (response.ok) {
+                    const apiData = await response.json();
+                    if (apiData.success && apiData.data) {
+                        data = apiData.data;
+                    }
+                }
+            } catch (error) {
+                console.warn('Failed to fetch Fear & Greed Index:', error);
+            }
             let emotion = '😐';
             let color = 'text-gray-400';
             let status = 'خنثی';
-            
+    
             if (data.value >= 75) {
                 emotion = '🤑';
                 color = 'text-green-400';
@@ -4782,7 +4889,7 @@ class TitanApp {
                 color = 'text-red-400';
                 status = 'ترس';
             }
-            
+    
             return `
                 <div class="widget-metric">
                     <div class="text-4xl mb-2">${emotion}</div>
@@ -4810,7 +4917,7 @@ class TitanApp {
         if (this.dashboardRefreshInterval) {
             clearInterval(this.dashboardRefreshInterval);
         }
-        
+
         this.dashboardRefreshInterval = setInterval(() => {
             if (this.currentModule === 'dashboard') {
                 this.loadAllWidgets();
@@ -4823,42 +4930,42 @@ class TitanApp {
         this.isEditMode = !this.isEditMode;
         const button = document.getElementById('edit-mode-btn');
         const overlay = document.getElementById('edit-mode-overlay');
-        
+
         if (this.isEditMode) {
             button.innerHTML = '<i class="fas fa-check"></i> حالت ویرایش';
             button.className = 'px-3 py-1 bg-green-600 hover:bg-green-700 text-white rounded text-sm';
             overlay.classList.remove('hidden');
-            
+    
             // Add edit mode class to all widgets
             document.querySelectorAll('.dashboard-widget').forEach(widget => {
                 widget.classList.add('edit-mode');
             });
-            
+    
             this.initializeDragAndDrop();
         } else {
             button.innerHTML = '<i class="fas fa-edit"></i> ویرایش چیدمان';
             button.className = 'px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded text-sm';
             overlay.classList.add('hidden');
-            
+    
             // Remove edit mode class
             document.querySelectorAll('.dashboard-widget').forEach(widget => {
                 widget.classList.remove('edit-mode');
             });
-            
+    
             this.destroyDragAndDrop();
         }
     }
 
     async saveLayout() {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.post('/api/widgets/layout', {
                 userId,
                 layoutName: 'default',
                 widgets: this.dashboardLayout.widgets
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('چیدمان داشبورد ذخیره شد', 'success');
                 this.toggleEditMode();
@@ -4883,52 +4990,38 @@ class TitanApp {
 
     // Widget rendering functions (continued)
     async renderWatchlistWidget(widget) {
-        // Generate realistic watchlist data
-        const watchlistCoins = [
-            {
-                symbol: 'BTC',
-                name: 'Bitcoin',
-                current_price: 67342.50,
-                price_change_percentage_24h: 2.45,
-                market_cap_rank: 1,
-                favorite: true
-            },
-            {
-                symbol: 'ETH',
-                name: 'Ethereum',
-                current_price: 3456.78,
-                price_change_percentage_24h: -1.23,
-                market_cap_rank: 2,
-                favorite: true
-            },
-            {
-                symbol: 'ADA',
-                name: 'Cardano',
-                current_price: 0.4567,
-                price_change_percentage_24h: 4.12,
-                market_cap_rank: 8,
-                favorite: true
-            },
-            {
-                symbol: 'DOT',
-                name: 'Polkadot',
-                current_price: 6.89,
-                price_change_percentage_24h: -2.45,
-                market_cap_rank: 12,
-                favorite: true
-            },
-            {
-                symbol: 'LINK',
-                name: 'Chainlink',
-                current_price: 14.56,
-                price_change_percentage_24h: 6.78,
-                market_cap_rank: 15,
-                favorite: true
+        // Fetch real-time cryptocurrency prices from API
+        let coins = [];
+        try {
+            const response = await fetch('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK', {
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const data = await response.json();
+                if (data.success && data.data) {
+                    // Transform API data to coins array
+                    coins = Object.values(data.data).map((coin, idx) => ({
+                        symbol: coin.symbol,
+                        name: coin.name,
+                        current_price: coin.current_price,
+                        price_change_percentage_24h: coin.price_change_percentage_24h,
+                        market_cap_rank: idx + 1,
+                        favorite: true
+                    }));
+                }
             }
-        ];
-
-        const coins = watchlistCoins.slice(0, widget.settings?.limit || 5);
+        } catch (error) {
+            console.warn('Failed to fetch watchlist prices:', error);
+            // Fallback to empty array if API fails
+            coins = [];
+        }
         
+        // Limit coins based on widget settings
+        coins = coins.slice(0, widget.settings?.limit || 5);
+
         return `
             <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
                 <div class="flex items-center justify-between mb-4">
@@ -4976,55 +5069,28 @@ class TitanApp {
     }
 
     async renderTopMoversWidget(widget) {
-        // Generate realistic top movers data (gainers and losers)
-        const topGainers = [
-            {
-                symbol: 'SHIB',
-                name: 'Shiba Inu',
-                current_price: 0.00002456,
-                price_change_percentage_24h: 15.67,
-                volume_24h: 567890123,
-                market_cap_rank: 11
-            },
-            {
-                symbol: 'DOGE',
-                name: 'Dogecoin',
-                current_price: 0.1234,
-                price_change_percentage_24h: 12.45,
-                volume_24h: 890123456,
-                market_cap_rank: 9
-            },
-            {
-                symbol: 'LINK',
-                name: 'Chainlink',
-                current_price: 14.56,
-                price_change_percentage_24h: 8.91,
-                volume_24h: 234567890,
-                market_cap_rank: 15
+        // Fetch real top movers from API
+        let topGainers = [];
+        let topLosers = [];
+        
+        try {
+            const response = await fetch('/api/market/top-movers', {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const apiData = await response.json();
+                if (apiData.success && apiData.data) {
+                    topGainers = apiData.data.gainers || [];
+                    topLosers = apiData.data.losers || [];
+                }
             }
-        ];
-
-        const topLosers = [
-            {
-                symbol: 'LUNA',
-                name: 'Terra Luna',
-                current_price: 0.89,
-                price_change_percentage_24h: -8.45,
-                volume_24h: 123456789,
-                market_cap_rank: 45
-            },
-            {
-                symbol: 'AVAX',
-                name: 'Avalanche',
-                current_price: 28.67,
-                price_change_percentage_24h: -6.23,
-                volume_24h: 345678901,
-                market_cap_rank: 18
-            }
-        ];
+        } catch (error) {
+            console.warn('Failed to fetch top movers:', error);
+        }
 
         const allMovers = [...topGainers, ...topLosers].slice(0, widget.settings?.limit || 5);
-        
+
         return `
             <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
                 <div class="mb-4">
@@ -5077,10 +5143,10 @@ class TitanApp {
     async renderNewsFeedWidget(widget) {
         try {
             const response = await axios.get(`/api/alerts/news?limit=${widget.settings?.limit || 3}`);
-            
+    
             if (response.data.success && response.data.data.length > 0) {
                 const news = response.data.data;
-                
+        
                 return `
                     <div class="space-y-3">
                         ${news.map(item => `
@@ -5095,47 +5161,43 @@ class TitanApp {
         } catch (error) {
             console.error('News feed widget error:', error);
         }
-        
+
         return '<div class="text-center text-gray-400">داده‌ای یافت نشد</div>';
     }
 
     async renderTradingSignalsWidget(widget) {
-        // Generate realistic trading signals
-        const signals = [
-            {
-                symbol: 'BTC',
-                signal: 'buy',
-                confidence: 78,
-                price: 67342.50,
-                target: 72000,
-                stopLoss: 64000,
-                reason: 'شکست مقاومت کلیدی',
-                timeframe: '4H',
-                indicator: 'RSI + MACD'
-            },
-            {
-                symbol: 'ETH',
-                signal: 'hold',
-                confidence: 65,
-                price: 3456.78,
-                target: 3800,
-                stopLoss: 3200,
-                reason: 'ترند صعودی ادامه دار',
-                timeframe: '1D',
-                indicator: 'EMA Crossover'
-            },
-            {
-                symbol: 'ADA',
-                signal: 'sell',
-                confidence: 82,
-                price: 0.4567,
-                target: 0.40,
-                stopLoss: 0.48,
-                reason: 'واگرایی منفی RSI',
-                timeframe: '6H',
-                indicator: 'Divergence'
+        // Fetch real trading signals from API
+        let signals = [];
+        
+        try {
+            const response = await fetch('/api/ai/signals', {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const apiData = await response.json();
+                if (apiData.success && apiData.data) {
+                    signals = apiData.data;
+                }
             }
-        ];
+        } catch (error) {
+            console.warn('Failed to fetch trading signals:', error);
+        }
+        
+        // Fallback if no signals
+        if (signals.length === 0) {
+            signals = [{
+                symbol: 'BTC',
+                signal: 'hold',
+                confidence: 50,
+                price: 0,
+                target: 0,
+                stopLoss: 0,
+                reason: 'در حال بارگذاری...',
+                timeframe: '24H',
+                indicator: 'N/A'
+            }];
+        }
 
         const primarySignal = signals[0];
         const signalColors = {
@@ -5143,14 +5205,14 @@ class TitanApp {
             'sell': { color: 'text-red-400', bg: 'bg-red-900/20', icon: '🔴', text: 'فروش' },
             'hold': { color: 'text-yellow-400', bg: 'bg-yellow-900/20', icon: '🟡', text: 'نگهداری' }
         };
-        
+
         return `
             <div class="bg-gray-800 rounded-lg border border-gray-700 p-4">
                 <div class="mb-4">
                     <h3 class="text-lg font-semibold text-white">سیگنال‌های معاملاتی</h3>
                     <p class="text-sm text-gray-400">تحلیل تکنیکال لحظه‌ای</p>
                 </div>
-                
+        
                 <!-- Primary Signal -->
                 <div class="${signalColors[primarySignal.signal].bg} rounded-lg p-4 mb-4">
                     <div class="flex items-center justify-between mb-3">
@@ -5168,7 +5230,7 @@ class TitanApp {
                             <div class="text-xs text-gray-400">اطمینان: ${primarySignal.confidence}%</div>
                         </div>
                     </div>
-                    
+            
                     <div class="grid grid-cols-3 gap-3 text-xs">
                         <div class="text-center">
                             <div class="text-gray-400">قیمت فعلی</div>
@@ -5183,7 +5245,7 @@ class TitanApp {
                             <div class="text-red-400 font-medium">$${primarySignal.stopLoss.toLocaleString()}</div>
                         </div>
                     </div>
-                    
+            
                     <div class="mt-3 pt-3 border-t border-gray-600">
                         <div class="text-xs text-gray-300">
                             <i class="fas fa-info-circle mr-1"></i>
@@ -5191,7 +5253,7 @@ class TitanApp {
                         </div>
                     </div>
                 </div>
-                
+        
                 <!-- Other Signals -->
                 <div class="space-y-2">
                     ${signals.slice(1).map(signal => `
@@ -5212,7 +5274,7 @@ class TitanApp {
                         </div>
                     `).join('')}
                 </div>
-                
+        
                 <div class="mt-4 pt-3 border-t border-gray-600">
                     <div class="flex justify-between text-xs text-gray-400">
                         <span>آخرین بروزرسانی: ${new Date().toLocaleTimeString('fa-IR')}</span>
@@ -5224,12 +5286,33 @@ class TitanApp {
     }
 
     async renderAIRecommendationsWidget(widget) {
-        const recommendations = [
-            'بیت‌کوین در نزدیکی حمایت قوی',
-            'اتریوم پتانسیل رشد دارد',
-            'توصیه به صبر و نگهداری'
-        ];
+        // Fetch real AI recommendations from API
+        let recommendations = [];
         
+        try {
+            const response = await fetch('/api/ai/recommendations', {
+                headers: { 'Content-Type': 'application/json' }
+            });
+            
+            if (response.ok) {
+                const apiData = await response.json();
+                if (apiData.success && apiData.data) {
+                    recommendations = apiData.data;
+                }
+            }
+        } catch (error) {
+            console.warn('Failed to fetch AI recommendations:', error);
+        }
+        
+        // Fallback if no recommendations
+        if (recommendations.length === 0) {
+            recommendations = [
+                'بازار در حال بررسی است',
+                'توصیه به مدیریت ریسک',
+                'تنوع‌بخشی پورتفولیو'
+            ];
+        }
+
         return `
             <div class="space-y-2">
                 ${recommendations.map(rec => `
@@ -5288,25 +5371,37 @@ class TitanApp {
     async initializeWidgetChart(widget) {
         const canvas = document.getElementById(`widget-performance-chart-${widget.id}`);
         if (!canvas) return;
-        
+
         const ctx = canvas.getContext('2d');
-        
+
         try {
-            // Generate mock performance data for chart
-            const mockData = this.generateMockPerformanceData();
-            const totalPnL = mockData[mockData.length - 1].pnl;
-            const startPnL = mockData[0].pnl;
-            const percentage = startPnL !== 0 ? ((totalPnL - startPnL) / Math.abs(startPnL) * 100) : 0;
+            // Get real performance data from API
+            const response = await fetch('/api/portfolio/advanced', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            const performance = data.data?.performance || {};
             
+            // Use real PnL data or fallback
+            const totalPnL = performance.totalPnL || 0;
+            const dailyPnL = performance.dailyPnL || 0;
+            const percentage = performance.winRate || 0;
+            
+            // Generate chart data from real trading history
+            const mockData = await this.getPerformanceHistory();
+    
             // Update summary stats
             document.getElementById(`chart-total-pnl-${widget.id}`).textContent = 
                 `${totalPnL >= 0 ? '+' : ''}$${totalPnL.toFixed(2)}`;
             document.getElementById(`chart-total-pnl-${widget.id}`).className = 
                 `text-xl font-bold ${totalPnL >= 0 ? 'text-green-400' : 'text-red-400'}`;
-                
+        
             document.getElementById(`chart-percentage-${widget.id}`).textContent = 
                 `${percentage >= 0 ? '+' : ''}${percentage.toFixed(1)}%`;
-            
+    
             // Calculate best and worst days
             const dailyChanges = mockData.map((item, index) => {
                 if (index === 0) return 0;
@@ -5314,10 +5409,10 @@ class TitanApp {
             });
             const bestDay = Math.max(...dailyChanges);
             const worstDay = Math.min(...dailyChanges);
-            
+    
             document.getElementById(`chart-best-day-${widget.id}`).textContent = `+$${bestDay.toFixed(2)}`;
             document.getElementById(`chart-worst-day-${widget.id}`).textContent = `$${worstDay.toFixed(2)}`;
-            
+    
             new Chart(ctx, {
                 type: 'line',
                 data: {
@@ -5417,27 +5512,55 @@ class TitanApp {
         }
     }
 
-    generateMockPerformanceData() {
-        const data = [];
-        const startDate = new Date();
-        let currentPnL = 0;
+    async getPerformanceHistory() {
+        try {
+            // Try to get real historical data from API
+            const response = await fetch('/api/portfolio/performance', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = response.ok ? await response.json() : {};
+            if (data.success && data.data?.history) {
+                return response.data.history;
+            }
+        } catch (error) {
+            console.warn('Performance history API not available, using calculation from current data');
+        }
         
-        // Generate 30 days of data
+        // Fallback: calculate from current portfolio data
+        const dashResponse = await fetch('/api/dashboard/comprehensive', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('titan_auth_token')}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+        const data = dashResponse.ok ? await dashResponse.json() : {};
+        const portfolio = data.data?.portfolio || {};
+        const currentBalance = portfolio.totalBalance || 10000;
+        const totalPnL = portfolio.totalPnL || 0;
+        
+        const days = 30;
+        const historyData = [];
+        const startDate = new Date();
+        const startBalance = currentBalance - totalPnL;
+        const dailyChange = totalPnL / days;
+        
+        // Generate historical progression
         for (let i = 29; i >= 0; i--) {
             const date = new Date(startDate);
             date.setDate(date.getDate() - i);
-            
-            // Simulate realistic trading performance with trend
-            const randomChange = (Math.random() - 0.45) * 100; // Slight positive bias
-            currentPnL += randomChange;
-            
-            data.push({
+            const daysPassed = 29 - i;
+            const currentPnL = dailyChange * daysPassed;
+    
+            historyData.push({
                 date: date.toLocaleDateString('fa-IR'),
                 pnl: parseFloat(currentPnL.toFixed(2))
             });
         }
-        
-        return data;
+
+        return historyData;
     }
 
     // ===== THEME CUSTOMIZATION =====
@@ -5445,20 +5568,20 @@ class TitanApp {
     async showThemeSettings() {
         const modal = document.getElementById('theme-settings-modal');
         const content = document.getElementById('theme-settings-content');
-        
+
         try {
             const [themeResponse, optionsResponse] = await Promise.all([
                 axios.get(`/api/widgets/theme/${this.currentUser?.id || 'demo_user'}`),
                 axios.get('/api/widgets/options')
             ]);
-            
+    
             if (themeResponse.data.success && optionsResponse.data.success) {
                 const currentTheme = themeResponse.data.data;
                 const options = optionsResponse.data.data;
-                
+        
                 content.innerHTML = this.renderThemeSettings(currentTheme, options);
             }
-            
+    
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         } catch (error) {
@@ -5554,7 +5677,7 @@ class TitanApp {
         try {
             // Save to localStorage for now (in real app, would save to backend)
             localStorage.setItem('themeSettings', JSON.stringify(themeData));
-            
+    
             this.applyTheme(themeData);
             this.hideThemeSettings();
             this.showAlert('تنظیمات ظاهری ذخیره و اعمال شد', 'success');
@@ -5566,36 +5689,36 @@ class TitanApp {
 
     applyTheme(themeData) {
         const root = document.documentElement;
-        
+
         // Apply accent color to various elements
         root.style.setProperty('--accent-color', themeData.accentColor);
-        
+
         // Update button colors dynamically
         document.querySelectorAll('.bg-blue-600').forEach(el => {
             el.style.backgroundColor = themeData.accentColor;
         });
-        
+
         document.querySelectorAll('.text-blue-400, .text-blue-500').forEach(el => {
             el.style.color = themeData.accentColor;
         });
-        
+
         // Apply font size
         const fontSizes = { small: '14px', medium: '16px', large: '18px' };
         root.style.setProperty('--base-font-size', fontSizes[themeData.fontSize]);
         document.body.style.fontSize = fontSizes[themeData.fontSize];
-        
+
         // Apply theme classes
         document.body.classList.remove('light-theme', 'dark-theme');
         document.body.classList.add(themeData.theme + '-theme');
-        
+
         // Apply other theme settings
         document.body.classList.toggle('compact-mode', themeData.compactMode);
         document.body.classList.toggle('no-animations', !themeData.animations);
-        
+
         // Apply RTL/LTR
         document.body.dir = themeData.rtlMode ? 'rtl' : 'ltr';
         document.documentElement.dir = themeData.rtlMode ? 'rtl' : 'ltr';
-        
+
         // Update current theme
         this.currentTheme = themeData;
     }
@@ -5633,7 +5756,7 @@ class TitanApp {
             animations: true,
             rtlMode: true
         };
-        
+
         this.applyTheme(defaultTheme);
         this.hideThemeSettings();
         this.showThemeSettings(); // Reload with defaults
@@ -5645,13 +5768,13 @@ class TitanApp {
     async showWidgetLibrary() {
         const modal = document.getElementById('widget-library-modal');
         const grid = document.getElementById('widget-library-grid');
-        
+
         try {
             const response = await axios.get('/api/widgets/types');
-            
+    
             if (response.data.success) {
                 const widgetTypes = response.data.data;
-                
+        
                 grid.innerHTML = widgetTypes.map(widget => `
                     <div class="widget-library-item bg-gray-700 rounded-lg p-4 cursor-pointer hover:bg-gray-600 transition-colors"
                          onclick="app.addWidget('${widget.id}')">
@@ -5666,7 +5789,7 @@ class TitanApp {
                     </div>
                 `).join('');
             }
-            
+    
             modal.classList.remove('hidden');
             modal.classList.add('flex');
         } catch (error) {
@@ -5685,13 +5808,13 @@ class TitanApp {
         try {
             const response = await axios.get('/api/widgets/types');
             if (!response.data.success) return;
-            
+    
             const widgetData = response.data.data.find(w => w.id === widgetType);
             if (!widgetData) return;
-            
+    
             // Find available position
             const position = this.findAvailablePosition(widgetData.defaultSize);
-            
+    
             const newWidget = {
                 id: `${widgetType}_${Date.now()}`,
                 type: widgetType,
@@ -5701,21 +5824,21 @@ class TitanApp {
                 isVisible: true,
                 settings: {}
             };
-            
+    
             // Add to layout
             this.dashboardLayout.widgets.push(newWidget);
-            
+    
             // Create and add widget element
             const widgetElement = this.createWidgetElement(newWidget);
             widgetElement.classList.add('widget-enter');
             document.getElementById('dashboard-grid').appendChild(widgetElement);
-            
+    
             // Load widget data
             await this.loadWidgetData(newWidget);
-            
+    
             this.hideWidgetLibrary();
             this.showAlert('ویجت اضافه شد', 'success');
-            
+    
         } catch (error) {
             console.error('Add widget error:', error);
             this.showAlert('خطا در افزودن ویجت', 'error');
@@ -5725,7 +5848,7 @@ class TitanApp {
     findAvailablePosition(size) {
         const gridWidth = 5;
         const gridHeight = 10;
-        
+
         // Simple algorithm to find available position
         for (let y = 0; y <= gridHeight - size.height; y++) {
             for (let x = 0; x <= gridWidth - size.width; x++) {
@@ -5734,7 +5857,7 @@ class TitanApp {
                 }
             }
         }
-        
+
         // If no space found, place at bottom
         return { x: 0, y: gridHeight };
     }
@@ -5742,12 +5865,12 @@ class TitanApp {
     isPositionAvailable(x, y, width, height) {
         return !this.dashboardLayout.widgets.some(widget => {
             if (!widget.isVisible) return false;
-            
+    
             const wx = widget.position.x;
             const wy = widget.position.y;
             const ww = widget.size.width;
             const wh = widget.size.height;
-            
+    
             return !(x >= wx + ww || x + width <= wx || y >= wy + wh || y + height <= wy);
         });
     }
@@ -5756,23 +5879,23 @@ class TitanApp {
         if (!confirm('آیا از حذف این ویجت مطمئن هستید؟')) {
             return;
         }
-        
+
         // Remove from layout
         this.dashboardLayout.widgets = this.dashboardLayout.widgets.filter(w => w.id !== widgetId);
-        
+
         // Remove element
         const element = document.getElementById(widgetId);
         if (element) {
             element.remove();
         }
-        
+
         this.showAlert('ویجت حذف شد', 'success');
     }
 
     resizeWidget(widgetId) {
         const widget = this.dashboardLayout.widgets.find(w => w.id === widgetId);
         if (!widget) return;
-        
+
         // Cycle through common sizes
         const sizes = [
             { width: 1, height: 1 },
@@ -5780,12 +5903,12 @@ class TitanApp {
             { width: 2, height: 2 },
             { width: 3, height: 2 }
         ];
-        
+
         const currentIndex = sizes.findIndex(s => s.width === widget.size.width && s.height === widget.size.height);
         const nextIndex = (currentIndex + 1) % sizes.length;
-        
+
         widget.size = sizes[nextIndex];
-        
+
         // Update element
         const element = document.getElementById(widgetId);
         if (element) {
@@ -5793,7 +5916,7 @@ class TitanApp {
             element.style.gridColumn = `${widget.position.x + 1} / span ${widget.size.width}`;
             element.style.gridRow = `${widget.position.y + 1} / span ${widget.size.height}`;
         }
-        
+
         // Reload widget data to fit new size
         this.loadWidgetData(widget);
     }
@@ -5802,14 +5925,14 @@ class TitanApp {
     initializeDragAndDrop() {
         const container = document.getElementById('dashboard-grid');
         if (!container) return;
-        
+
         // Make widgets draggable
         document.querySelectorAll('.dashboard-widget').forEach(widget => {
             widget.draggable = true;
             widget.addEventListener('dragstart', this.handleDragStart.bind(this));
             widget.addEventListener('dragend', this.handleDragEnd.bind(this));
         });
-        
+
         // Setup drop zones
         container.addEventListener('dragover', this.handleDragOver.bind(this));
         container.addEventListener('drop', this.handleDrop.bind(this));
@@ -5843,27 +5966,27 @@ class TitanApp {
     handleDrop(e) {
         e.preventDefault();
         if (!this.draggedWidget) return;
-        
+
         // Calculate grid position from mouse coordinates
         const container = document.getElementById('dashboard-grid');
         const rect = container.getBoundingClientRect();
         const x = e.clientX - rect.left;
         const y = e.clientY - rect.top;
-        
+
         const columnWidth = rect.width / 5;
         const rowHeight = 140; // Approximate row height
-        
+
         const gridX = Math.floor(x / columnWidth);
         const gridY = Math.floor(y / rowHeight);
-        
+
         // Update widget position
         const widgetId = this.draggedWidget.id;
         const widget = this.dashboardLayout.widgets.find(w => w.id === widgetId);
-        
+
         if (widget) {
             widget.position.x = Math.max(0, Math.min(gridX, 5 - widget.size.width));
             widget.position.y = Math.max(0, gridY);
-            
+    
             // Update element position
             this.draggedWidget.style.gridColumn = `${widget.position.x + 1} / span ${widget.size.width}`;
             this.draggedWidget.style.gridRow = `${widget.position.y + 1} / span ${widget.size.height}`;
@@ -5873,7 +5996,7 @@ class TitanApp {
     // Default layout generator
     getDefaultLayout() {
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         return {
             userId,
             layoutName: 'default',
@@ -5962,12 +6085,12 @@ class TitanApp {
     updatePerformanceOverview(metrics) {
         // Update overview cards
         document.getElementById('total-portfolio-value')?.classList.add('loading');
-        
+
         setTimeout(() => {
             // Portfolio value (calculated from holdings)
             const portfolioValue = 125000; // Will be calculated from actual holdings
             document.getElementById('total-portfolio-value').textContent = '$' + portfolioValue.toLocaleString();
-            
+    
             // P&L
             const pnlElement = document.getElementById('total-pnl');
             const roiElement = document.getElementById('total-roi');
@@ -5978,15 +6101,15 @@ class TitanApp {
                 roiElement.textContent = `ROI: ${metrics.roi.toFixed(2)}%`;
                 roiElement.className = `text-xs mt-1 ${isPositive ? 'text-green-300' : 'text-red-300'}`;
             }
-            
+    
             // Win rate
             document.getElementById('win-rate').textContent = metrics.winRate.toFixed(1) + '%';
             document.getElementById('trade-count').textContent = `${metrics.totalTrades} معامله`;
-            
+    
             // Sharpe ratio
             document.getElementById('sharpe-ratio').textContent = metrics.sharpeRatio.toFixed(2);
             document.getElementById('max-drawdown').textContent = `Max DD: ${metrics.maxDrawdown.toFixed(1)}%`;
-            
+    
             // Trading statistics
             document.getElementById('total-trades').textContent = metrics.totalTrades.toLocaleString();
             document.getElementById('winning-trades').textContent = metrics.winningTrades.toLocaleString();
@@ -5994,20 +6117,20 @@ class TitanApp {
             document.getElementById('avg-win').textContent = '$' + metrics.averageWin.toFixed(2);
             document.getElementById('avg-loss').textContent = '$' + metrics.averageLoss.toFixed(2);
             document.getElementById('profit-factor').textContent = metrics.profitFactor.toFixed(2);
-            
+    
             // Top performers
             this.updateTopPerformers(metrics.topPerformers);
-            
+    
             // Monthly returns
             this.updateMonthlyReturns(metrics.monthlyReturns);
-            
+    
         }, 500);
     }
 
     updateTopPerformers(performers) {
         const container = document.getElementById('top-performers');
         if (!container) return;
-        
+
         container.innerHTML = performers.map(performer => `
             <div class="flex justify-between items-center text-sm">
                 <span class="text-gray-300">${performer.symbol}</span>
@@ -6024,7 +6147,7 @@ class TitanApp {
     updateMonthlyReturns(returns) {
         const container = document.getElementById('monthly-returns');
         if (!container) return;
-        
+
         container.innerHTML = returns.map(monthData => `
             <div class="flex justify-between items-center text-sm">
                 <span class="text-gray-300">${monthData.month}</span>
@@ -6038,7 +6161,7 @@ class TitanApp {
     updatePortfolioHoldings(portfolio) {
         const tableBody = document.getElementById('holdings-table');
         if (!tableBody) return;
-        
+
         tableBody.innerHTML = portfolio.holdings.map(holding => {
             const isPositive = holding.pnl > 0;
             return `
@@ -6066,10 +6189,10 @@ class TitanApp {
     async loadPnLChart() {
         const period = document.getElementById('pnl-period')?.value || 'daily';
         const userId = this.currentUser?.id || 'demo_user';
-        
+
         try {
             const response = await axios.get(`/api/performance/pnl/${userId}/${period}`);
-            
+    
             if (response.data.success) {
                 this.renderPnLChart(response.data.data);
             }
@@ -6081,17 +6204,17 @@ class TitanApp {
     renderPnLChart(pnlData) {
         const canvas = document.getElementById('pnl-chart');
         if (!canvas) return;
-        
+
         const ctx = canvas.getContext('2d');
-        
+
         // Destroy existing chart
         if (this.pnlChart) {
             this.pnlChart.destroy();
         }
-        
+
         const labels = pnlData.data.map(item => item.date);
         const pnlValues = pnlData.data.map(item => item.pnl);
-        
+
         this.pnlChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -6144,21 +6267,21 @@ class TitanApp {
     renderAllocationChart(portfolio) {
         const canvas = document.getElementById('allocation-chart');
         if (!canvas) return;
-        
+
         const ctx = canvas.getContext('2d');
-        
+
         // Destroy existing chart
         if (this.allocationChart) {
             this.allocationChart.destroy();
         }
-        
+
         const labels = portfolio.holdings.map(h => h.symbol);
         const data = portfolio.holdings.map(h => h.value);
         const colors = [
             '#F59E0B', '#EF4444', '#8B5CF6', '#10B981', '#3B82F6',
             '#F97316', '#84CC16', '#06B6D4', '#EC4899', '#6B7280'
         ];
-        
+
         this.allocationChart = new Chart(ctx, {
             type: 'doughnut',
             data: {
@@ -6196,29 +6319,29 @@ class TitanApp {
     async loadChartData() {
         const symbol = document.getElementById('chart-symbol')?.value || 'bitcoin';
         const timeframe = this.currentTimeframe || '1h';
-        
+
         // Show loading
         const loadingElement = document.getElementById('chart-loading');
         if (loadingElement) {
             loadingElement.classList.remove('hidden');
         }
-        
+
         try {
             // Fetch chart data
             const response = await axios.get(`/api/chart/data/${symbol}/${timeframe}`);
-            
+    
             if (response.data.success) {
                 const chartData = response.data.data;
                 this.renderPriceChart(chartData);
                 this.renderVolumeChart(chartData);
                 this.updateTechnicalIndicators(chartData);
-                
+        
                 // Load technical analysis
                 await this.loadTechnicalAnalysis(symbol);
             } else {
                 this.showAlert('خطا در دریافت داده‌های نمودار', 'error');
             }
-            
+    
         } catch (error) {
             console.error('Chart data error:', error);
             this.showAlert('خطا در بارگذاری نمودار', 'error');
@@ -6233,14 +6356,14 @@ class TitanApp {
     renderPriceChart(chartData) {
         const canvas = document.getElementById('price-chart');
         if (!canvas) return;
-        
+
         const ctx = canvas.getContext('2d');
-        
+
         // Destroy existing chart
         if (this.priceChart) {
             this.priceChart.destroy();
         }
-        
+
         // Prepare OHLC data for candlestick chart
         const labels = chartData.ohlc.map(item => 
             new Date(item.timestamp).toLocaleString('fa-IR', {
@@ -6250,7 +6373,7 @@ class TitanApp {
                 minute: '2-digit'
             })
         );
-        
+
         const candlestickData = chartData.ohlc.map(item => ({
             x: new Date(item.timestamp),
             o: item.open,
@@ -6258,22 +6381,22 @@ class TitanApp {
             l: item.low,
             c: item.close
         }));
-        
+
         // Update current price display
         const currentPrice = chartData.ohlc[chartData.ohlc.length - 1];
         if (currentPrice) {
             const priceElement = document.getElementById('current-price');
             const changeElement = document.getElementById('price-change');
-            
+    
             if (priceElement && changeElement) {
                 priceElement.textContent = `$${currentPrice.close.toLocaleString()}`;
-                
+        
                 const previousPrice = chartData.ohlc[chartData.ohlc.length - 2];
                 if (previousPrice) {
                     const change = currentPrice.close - previousPrice.close;
                     const changePercent = (change / previousPrice.close) * 100;
                     const isPositive = change > 0;
-                    
+            
                     changeElement.innerHTML = `
                         <span class="${isPositive ? 'text-green-400' : 'text-red-400'}">
                             ${isPositive ? '+' : ''}${change.toFixed(2)} (${changePercent.toFixed(2)}%)
@@ -6283,7 +6406,7 @@ class TitanApp {
                 }
             }
         }
-        
+
         // Create candlestick chart using Chart.js
         this.priceChart = new Chart(ctx, {
             type: 'line', // We'll simulate candlesticks with multiple datasets
@@ -6368,21 +6491,21 @@ class TitanApp {
     renderVolumeChart(chartData) {
         const canvas = document.getElementById('volume-chart');
         if (!canvas || !chartData.volume || chartData.volume.length === 0) return;
-        
+
         const ctx = canvas.getContext('2d');
-        
+
         // Destroy existing chart
         if (this.volumeChart) {
             this.volumeChart.destroy();
         }
-        
+
         const labels = chartData.ohlc.map(item => 
             new Date(item.timestamp).toLocaleString('fa-IR', {
                 month: 'short',
                 day: 'numeric'
             })
         );
-        
+
         this.volumeChart = new Chart(ctx, {
             type: 'bar',
             data: {
@@ -6429,19 +6552,19 @@ class TitanApp {
 
     updateTechnicalIndicators(chartData) {
         const indicators = chartData.indicators;
-        
+
         // Update RSI
         const rsiValue = indicators.rsi?.[indicators.rsi.length - 1];
         if (rsiValue) {
             const rsiElement = document.getElementById('rsi-value');
             const rsiSignalElement = document.getElementById('rsi-signal');
-            
+    
             if (rsiElement && rsiSignalElement) {
                 rsiElement.textContent = rsiValue.value.toFixed(2);
-                
+        
                 let signalClass = 'bg-gray-600';
                 let signalText = 'خنثی';
-                
+        
                 if (rsiValue.signal === 'buy') {
                     signalClass = 'bg-green-600';
                     signalText = 'خرید';
@@ -6449,24 +6572,24 @@ class TitanApp {
                     signalClass = 'bg-red-600';
                     signalText = 'فروش';
                 }
-                
+        
                 rsiSignalElement.className = `ml-2 px-2 py-1 rounded text-xs ${signalClass} text-white`;
                 rsiSignalElement.textContent = signalText;
             }
         }
-        
+
         // Update MACD
         const macdValue = indicators.macd?.[indicators.macd.length - 1];
         if (macdValue) {
             const macdElement = document.getElementById('macd-value');
             const macdSignalElement = document.getElementById('macd-signal');
-            
+    
             if (macdElement && macdSignalElement) {
                 macdElement.textContent = macdValue.macd.toFixed(4);
-                
+        
                 let signalClass = 'bg-gray-600';
                 let signalText = 'خنثی';
-                
+        
                 if (macdValue.histogram > 0) {
                     signalClass = 'bg-green-600';
                     signalText = 'صعودی';
@@ -6474,23 +6597,23 @@ class TitanApp {
                     signalClass = 'bg-red-600';
                     signalText = 'نزولی';
                 }
-                
+        
                 macdSignalElement.className = `ml-2 px-2 py-1 rounded text-xs ${signalClass} text-white`;
                 macdSignalElement.textContent = signalText;
             }
         }
-        
+
         // Update SMAs
         const sma20 = indicators.sma20?.[indicators.sma20.length - 1];
         const sma50 = indicators.sma50?.[indicators.sma50.length - 1];
-        
+
         if (sma20) {
             const sma20Element = document.getElementById('sma20-value');
             if (sma20Element) {
                 sma20Element.textContent = '$' + sma20.value.toLocaleString();
             }
         }
-        
+
         if (sma50) {
             const sma50Element = document.getElementById('sma50-value');
             if (sma50Element) {
@@ -6502,7 +6625,7 @@ class TitanApp {
     async loadTechnicalAnalysis(symbol) {
         try {
             const response = await axios.get(`/api/chart/analysis/${symbol}`);
-            
+    
             if (response.data.success) {
                 const analysis = response.data.data;
                 this.displayTechnicalAnalysis(analysis);
@@ -6527,17 +6650,17 @@ class TitanApp {
                 `).join('');
             }
         }
-        
+
         // Update overall signal
         const overallSignalElement = document.getElementById('overall-signal');
         const confidenceElement = document.getElementById('signal-confidence');
         const recommendationElement = document.getElementById('recommendation-text');
-        
+
         if (overallSignalElement && confidenceElement && recommendationElement) {
             let signalClass = 'text-gray-400';
             let signalIcon = '⚪';
             let signalText = 'خنثی';
-            
+    
             if (analysis.overallSignal === 'buy') {
                 signalClass = 'text-green-400';
                 signalIcon = '🟢';
@@ -6547,10 +6670,10 @@ class TitanApp {
                 signalIcon = '🔴';
                 signalText = 'فروش';
             }
-            
+    
             overallSignalElement.className = `text-lg font-bold ${signalClass}`;
             overallSignalElement.innerHTML = `${signalIcon} ${signalText}`;
-            
+    
             confidenceElement.textContent = `اطمینان: ${analysis.confidence}%`;
             recommendationElement.textContent = analysis.recommendation;
         }
@@ -6565,7 +6688,7 @@ class TitanApp {
                 btn.className = 'timeframe-btn px-2 py-1 bg-gray-600 text-white text-xs rounded hover:bg-gray-700';
             }
         });
-        
+
         this.currentTimeframe = timeframe;
         this.loadChartData();
     }
@@ -6574,17 +6697,17 @@ class TitanApp {
     async initTradingModule() {
         // Set default timeframe
         this.currentTimeframe = '1h';
-        
+
         // Load initial chart data
         setTimeout(() => {
             this.loadChartData();
         }, 500); // Small delay to ensure DOM elements are ready
-        
+
         // Setup auto-refresh for chart data every 5 minutes
         if (this.chartRefreshInterval) {
             clearInterval(this.chartRefreshInterval);
         }
-        
+
         this.chartRefreshInterval = setInterval(() => {
             this.loadChartData();
         }, 5 * 60 * 1000); // 5 minutes
@@ -6596,11 +6719,11 @@ class TitanApp {
         try {
             // First check localStorage for saved mode
             const savedMode = localStorage.getItem('titan_trading_mode') || 'demo';
-            
+    
             // Try to get current mode from API (use test endpoint for now)
             try {
                 const response = await axios.get('/api/mode/test');
-                
+        
                 if (response.data.success) {
                     this.currentTradingMode = savedMode; // Use saved mode
                     this.demoBalance = response.data.demoBalance || 10000;
@@ -6612,12 +6735,12 @@ class TitanApp {
                 this.currentTradingMode = savedMode;
                 this.demoBalance = 10000;
             }
-            
+    
             // Update display
             this.updateModeDisplay(this.currentTradingMode);
-            
+    
             console.log(`Trading mode initialized: ${this.currentTradingMode}`);
-            
+    
         } catch (error) {
             console.error('Mode initialization error:', error);
             // Fallback to demo mode
@@ -6645,11 +6768,11 @@ class TitanApp {
             modeIndicator.className = 'w-3 h-3 rounded-full ml-2 bg-orange-400 animate-pulse';
             modeText.textContent = 'حالت دمو';
             modeText.className = 'text-sm font-semibold text-orange-200';
-            
+    
             // Update selection indicators
             demoSelected.forEach(el => el.classList.remove('hidden'));
             liveSelected.forEach(el => el.classList.add('hidden'));
-            
+    
             // Update page title if needed
             if (document.title.includes('🔴')) {
                 document.title = document.title.replace('🔴', '🟡');
@@ -6660,11 +6783,11 @@ class TitanApp {
             modeIndicator.className = 'w-3 h-3 rounded-full ml-2 bg-red-500 animate-pulse';
             modeText.textContent = 'حالت واقعی';
             modeText.className = 'text-sm font-semibold text-red-100';
-            
+    
             // Update selection indicators
             liveSelected.forEach(el => el.classList.remove('hidden'));
             demoSelected.forEach(el => el.classList.add('hidden'));
-            
+    
             // Update page title with warning
             if (!document.title.includes('🔴')) {
                 document.title = '🔴 ' + document.title.replace('🟡 ', '');
@@ -6676,14 +6799,14 @@ class TitanApp {
 
         // Store mode in localStorage
         localStorage.setItem('titan_trading_mode', mode);
-        
+
         console.log(`Trading mode updated to: ${mode}`);
     }
 
     async loadDemoWalletInfo(userId) {
         try {
             const response = await axios.get(`/api/mode/demo/wallet/${userId}`);
-            
+    
             if (response.data.success) {
                 const wallet = response.data.data;
                 const demoBalanceEl = document.getElementById('demo-balance');
@@ -6730,11 +6853,11 @@ class TitanApp {
                 this.currentTradingMode = mode;
                 this.updateModeDisplay(mode);
                 this.hideModeSelector();
-                
+        
                 // Show success message with mode info
                 const modeText = mode === 'demo' ? 'دمو' : 'واقعی';
                 this.showAlert(`✅ با موفقیت به حالت ${modeText} تغییر یافت`, 'success');
-                
+        
                 // Refresh relevant data based on mode
                 if (mode === 'demo') {
                     await this.loadDemoWalletInfo();
@@ -6744,12 +6867,12 @@ class TitanApp {
                         this.showAlert('🔴 توجه: شما در حالت معاملات واقعی هستید!', 'warning');
                     }, 2000);
                 }
-                
+        
                 // Update dashboard if visible
                 if (this.currentPage === 'dashboard') {
                     await this.loadDashboardModule();
                 }
-                
+        
             } else {
                 this.showAlert(response.data.message || 'خطا در تغییر حالت معاملات', 'error');
             }
@@ -6781,7 +6904,7 @@ class TitanApp {
                                 در این حالت، معاملات شما با پول حقیقی انجام خواهد شد.
                             </p>
                         </div>
-                        
+                
                         <div class="flex gap-3">
                             <button onclick="app.confirmModeSwitch(true)" 
                                     class="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition-colors">
@@ -6797,7 +6920,7 @@ class TitanApp {
             `;
 
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
+    
             this.modeConfirmationResolver = resolve;
         });
     }
@@ -6807,7 +6930,7 @@ class TitanApp {
         if (modal) {
             modal.remove();
         }
-        
+
         if (this.modeConfirmationResolver) {
             this.modeConfirmationResolver(confirmed);
             this.modeConfirmationResolver = null;
@@ -6817,10 +6940,10 @@ class TitanApp {
     async manageDemoWallet() {
         try {
             this.hideModeSelector();
-            
+    
             // Show demo wallet management modal
             this.showDemoWalletModal();
-            
+    
         } catch (error) {
             console.error('Demo wallet management error:', error);
             this.showAlert('خطا در بارگذاری کیف پول دمو', 'error');
@@ -6859,7 +6982,7 @@ class TitanApp {
                                 <i class="fas fa-undo ml-2"></i>
                                 بازنشانی به مبلغ پیش‌فرض ($10,000)
                             </button>
-                            
+                    
                             <div class="grid grid-cols-2 gap-3">
                                 <button onclick="app.showAddFundsForm()" 
                                         class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-lg transition-colors">
@@ -6903,7 +7026,7 @@ class TitanApp {
         `;
 
         document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
+
         // Load current balance
         this.loadCurrentDemoBalance();
     }
@@ -6941,14 +7064,14 @@ class TitanApp {
         const form = document.getElementById('funds-form');
         const label = document.getElementById('funds-form-label');
         const confirmBtn = document.getElementById('funds-confirm-btn');
-        
+
         if (form && label && confirmBtn) {
             form.classList.remove('hidden');
             label.textContent = 'مبلغ افزودنی ($)';
             confirmBtn.textContent = 'افزودن مبلغ';
             confirmBtn.className = 'flex-1 bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded transition-colors';
             this.currentFundsAction = 'add';
-            
+    
             document.getElementById('funds-amount').focus();
         }
     }
@@ -6957,14 +7080,14 @@ class TitanApp {
         const form = document.getElementById('funds-form');
         const label = document.getElementById('funds-form-label');
         const confirmBtn = document.getElementById('funds-confirm-btn');
-        
+
         if (form && label && confirmBtn) {
             form.classList.remove('hidden');
             label.textContent = 'مبلغ کسری ($)';
             confirmBtn.textContent = 'کسر مبلغ';
             confirmBtn.className = 'flex-1 bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded transition-colors';
             this.currentFundsAction = 'remove';
-            
+    
             document.getElementById('funds-amount').focus();
         }
     }
@@ -6980,7 +7103,7 @@ class TitanApp {
     async processFundsAction() {
         try {
             const amount = parseFloat(document.getElementById('funds-amount').value);
-            
+    
             if (!amount || amount <= 0) {
                 this.showAlert('مبلغ وارد شده نامعتبر است', 'error');
                 return;
@@ -6994,11 +7117,11 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert(response.data.message, 'success');
-                
+        
                 // Update balance displays
                 this.updateDemoBalanceDisplay(response.data.data.newBalance);
                 this.loadCurrentDemoBalance();
-                
+        
                 // Hide form
                 this.hideFundsForm();
             } else {
@@ -7023,7 +7146,7 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert('کیف پول دمو با موفقیت بازنشانی شد', 'success');
-                
+        
                 // Update balance displays
                 this.updateDemoBalanceDisplay(10000);
                 this.loadCurrentDemoBalance();
@@ -7043,7 +7166,7 @@ class TitanApp {
             if (demoBalanceElement) {
                 demoBalanceElement.textContent = `$\${newBalance.toLocaleString()}`;
             }
-            
+    
             // Update modal balance if open
             const modalBalanceElement = document.getElementById('current-demo-balance');
             if (modalBalanceElement) {
@@ -7065,14 +7188,14 @@ class TitanApp {
                             <i class="fas fa-times text-xl"></i>
                         </button>
                     </div>
-                    
+            
                     <!-- Wallet Summary -->
                     <div class="bg-gray-700 rounded-lg p-4 mb-6">
                         <div class="flex items-center justify-between mb-4">
                             <h3 class="text-lg font-semibold text-white">موجودی کل</h3>
                             <span class="text-2xl font-bold text-orange-400">$${wallet.totalValue.toLocaleString()}</span>
                         </div>
-                        
+                
                         <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
                             ${Object.entries(wallet.breakdown).map(([symbol, data]) => `
                                 <div class="text-center p-2 bg-gray-800 rounded">
@@ -7083,11 +7206,11 @@ class TitanApp {
                             `).join('')}
                         </div>
                     </div>
-                    
+            
                     <!-- Add Funds Section -->
                     <div class="bg-gray-700 rounded-lg p-4 mb-4">
                         <h3 class="text-lg font-semibold text-white mb-4">شارژ کیف پول</h3>
-                        
+                
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">ارز</label>
@@ -7097,7 +7220,7 @@ class TitanApp {
                                     `).join('')}
                                 </select>
                             </div>
-                            
+                    
                             <div>
                                 <label class="block text-sm font-medium text-gray-300 mb-2">مقدار</label>
                                 <input type="number" id="add-funds-amount" 
@@ -7105,14 +7228,14 @@ class TitanApp {
                                        placeholder="مقدار را وارد کنید" min="0" step="0.00000001">
                             </div>
                         </div>
-                        
+                
                         <div class="flex gap-2 mt-4">
                             <button onclick="app.addDemoFunds()" 
                                     class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded transition-colors">
                                 <i class="fas fa-plus mr-1"></i>
                                 افزودن موجودی
                             </button>
-                            
+                    
                             <button onclick="app.resetDemoWallet()" 
                                     class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white rounded transition-colors">
                                 <i class="fas fa-undo mr-1"></i>
@@ -7120,7 +7243,7 @@ class TitanApp {
                             </button>
                         </div>
                     </div>
-                    
+            
                     <!-- Quick Add Buttons -->
                     <div class="bg-gray-700 rounded-lg p-4">
                         <h3 class="text-sm font-semibold text-white mb-3">شارژ سریع</h3>
@@ -7161,7 +7284,7 @@ class TitanApp {
         try {
             const currency = document.getElementById('add-funds-currency').value;
             const amount = parseFloat(document.getElementById('add-funds-amount').value);
-            
+    
             if (!currency || !amount || amount <= 0) {
                 this.showAlert('لطفاً ارز و مقدار معتبر وارد کنید', 'error');
                 return;
@@ -7176,14 +7299,14 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert(response.data.message, 'success');
-                
+        
                 // Refresh wallet modal
                 this.hideDemoWalletModal();
                 setTimeout(() => this.manageDemoWallet(), 500);
-                
+        
                 // Update header balance
                 await this.loadDemoWalletInfo(userId);
-                
+        
             } else {
                 this.showAlert(response.data.message || 'خطا در افزودن موجودی', 'error');
             }
@@ -7205,14 +7328,14 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert(`${amount} ${currency} به کیف پول دمو اضافه شد`, 'success');
-                
+        
                 // Refresh wallet modal
                 this.hideDemoWalletModal();
                 setTimeout(() => this.manageDemoWallet(), 500);
-                
+        
                 // Update header balance
                 await this.loadDemoWalletInfo(userId);
-                
+        
             } else {
                 this.showAlert(response.data.message || 'خطا در افزودن موجودی', 'error');
             }
@@ -7233,14 +7356,14 @@ class TitanApp {
 
             if (response.data.success) {
                 this.showAlert(response.data.message, 'success');
-                
+        
                 // Refresh wallet modal
                 this.hideDemoWalletModal();
                 setTimeout(() => this.manageDemoWallet(), 500);
-                
+        
                 // Update header balance
                 await this.loadDemoWalletInfo(userId);
-                
+        
             } else {
                 this.showAlert(response.data.message || 'خطا در بازنشانی کیف پول', 'error');
             }
@@ -7298,9 +7421,9 @@ class TitanApp {
                 };
                 console.log('👤 Using mock profile data');
             }
-            
+    
             this.currentUserProfile = userData;
-            
+    
             // Create modal HTML
             const modalHTML = `
                 <div id="user-profile-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -7322,7 +7445,7 @@ class TitanApp {
                                 <i class="fas fa-times text-xl"></i>
                             </button>
                         </div>
-                        
+                
                         <!-- Modal Tabs -->
                         <div class="flex border-b border-gray-700">
                             <button onclick="app.switchProfileTab('general')" 
@@ -7342,14 +7465,14 @@ class TitanApp {
                                 <i class="fas fa-chart-bar mr-2"></i>آمار
                             </button>
                         </div>
-                        
+                
                         <!-- Modal Content -->
                         <div class="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
                             <div id="profile-tab-content">
                                 <!-- Content will be loaded here -->
                             </div>
                         </div>
-                        
+                
                         <!-- Modal Footer -->
                         <div class="flex justify-end gap-3 p-6 border-t border-gray-700">
                             <button onclick="app.hideUserProfile()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg text-white">
@@ -7362,13 +7485,13 @@ class TitanApp {
                     </div>
                 </div>
             `;
-            
+    
             // Add modal to DOM
             document.body.insertAdjacentHTML('beforeend', modalHTML);
-            
+    
             // Show modal and load first tab
             this.switchProfileTab('general');
-            
+    
         } catch (error) {
             console.error('Show user profile error:', error);
             this.showAlert('خطا در بارگذاری پروفایل کاربری', 'error');
@@ -7400,7 +7523,7 @@ class TitanApp {
 
         try {
             let tabContent = '';
-            
+    
             switch (tabName) {
                 case 'general':
                     tabContent = await this.renderGeneralProfileTab();
@@ -7423,7 +7546,7 @@ class TitanApp {
                 default:
                     tabContent = '<div class="text-center text-red-400">تب پیدا نشد</div>';
             }
-            
+    
             content.innerHTML = tabContent;
         } catch (error) {
             console.error('Switch profile tab error:', error);
@@ -7433,40 +7556,40 @@ class TitanApp {
 
     async renderGeneralProfileTab() {
         const userData = this.currentUserProfile;
-        
+
         return `
             <div class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-white mb-4">اطلاعات شخصی</h3>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">نام کامل</label>
                             <input type="text" value="${userData.fullName || ''}" 
                                    class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل</label>
                             <input type="email" value="${userData.email || ''}" 
                                    class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">شماره تلفن</label>
                             <input type="tel" value="${userData.phone || ''}" 
                                    class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">
                         </div>
                     </div>
-                    
+            
                     <div class="space-y-4">
                         <h3 class="text-lg font-semibold text-white mb-4">اطلاعات تکمیلی</h3>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">بیو</label>
                             <textarea rows="3" class="w-full bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white">${userData.bio || ''}</textarea>
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">مکان</label>
                             <input type="text" value="${userData.location || ''}" 
@@ -7474,7 +7597,7 @@ class TitanApp {
                         </div>
                     </div>
                 </div>
-                
+        
                 <div class="flex justify-end space-x-3 space-x-reverse pt-4 border-t border-gray-700">
                     <button onclick="app.hideUserProfile()" class="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded">
                         انصراف
@@ -7492,35 +7615,35 @@ class TitanApp {
             <div class="space-y-6">
                 <div class="bg-gray-700 rounded-lg p-4">
                     <h3 class="text-lg font-semibold text-white mb-4">تغییر رمز عبور</h3>
-                    
+            
                     <div class="space-y-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور فعلی</label>
                             <input type="password" id="current-password" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور جدید</label>
                             <input type="password" id="new-password" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">تکرار رمز عبور جدید</label>
                             <input type="password" id="confirm-password" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <button onclick="app.changePassword()" class="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
                             تغییر رمز عبور
                         </button>
                     </div>
                 </div>
-                
+        
                 <div class="bg-gray-700 rounded-lg p-4">
                     <h3 class="text-lg font-semibold text-white mb-4">احراز دو مرحله‌ای</h3>
-                    
+            
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-white">فعال‌سازی احراز دو مرحله‌ای</p>
@@ -7541,11 +7664,11 @@ class TitanApp {
         try {
             const response = await axios.get(`/api/profile/${this.currentUser.id}/sessions`);
             const sessions = response.data.success ? response.data.data : [];
-            
+    
             return `
                 <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-white">دستگاه‌های متصل</h3>
-                    
+            
                     ${sessions.map(session => {
                         // Handle API response structure
                         const deviceInfo = session.deviceInfo || {};
@@ -7553,7 +7676,7 @@ class TitanApp {
                         const location = deviceInfo.location || 'مکان نامشخص';
                         const lastActive = session.lastActiveAt ? new Date(session.lastActiveAt).toLocaleString('fa-IR') : 'نامشخص';
                         const deviceIcon = deviceInfo.device && deviceInfo.device.includes('iPhone') ? 'mobile-alt' : 'desktop';
-                        
+                
                         return `
                         <div class="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
                             <div class="flex items-center space-x-3 space-x-reverse">
@@ -7564,7 +7687,7 @@ class TitanApp {
                                     <p class="text-xs text-gray-500">آخرین فعالیت: ${lastActive}</p>
                                 </div>
                             </div>
-                            
+                    
                             <div class="flex items-center space-x-2 space-x-reverse">
                                 ${session.isActive ? 
                                     '<span class="text-green-400 text-sm">دستگاه فعلی</span>' : 
@@ -7585,11 +7708,11 @@ class TitanApp {
         try {
             const response = await axios.get(`/api/profile/${this.currentUser.id}/activity`);
             const activities = response.data.success ? response.data.data : [];
-            
+    
             return `
                 <div class="space-y-4">
                     <h3 class="text-lg font-semibold text-white">تاریخچه فعالیت‌ها</h3>
-                    
+            
                     ${activities.length > 0 ? activities.map(activity => {
                         const timestamp = activity.timestamp ? new Date(activity.timestamp).toLocaleString('fa-IR') : 'نامشخص';
                         const severityColor = {
@@ -7597,7 +7720,7 @@ class TitanApp {
                             'warning': 'text-yellow-400', 
                             'critical': 'text-red-400'
                         }[activity.severity] || 'text-gray-400';
-                        
+                
                         const typeIcon = {
                             'login': 'sign-in-alt',
                             'logout': 'sign-out-alt',
@@ -7607,7 +7730,7 @@ class TitanApp {
                             'settings_change': 'cog',
                             'security_event': 'shield-alt'
                         }[activity.type] || 'info-circle';
-                        
+                
                         return `
                         <div class="bg-gray-700 rounded-lg p-4 flex items-center justify-between">
                             <div class="flex items-center space-x-3 space-x-reverse">
@@ -7618,7 +7741,7 @@ class TitanApp {
                                     <p class="text-xs text-gray-500">${timestamp}</p>
                                 </div>
                             </div>
-                            
+                    
                             <div class="text-right">
                                 <span class="px-2 py-1 rounded text-xs ${severityColor} bg-gray-600">
                                     ${activity.severity === 'info' ? 'اطلاعات' : activity.severity === 'warning' ? 'هشدار' : 'بحرانی'}
@@ -7647,7 +7770,7 @@ class TitanApp {
             <div class="space-y-6">
                 <div class="bg-gray-700 rounded-lg p-4">
                     <h3 class="text-lg font-semibold text-white mb-4">تنظیمات نمایش</h3>
-                    
+            
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">تم</label>
@@ -7656,7 +7779,7 @@ class TitanApp {
                                 <option value="light">روشن</option>
                             </select>
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">زبان</label>
                             <select class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
@@ -7672,7 +7795,7 @@ class TitanApp {
 
     async renderStatsProfileTab() {
         const userData = this.currentUserProfile;
-        
+
         return `
             <div class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -7778,7 +7901,7 @@ class TitanApp {
 
         try {
             let tabContent = '';
-            
+    
             switch (tabName) {
                 case 'overview':
                     tabContent = await this.renderAdminOverviewTab();
@@ -7795,7 +7918,7 @@ class TitanApp {
                 default:
                     tabContent = '<div class="text-center text-red-400">تب پیدا نشد</div>';
             }
-            
+    
             content.innerHTML = tabContent;
         } catch (error) {
             console.error('Switch admin tab error:', error);
@@ -7807,11 +7930,11 @@ class TitanApp {
         try {
             const response = await axios.get('/api/admin/users/stats');
             const stats = response.data.success ? response.data.data : {};
-            
+    
             return `
                 <div class="space-y-6">
                     <h3 class="text-xl font-semibold text-white">آمار کلی کاربران</h3>
-                    
+            
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <div class="bg-blue-600 rounded-lg p-4 text-white">
                             <div class="flex items-center justify-between">
@@ -7822,7 +7945,7 @@ class TitanApp {
                                 <i class="fas fa-users text-3xl opacity-70"></i>
                             </div>
                         </div>
-                        
+                
                         <div class="bg-green-600 rounded-lg p-4 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -7832,7 +7955,7 @@ class TitanApp {
                                 <i class="fas fa-user-check text-3xl opacity-70"></i>
                             </div>
                         </div>
-                        
+                
                         <div class="bg-yellow-600 rounded-lg p-4 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -7842,7 +7965,7 @@ class TitanApp {
                                 <i class="fas fa-circle text-3xl opacity-70"></i>
                             </div>
                         </div>
-                        
+                
                         <div class="bg-red-600 rounded-lg p-4 text-white">
                             <div class="flex items-center justify-between">
                                 <div>
@@ -7853,7 +7976,7 @@ class TitanApp {
                             </div>
                         </div>
                     </div>
-                    
+            
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
                         <div class="bg-gray-700 rounded-lg p-4">
                             <h4 class="text-lg font-semibold text-white mb-4">کاربران جدید</h4>
@@ -7872,7 +7995,7 @@ class TitanApp {
                                 </div>
                             </div>
                         </div>
-                        
+                
                         <div class="bg-gray-700 rounded-lg p-4">
                             <h4 class="text-lg font-semibold text-white mb-4">وضعیت حساب‌ها</h4>
                             <div class="space-y-2">
@@ -7902,7 +8025,7 @@ class TitanApp {
         try {
             const response = await axios.get('/api/admin/users/list');
             const users = response.data.success ? response.data.data.users : [];
-            
+    
             return `
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
@@ -7910,7 +8033,7 @@ class TitanApp {
                         <input type="text" placeholder="جستجو کاربر..." 
                                class="bg-gray-700 border border-gray-600 rounded px-3 py-2 text-white text-sm">
                     </div>
-                    
+            
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm text-left">
                             <thead class="text-xs uppercase bg-gray-700 text-gray-300">
@@ -7974,7 +8097,7 @@ class TitanApp {
         try {
             const response = await axios.get('/api/admin/users/suspicious-activities');
             const activities = response.data.success ? response.data.data : [];
-            
+    
             return `
                 <div class="space-y-4">
                     <div class="flex items-center justify-between">
@@ -7993,7 +8116,7 @@ class TitanApp {
                             </select>
                         </div>
                     </div>
-                    
+            
                     ${activities.length > 0 ? `
                         <div class="overflow-x-auto">
                             <table class="w-full text-sm text-left">
@@ -8071,7 +8194,7 @@ class TitanApp {
             return `
                 <div class="space-y-4">
                     <h3 class="text-xl font-semibold text-white">فعالیت‌های مشکوک</h3>
-                    
+            
                     <div class="bg-red-600 rounded-lg p-4 text-center">
                         <i class="fas fa-exclamation-triangle text-2xl mb-2"></i>
                         <p class="text-white">خطا در بارگذاری فعالیت‌های مشکوک</p>
@@ -8089,7 +8212,7 @@ class TitanApp {
         return `
             <div class="space-y-6">
                 <h3 class="text-xl font-semibold text-white">ایجاد کاربر جدید</h3>
-                
+        
                 <div class="bg-gray-700 rounded-lg p-6">
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
@@ -8097,19 +8220,19 @@ class TitanApp {
                             <input type="text" id="new-user-name" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل</label>
                             <input type="email" id="new-user-email" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
                             <input type="password" id="new-user-password" 
                                    class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
                         </div>
-                        
+                
                         <div>
                             <label class="block text-sm font-medium text-gray-300 mb-2">نقش</label>
                             <select id="new-user-role" class="w-full bg-gray-600 border border-gray-500 rounded px-3 py-2 text-white">
@@ -8120,7 +8243,7 @@ class TitanApp {
                             </select>
                         </div>
                     </div>
-                    
+            
                     <div class="mt-6">
                         <button onclick="app.createNewUser()" 
                                 class="px-6 py-2 bg-green-600 hover:bg-green-700 text-white rounded">
@@ -8151,23 +8274,23 @@ class TitanApp {
         const currentPassword = document.getElementById('current-password')?.value;
         const newPassword = document.getElementById('new-password')?.value;
         const confirmPassword = document.getElementById('confirm-password')?.value;
-        
+
         if (!currentPassword || !newPassword || !confirmPassword) {
             this.showAlert('لطفاً تمام فیلدها را پر کنید', 'error');
             return;
         }
-        
+
         if (newPassword !== confirmPassword) {
             this.showAlert('رمز عبور جدید و تکرار آن مطابقت ندارند', 'error');
             return;
         }
-        
+
         try {
             const response = await axios.post(`/api/profile/${this.currentUser.id}/password`, {
                 currentPassword,
                 newPassword
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('رمز عبور با موفقیت تغییر کرد', 'success');
                 // Clear fields
@@ -8188,7 +8311,7 @@ class TitanApp {
             const response = await axios.post(`/api/profile/${this.currentUser.id}/2fa`, {
                 enabled
             });
-            
+    
             if (response.data.success) {
                 this.currentUserProfile.twoFactorEnabled = enabled;
                 this.showAlert(`احراز دو مرحله‌ای ${enabled ? 'فعال' : 'غیرفعال'} شد`, 'success');
@@ -8205,7 +8328,7 @@ class TitanApp {
     async terminateSession(sessionId) {
         try {
             const response = await axios.delete(`/api/profile/${this.currentUser.id}/sessions/${sessionId}`);
-            
+    
             if (response.data.success) {
                 this.showAlert('جلسه با موفقیت قطع شد', 'success');
                 this.switchProfileTab('sessions'); // Refresh the tab
@@ -8221,19 +8344,19 @@ class TitanApp {
     async showUserDetail(userId) {
         try {
             const response = await axios.get(`/api/admin/users/${userId}`);
-            
+    
             if (response.data.success) {
                 const userData = response.data.data;
-                
+        
                 // Update user detail modal header
                 document.getElementById('user-detail-avatar').src = userData.avatar;
                 document.getElementById('user-detail-name').textContent = userData.fullName;
                 document.getElementById('user-detail-email').textContent = userData.email;
-                
+        
                 // Load user detail content
                 const content = document.getElementById('user-detail-content');
                 content.innerHTML = this.renderUserDetailContent(userData);
-                
+        
                 // Show user detail modal
                 document.getElementById('user-detail-modal').classList.remove('hidden');
                 document.getElementById('user-detail-modal').classList.add('flex');
@@ -8254,7 +8377,7 @@ class TitanApp {
             <div class="space-y-6">
                 <!-- User Information Grid -->
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                    
+            
                     <!-- Basic Info -->
                     <div class="bg-gray-700 rounded-lg p-4">
                         <h3 class="text-lg font-semibold text-white mb-4 flex items-center">
@@ -8401,17 +8524,17 @@ class TitanApp {
                                 class="px-4 py-2 bg-${userData.status === 'active' ? 'red' : 'green'}-600 hover:bg-${userData.status === 'active' ? 'red' : 'green'}-700 text-white text-sm rounded">
                             ${userData.status === 'active' ? 'غیرفعال کردن' : 'فعال کردن'}
                         </button>
-                        
+                
                         <button onclick="app.resetUserPassword('${userData.id}')" 
                                 class="px-4 py-2 bg-yellow-600 hover:bg-yellow-700 text-white text-sm rounded">
                             بازنشانی رمز عبور
                         </button>
-                        
+                
                         <button onclick="app.forceLogoutUser('${userData.id}')" 
                                 class="px-4 py-2 bg-orange-600 hover:bg-orange-700 text-white text-sm rounded">
                             خروج اجباری از همه دستگاه‌ها
                         </button>
-                        
+                
                         <button onclick="app.deleteUser('${userData.id}')" 
                                 class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm rounded">
                             حذف کاربر
@@ -8440,12 +8563,12 @@ class TitanApp {
     async toggleUserStatus(userId, currentStatus) {
         const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
         const actionText = newStatus === 'active' ? 'فعال' : 'غیرفعال';
-        
+
         try {
             const response = await axios.post(`/api/admin/users/${userId}/status`, {
                 status: newStatus
             });
-            
+    
             if (response.data.success) {
                 this.showAlert(`کاربر با موفقیت ${actionText} شد`, 'success');
                 this.switchAdminTab('users'); // Refresh users list
@@ -8463,12 +8586,12 @@ class TitanApp {
         const email = document.getElementById('new-user-email')?.value;
         const password = document.getElementById('new-user-password')?.value;
         const role = document.getElementById('new-user-role')?.value;
-        
+
         if (!name || !email || !password || !role) {
             this.showAlert('لطفاً تمام فیلدها را پر کنید', 'error');
             return;
         }
-        
+
         try {
             const response = await axios.post('/api/admin/users/create', {
                 fullName: name,
@@ -8476,7 +8599,7 @@ class TitanApp {
                 password,
                 role
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('کاربر جدید با موفقیت ایجاد شد', 'success');
                 // Clear form
@@ -8484,7 +8607,7 @@ class TitanApp {
                 document.getElementById('new-user-email').value = '';
                 document.getElementById('new-user-password').value = '';
                 document.getElementById('new-user-role').value = 'viewer';
-                
+        
                 // Switch to users tab to show the new user
                 this.switchAdminTab('users');
             } else {
@@ -8500,7 +8623,7 @@ class TitanApp {
     async resetUserPassword(userId) {
         try {
             const response = await axios.post(`/api/admin/users/${userId}/reset-password`);
-            
+    
             if (response.data.success) {
                 this.showAlert('رمز عبور کاربر بازنشانی شد', 'success');
             } else {
@@ -8515,7 +8638,7 @@ class TitanApp {
     async forceLogoutUser(userId) {
         try {
             const response = await axios.post(`/api/admin/users/${userId}/force-logout`);
-            
+    
             if (response.data.success) {
                 this.showAlert('کاربر از همه دستگاه‌ها خارج شد', 'success');
             } else {
@@ -8531,10 +8654,10 @@ class TitanApp {
         if (!confirm('آیا از حذف این کاربر اطمینان دارید؟ این عمل قابل بازگشت نیست!')) {
             return;
         }
-        
+
         try {
             const response = await axios.delete(`/api/admin/users/${userId}`);
-            
+    
             if (response.data.success) {
                 this.showAlert('کاربر با موفقیت حذف شد', 'success');
                 this.hideUserDetailModal();
@@ -8550,12 +8673,12 @@ class TitanApp {
 
     async saveUserNotes(userId) {
         const notes = document.getElementById(`user-notes-${userId}`)?.value || '';
-        
+
         try {
             const response = await axios.post(`/api/admin/users/${userId}/note`, {
                 notes
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('یادداشت ذخیره شد', 'success');
             } else {
@@ -8602,7 +8725,7 @@ class TitanApp {
                 adminNotes: 'بررسی شد - مشکلی وجود ندارد',
                 action: 'resolved'
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('فعالیت مشکوک به عنوان حل شده علامت‌گذاری شد', 'success');
                 this.switchAdminTab('suspicious'); // Refresh the tab
@@ -8619,13 +8742,13 @@ class TitanApp {
         if (!confirm('آیا از مسدود کردن این کاربر اطمینان دارید؟')) {
             return;
         }
-        
+
         try {
             const response = await axios.post(`/api/admin/users/${userId}/status`, {
                 status: 'banned',
                 reason: 'فعالیت مشکوک تشخیص داده شد'
             });
-            
+    
             if (response.data.success) {
                 this.showAlert('کاربر مسدود شد', 'success');
                 this.switchAdminTab('suspicious'); // Refresh the tab
@@ -8676,7 +8799,7 @@ class TitanApp {
         const macdEnabled = document.getElementById('macdEnabled').checked;
         const emaEnabled = document.getElementById('emaEnabled').checked;
         const confidenceThreshold = document.getElementById('confidenceThreshold').value;
-        
+
         // Save settings (in real app, would save to backend)
         localStorage.setItem('signalSettings', JSON.stringify({
             rsiEnabled,
@@ -8684,7 +8807,7 @@ class TitanApp {
             emaEnabled,
             confidenceThreshold
         }));
-        
+
         this.showAlert('تنظیمات سیگنال‌ها ذخیره شد', 'success');
         this.hideSignalSettings();
     }
@@ -8692,7 +8815,7 @@ class TitanApp {
     initSignalSettingsSlider() {
         const slider = document.getElementById('confidenceThreshold');
         const valueDisplay = document.getElementById('confidenceValue');
-        
+
         if (slider && valueDisplay) {
             slider.addEventListener('input', function() {
                 valueDisplay.textContent = this.value + '%';
@@ -8706,7 +8829,7 @@ class TitanApp {
         const overlay = document.getElementById('mobile-menu-overlay');
         const menuBtn = document.getElementById('mobile-menu-btn');
         const isOpen = mobileMenu.classList.contains('show');
-        
+
         if (isOpen) {
             this.closeMobileMenu();
         } else {
@@ -8729,7 +8852,7 @@ class TitanApp {
         const mobileMenu = document.getElementById('mobile-menu');
         const overlay = document.getElementById('mobile-menu-overlay');
         const menuBtn = document.getElementById('mobile-menu-btn');
-        
+
         // Hide menu first
         mobileMenu.classList.remove('show');
         // Then hide overlay
@@ -8745,7 +8868,7 @@ class TitanApp {
     toggleMoreMenu() {
         const moreMenu = document.getElementById('more-menu');
         const moreBtn = document.getElementById('more-menu-btn');
-        
+
         if (moreMenu.classList.contains('hidden')) {
             moreMenu.classList.remove('hidden');
             // Add stagger animation to dropdown items
@@ -8769,17 +8892,17 @@ class TitanApp {
         document.querySelectorAll('.nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        
+
         // Mobile nav
         document.querySelectorAll('.mobile-nav-link').forEach(link => {
             link.classList.remove('active');
         });
-        
+
         // Find and activate the correct link
         const activeSelector = `[onclick*="loadModule('${moduleName}')"]`;
         const activeDesktopLink = document.querySelector(`.nav-link${activeSelector}`);
         const activeMobileLink = document.querySelector(`.mobile-nav-link${activeSelector}`);
-        
+
         if (activeDesktopLink) activeDesktopLink.classList.add('active');
         if (activeMobileLink) activeMobileLink.classList.add('active');
     }
@@ -8793,7 +8916,7 @@ class TitanApp {
                 this.closeMobileMenu();
             });
         }
-        
+
         document.addEventListener('click', (e) => {
             // Close more menu if clicking outside
             const moreMenu = document.getElementById('more-menu');
@@ -8801,7 +8924,7 @@ class TitanApp {
             if (!moreMenu?.contains(e.target) && !moreBtn?.contains(e.target)) {
                 moreMenu?.classList.add('hidden');
             }
-            
+    
             // Close mobile menu if clicking outside (but not on overlay - handled separately)
             const mobileMenu = document.getElementById('mobile-menu');
             const mobileBtn = document.getElementById('mobile-menu-btn');
@@ -8821,7 +8944,7 @@ class TitanApp {
     autoSaveLayout() {
         const widgets = document.querySelectorAll('.dashboard-widget');
         const layout = [];
-        
+
         widgets.forEach((widget, index) => {
             layout.push({
                 id: widget.id,
@@ -8829,7 +8952,7 @@ class TitanApp {
                 visible: !widget.classList.contains('hidden')
             });
         });
-        
+
         localStorage.setItem('dashboard-layout', JSON.stringify(layout));
         this.showAutoSaveMessage();
     }
@@ -8862,34 +8985,34 @@ class TitanApp {
     // Enhanced drag and drop setup (always enabled)
     setupDragAndDrop() {
         const widgets = document.querySelectorAll('.dashboard-widget');
-        
+
         widgets.forEach(widget => {
             widget.draggable = true;
-            
+    
             widget.addEventListener('dragstart', (e) => {
                 e.dataTransfer.setData('text/plain', widget.id);
                 widget.classList.add('dragging');
             });
-            
+    
             widget.addEventListener('dragend', (e) => {
                 widget.classList.remove('dragging');
                 // Auto-save after drag ends
                 setTimeout(() => this.autoSaveLayout(), 100);
             });
-            
+    
             widget.addEventListener('dragover', (e) => {
                 e.preventDefault();
             });
-            
+    
             widget.addEventListener('drop', (e) => {
                 e.preventDefault();
                 const draggedId = e.dataTransfer.getData('text/plain');
                 const draggedElement = document.getElementById(draggedId);
-                
+        
                 if (draggedElement && draggedElement !== widget) {
                     const container = widget.parentNode;
                     const nextSibling = widget.nextSibling;
-                    
+            
                     if (nextSibling) {
                         container.insertBefore(draggedElement, nextSibling);
                     } else {
@@ -8907,7 +9030,7 @@ class TitanApp {
         const compactMode = document.getElementById('compact-mode')?.checked || false;
         const animations = document.getElementById('animations')?.checked || true;
         const autoSave = document.getElementById('auto-save-layout')?.checked || true;
-        
+
         // Save theme settings
         const themeSettings = {
             theme: selectedTheme,
@@ -8916,14 +9039,14 @@ class TitanApp {
             animations: animations,
             autoSave: autoSave
         };
-        
+
         localStorage.setItem('theme-settings', JSON.stringify(themeSettings));
-        
+
         // Apply settings
         document.body.className = `theme-${selectedTheme} accent-${selectedAccent}`;
         if (compactMode) document.body.classList.add('compact-mode');
         if (!animations) document.body.classList.add('no-animations');
-        
+
         this.showAlert('تنظیمات ظاهری اعمال شد', 'success');
     }
 
@@ -8933,19 +9056,19 @@ class TitanApp {
         if (savedSettings) {
             try {
                 const settings = JSON.parse(savedSettings);
-                
+        
                 // Apply saved theme
                 document.body.className = `theme-${settings.theme} accent-${settings.accent}`;
                 if (settings.compact) document.body.classList.add('compact-mode');
                 if (!settings.animations) document.body.classList.add('no-animations');
-                
+        
                 // Update UI controls
                 document.querySelector(`[data-theme="${settings.theme}"]`)?.classList.add('active');
                 document.querySelector(`[data-color="${settings.accent}"]`)?.classList.add('active');
                 if (document.getElementById('compact-mode')) document.getElementById('compact-mode').checked = settings.compact;
                 if (document.getElementById('animations')) document.getElementById('animations').checked = settings.animations;
                 if (document.getElementById('auto-save-layout')) document.getElementById('auto-save-layout').checked = settings.autoSave;
-                
+        
             } catch (error) {
                 console.error('Error loading theme settings:', error);
             }
@@ -8957,10 +9080,10 @@ class TitanApp {
         // Load saved settings
         this.loadThemeSettings();
         this.loadSavedLayout();
-        
+
         // Setup drag and drop (always enabled)
         setTimeout(() => this.setupDragAndDrop(), 1000);
-        
+
         // Setup theme option click handlers
         document.querySelectorAll('.theme-option').forEach(option => {
             option.addEventListener('click', () => {
@@ -8968,7 +9091,7 @@ class TitanApp {
                 option.classList.add('active');
             });
         });
-        
+
         document.querySelectorAll('.accent-color').forEach(color => {
             color.addEventListener('click', () => {
                 document.querySelectorAll('.accent-color').forEach(c => c.classList.remove('active'));
@@ -9006,7 +9129,7 @@ class TitanApp {
             const response = await fetch('/api/ai-analytics/agents');
             if (response.ok) {
                 const data = await response.json();
-                
+        
                 // Update desktop header
                 const headerAICount = document.getElementById('header-ai-count');
                 const headerAIPerformance = document.getElementById('header-ai-performance');
@@ -9036,7 +9159,7 @@ class TitanApp {
 }
 
 // Initialize app
-const app = new TitanApp();
+// NOTE: TitanApp is initialized in DOMContentLoaded event (see end of file)
 
 // Add CSS for navigation
 const style = document.createElement('style');
@@ -9278,7 +9401,7 @@ style.textContent = `
             padding-left: 1rem;
             padding-right: 1rem;
         }
-        
+
         .mobile-nav-link {
             padding: 1.25rem 1.5rem;
             font-size: 1rem;
@@ -9292,11 +9415,11 @@ style.textContent = `
         #dashboard-grid {
             padding: 0;
         }
-        
+
         .dashboard-widget {
             transition: all 0.2s ease;
         }
-        
+
         .dashboard-widget:hover {
             transform: translateY(-2px);
             box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
@@ -9309,38 +9432,38 @@ style.textContent = `
         html, body {
             overflow-x: hidden;
         }
-        
+
         /* Main content area mobile optimization */
         main {
             padding-bottom: 4rem !important;
         }
-        
+
         #main-content {
             min-height: calc(100vh - 200px);
         }
-        
+
         /* Dashboard container - remove height restrictions to allow natural scroll */
         #dashboard-grid {
             padding: 0.5rem;
             /* Remove max-height to allow natural page scroll */
         }
-        
+
         /* Mobile widget spacing with proper bottom padding */
         .dashboard-widget {
             margin-bottom: 1rem;
         }
-        
+
         /* Ensure mobile widgets have enough bottom space */
         #dashboard-grid .space-y-4 {
             padding-bottom: 4rem;
         }
-        
+
         /* Make widget controls larger and more touch-friendly */
         .dashboard-controls button {
             min-height: 44px;
             min-width: 44px;
         }
-        
+
         /* Auto-save message positioning for mobile */
         #auto-save-message {
             top: auto;
@@ -9349,18 +9472,18 @@ style.textContent = `
             left: 1rem;
             text-align: center;
         }
-        
+
         /* Mobile canvas optimization */
         #mobilePortfolioChart {
             max-height: 200px;
         }
-        
+
         /* Touch-friendly interactions */
         .dashboard-widget {
             cursor: grab;
             active: scale(0.98);
         }
-        
+
         .dashboard-widget:active {
             transform: scale(0.98);
         }
@@ -9372,20 +9495,20 @@ style.textContent = `
             padding: 0.25rem;
             max-height: calc(100vh - 180px);
         }
-        
+
         .dashboard-widget {
             border-radius: 0.75rem;
         }
-        
+
         /* Smaller text on tiny screens */
         .dashboard-widget .text-xl {
             font-size: 1.25rem;
         }
-        
+
         .dashboard-widget .text-2xl {
             font-size: 1.5rem;
         }
-        
+
         /* Mobile market grid - 2 columns on small screens */
         #mobile-widget-market .grid-cols-2 {
             gap: 0.5rem;
@@ -9398,7 +9521,7 @@ style.textContent = `
         body {
             scroll-behavior: smooth;
         }
-        
+
         /* Better spacing for mobile navigation */
         nav + div {
             padding-top: 0;
@@ -9704,7 +9827,7 @@ Object.assign(TitanApp.prototype, {
     // Start real-time system status updates
     startSystemStatusUpdates() {
         console.log('🔄 Starting system status updates...');
-        
+
         // Clear existing interval
         if (this.systemStatusInterval) {
             clearInterval(this.systemStatusInterval);
@@ -9825,12 +9948,12 @@ Object.assign(TitanApp.prototype, {
 
         // Update existing component status items
         const statusItems = statusContainer.querySelectorAll('.flex.items-center.justify-between');
-        
+
         components.forEach((component, index) => {
             if (statusItems[index]) {
                 const statusDot = statusItems[index].querySelector('.w-2.h-2');
                 const statusLabel = statusItems[index].querySelector('.text-xs');
-                
+        
                 if (statusDot) {
                     statusDot.className = component.status === 'online' 
                         ? 'w-2 h-2 bg-green-400 rounded-full'
@@ -9838,7 +9961,7 @@ Object.assign(TitanApp.prototype, {
                         ? 'w-2 h-2 bg-yellow-400 rounded-full'
                         : 'w-2 h-2 bg-red-400 rounded-full';
                 }
-                
+        
                 if (statusLabel) {
                     statusLabel.textContent = component.statusText;
                     statusLabel.className = component.status === 'online'
@@ -9901,10 +10024,10 @@ window.addEventListener('DOMContentLoaded', function() {
     try {
         // Initialize TITAN app
         window.titanApp = new TitanApp();
-        
+
         // Create global alias for onclick handlers
         window.app = window.titanApp;
-        
+
         console.log('TITAN Trading System initialized successfully');
     } catch (error) {
         console.error('Failed to initialize TITAN app:', error);
