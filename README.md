@@ -1931,3 +1931,66 @@ CREATE INDEX idx_watchlist_active ON watchlist(is_active);
 ---
 
 **🚀 The TITAN Trading System now features complete **Professional Autopilot System** with comprehensive backend-frontend integration, real-time Chart.js visualizations, and multi-AI provider support. The revolutionary autopilot system includes target-based trading, 8 professional strategies, emergency controls, and advanced performance analytics. Building upon the complete **آرتمیس AI** integration with 8 comprehensive backend endpoints, along with Manual Trading, and all existing modules, the system now provides the most sophisticated automated trading platform in the industry. This complete Professional Autopilot integration maintains perfect system integrity across all interconnected modules - establishing TITAN as the definitive AI-powered automated trading platform with unparalleled intelligence, comprehensive functionality, and professional-grade automation capabilities.**
+## 🔐 Phase 4: SSL Full (strict) Configuration
+
+### **Overview**
+TITAN Trading System uses **Cloudflare Origin Certificate** with **Nginx** for end-to-end encryption with **Full (strict)** SSL mode.
+
+### **Security Features**
+- ✅ **TLS 1.2 & 1.3** - Modern encryption protocols only
+- ✅ **HSTS Enabled** - HTTP Strict Transport Security with preload
+- ✅ **OCSP Stapling** - Improved SSL handshake performance
+- ✅ **Strong Cipher Suites** - Mozilla Modern configuration
+- ✅ **Security Headers** - X-Frame-Options, X-Content-Type-Options, XSS-Protection
+- ✅ **HTTP to HTTPS** - Automatic 301 redirect
+
+### **Architecture**
+```
+Client → Cloudflare (Full strict) → Nginx (Origin Cert) → Backend (PM2)
+         └─ TLS 1.3                └─ TLS 1.2/1.3      └─ Port 5000
+```
+
+### **Quick Verification**
+```bash
+# Test SSL chain
+openssl s_client -connect www.zala.ir:443 -servername www.zala.ir < /dev/null | grep "Verify return code"
+# Expected: Verify return code: 0 (ok)
+
+# Test HSTS header
+curl -I https://www.zala.ir | grep -i strict-transport-security
+# Expected: Strict-Transport-Security: max-age=31536000; includeSubDomains; preload
+
+# Test application health
+curl -sS https://www.zala.ir/api/health | jq '.data.status'
+# Expected: "healthy"
+
+# Run complete SSL acceptance tests
+./scripts/test-ssl-acceptance.sh
+```
+
+### **Documentation**
+- 📖 **Setup Guide**: [docs/ops/SSL_SETUP.md](docs/ops/SSL_SETUP.md) - Complete SSL installation and configuration
+- ⚙️ **Nginx Config**: [infra/nginx-ssl-strict.conf](infra/nginx-ssl-strict.conf) - Production Nginx configuration template
+- 🧪 **Test Script**: [scripts/test-ssl-acceptance.sh](scripts/test-ssl-acceptance.sh) - Automated SSL validation
+
+### **Rollback Procedure**
+If issues occur after SSL deployment:
+1. **Revert Cloudflare**: Change SSL mode from Full (strict) → Full
+2. **Restore Nginx**: `sudo cp /etc/nginx/sites-available/titan.backup.* /etc/nginx/sites-available/titan`
+3. **Reload**: `sudo nginx -t && sudo systemctl reload nginx`
+4. **Verify**: Run health checks
+
+See [docs/ops/SSL_SETUP.md](docs/ops/SSL_SETUP.md#rollback-procedure) for detailed rollback instructions.
+
+### **Acceptance Criteria**
+- ✅ SSL certificate chain valid (Verify return code: 0)
+- ✅ HSTS header present with preload
+- ✅ HTTP redirects to HTTPS (301)
+- ✅ Application health check passes
+- ✅ Authentication works over HTTPS
+- ✅ All API endpoints functional
+- ✅ Security headers configured
+- ✅ TLS 1.2/1.3 supported
+
+---
+
