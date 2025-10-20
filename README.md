@@ -200,6 +200,146 @@ curl -H "Authorization: Bearer $TOKEN" \
 - **Token Payload**: `userId`, `username`, `email`, `role`
 - **Expiry**: Configurable (default: 7d)
 
+---
+
+## 🔐 **Phase 4: RBAC (Role-Based Access Control)**
+
+### **RBAC Implementation**
+
+Phase 4 introduces role-based access control to restrict admin endpoints to admin users only.
+
+#### **Roles**
+- **`admin`**: Full access to all endpoints including admin-only endpoints
+- **`user`**: Access to standard user endpoints (dashboard, portfolio, etc.)
+
+#### **RBAC Middleware**
+```javascript
+// Usage: app.get('/api/admin/users', authMiddleware, requireRole('admin'), handler)
+requireRole(...allowedRoles)
+```
+
+#### **Admin-Only Endpoints**
+
+**1. List All Users (Admin Only)**
+```bash
+# Get JWT token
+TOKEN=$(curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+# Call admin endpoint
+curl -H "Authorization: Bearer $TOKEN" \
+  https://www.zala.ir/api/admin/users | jq '.'
+
+# Expected for admin user: 200 OK
+{
+  "success": true,
+  "data": {
+    "users": [...],
+    "count": 5
+  },
+  "meta": {
+    "source": "real",
+    "requiredRole": "admin",
+    "userRole": "admin"
+  }
+}
+
+# Expected for regular user: 403 Forbidden
+{
+  "success": false,
+  "error": "Forbidden - Requires one of: admin. Your role: user"
+}
+```
+
+**2. System Statistics (Admin Only)**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  https://www.zala.ir/api/admin/stats | jq '.'
+
+# Expected for admin: 200 OK
+{
+  "success": true,
+  "data": {
+    "totalUsers": 5,
+    "totalTrades": 150,
+    "totalPortfolios": 8
+  },
+  "meta": {
+    "source": "real",
+    "requiredRole": "admin",
+    "userRole": "admin"
+  }
+}
+```
+
+#### **User Endpoints (All Authenticated Users)**
+
+**Get User Profile**
+```bash
+curl -H "Authorization: Bearer $TOKEN" \
+  https://www.zala.ir/api/user/profile | jq '.'
+
+# Expected: 200 OK (accessible by both admin and user roles)
+{
+  "success": true,
+  "data": {
+    "id": "5ad73335-e390-4073-ad14-e7235eb661ad",
+    "username": "admin",
+    "email": "admin@titan.com",
+    "role": "admin",
+    "created_at": "2025-01-15T10:30:00Z"
+  },
+  "meta": {
+    "source": "real",
+    "requiredRole": "any authenticated user",
+    "userRole": "admin"
+  }
+}
+```
+
+### **RBAC Testing**
+
+#### **Test 1: Admin User → Admin Endpoint (Should Pass)**
+```bash
+# Login as admin
+ADMIN_TOKEN=$(curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+# Call admin endpoint
+curl -sS -H "Authorization: Bearer $ADMIN_TOKEN" \
+  https://www.zala.ir/api/admin/users | jq '.success'
+
+# Expected: true (200 OK)
+```
+
+#### **Test 2: Regular User → Admin Endpoint (Should Fail)**
+```bash
+# Login as regular user (if exists)
+USER_TOKEN=$(curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"user","password":"user123"}' | jq -r '.data.token')
+
+# Try to call admin endpoint
+curl -sS -H "Authorization: Bearer $USER_TOKEN" \
+  https://www.zala.ir/api/admin/users | jq '.'
+
+# Expected: 403 Forbidden
+{
+  "success": false,
+  "error": "Forbidden - Requires one of: admin. Your role: user"
+}
+```
+
+### **RBAC Acceptance Criteria**
+- ✅ Admin endpoints return **403 Forbidden** for non-admin users
+- ✅ Admin endpoints return **200 OK** for admin users
+- ✅ User endpoints accessible by all authenticated users
+- ✅ Clear error messages indicating required role
+- ✅ JWT token includes `role` field
+- ✅ Role extracted and validated by RBAC middleware
+
 ## 📊 **INTEGRATION STATUS: PERFECT 10/10** ✅
 
 ### **Backend-Frontend Integration Analysis**
