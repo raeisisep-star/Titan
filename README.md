@@ -56,6 +56,85 @@ curl -H "Authorization: Bearer <your-jwt-token>" https://www.zala.ir/api/dashboa
 - ✅ **Task 3**: Disabled mock data (FORCE_REAL='true', USE_MOCK='false' in public/config.js)
 - ✅ **Task 4**: Updated README to reflect Ubuntu+Nginx+PM2+PostgreSQL architecture
 
+### **Phase 3 Closure Verification (Live Production Tests)**
+
+#### ✅ **Test 1: JWT_SECRET Configuration**
+```bash
+# Verified: JWT_SECRET is in .env file (not hardcoded)
+✅ .env file exists
+✅ JWT_SECRET found in .env
+✅ server-real-v3.js uses process.env.JWT_SECRET (lines 57, 205)
+```
+
+#### ✅ **Test 2: Health Check Endpoint**
+```bash
+$ curl -sS https://www.zala.ir/api/health | jq '.data.status'
+"healthy"
+
+✅ PostgreSQL connected (16ms latency)
+✅ Redis connected (2ms latency)
+✅ System status: production
+```
+
+#### ✅ **Test 3: Unauthorized Access (Without Token)**
+```bash
+$ curl -sS https://www.zala.ir/api/dashboard/comprehensive-real | jq '.'
+{
+  "success": false,
+  "error": "Unauthorized - No token provided"
+}
+
+✅ JWT middleware correctly blocks unauthorized access
+✅ Returns 401 status for protected endpoints
+```
+
+#### ✅ **Test 4: Login & Get JWT Token**
+```bash
+$ curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq '.data.token'
+
+"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI1YWQ3MzMzNS1lMzkwLTQwNzMtYWQxNC1lNzIzNWViNjYxYWQiLCJ1c2VybmFtZSI6ImFkbWluIiwiZW1haWwiOiJhZG1pbkB0aXRhbi5jb20iLCJyb2xlIjoidXNlciIsImlhdCI6MTc2MDk1NDgzMywiZXhwIjoxNzYxNTU5NjMzfQ.hCNVLlOZd56YEEXvfb-zK4EXBhLngNd3wU6x0HPhpjw"
+
+✅ Login successful
+✅ Valid JWT token generated with userId, username, email, role
+✅ Token expiry: 7 days
+```
+
+#### ✅ **Test 5: Authorized API Access (With Token)**
+```bash
+$ TOKEN=$(curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+$ curl -sS https://www.zala.ir/api/dashboard/portfolio-real \
+  -H "Authorization: Bearer $TOKEN" | jq '{success, meta, data: (.data | keys)}'
+
+{
+  "success": true,
+  "meta": {
+    "source": "real",
+    "ts": 1760954844543,
+    "ttlMs": 30000,
+    "stale": false
+  },
+  "data": [
+    "availableBalance",
+    "avgPnLPercentage",
+    "dailyChange",
+    "monthlyChange",
+    "totalBalance",
+    "totalPnL",
+    "weeklyChange"
+  ]
+}
+
+✅ Authentication successful
+✅ meta.source = "real" (real database data)
+✅ userId extracted from JWT token
+✅ No hardcoded UUIDs
+```
+
 ## 🌐 Live System URLs - **REAL DATABASE INTEGRATION ✅**
 - **Production URL**: https://www.zala.ir ✅ **100% FUNCTIONAL WITH REAL DATA**
 - **GitHub Repository**: https://github.com/raeisisep-star/Titan ✅ **UPDATED**
@@ -66,10 +145,60 @@ curl -H "Authorization: Bearer <your-jwt-token>" https://www.zala.ir/api/dashboa
 - **Comprehensive Real API**: https://www.zala.ir/api/dashboard/comprehensive-real ✅ **NEW**
 - **API Health**: https://www.zala.ir/api/health (PostgreSQL Connected)
 
-### 🔑 **Test Credentials (WORKING)**
+### 🔐 **Authentication & JWT Token Usage**
+
+#### **How to Get JWT Token**
+```bash
+# Step 1: Login to get JWT token
+TOKEN=$(curl -sS -X POST https://www.zala.ir/api/auth/login \
+  -H 'Content-Type: application/json' \
+  -d '{"username":"admin","password":"admin123"}' | jq -r '.data.token')
+
+echo "Token: $TOKEN"
+
+# Step 2: Use token in API requests
+curl -H "Authorization: Bearer $TOKEN" \
+  https://www.zala.ir/api/dashboard/portfolio-real | jq '.'
+```
+
+#### **Login API Endpoint**
+- **URL**: `POST /api/auth/login`
+- **Content-Type**: `application/json`
+- **Request Body**:
+  ```json
+  {
+    "username": "admin",
+    "password": "admin123"
+  }
+  ```
+- **Response**:
+  ```json
+  {
+    "success": true,
+    "data": {
+      "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
+      "user": {
+        "id": "5ad73335-e390-4073-ad14-e7235eb661ad",
+        "username": "admin",
+        "email": "admin@titan.com",
+        "firstName": "Admin",
+        "lastName": "TITAN"
+      }
+    }
+  }
+  ```
+
+#### **Test Credentials**
+- **Username**: `admin`
 - **Email**: `admin@titan.com`
 - **Password**: `admin123`
-- **Token**: JWT-based authentication fully functional
+- **Token Expiry**: 7 days (configurable via JWT_EXPIRES_IN)
+
+#### **JWT Configuration**
+- **Secret**: Stored in `.env` file as `JWT_SECRET` (never hardcoded)
+- **Algorithm**: HS256
+- **Token Payload**: `userId`, `username`, `email`, `role`
+- **Expiry**: Configurable (default: 7d)
 
 ## 📊 **INTEGRATION STATUS: PERFECT 10/10** ✅
 
@@ -1000,6 +1129,42 @@ curl -H "Authorization: Bearer <token>" http://localhost:5000/api/artemis/dashbo
 # Check complete system status
 curl http://localhost:5000/api/health
 ```
+
+### **Rollback Plan (Production Recovery)**
+
+In case of issues after deployment, follow these steps to rollback:
+
+```bash
+# Step 1: Restore PM2 to previous state
+pm2 resurrect  # Restores last saved PM2 state (run pm2 save before deploys)
+
+# Step 2: Restore Nginx configuration
+sudo cp /etc/nginx/sites-enabled/zala.backup /etc/nginx/sites-enabled/zala
+sudo nginx -t  # Test configuration
+sudo systemctl reload nginx
+
+# Step 3: Rollback git to previous tag
+cd /tmp/webapp/Titan
+git fetch --tags
+git checkout v2.0.0-phase2  # Or any previous stable tag
+npm install
+npm run build
+pm2 restart ecosystem.config.js
+
+# Step 4: Verify rollback success
+curl -sS https://www.zala.ir/api/health | jq '.data.status'
+
+# Step 5: Check PM2 logs for errors
+pm2 logs titan-backend --lines 100
+```
+
+#### **Pre-Deployment Backup Checklist**
+Before any production deployment:
+- ✅ `pm2 save` - Save current PM2 process list
+- ✅ `sudo cp /etc/nginx/sites-enabled/zala /etc/nginx/sites-enabled/zala.backup` - Backup Nginx config
+- ✅ `git tag v{version}-pre-deploy` - Tag current stable state
+- ✅ Test deployment on staging/dev environment first
+- ✅ Have database backup ready (pg_dump)
 
 ### **Production Deployment (Ubuntu Server)**
 ```bash
