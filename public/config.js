@@ -1,4 +1,15 @@
 // TITAN Trading System - Production Configuration
+
+// Environment variables for feature flags
+window.ENV = {
+  FORCE_REAL: 'true',      // 🔴 Production safety - ALWAYS use real data
+  USE_MOCK: 'false',       // ❌ Mock data disabled
+  DEBUG: 'false',          // Disable debug mode in production
+  API_TIMEOUT: '8000',
+  ENABLE_RETRY: 'true',
+  MAX_RETRIES: '1'
+};
+
 window.TITAN_CONFIG = {
   // Backend API URLs - Local Development
   API_BASE_URL: '',  // Empty means same-origin (relative URLs)

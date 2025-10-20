@@ -9,6 +9,7 @@ const { serve } = require('@hono/node-server');
 const { cors } = require('hono/cors');
 const { Pool } = require('pg');
 const { createClient } = require('redis');
+const jwt = require('jsonwebtoken');
 
 // Initialize Hono App
 const app = new Hono();
@@ -37,6 +38,38 @@ app.use('/*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
+
+// JWT Authentication Middleware
+const authMiddleware = async (c, next) => {
+  try {
+    const authHeader = c.req.header('Authorization');
+    
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      // For development/testing: allow requests without token but use default user
+      if (process.env.NODE_ENV === 'development') {
+        c.set('userId', '07b18b25-fc41-4a4f-8774-d19bd15350b5'); // Default test user
+        return await next();
+      }
+      return c.json({ success: false, error: 'Unauthorized - No token provided' }, 401);
+    }
+    
+    const token = authHeader.substring(7);
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    
+    // Set userId in context
+    c.set('userId', decoded.userId || decoded.id);
+    
+    await next();
+  } catch (error) {
+    // For development: allow with default user on error
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('JWT verification failed, using default user:', error.message);
+      c.set('userId', '07b18b25-fc41-4a4f-8774-d19bd15350b5');
+      return await next();
+    }
+    return c.json({ success: false, error: 'Unauthorized - Invalid token' }, 401);
+  }
+};
 
 // ========================================================================
 // HEALTH CHECK & MONITORING
@@ -161,8 +194,17 @@ app.post('/api/auth/login', async (c) => {
     // For now, accept any password for demo (INSECURE - FIX IN PRODUCTION)
     console.log('✅ Login successful:', user.username);
     
-    // Generate token (simplified)
-    const token = `demo_token_${user.id}_${Date.now()}`;
+    // Generate JWT token
+    const token = jwt.sign(
+      { 
+        userId: user.id,
+        username: user.username,
+        email: user.email,
+        role: user.role || 'user'
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
+    );
     
     // Update last login
     await pool.query(
@@ -345,10 +387,10 @@ app.get('/api/dashboard/stats', async (c) => {
 // =============================================================================
 
 // Portfolio Summary - REAL
-app.get('/api/dashboard/portfolio-real', async (c) => {
+app.get('/api/dashboard/portfolio-real', authMiddleware, async (c) => {
   try {
     // Default to first user if no auth (for testing)
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     const result = await pool.query(
       'SELECT * FROM v_dashboard_portfolio WHERE user_id = $1',
@@ -392,9 +434,9 @@ app.get('/api/dashboard/portfolio-real', async (c) => {
 });
 
 // AI Agents Summary - REAL
-app.get('/api/dashboard/agents-real', async (c) => {
+app.get('/api/dashboard/agents-real', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     const result = await pool.query(`
       SELECT 
@@ -430,9 +472,9 @@ app.get('/api/dashboard/agents-real', async (c) => {
 });
 
 // Trading Activity - REAL
-app.get('/api/dashboard/trading-real', async (c) => {
+app.get('/api/dashboard/trading-real', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     const result = await pool.query(
       'SELECT * FROM v_dashboard_trading WHERE user_id = $1',
@@ -468,9 +510,9 @@ app.get('/api/dashboard/trading-real', async (c) => {
 });
 
 // Activities Feed - REAL
-app.get('/api/dashboard/activities-real', async (c) => {
+app.get('/api/dashboard/activities-real', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     const result = await pool.query(`
       SELECT 
@@ -505,9 +547,9 @@ app.get('/api/dashboard/activities-real', async (c) => {
 });
 
 // Charts Data - REAL
-app.get('/api/dashboard/charts-real', async (c) => {
+app.get('/api/dashboard/charts-real', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     // Get portfolio performance over last 24 hours
     const performanceResult = await pool.query(`
@@ -571,9 +613,9 @@ app.get('/api/dashboard/charts-real', async (c) => {
 });
 
 // Comprehensive Dashboard - REAL (combines all above)
-app.get('/api/dashboard/comprehensive-real', async (c) => {
+app.get('/api/dashboard/comprehensive-real', authMiddleware, async (c) => {
   try {
-    const userId = c.get('userId') || '07b18b25-fc41-4a4f-8774-d19bd15350b5';
+    const userId = c.get('userId');
     
     // Parallel queries for performance
     const [portfolioRes, agentsRes, tradingRes, activitiesRes] = await Promise.all([
