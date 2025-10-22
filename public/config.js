@@ -32,10 +32,10 @@ window.TITAN_CONFIG = {
   // API Endpoints
   ENDPOINTS: {
     AUTH: {
-      LOGIN: '/auth/login',
-      REGISTER: '/auth/register',
-      LOGOUT: '/auth/logout',
-      REFRESH: '/auth/refresh'
+      LOGIN: '/api/auth/login',
+      REGISTER: '/api/auth/register',
+      LOGOUT: '/api/auth/logout',
+      REFRESH: '/api/auth/refresh'
     },
     TRADING: {
       LIST: '/trades',
