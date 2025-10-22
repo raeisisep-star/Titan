@@ -187,6 +187,106 @@ app.get('/api/health', async (c) => {
   }
 });
 
+// Full health check (for UI display with human-readable status)
+app.get('/api/health/full', async (c) => {
+  const startTime = process.uptime();
+  const services = [];
+  let overallHealthy = true;
+  
+  try {
+    // Test API service (always healthy if we got here)
+    services.push({
+      name: 'API Server',
+      status: 'healthy',
+      icon: '✅',
+      details: `Uptime: ${Math.floor(startTime)}s`
+    });
+    
+    // Test database connection
+    try {
+      const dbStart = Date.now();
+      const dbResult = await pool.query('SELECT NOW(), pg_database_size(current_database()) as db_size');
+      const dbLatency = Date.now() - dbStart;
+      const dbSizeMB = Math.round(parseInt(dbResult.rows[0].db_size) / 1024 / 1024);
+      
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${dbLatency}ms, Size: ${dbSizeMB}MB`
+      });
+    } catch (dbError) {
+      overallHealthy = false;
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${dbError.message}`
+      });
+    }
+    
+    // Test Redis connection
+    try {
+      const redisStart = Date.now();
+      await redisClient.ping();
+      const redisLatency = Date.now() - redisStart;
+      
+      services.push({
+        name: 'Redis Cache',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${redisLatency}ms`
+      });
+    } catch (redisError) {
+      overallHealthy = false;
+      services.push({
+        name: 'Redis Cache',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${redisError.message}`
+      });
+    }
+    
+    // Queue status (placeholder - no actual queue in this version)
+    services.push({
+      name: 'Job Queue',
+      status: 'not_configured',
+      icon: 'ℹ️',
+      details: 'Queue not configured in this version'
+    });
+    
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    const heapUsedPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+    services.push({
+      name: 'Memory Usage',
+      status: heapUsedPercent < 90 ? 'healthy' : 'warning',
+      icon: heapUsedPercent < 90 ? '✅' : '⚠️',
+      details: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB (${heapUsedPercent}%)`
+    });
+    
+    return c.json({
+      success: true,
+      data: {
+        overallStatus: overallHealthy ? 'healthy' : 'degraded',
+        version: '1.0.0',
+        commit: 'c6b3b08',
+        environment: process.env.NODE_ENV || 'development',
+        serverTime: new Date().toISOString(),
+        uptime: `${Math.floor(startTime)} seconds`,
+        services: services
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Health check failed',
+      message: error.message,
+      services: services
+    }, 500);
+  }
+});
+
 // =============================================================================
 // AUTHENTICATION APIs
 // =============================================================================

@@ -157,11 +157,107 @@
         
         async function testConnection() {
             try {
-                const response = await axios.get('/api/health');
-                alert('✅ اتصال موفقیت آمیز!\n' + JSON.stringify(response.data, null, 2));
+                const response = await axios.get('/api/health/full');
+                showHealthModal(response.data);
             } catch (error) {
-                alert('❌ خطا در اتصال:\n' + error.message);
+                showHealthModal({
+                    success: false,
+                    error: 'خطا در اتصال به سرور',
+                    message: error.message
+                });
             }
+        }
+        
+        function showHealthModal(data) {
+            // Create modal overlay
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            modal.onclick = (e) => {
+                if (e.target === modal) modal.remove();
+            };
+            
+            // Modal content
+            const modalContent = document.createElement('div');
+            modalContent.className = 'bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full mx-4';
+            
+            if (data.success && data.data) {
+                const healthData = data.data;
+                const isHealthy = healthData.overallStatus === 'healthy';
+                
+                modalContent.innerHTML = `
+                    <div class="text-center mb-6">
+                        <div class="text-5xl mb-3">${isHealthy ? '✅' : '⚠️'}</div>
+                        <h2 class="text-2xl font-bold text-white mb-2">وضعیت سیستم</h2>
+                        <p class="text-gray-400">${isHealthy ? 'همه سرویس‌ها عملکرد طبیعی دارند' : 'برخی سرویس‌ها با مشکل مواجه هستند'}</p>
+                    </div>
+                    
+                    <div class="space-y-3 mb-6">
+                        ${healthData.services.map(service => `
+                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
+                                <div class="flex items-center gap-3">
+                                    <span class="text-2xl">${service.icon}</span>
+                                    <div>
+                                        <div class="font-medium text-white">${service.name}</div>
+                                        <div class="text-sm text-gray-400">${service.details}</div>
+                                    </div>
+                                </div>
+                                <span class="text-xs px-2 py-1 rounded ${
+                                    service.status === 'healthy' ? 'bg-green-600 text-white' :
+                                    service.status === 'error' ? 'bg-red-600 text-white' :
+                                    'bg-blue-600 text-white'
+                                }">
+                                    ${service.status === 'healthy' ? 'سالم' : 
+                                      service.status === 'error' ? 'خطا' : 'غیرفعال'}
+                                </span>
+                            </div>
+                        `).join('')}
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-3 mb-6 text-sm">
+                        <div class="bg-gray-700 p-3 rounded-lg">
+                            <div class="text-gray-400 mb-1">نسخه</div>
+                            <div class="text-white font-medium">${healthData.version}</div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg">
+                            <div class="text-gray-400 mb-1">محیط</div>
+                            <div class="text-white font-medium">${healthData.environment}</div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg">
+                            <div class="text-gray-400 mb-1">زمان سرور</div>
+                            <div class="text-white font-medium text-xs">${new Date(healthData.serverTime).toLocaleString('fa-IR')}</div>
+                        </div>
+                        <div class="bg-gray-700 p-3 rounded-lg">
+                            <div class="text-gray-400 mb-1">Uptime</div>
+                            <div class="text-white font-medium">${healthData.uptime}</div>
+                        </div>
+                    </div>
+                    
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
+                        بستن
+                    </button>
+                `;
+            } else {
+                modalContent.innerHTML = `
+                    <div class="text-center mb-6">
+                        <div class="text-5xl mb-3">❌</div>
+                        <h2 class="text-2xl font-bold text-white mb-2">خطا در اتصال</h2>
+                        <p class="text-gray-400">${data.error || 'خطای ناشناخته'}</p>
+                    </div>
+                    
+                    <div class="bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-4 mb-6">
+                        <div class="text-sm text-red-300">${data.message || 'لطفاً مجدداً تلاش کنید'}</div>
+                    </div>
+                    
+                    <button onclick="this.closest('.fixed').remove()" 
+                            class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-md hover:from-red-600 hover:to-red-700 transition duration-300">
+                        بستن
+                    </button>
+                `;
+            }
+            
+            modal.appendChild(modalContent);
+            document.body.appendChild(modal);
         }
 
         // Register form handler
