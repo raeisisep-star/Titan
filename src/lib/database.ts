@@ -11,18 +11,18 @@ import { createClient } from 'redis';
 // =============================================================================
 
 const DATABASE_CONFIG = {
-  user: 'titan_user',
-  password: 'titan_secure_2024',
-  host: 'localhost',
-  database: 'titan_trading',
-  port: 5432,
+  user: process.env.DB_USER || 'titan_user',
+  password: process.env.DB_PASSWORD || 'titan_secure_2024',
+  host: process.env.DB_HOST || 'localhost',
+  database: process.env.DB_NAME || 'titan_trading',
+  port: parseInt(process.env.DB_PORT || '5432'),
   max: 20, // Maximum number of clients in the pool
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,
 };
 
 const REDIS_CONFIG = {
-  url: 'redis://localhost:6379',
+  url: process.env.REDIS_URL || 'redis://localhost:6379',
   socket: {
     connectTimeout: 2000,
     lazyConnect: true
