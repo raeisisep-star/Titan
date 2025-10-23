@@ -1,0 +1,16 @@
+[Unit]
+Description=Weekly update of Cloudflare IP ranges
+Documentation=https://www.cloudflare.com/ips
+
+[Timer]
+# Run every Sunday at 3:00 AM
+OnCalendar=Sun *-*-* 03:00:00
+# Also run 5 minutes after boot
+OnBootSec=5min
+# Keep timer active even if service fails
+Persistent=true
+# Randomize start time by up to 30 minutes to avoid load spikes
+RandomizedDelaySec=30min
+
+[Install]
+WantedBy=timers.target

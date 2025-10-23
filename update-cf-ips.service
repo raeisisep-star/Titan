@@ -1,0 +1,17 @@
+[Unit]
+Description=Update Cloudflare IP ranges and reload Nginx
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/update-cf-ips.sh
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=cf-ip-update
+
+# Security hardening
+PrivateTmp=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ReadWritePaths=/etc/nginx/conf.d /var/log /tmp
