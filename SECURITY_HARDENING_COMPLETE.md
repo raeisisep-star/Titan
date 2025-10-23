@@ -65,15 +65,23 @@ Denied:
 
 ### B) Security & Performance ✅
 
-#### 6. Nginx Rate Limiting ✅
+#### 6. Nginx Dual-Layer Rate Limiting ✅
 ```nginx
-# Authentication endpoints: 5 req/s, burst 10
+# IP-based rate limiting
 limit_req_zone $binary_remote_addr zone=auth_zone:10m rate=5r/s;
-
-# General API: 20 req/s, burst 30
 limit_req_zone $binary_remote_addr zone=api_zone:10m rate=20r/s;
+
+# Username-based rate limiting (prevents credential stuffing)
+limit_req_zone $login_key zone=auth_user:10m rate=10r/m;
+
+# Login endpoint applies BOTH limits
+location /api/auth/login {
+    limit_req zone=auth_zone burst=10 nodelay;    # IP: 5 req/s
+    limit_req zone=auth_user burst=5 nodelay;     # User: 10 req/min
+}
 ```
-- **Benefit:** Protects against brute force and DoS attacks
+- **Benefit:** Protects against both distributed attacks (IP-based) and targeted credential stuffing (username-based)
+- **Tested:** Parallel curl tests confirm 429 responses trigger correctly
 
 #### 7. Nginx Request Size Limits ✅
 ```nginx
@@ -111,7 +119,21 @@ real_ip_header CF-Connecting-IP;
 ```
 - **Benefit:** Only own domain can access API
 
-#### 11. PostgreSQL Backup ✅
+#### 11. TLS/SSL Hardening ✅
+```nginx
+# Protocol prioritization
+ssl_protocols TLSv1.3 TLSv1.2;
+ssl_prefer_server_ciphers on;
+
+# Strong cipher suite (excludes weak algorithms)
+ssl_ciphers 'TLS_AES_256_GCM_SHA384:TLS_AES_128_GCM_SHA256:TLS_CHACHA20_POLY1305_SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305:HIGH:!aNULL:!MD5:!3DES:!DES:!RC4:!PSK:!SRP:!CAMELLIA';
+```
+- **Active Cipher:** TLS 1.3 with TLS_AES_256_GCM_SHA384
+- **Benefit:** Maximum encryption strength, forward secrecy
+- **Excluded:** Weak algorithms (3DES, RC4, MD5, PSK, SRP, CAMELLIA)
+- **Verified:** `openssl s_client -connect www.zala.ir:443 -brief`
+
+#### 12. PostgreSQL Backup ✅
 ```bash
 # Daily backup at 3:00 AM
 0 3 * * * postgres pg_dump -p 5433 -Fc titan_trading > /var/backups/titan_$(date +\%F).dump
