@@ -7,7 +7,8 @@
 #   * * * * * /home/ubuntu/Titan/scripts/uptime-monitor.sh >> /home/ubuntu/Titan/logs/uptime-monitor.log 2>&1
 #
 
-HEALTH_URL="https://www.zala.ir/api/health/full"
+HEALTH_URL_LOCAL="http://127.0.0.1:5000/api/health/full"
+HEALTH_URL_PUBLIC="https://www.zala.ir/api/health/full"
 LOG_DIR="/home/ubuntu/Titan/logs"
 LOG_FILE="$LOG_DIR/uptime-monitor.log"
 ALERT_FILE="$LOG_DIR/uptime-alerts.log"
@@ -18,13 +19,20 @@ mkdir -p "$LOG_DIR"
 # Get timestamp
 TIMESTAMP=$(date '+%Y-%m-%d %H:%M:%S')
 
-# Check health endpoint
-RESPONSE=$(curl -s -k --max-time 10 "$HEALTH_URL")
+# Check local health endpoint first (primary check)
+RESPONSE=$(curl -s --max-time 5 "$HEALTH_URL_LOCAL")
 EXIT_CODE=$?
 
 if [ $EXIT_CODE -ne 0 ]; then
-    # Curl failed - connection error
-    echo "[$TIMESTAMP] ❌ CRITICAL: Unable to connect to $HEALTH_URL (curl exit code: $EXIT_CODE)" | tee -a "$ALERT_FILE"
+    # Local check failed - backend is down
+    echo "[$TIMESTAMP] ❌ CRITICAL: Backend down - Unable to connect to $HEALTH_URL_LOCAL (exit code: $EXIT_CODE)" | tee -a "$ALERT_FILE"
+    
+    # Try public URL to determine if it's backend or CF/DNS issue
+    PUBLIC_RESPONSE=$(curl -s -k --max-time 10 "$HEALTH_URL_PUBLIC" 2>/dev/null)
+    PUBLIC_EXIT=$?
+    if [ $PUBLIC_EXIT -ne 0 ]; then
+        echo "[$TIMESTAMP] ⚠️  Additional: Public URL also unreachable - possible CF/DNS/SSL issue" | tee -a "$ALERT_FILE"
+    fi
     exit 1
 fi
 
