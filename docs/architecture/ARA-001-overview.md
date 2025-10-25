@@ -785,7 +785,7 @@ VALUES (?, 'mode_switch', '{"from": "demo", "to": "real"}');
 2. **Health Endpoint Security**
    - ✅ Split into public (`/api/health`) and admin (`/api/health/full`)
    - ✅ Basic Auth on admin endpoint
-   - ✅ Credentials: `admin` / `TitanHealth@2024!Secure`
+   - ✅ Credentials stored in `.htpasswd` file (not in repository)
 
 3. **Fail2ban Implementation**
    - ✅ Auto-ban after 15 violations
