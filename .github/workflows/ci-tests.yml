@@ -1,13 +1,13 @@
 name: CI Tests
 
-on:
-  push:
-    branches: [ main, develop, 'task/**' ]
-  pull_request:
-    branches: [ main, develop ]
+# Temporarily disabled - local-only testing on production server 188.40.209.82
+# Re-enable after completion of local test phase
+on: []
 
 jobs:
   test:
+    # Temporarily disabled for local-only testing
+    if: false
     name: Test on Node ${{ matrix.node-version }}
     runs-on: ubuntu-latest
     
