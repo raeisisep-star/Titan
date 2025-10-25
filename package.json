@@ -15,7 +15,9 @@
     "deploy:enhanced": "npm run build:enhanced && wrangler deploy --config wrangler.enhanced.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
-    "test": "curl http://localhost:3000",
+    "test": "jest",
+    "test:contracts": "jest tests/contracts --coverage",
+    "test:watch": "jest --watch",
     "db:migrate:local": "wrangler d1 migrations apply webapp-production --local",
     "db:migrate:prod": "wrangler d1 migrations apply webapp-production",
     "db:seed": "wrangler d1 execute webapp-production --local --file=./seed.sql",
@@ -55,9 +57,17 @@
   "devDependencies": {
     "@cloudflare/workers-types": "4.20250705.0",
     "@hono/vite-cloudflare-pages": "^0.4.2",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^24.9.1",
+    "@types/supertest": "^6.0.3",
+    "jest": "^30.2.0",
+    "nock": "^14.0.10",
     "puppeteer": "^24.19.0",
+    "supertest": "^7.1.4",
+    "ts-jest": "^29.4.5",
     "typescript": "^5.9.3",
     "vite": "^5.4.20",
-    "wrangler": "^3.114.14"
+    "wrangler": "^3.114.14",
+    "yaml": "^2.8.1"
   }
 }
