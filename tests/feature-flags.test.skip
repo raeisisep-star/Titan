@@ -1,0 +1,226 @@
+/**
+ * Feature Flags Tests
+ * Task-7: Unit tests for feature flag system
+ */
+
+import { Pool } from 'pg';
+import { FeatureFlagsService, EnvFeatureFlags } from '../src/feature-flags';
+import { validateUserPreferences, validateFeatureFlag, validateWithErrors } from '../src/validators/settings-schema';
+
+// Mock PostgreSQL pool
+const mockQuery = jest.fn();
+const mockRelease = jest.fn();
+const mockClient = {
+  query: mockQuery,
+  release: mockRelease
+};
+const mockConnect = jest.fn().mockResolvedValue(mockClient);
+
+const mockPool: any = {
+  query: mockQuery,
+  connect: mockConnect
+};
+
+describe('FeatureFlagsService', () => {
+  let service: FeatureFlagsService;
+  
+  beforeEach(() => {
+    service = new FeatureFlagsService(mockPool);
+    mockQuery.mockClear();
+    mockConnect.mockClear();
+  });
+  
+  describe('getFlag', () => {
+    it('should return flag value if exists', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ flag_value: true }]
+      });
+      
+      const result = await service.getFlag('DEMO_MODE');
+      
+      expect(result).toBe(true);
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('SELECT flag_value'),
+        ['DEMO_MODE']
+      );
+    });
+    
+    it('should return false if flag does not exist', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      
+      const result = await service.getFlag('NONEXISTENT');
+      
+      expect(result).toBe(false);
+    });
+  });
+  
+  describe('getUserTradingMode', () => {
+    it('should return user trading mode', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ trading_mode: 'real' }]
+      });
+      
+      const result = await service.getUserTradingMode(123);
+      
+      expect(result).toBe('real');
+    });
+    
+    it('should return demo as default if not set', async () => {
+      mockQuery.mockResolvedValueOnce({ rows: [] });
+      
+      const result = await service.getUserTradingMode(123);
+      
+      expect(result).toBe('demo');
+    });
+  });
+  
+  describe('shouldUseDemoMode', () => {
+    it('should call database function', async () => {
+      mockQuery.mockResolvedValueOnce({
+        rows: [{ use_demo: true }]
+      });
+      
+      const result = await service.shouldUseDemoMode(123);
+      
+      expect(result).toBe(true);
+      expect(mockQuery).toHaveBeenCalledWith(
+        expect.stringContaining('should_use_demo_mode'),
+        [123]
+      );
+    });
+  });
+});
+
+describe('EnvFeatureFlags', () => {
+  const originalEnv = process.env;
+  
+  beforeEach(() => {
+    jest.resetModules();
+    process.env = { ...originalEnv };
+  });
+  
+  afterAll(() => {
+    process.env = originalEnv;
+  });
+  
+  describe('isDemoMode', () => {
+    it('should return true when DEMO_MODE=true', () => {
+      process.env.DEMO_MODE = 'true';
+      expect(EnvFeatureFlags.isDemoMode()).toBe(true);
+    });
+    
+    it('should return false when DEMO_MODE=false', () => {
+      process.env.DEMO_MODE = 'false';
+      expect(EnvFeatureFlags.isDemoMode()).toBe(false);
+    });
+    
+    it('should return false when DEMO_MODE is not set', () => {
+      delete process.env.DEMO_MODE;
+      expect(EnvFeatureFlags.isDemoMode()).toBe(false);
+    });
+  });
+  
+  describe('isMexcOnly', () => {
+    it('should return true by default', () => {
+      delete process.env.MEXC_ONLY;
+      expect(EnvFeatureFlags.isMexcOnly()).toBe(true);
+    });
+    
+    it('should return false when explicitly set to false', () => {
+      process.env.MEXC_ONLY = 'false';
+      expect(EnvFeatureFlags.isMexcOnly()).toBe(false);
+    });
+  });
+});
+
+describe('Settings Validation', () => {
+  describe('validateUserPreferences', () => {
+    it('should accept valid trading_mode', () => {
+      const data = { trading_mode: 'demo' };
+      const result = validateWithErrors(validateUserPreferences, data);
+      
+      expect(result.valid).toBe(true);
+      expect(result.errors).toBeNull();
+    });
+    
+    it('should accept valid preferences', () => {
+      const data = {
+        preferences: {
+          theme: 'dark',
+          language: 'fa',
+          notifications: {
+            email: true,
+            telegram: false
+          }
+        }
+      };
+      const result = validateWithErrors(validateUserPreferences, data);
+      
+      expect(result.valid).toBe(true);
+    });
+    
+    it('should reject invalid trading_mode', () => {
+      const data = { trading_mode: 'invalid' };
+      const result = validateWithErrors(validateUserPreferences, data);
+      
+      expect(result.valid).toBe(false);
+      expect(result.errors).not.toBeNull();
+    });
+    
+    it('should reject invalid risk settings', () => {
+      const data = {
+        preferences: {
+          risk_settings: {
+            max_position_size: -100 // Invalid: negative
+          }
+        }
+      };
+      const result = validateWithErrors(validateUserPreferences, data);
+      
+      expect(result.valid).toBe(false);
+    });
+    
+    it('should remove additional properties', () => {
+      const data = {
+        trading_mode: 'demo',
+        extra_field: 'should be removed'
+      };
+      validateUserPreferences(data);
+      
+      expect(data).not.toHaveProperty('extra_field');
+    });
+  });
+  
+  describe('validateFeatureFlag', () => {
+    it('should accept valid feature flag', () => {
+      const data = {
+        flag_key: 'DEMO_MODE',
+        flag_value: true,
+        description: 'Test flag'
+      };
+      const result = validateWithErrors(validateFeatureFlag, data);
+      
+      expect(result.valid).toBe(true);
+    });
+    
+    it('should reject invalid flag_key format', () => {
+      const data = {
+        flag_key: 'invalid-format', // Should be UPPERCASE_WITH_UNDERSCORES
+        flag_value: true
+      };
+      const result = validateWithErrors(validateFeatureFlag, data);
+      
+      expect(result.valid).toBe(false);
+    });
+    
+    it('should reject missing required fields', () => {
+      const data = {
+        flag_key: 'TEST_FLAG'
+        // Missing flag_value
+      };
+      const result = validateWithErrors(validateFeatureFlag, data);
+      
+      expect(result.valid).toBe(false);
+    });
+  });
+});
