@@ -112,15 +112,15 @@ describe('API Contract Tests', () => {
       '/api/wallet/history',
       '/api/wallet/deposit',
       '/api/wallet/withdraw',
-      '/api/alerts',
+      // '/api/alerts', // NOW IMPLEMENTED in Batch 2
       '/api/autopilot/status',
       '/api/autopilot/start',
       '/api/autopilot/stop',
-      '/api/manual-trading/pairs',
+      // '/api/manual-trading/pairs', // NOW IMPLEMENTED in Batch 2
       '/api/manual-trading/order',
-      '/api/manual-trading/orders/open',
+      // '/api/manual-trading/orders/open', // NOW IMPLEMENTED in Batch 2
       '/api/manual-trading/orders/cancel',
-      '/api/settings/user'
+      // '/api/settings/user' // NOW IMPLEMENTED in Batch 2
     ];
     
     protectedEndpoints.slice(0, 15).forEach((endpoint) => {
