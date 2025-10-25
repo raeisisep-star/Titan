@@ -295,7 +295,7 @@ pm2 logs titan-backend --lines 50
 
 ### Check Database:
 ```bash
-PGPASSWORD="***REDACTED***" psql -h localhost -p 5433 -U titan_user -d titan_trading
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading
 ```
 
 ### Test APIs:

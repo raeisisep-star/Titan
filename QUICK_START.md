@@ -161,7 +161,7 @@ pm2 logs titan-backend --lines 100
 sudo systemctl status postgresql
 
 # Test connection
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
 
 # Restart if needed
 sudo systemctl restart postgresql
@@ -282,13 +282,13 @@ cd /home/ubuntu/titan-backups
 ls -lh db_backup_*.dump
 
 # Restore specific backup
-PGPASSWORD='***REDACTED***' pg_restore \
+PGPASSWORD='Titan@2024!Strong' pg_restore \
   -h localhost -p 5433 -U titan_user \
   -d titan_trading --clean \
   db_backup_YYYYMMDD_HHMMSS.dump
 
 # Verify restoration
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT COUNT(*) FROM users;"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT COUNT(*) FROM users;"
 ```
 
 #### Restore Application Code
@@ -364,13 +364,13 @@ cd /tmp/webapp/Titan && scripts/monitor.sh
 ### Database Performance
 ```bash
 # Active connections
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';"
 
 # Database size
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));"
 
 # Table sizes
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size FROM pg_tables WHERE schemaname='public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC LIMIT 10;"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size FROM pg_tables WHERE schemaname='public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC LIMIT 10;"
 ```
 
 ### Redis Performance
@@ -489,7 +489,7 @@ pm2 stop titan-backend
 2. **Restore database**:
 ```bash
 cd /home/ubuntu/titan-backups
-PGPASSWORD='***REDACTED***' pg_restore \
+PGPASSWORD='Titan@2024!Strong' pg_restore \
   -h localhost -p 5433 -U titan_user \
   -d titan_trading --clean \
   $(ls -t db_backup_*.dump | head -1)

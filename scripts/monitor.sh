@@ -69,7 +69,7 @@ check_postgresql() {
         echo -e "${GREEN}✅ PostgreSQL Status: Running${NC}"
         
         # Check database connections
-        DB_CONNECTIONS=$(PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';" 2>/dev/null | xargs)
+        DB_CONNECTIONS=$(PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';" 2>/dev/null | xargs)
         
         if [ ! -z "$DB_CONNECTIONS" ]; then
             echo -e "${GREEN}✅ Active Connections: ${DB_CONNECTIONS}${NC}"
@@ -79,7 +79,7 @@ check_postgresql() {
         fi
         
         # Database size
-        DB_SIZE=$(PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));" 2>/dev/null | xargs)
+        DB_SIZE=$(PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));" 2>/dev/null | xargs)
         
         if [ ! -z "$DB_SIZE" ]; then
             echo -e "${GREEN}✅ Database Size: ${DB_SIZE}${NC}"

@@ -3,7 +3,7 @@
 
 echo "🌱 Seeding sample data for dashboard..."
 
-PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 << 'EOF'
+PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 << 'EOF'
 
 -- Clear existing test data
 TRUNCATE trades CASCADE;
@@ -130,7 +130,7 @@ EOF
 echo "✅ Sample data seeded successfully!"
 echo ""
 echo "📊 Quick Stats:"
-PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "
+PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "
 SELECT 
     (SELECT COUNT(*) FROM trades) as trades,
     (SELECT COUNT(*) FROM orders WHERE status = 'pending') as pending_orders,

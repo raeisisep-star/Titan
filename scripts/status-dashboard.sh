@@ -67,8 +67,8 @@ display_services() {
     
     # PostgreSQL
     if systemctl is-active postgresql &>/dev/null; then
-        DB_CONN=$(PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';" 2>/dev/null | xargs)
-        DB_SIZE=$(PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));" 2>/dev/null | xargs)
+        DB_CONN=$(PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT count(*) FROM pg_stat_activity WHERE datname='titan_trading';" 2>/dev/null | xargs)
+        DB_SIZE=$(PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -t -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));" 2>/dev/null | xargs)
         echo -e "  ${GREEN}● PostgreSQL:${NC} Running | Connections: ${DB_CONN} | Size: ${DB_SIZE}"
     else
         echo -e "  ${RED}● PostgreSQL:${NC} ${RED}Stopped${NC}"

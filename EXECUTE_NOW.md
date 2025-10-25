@@ -194,7 +194,7 @@ pm2 list | grep titan-backend
 # → Should show "online"
 
 # Check database seeded
-PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "SELECT COUNT(*) FROM trades;"
+PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "SELECT COUNT(*) FROM trades;"
 # → Should show 50+
 ```
 
@@ -227,7 +227,7 @@ curl -i https://www.zala.ir/api/health > api-health-response.txt 2>&1
 curl https://www.zala.ir/api/dashboard/comprehensive-real | jq . > dashboard-response.json
 
 # 4. Database stats
-PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "
+PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 -c "
 SELECT 
     'Database Stats' as report,
     (SELECT COUNT(*) FROM trades) as trades,

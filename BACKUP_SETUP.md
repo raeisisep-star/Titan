@@ -74,7 +74,7 @@ cd /home/ubuntu/titan-backups
 ls -lh db_backup_*.dump
 
 # Restore specific backup
-PGPASSWORD='***REDACTED***' pg_restore \
+PGPASSWORD='Titan@2024!Strong' pg_restore \
   -h localhost -p 5433 -U titan_user \
   -d titan_trading \
   --clean \
@@ -183,7 +183,7 @@ ls -ld /home/ubuntu/titan-backups
 ### Database Backup Fails
 ```bash
 # Test PostgreSQL connection
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
 
 # Check PostgreSQL is running
 systemctl status postgresql

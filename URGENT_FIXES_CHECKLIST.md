@@ -367,7 +367,7 @@ pm2 logs titan-backend --lines 50
 
 ```bash
 cd /tmp/webapp/Titan
-PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 << 'EOF'
+PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 << 'EOF'
 -- Add sample trades
 INSERT INTO trades (user_id, portfolio_id, symbol, side, quantity, price, total_value, status, executed_at)
 SELECT 

@@ -215,7 +215,7 @@ curl https://www.zala.ir/health
 ### Individual Service Checks
 ```bash
 # PostgreSQL
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
 
 # Redis
 redis-cli -h localhost -p 6379 ping
@@ -232,13 +232,13 @@ pm2 status
 ### Database Performance
 ```bash
 # Active queries
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pid, usename, application_name, state, query FROM pg_stat_activity WHERE datname='titan_trading';"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pid, usename, application_name, state, query FROM pg_stat_activity WHERE datname='titan_trading';"
 
 # Database size
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pg_size_pretty(pg_database_size('titan_trading'));"
 
 # Table sizes
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size FROM pg_tables WHERE schemaname='public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT schemaname, tablename, pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) AS size FROM pg_tables WHERE schemaname='public' ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC;"
 ```
 
 ### Redis Performance

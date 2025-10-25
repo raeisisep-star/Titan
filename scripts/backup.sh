@@ -17,7 +17,7 @@ echo "=== TITAN Backup Started at $(date) ==="
 
 # 1. Database Backup
 echo "📊 Backing up PostgreSQL database..."
-PGPASSWORD='***REDACTED***' pg_dump \
+PGPASSWORD='Titan@2024!Strong' pg_dump \
   -h "$DB_HOST" \
   -p "$DB_PORT" \
   -U "$DB_USER" \

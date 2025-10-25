@@ -294,7 +294,7 @@ JOIN portfolios p ON p.user_id = u.id
 LIMIT 10;
 
 -- Apply with:
--- PGPASSWORD='***REDACTED***' psql -U titan_user -d titan_trading -h localhost -p 5433 -f database/migrations/003_seed_sample_data.sql
+-- PGPASSWORD='Titan@2024!Strong' psql -U titan_user -d titan_trading -h localhost -p 5433 -f database/migrations/003_seed_sample_data.sql
 ```
 
 ---

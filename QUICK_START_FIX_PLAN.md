@@ -77,7 +77,7 @@ ALTER COLUMN user_id SET NOT NULL;
 EOF
 
 # اجرای migration
-PGPASSWORD="***REDACTED***" psql -h localhost -p 5433 -U titan_user -d titan_trading -f fix_trades_table.sql
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -f fix_trades_table.sql
 
 echo "✅ Database migration completed!"
 ```
@@ -216,7 +216,7 @@ COMMIT;
 EOF
 
 # اجرا
-PGPASSWORD="***REDACTED***" psql -h localhost -p 5433 -U titan_user -d titan_trading -f create_ai_tables.sql
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -f create_ai_tables.sql
 
 echo "✅ AI tables created!"
 ```
@@ -787,7 +787,7 @@ fetch('/api/news/latest').then(r => r.json()).then(console.log)
 cd /tmp/webapp/Titan
 
 # Step 1: Database fixes
-PGPASSWORD="***REDACTED***" psql -h localhost -p 5433 -U titan_user -d titan_trading << 'EOF'
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading << 'EOF'
 ALTER TABLE trades ADD COLUMN IF NOT EXISTS user_id UUID;
 ALTER TABLE trades ADD CONSTRAINT trades_user_id_fkey FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE;
 CREATE INDEX IF NOT EXISTS idx_trades_user_id ON trades(user_id);

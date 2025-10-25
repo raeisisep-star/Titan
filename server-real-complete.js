@@ -55,7 +55,7 @@ const pool = new Pool({
   port: 5433,
   database: 'titan_trading',
   user: 'titan_user',
-  password: '***REDACTED***',
+  password: 'Titan@2024!Strong',
   max: 20,
   idleTimeoutMillis: 30000,
   connectionTimeoutMillis: 2000,

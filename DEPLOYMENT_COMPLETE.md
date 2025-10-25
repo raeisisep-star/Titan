@@ -129,7 +129,7 @@
 
 ### Environment Variables (`.env`)
 ```bash
-DATABASE_URL=postgresql://titan_user:***REDACTED***@localhost:5433/titan_trading
+DATABASE_URL=postgresql://titan_user:Titan@2024!Strong@localhost:5433/titan_trading
 REDIS_URL=redis://localhost:6379
 JWT_SECRET=TitanTradingSystem2024SecretKeyVerySecureAndLong!
 NODE_ENV=production
@@ -232,7 +232,7 @@ CORS_ORIGIN=*
 ls -lh /home/ubuntu/titan-backups/
 
 # Restore database
-PGPASSWORD='***REDACTED***' pg_restore \
+PGPASSWORD='Titan@2024!Strong' pg_restore \
   -h localhost -p 5433 -U titan_user \
   -d titan_trading --clean \
   /home/ubuntu/titan-backups/db_backup_YYYYMMDD_HHMMSS.dump
@@ -355,7 +355,7 @@ curl https://www.zala.ir/health
 
 #### Database
 ```bash
-PGPASSWORD='***REDACTED***' psql \
+PGPASSWORD='Titan@2024!Strong' psql \
   -h localhost -p 5433 -U titan_user -d titan_trading \
   -c "SELECT NOW();"
 ```
@@ -423,7 +423,7 @@ curl https://www.zala.ir/api/portfolio \
 ### Database Testing
 ```bash
 # Connect to database
-PGPASSWORD='***REDACTED***' psql -h localhost -p 5433 -U titan_user -d titan_trading
+PGPASSWORD='Titan@2024!Strong' psql -h localhost -p 5433 -U titan_user -d titan_trading
 
 # List tables
 \dt
