@@ -1,0 +1,144 @@
+# Simplified Titan API Contracts for Testing
+# Version: 1.0
+
+auth:
+  description: "Authentication endpoints"
+  endpoints:
+    - path: "/api/auth/register"
+      method: POST
+      auth: "None"
+      status: "✅ REAL"
+      
+    - path: "/api/auth/login"
+      method: POST
+      auth: "None"
+      status: "✅ REAL"
+      
+    - path: "/api/auth/logout"
+      method: POST
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+
+health:
+  description: "Health check endpoints"
+  endpoints:
+    - path: "/api/health"
+      method: GET
+      auth: "None"
+      status: "✅ REAL"
+      
+    - path: "/api/health/full"
+      method: GET
+      auth: "Basic Auth"
+      status: "✅ REAL"
+
+dashboard:
+  description: "Dashboard endpoints"
+  endpoints:
+    - path: "/api/dashboard/portfolio-real"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/dashboard/portfolio-demo"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/dashboard/activities"
+      method: GET
+      auth: "JWT Bearer"
+      status: "🔄 PARTIAL"
+
+portfolio:
+  description: "Portfolio management"
+  endpoints:
+    - path: "/api/portfolio/holdings"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/wallet/balances"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/portfolio/pnl-history"
+      method: GET
+      auth: "JWT Bearer"
+      status: "⏳ TODO"
+
+alerts:
+  description: "Alerts and notifications"
+  endpoints:
+    - path: "/api/alerts"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/alerts"
+      method: POST
+      auth: "JWT Bearer"
+      status: "🔄 PARTIAL"
+      
+    - path: "/api/news/feed"
+      method: GET
+      auth: "JWT Bearer"
+      status: "⏳ TODO"
+
+autopilot:
+  description: "Autopilot trading"
+  endpoints:
+    - path: "/api/autopilot/start"
+      method: POST
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/autopilot/stop"
+      method: POST
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/autopilot/status"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+
+manual_trading:
+  description: "Manual trading operations"
+  endpoints:
+    - path: "/api/manual-trading/order"
+      method: POST
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/manual-trading/orders/open"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/manual-trading/orders/cancel"
+      method: POST
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+
+settings:
+  description: "User settings"
+  endpoints:
+    - path: "/api/settings/user"
+      method: GET
+      auth: "JWT Bearer"
+      status: "✅ REAL"
+      
+    - path: "/api/settings/user"
+      method: PATCH
+      auth: "JWT Bearer"
+      status: "🔄 PARTIAL"
+
+security:
+  description: "Security endpoints"
+  endpoints:
+    - path: "/api/security/csp-report"
+      method: POST
+      auth: "None"
+      status: "✅ REAL"
