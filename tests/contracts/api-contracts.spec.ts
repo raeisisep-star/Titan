@@ -107,15 +107,15 @@ describe('API Contract Tests', () => {
     const UNIMPLEMENTED_ENDPOINTS = [
       '/api/dashboard/portfolio-demo',
       '/api/dashboard/activities',
-      '/api/portfolio/holdings',
-      '/api/wallet/balances',
-      '/api/wallet/history',
+      // '/api/portfolio/holdings', // NOW IMPLEMENTED in Batch 3
+      // '/api/wallet/balances', // NOW IMPLEMENTED in Batch 3
+      // '/api/wallet/history', // NOW IMPLEMENTED in Batch 3
       '/api/wallet/deposit',
       '/api/wallet/withdraw',
       // '/api/alerts', // NOW IMPLEMENTED in Batch 2
-      '/api/autopilot/status',
-      '/api/autopilot/start',
-      '/api/autopilot/stop',
+      // '/api/autopilot/status', // NOW IMPLEMENTED in Batch 3
+      // '/api/autopilot/start', // NOW IMPLEMENTED in Batch 3
+      // '/api/autopilot/stop', // NOW IMPLEMENTED in Batch 3
       // '/api/manual-trading/pairs', // NOW IMPLEMENTED in Batch 2
       '/api/manual-trading/order',
       // '/api/manual-trading/orders/open', // NOW IMPLEMENTED in Batch 2
