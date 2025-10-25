@@ -1237,6 +1237,151 @@ app.get('/api/users', async (c) => {
 });
 
 // =============================================================================
+// Additional API Endpoints - Read-Only (Safe for Testing)
+// =============================================================================
+
+// GET /api/alerts - Return empty alerts list (read-only)
+app.get('/api/alerts', authMiddleware, async (c) => {
+  try {
+    // For now, return empty array - safe for testing JWT
+    // TODO: Implement alerts functionality with database
+    return c.json({
+      success: true,
+      data: []
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching alerts:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/alerts - Create alert (placeholder)
+app.post('/api/alerts', authMiddleware, async (c) => {
+  try {
+    // Placeholder for alert creation
+    // TODO: Implement alert creation with database
+    return c.json({
+      success: true,
+      data: { id: '1', message: 'Alert creation not yet implemented' }
+    }, 200);
+  } catch (error) {
+    console.error('Error creating alert:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/settings/user - Return user settings (read-only)
+app.get('/api/settings/user', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId');
+    
+    // Fetch user settings from database
+    const result = await pool.query(
+      'SELECT language, timezone, settings FROM users WHERE id = $1',
+      [userId]
+    );
+    
+    if (result.rows.length === 0) {
+      return c.json({
+        success: true,
+        data: {
+          language: 'en',
+          timezone: 'UTC',
+          notifications: true,
+          theme: 'dark'
+        }
+      }, 200);
+    }
+    
+    const user = result.rows[0];
+    return c.json({
+      success: true,
+      data: {
+        language: user.language || 'en',
+        timezone: user.timezone || 'UTC',
+        ...user.settings
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching user settings:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// PATCH /api/settings/user - Update user settings (safe)
+app.patch('/api/settings/user', authMiddleware, async (c) => {
+  try {
+    const userId = c.get('userId');
+    const body = await c.req.json();
+    
+    // Only allow safe settings updates
+    const allowedFields = ['language', 'timezone', 'theme', 'notifications'];
+    const updates = {};
+    
+    for (const key of allowedFields) {
+      if (body[key] !== undefined) {
+        updates[key] = body[key];
+      }
+    }
+    
+    // Update user settings
+    await pool.query(
+      'UPDATE users SET settings = settings || $1::jsonb, updated_at = NOW() WHERE id = $2',
+      [JSON.stringify(updates), userId]
+    );
+    
+    return c.json({
+      success: true,
+      data: updates
+    }, 200);
+  } catch (error) {
+    console.error('Error updating user settings:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/manual-trading/pairs - Return available trading pairs (read-only)
+app.get('/api/manual-trading/pairs', authMiddleware, async (c) => {
+  try {
+    // Return basic trading pairs for MEXC
+    // Safe read-only data, no state changes
+    return c.json({
+      success: true,
+      data: [
+        'BTCUSDT',
+        'ETHUSDT',
+        'BNBUSDT',
+        'SOLUSDT',
+        'XRPUSDT',
+        'ADAUSDT',
+        'DOGEUSDT',
+        'MATICUSDT',
+        'DOTUSDT',
+        'LINKUSDT'
+      ]
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching trading pairs:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/manual-trading/orders/open - Return open orders (read-only)
+app.get('/api/manual-trading/orders/open', authMiddleware, async (c) => {
+  try {
+    // For now, return empty array - safe for testing JWT
+    // TODO: Implement open orders functionality
+    return c.json({
+      success: true,
+      data: []
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching open orders:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =============================================================================
 // 404 Handler
 // =============================================================================
 
