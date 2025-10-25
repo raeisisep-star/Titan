@@ -1,47 +1,12 @@
 name: CI Tests
 
-# Temporarily disabled - local-only testing on production server 188.40.209.82
-# Re-enable after completion of local test phase
-on: []
+# Completely disabled - manual trigger only
+# Use ci-contracts.yml for automated CI testing
+on:
+  workflow_dispatch:
 
 jobs:
-  test:
-    # Temporarily disabled for local-only testing
-    if: false
-    name: Test on Node ${{ matrix.node-version }}
+  disabled:
     runs-on: ubuntu-latest
-    
-    strategy:
-      matrix:
-        node-version: [18.x, 20.x]
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ matrix.node-version }}
-        cache: 'npm'
-    
-    - name: Install dependencies
-      run: npm ci
-    
-    - name: Run linter
-      run: npm run lint --if-present
-      continue-on-error: true
-    
-    - name: Run contract tests
-      run: npm run test:contracts --if-present
-      env:
-        NODE_ENV: test
-    
-    - name: Upload coverage reports
-      if: matrix.node-version == '20.x'
-      uses: codecov/codecov-action@v3
-      with:
-        files: ./coverage/lcov.info
-        flags: unittests
-        name: codecov-umbrella
-      continue-on-error: true
+      - run: echo "Temporarily disabled - use ci-contracts.yml workflow instead"

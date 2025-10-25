@@ -1,24 +1,12 @@
 name: Secret Scanning (Gitleaks)
 
-# Temporarily disabled - local-only testing on production server 188.40.209.82
-# Re-enable after completion of local test phase
-on: []
+# Completely disabled - manual trigger only
+# Use ci-contracts.yml for automated CI testing
+on:
+  workflow_dispatch:
 
 jobs:
-  gitleaks:
-    # Temporarily disabled for local-only testing
-    if: false
-    name: Scan for secrets
+  disabled:
     runs-on: ubuntu-latest
-    
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Full history for scanning
-    
-    - name: Run Gitleaks
-      uses: gitleaks/gitleaks-action@v2
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        GITLEAKS_LICENSE: ${{ secrets.GITLEAKS_LICENSE }}
+      - run: echo "Temporarily disabled - use ci-contracts.yml workflow instead"
