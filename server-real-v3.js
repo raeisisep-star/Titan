@@ -1408,6 +1408,125 @@ app.post('/api/security/csp-report', async (c) => {
 });
 
 // =============================================================================
+// Autopilot Endpoints (Read-Only/Safe Placeholders)
+// =============================================================================
+
+// GET /api/autopilot/status - Return autopilot status
+app.get('/api/autopilot/status', authMiddleware, async (c) => {
+  try {
+    // Safe read-only placeholder - returns current autopilot status
+    return c.json({
+      success: true,
+      data: {
+        running: false,
+        mode: 'manual',
+        lastRun: null,
+        strategy: null,
+        performance: {
+          totalTrades: 0,
+          profitLoss: 0,
+          winRate: 0
+        }
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching autopilot status:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/autopilot/start - Start autopilot (safe placeholder)
+app.post('/api/autopilot/start', authMiddleware, async (c) => {
+  try {
+    // Safe placeholder - returns acknowledgment without actually starting
+    // TODO: Implement actual autopilot logic with strategy execution
+    return c.json({
+      success: true,
+      message: 'Autopilot start queued',
+      data: {
+        status: 'queued',
+        estimatedStart: new Date().toISOString()
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error starting autopilot:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// POST /api/autopilot/stop - Stop autopilot (safe placeholder)
+app.post('/api/autopilot/stop', authMiddleware, async (c) => {
+  try {
+    // Safe placeholder - returns acknowledgment without side effects
+    // TODO: Implement actual autopilot stop logic
+    return c.json({
+      success: true,
+      message: 'Autopilot stop queued',
+      data: {
+        status: 'stopped',
+        stoppedAt: new Date().toISOString()
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error stopping autopilot:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =============================================================================
+// Portfolio & Wallet Endpoints (Read-Only Placeholders)
+// =============================================================================
+
+// GET /api/portfolio/holdings - Return portfolio holdings
+app.get('/api/portfolio/holdings', authMiddleware, async (c) => {
+  try {
+    // Safe read-only placeholder - returns empty holdings
+    // TODO: Implement actual portfolio holdings from database
+    return c.json({
+      success: true,
+      data: []
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching portfolio holdings:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/wallet/balances - Return wallet balances
+app.get('/api/wallet/balances', authMiddleware, async (c) => {
+  try {
+    // Safe read-only placeholder - returns zero balances
+    // TODO: Implement actual wallet balance calculation
+    return c.json({
+      success: true,
+      data: {
+        total: 0,
+        totalUSD: 0,
+        assets: []
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching wallet balances:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// GET /api/wallet/history - Return wallet transaction history
+app.get('/api/wallet/history', authMiddleware, async (c) => {
+  try {
+    // Safe read-only placeholder - returns empty history
+    // TODO: Implement actual transaction history from database
+    return c.json({
+      success: true,
+      data: []
+    }, 200);
+  } catch (error) {
+    console.error('Error fetching wallet history:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =============================================================================
 // 404 Handler
 // =============================================================================
 
