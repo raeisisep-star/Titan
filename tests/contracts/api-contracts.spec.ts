@@ -147,14 +147,14 @@ describe('API Contract Tests', () => {
           expect([401, 403]).toContain(response.status);
         });
         
-        // Skip valid JWT tests - token is intentionally invalid for security
-        it.skip('should accept valid JWT token (skipped - requires valid test user)', async () => {
+        // ENABLED: Valid JWT tests - using real test user on 188.40.209.82
+        it('should accept valid JWT token', async () => {
           const method = endpoint.method.toLowerCase() as 'get' | 'post' | 'patch' | 'delete';
           const response = await request(BASE_URL)[method](endpoint.path)
             .set('Authorization', `Bearer ${TEST_JWT}`);
           
-          // This test is skipped because TEST_JWT is intentionally invalid
-          // To enable: create test user, generate valid JWT, set in TEST_JWT env var
+          // Test user created: test-user@example.com (UUID: 2cd563bb-585d-4c78-9050-00f84b64c47b)
+          // Should not return 401 (unauthorized) with valid token
           expect(response.status).not.toBe(401);
         });
       });
@@ -232,13 +232,13 @@ describe('API Contract Tests', () => {
       expect([401, 403]).toContain(response.status);
     });
     
-    // Skip valid token test - requires valid JWT
-    it.skip('GET /api/dashboard/portfolio-real should work with valid token', async () => {
+    // ENABLED: Valid token test with real JWT
+    it('GET /api/dashboard/portfolio-real should work with valid token', async () => {
       const response = await request(BASE_URL)
         .get('/api/dashboard/portfolio-real')
         .set('Authorization', `Bearer ${TEST_JWT}`);
       
-      // Skipped - TEST_JWT is intentionally invalid
+      // With valid JWT, should return 200 or 500 (internal errors acceptable for now)
       expect([200, 500]).toContain(response.status);
       if (response.status === 200) {
         expect(response.body.data).toHaveProperty('total_balance_usd');
