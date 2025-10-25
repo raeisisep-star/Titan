@@ -6,6 +6,8 @@ module.exports = {
   transform: {
     '^.+\\.ts$': 'ts-jest',
   },
+  // Load test environment variables before running tests
+  setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   collectCoverageFrom: [
     'server-real-v3.js',
     '!**/node_modules/**',
