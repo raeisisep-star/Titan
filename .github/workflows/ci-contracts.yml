@@ -1,0 +1,310 @@
+name: Contract Tests (Isolated CI)
+
+# Limited triggers - only for PRs and main branch pushes, specific paths only
+on:
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'server-real-v3.js'
+      - 'src/**'
+      - 'tests/**'
+      - 'contracts/**'
+      - 'jest.config.js'
+      - '.github/workflows/ci-contracts.yml'
+  push:
+    branches:
+      - main
+    paths:
+      - 'server-real-v3.js'
+      - 'src/**'
+      - 'tests/**'
+      - 'contracts/**'
+      - 'jest.config.js'
+      - '.github/workflows/ci-contracts.yml'
+
+jobs:
+  contract-tests:
+    name: Contract Tests (Isolated Environment)
+    runs-on: ubuntu-latest
+    
+    # Ephemeral service containers - NO connection to production 188.40.209.82
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: titan_test
+          POSTGRES_PASSWORD: test_password_123
+          POSTGRES_DB: titan_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+    
+    env:
+      # Test environment variables
+      NODE_ENV: test
+      DEMO_MODE: true
+      MEXC_ONLY: true
+      TEST_BASE_URL: http://127.0.0.1:5000
+      
+      # Database configuration (ephemeral PostgreSQL container)
+      PGHOST: localhost
+      PGPORT: 5432
+      PGUSER: titan_test
+      PGPASSWORD: test_password_123
+      PGDATABASE: titan_test
+      DATABASE_URL: postgresql://titan_test:test_password_123@localhost:5432/titan_test
+      
+      # Redis configuration (ephemeral Redis container)
+      REDIS_HOST: localhost
+      REDIS_PORT: 6379
+      
+      # JWT Secret from GitHub Secrets
+      JWT_SECRET: ${{ secrets.JWT_SECRET }}
+      
+      # Server configuration
+      PORT: 5000
+      HOST: 127.0.0.1
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js 20.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Verify PostgreSQL connection
+        run: |
+          echo "Testing PostgreSQL connection..."
+          PGPASSWORD=test_password_123 psql -h localhost -U titan_test -d titan_test -c "SELECT version();"
+      
+      - name: Setup PostgreSQL schema and test user
+        run: |
+          echo "Creating PostgreSQL schema..."
+          PGPASSWORD=test_password_123 psql -h localhost -U titan_test -d titan_test <<'SQL'
+          
+          -- Create users table
+          CREATE TABLE IF NOT EXISTS users (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            username VARCHAR(50) UNIQUE NOT NULL,
+            email VARCHAR(255) UNIQUE NOT NULL,
+            password_hash VARCHAR(255) NOT NULL,
+            first_name VARCHAR(100),
+            last_name VARCHAR(100),
+            role VARCHAR(20) DEFAULT 'user',
+            is_active BOOLEAN DEFAULT true,
+            is_verified BOOLEAN DEFAULT false,
+            language VARCHAR(10) DEFAULT 'en',
+            timezone VARCHAR(50) DEFAULT 'UTC',
+            settings JSONB DEFAULT '{}',
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+          );
+          
+          -- Create index for faster lookups
+          CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
+          CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+          
+          -- Insert test user with known UUID
+          INSERT INTO users (
+            id,
+            username,
+            email,
+            password_hash,
+            first_name,
+            last_name,
+            role,
+            is_active,
+            is_verified,
+            language,
+            timezone
+          ) VALUES (
+            '2cd563bb-585d-4c78-9050-00f84b64c47b',
+            'test_user',
+            'test-user@example.com',
+            '$2b$10$LLC85jj4SFhfVurPmtcbuOibOmAyrsu8KIif.EWYVHGvYz3pTp.N6',
+            'Test',
+            'User',
+            'user',
+            true,
+            true,
+            'en',
+            'UTC'
+          ) ON CONFLICT (id) DO NOTHING;
+          
+          SQL
+          
+          echo "✅ PostgreSQL schema and test user created successfully"
+          
+          # Verify test user exists
+          echo "Verifying test user..."
+          PGPASSWORD=test_password_123 psql -h localhost -U titan_test -d titan_test -c \
+            "SELECT id, username, email, role FROM users WHERE username = 'test_user';"
+      
+      - name: Generate test JWT token
+        id: generate-jwt
+        run: |
+          echo "Generating JWT token for test user..."
+          
+          # Create Node.js script to generate JWT
+          cat > generate-jwt.js <<'EOF'
+          const jwt = require('jsonwebtoken');
+          
+          const payload = {
+            userId: '2cd563bb-585d-4c78-9050-00f84b64c47b',
+            username: 'test_user',
+            email: 'test-user@example.com',
+            role: 'user'
+          };
+          
+          const secret = process.env.JWT_SECRET;
+          if (!secret) {
+            console.error('❌ JWT_SECRET not found in environment');
+            process.exit(1);
+          }
+          
+          const token = jwt.sign(payload, secret, {
+            algorithm: 'HS256',
+            expiresIn: '6h'
+          });
+          
+          console.log('✅ JWT token generated successfully');
+          console.log('Token length:', token.length);
+          
+          // Write token to .env.test file
+          const fs = require('fs');
+          const envContent = `# Generated by CI workflow
+          DEMO_MODE=true
+          MEXC_ONLY=true
+          NODE_ENV=test
+          TEST_BASE_URL=http://127.0.0.1:5000
+          TEST_JWT=${token}
+          `;
+          
+          fs.writeFileSync('.env.test', envContent.trim());
+          console.log('✅ .env.test file created');
+          EOF
+          
+          # Run the JWT generation script
+          node generate-jwt.js
+          
+          # Verify .env.test was created
+          if [ -f .env.test ]; then
+            echo "✅ .env.test file verified"
+            echo "TEST_JWT length: $(grep TEST_JWT .env.test | wc -c)"
+          else
+            echo "❌ .env.test file not created"
+            exit 1
+          fi
+      
+      - name: Start backend server
+        run: |
+          echo "Starting backend server in background..."
+          
+          # Start server in background with output to log file
+          nohup node server-real-v3.js > server.log 2>&1 &
+          SERVER_PID=$!
+          echo $SERVER_PID > server.pid
+          
+          echo "✅ Server started with PID: $SERVER_PID"
+          echo "Waiting for server to be ready..."
+          
+          # Wait for server health check (max 30 seconds)
+          for i in {1..30}; do
+            if curl -s http://127.0.0.1:5000/health > /dev/null 2>&1; then
+              echo "✅ Server is healthy and ready!"
+              curl -s http://127.0.0.1:5000/health | head -5
+              break
+            fi
+            
+            if [ $i -eq 30 ]; then
+              echo "❌ Server failed to start within 30 seconds"
+              echo "=== Server log (last 50 lines) ==="
+              tail -50 server.log
+              exit 1
+            fi
+            
+            echo "Waiting for server... (attempt $i/30)"
+            sleep 1
+          done
+        timeout-minutes: 2
+      
+      - name: Run contract tests
+        run: |
+          echo "Running contract tests..."
+          npm run test:contracts
+        timeout-minutes: 5
+      
+      - name: Stop backend server
+        if: always()
+        run: |
+          if [ -f server.pid ]; then
+            SERVER_PID=$(cat server.pid)
+            echo "Stopping server with PID: $SERVER_PID"
+            kill $SERVER_PID 2>/dev/null || true
+            
+            # Wait for graceful shutdown
+            sleep 2
+            
+            # Force kill if still running
+            kill -9 $SERVER_PID 2>/dev/null || true
+            
+            echo "✅ Server stopped"
+          fi
+      
+      - name: Upload test coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-report
+          path: |
+            coverage/
+            !coverage/**/*.map
+          retention-days: 30
+      
+      - name: Upload server logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: server-logs
+          path: server.log
+          retention-days: 7
+      
+      - name: Test summary
+        if: always()
+        run: |
+          echo "=== CI Test Summary ==="
+          echo "Environment: Isolated GitHub Actions runner"
+          echo "PostgreSQL: Ephemeral container (localhost:5432)"
+          echo "Redis: Ephemeral container (localhost:6379)"
+          echo "Backend: Local server (127.0.0.1:5000)"
+          echo "Production server: NOT CONNECTED (188.40.209.82 isolated)"
+          echo ""
+          echo "Expected pass rate: 85.5% (59/69 tests)"
+          echo ""
+          
+          if [ -f coverage/coverage-summary.json ]; then
+            echo "=== Coverage Summary ==="
+            cat coverage/coverage-summary.json | head -20
+          fi
