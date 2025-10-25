@@ -1382,6 +1382,32 @@ app.get('/api/manual-trading/orders/open', authMiddleware, async (c) => {
 });
 
 // =============================================================================
+// Security Endpoints
+// =============================================================================
+
+// POST /api/security/csp-report - Accept CSP violation reports
+app.post('/api/security/csp-report', async (c) => {
+  try {
+    const report = await c.req.json();
+    
+    // Log CSP violation for monitoring
+    console.log('CSP Violation Report:', JSON.stringify(report, null, 2));
+    
+    // In production, you would:
+    // 1. Store in database for analysis
+    // 2. Alert security team for critical violations
+    // 3. Track violation trends
+    
+    // Return 200 OK with success message
+    return c.json({ success: true, message: 'CSP report received' }, 200);
+  } catch (error) {
+    console.error('Error processing CSP report:', error);
+    // Even on error, return 200 to avoid browser retry loops
+    return c.json({ success: true, message: 'CSP report received' }, 200);
+  }
+});
+
+// =============================================================================
 // 404 Handler
 // =============================================================================
 

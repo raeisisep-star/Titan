@@ -336,8 +336,9 @@ describe('API Contract Tests', () => {
           }
         });
       
-      // CSP endpoint should accept reports (200 or 204)
-      expect([200, 204]).toContain(response.status);
+      // CSP endpoint accepts reports and returns 200
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success');
     });
     
     it('POST /api/security/csp-report should handle invalid reports', async () => {
@@ -345,8 +346,9 @@ describe('API Contract Tests', () => {
         .post('/api/security/csp-report')
         .send({ invalid: 'data' });
       
-      // Should still accept (200/204) or return 400 for invalid format
-      expect([200, 204, 400]).toContain(response.status);
+      // Should still accept and return 200 (to avoid browser retry loops)
+      expect(response.status).toBe(200);
+      expect(response.body).toHaveProperty('success');
     });
   });
 });
