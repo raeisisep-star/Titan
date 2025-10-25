@@ -188,6 +188,43 @@ app.get('/api/health', async (c) => {
 });
 
 // =============================================================================
+// SECURITY APIs
+// =============================================================================
+
+/**
+ * CSP Report Collector
+ * Receives Content Security Policy violation reports
+ */
+app.post('/api/security/csp-report', async (c) => {
+  try {
+    const report = await c.req.json();
+    
+    // Sanitize report - remove any sensitive data
+    const sanitized = {
+      'document-uri': report['csp-report']?.['document-uri']?.split('?')[0], // Remove query params
+      'violated-directive': report['csp-report']?.['violated-directive'],
+      'blocked-uri': report['csp-report']?.['blocked-uri']?.split('?')[0],
+      'source-file': report['csp-report']?.['source-file']?.split('?')[0],
+      'line-number': report['csp-report']?.['line-number'],
+      'column-number': report['csp-report']?.['column-number'],
+      'timestamp': new Date().toISOString()
+    };
+    
+    // Log to file (no sensitive data like cookies, tokens, etc.)
+    const fs = require('fs');
+    const logFile = '/var/log/csp-report.log';
+    const logEntry = JSON.stringify(sanitized) + '\n';
+    
+    fs.appendFileSync(logFile, logEntry, { mode: 0o644 });
+    
+    return c.json({ success: true, message: 'Report received' }, 200);
+  } catch (error) {
+    console.error('CSP Report Error:', error);
+    return c.json({ success: false, error: 'Invalid report format' }, 400);
+  }
+});
+
+// =============================================================================
 // AUTHENTICATION APIs
 // =============================================================================
 
