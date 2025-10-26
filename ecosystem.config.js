@@ -9,7 +9,9 @@ module.exports = {
       max_memory_restart: '1G',
       env: {
         NODE_ENV: 'production',
-        PORT: 5000
+        PORT: 5000,
+        JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production-2024',
+        REDIS_URL: 'redis://localhost:6379'
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',
