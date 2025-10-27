@@ -7,6 +7,9 @@ const { RateLimiterRedis, RateLimiterMemory } = require('rate-limiter-flexible')
 
 let rateLimiter;
 
+// Debug logging control via environment variable
+const DEBUG_RATE_LIMIT = process.env.LOG_LEVEL === 'debug' || process.env.DEBUG_RATE_LIMIT === 'true';
+
 /**
  * Initialize rate limiter with Redis or fallback to Memory
  * @param {object} redisClient - Redis client instance (optional)
@@ -61,23 +64,28 @@ function rateLimitMiddleware() {
       
       const key = userId || forwardedFor?.split(',')[0]?.trim() || remoteIp;
 
-      console.log(`[RateLimit] Consuming for key: ${key}`);
+      if (DEBUG_RATE_LIMIT) {
+        console.log(`[RateLimit] Consuming for key: ${key}`);
+      }
 
       // Consume 1 point for this request
       await rateLimiter.consume(key);
 
-      console.log(`[RateLimit] Request allowed for key: ${key}`);
       // Request allowed - proceed
       return next();
     } catch (rateLimiterRes) {
-      console.error(`[RateLimit] Error caught:`, rateLimiterRes);
+      if (DEBUG_RATE_LIMIT) {
+        console.error(`[RateLimit] Error caught:`, rateLimiterRes);
+      }
       
       // Check if this is a rate limit error or a different error
       if (rateLimiterRes.msBeforeNext !== undefined) {
         // Rate limit exceeded
         const retryAfter = Math.ceil(rateLimiterRes.msBeforeNext / 1000);
         
-        console.log(`[RateLimit] Rate limit exceeded, retry after: ${retryAfter}s`);
+        if (DEBUG_RATE_LIMIT) {
+          console.log(`[RateLimit] Rate limit exceeded, retry after: ${retryAfter}s`);
+        }
         
         return c.json({
           success: false,
