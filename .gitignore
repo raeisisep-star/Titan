@@ -51,3 +51,7 @@ lerna-debug.log*
 # misc
 .DS_Store
 dist.old/
+
+# Test JWT tokens (generated locally/CI)
+.test.jwt
+*.jwt
