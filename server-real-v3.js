@@ -1527,6 +1527,88 @@ app.get('/api/wallet/history', authMiddleware, async (c) => {
 });
 
 // =============================================================================
+// Sprint 1: Skeleton Endpoints for Missing APIs
+// =============================================================================
+
+// Dashboard - Portfolio Demo (auth-protected skeleton)
+app.get('/api/dashboard/portfolio-demo', authMiddleware, async (c) => {
+  try {
+    return c.json({
+      success: true,
+      data: {
+        positions: [],
+        summary: {
+          totalValue: 0,
+          totalPnL: 0,
+          openPositions: 0
+        }
+      },
+      meta: { source: 'demo', ts: Date.now() }
+    }, 200);
+  } catch (error) {
+    console.error('Portfolio-demo error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Dashboard - Activities (auth-protected skeleton)
+app.get('/api/dashboard/activities', authMiddleware, async (c) => {
+  try {
+    return c.json({
+      success: true,
+      data: {
+        items: [],
+        total: 0
+      },
+      meta: { source: 'real', ts: Date.now() }
+    }, 200);
+  } catch (error) {
+    console.error('Activities error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Manual Trading - Place Order (auth-protected skeleton)
+app.post('/api/manual-trading/order', authMiddleware, async (c) => {
+  try {
+    // TODO: Add validation for order body
+    const body = await c.req.json();
+    
+    return c.json({
+      success: true,
+      data: {
+        orderId: `demo-${Date.now()}`,
+        status: 'pending',
+        createdAt: new Date().toISOString()
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Place order error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Manual Trading - Cancel Order (auth-protected skeleton)
+app.post('/api/manual-trading/orders/cancel', authMiddleware, async (c) => {
+  try {
+    // TODO: Add validation for cancel order body
+    const body = await c.req.json();
+    
+    return c.json({
+      success: true,
+      data: {
+        cancelled: true,
+        orderId: body.orderId || 'unknown',
+        cancelledAt: new Date().toISOString()
+      }
+    }, 200);
+  } catch (error) {
+    console.error('Cancel order error:', error);
+    return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =============================================================================
 // 404 Handler
 // =============================================================================
 
