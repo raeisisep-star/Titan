@@ -285,21 +285,12 @@ describe('API Contract Tests', () => {
       const has429 = statuses.includes(429);
       const has200 = statuses.includes(200);
       const allAuth = statuses.every(s => [401, 403].includes(s));
-      const has500 = statuses.includes(500);
-      
-      // Debug: Log status distribution
-      const statusCounts = statuses.reduce((acc, s) => {
-        acc[s] = (acc[s] || 0) + 1;
-        return acc;
-      }, {} as Record<number, number>);
-      console.log('Rate Limit Test - Status distribution:', statusCounts);
       
       // Accept multiple scenarios:
       // 1. Rate limiting works (has 429)
       // 2. Auth rejects all (invalid JWT fallback)
       // 3. All succeed (rate limiting not configured yet - acceptable)
-      // 4. Server errors are acceptable (backend not fully ready)
-      expect(has429 || allAuth || has200 || has500).toBe(true);
+      expect(has429 || allAuth || has200).toBe(true);
     }, 15000);
   });
   
