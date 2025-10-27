@@ -33,8 +33,10 @@ let redisClient;
   console.log('✅ Redis connected');
   
   // Initialize rate limiter after Redis connection
+  // Note: Redis v5 has compatibility issues with rate-limiter-flexible
+  // Temporarily using Memory-based rate limiter until we upgrade/fix the integration
   const { initRateLimiter } = require('./middleware/rateLimit');
-  initRateLimiter(redisClient, {
+  initRateLimiter(null, {  // Pass null to use Memory fallback
     points: 50,      // 50 requests
     duration: 60,    // per 60 seconds
   });

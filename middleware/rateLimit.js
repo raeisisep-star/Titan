@@ -61,25 +61,43 @@ function rateLimitMiddleware() {
       
       const key = userId || forwardedFor?.split(',')[0]?.trim() || remoteIp;
 
+      console.log(`[RateLimit] Consuming for key: ${key}`);
+
       // Consume 1 point for this request
       await rateLimiter.consume(key);
 
+      console.log(`[RateLimit] Request allowed for key: ${key}`);
       // Request allowed - proceed
       return next();
     } catch (rateLimiterRes) {
-      // Rate limit exceeded
-      const retryAfter = Math.ceil(rateLimiterRes.msBeforeNext / 1000);
+      console.error(`[RateLimit] Error caught:`, rateLimiterRes);
       
-      return c.json({
-        success: false,
-        error: 'Too Many Requests',
-        retryAfter,
-      }, 429, {
-        'Retry-After': String(retryAfter),
-        'X-RateLimit-Limit': String(rateLimiter.points),
-        'X-RateLimit-Remaining': String(rateLimiterRes.remainingPoints),
-        'X-RateLimit-Reset': String(Math.ceil(Date.now() / 1000) + retryAfter),
-      });
+      // Check if this is a rate limit error or a different error
+      if (rateLimiterRes.msBeforeNext !== undefined) {
+        // Rate limit exceeded
+        const retryAfter = Math.ceil(rateLimiterRes.msBeforeNext / 1000);
+        
+        console.log(`[RateLimit] Rate limit exceeded, retry after: ${retryAfter}s`);
+        
+        return c.json({
+          success: false,
+          error: 'Too Many Requests',
+          retryAfter,
+        }, 429, {
+          'Retry-After': String(retryAfter),
+          'X-RateLimit-Limit': String(rateLimiter.points),
+          'X-RateLimit-Remaining': String(rateLimiterRes.remainingPoints),
+          'X-RateLimit-Reset': String(Math.ceil(Date.now() / 1000) + retryAfter),
+        });
+      } else {
+        // Some other error (Redis connection issue, etc.)
+        console.error(`[RateLimit] Unexpected error:`, rateLimiterRes);
+        return c.json({
+          success: false,
+          error: 'Rate limiter error',
+          details: rateLimiterRes.message || 'Unknown error'
+        }, 500);
+      }
     }
   };
 }
