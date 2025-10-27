@@ -105,8 +105,8 @@ describe('API Contract Tests', () => {
     
     // List of endpoints NOT implemented in production (return 404)
     const UNIMPLEMENTED_ENDPOINTS = [
-      '/api/dashboard/portfolio-demo',
-      '/api/dashboard/activities',
+      // '/api/dashboard/portfolio-demo', // NOW IMPLEMENTED in Sprint 1
+      // '/api/dashboard/activities', // NOW IMPLEMENTED in Sprint 1
       // '/api/portfolio/holdings', // NOW IMPLEMENTED in Batch 3
       // '/api/wallet/balances', // NOW IMPLEMENTED in Batch 3
       // '/api/wallet/history', // NOW IMPLEMENTED in Batch 3
@@ -117,9 +117,9 @@ describe('API Contract Tests', () => {
       // '/api/autopilot/start', // NOW IMPLEMENTED in Batch 3
       // '/api/autopilot/stop', // NOW IMPLEMENTED in Batch 3
       // '/api/manual-trading/pairs', // NOW IMPLEMENTED in Batch 2
-      '/api/manual-trading/order',
+      // '/api/manual-trading/order', // NOW IMPLEMENTED in Sprint 1
       // '/api/manual-trading/orders/open', // NOW IMPLEMENTED in Batch 2
-      '/api/manual-trading/orders/cancel',
+      // '/api/manual-trading/orders/cancel', // NOW IMPLEMENTED in Sprint 1
       // '/api/settings/user' // NOW IMPLEMENTED in Batch 2
     ];
     
@@ -304,8 +304,8 @@ describe('API Contract Tests', () => {
   });
   
   describe('Validation Tests', () => {
-    // TODO: /api/manual-trading/order not implemented - endpoint returns 404
-    it.skip('POST /api/manual-trading/order should require auth before validation (TODO: not implemented)', async () => {
+    // Sprint 2: Validation tests for place order endpoint
+    it('POST /api/manual-trading/order should reject invalid body with 422', async () => {
       const response = await request(BASE_URL)
         .post('/api/manual-trading/order')
         .set('Authorization', `Bearer ${TEST_JWT}`)
@@ -314,8 +314,36 @@ describe('API Contract Tests', () => {
           symbol: 'BTCUSDT'
         });
       
-      // Auth runs first, so expect 401 (invalid token) or 400/422 if somehow passed auth
-      expect([400, 401, 422]).toContain(response.status);
+      // Should return 422 for validation failure, 401 for invalid token, or 429 if rate limited
+      expect([401, 422, 429]).toContain(response.status);
+    });
+    
+    it('POST /api/manual-trading/order should reject invalid symbol format', async () => {
+      const response = await request(BASE_URL)
+        .post('/api/manual-trading/order')
+        .set('Authorization', `Bearer ${TEST_JWT}`)
+        .send({
+          symbol: 'invalid-symbol', // lowercase not allowed
+          side: 'buy',
+          qty: 10,
+          type: 'market'
+        });
+      
+      // Should return 422 for validation failure, 401 for invalid token, or 429 if rate limited
+      expect([401, 422, 429]).toContain(response.status);
+    });
+    
+    it('POST /api/manual-trading/orders/cancel should reject missing orderId', async () => {
+      const response = await request(BASE_URL)
+        .post('/api/manual-trading/orders/cancel')
+        .set('Authorization', `Bearer ${TEST_JWT}`)
+        .send({
+          // Missing orderId
+          reason: 'test'
+        });
+      
+      // Should return 422 for validation failure, 401 for invalid token, or 429 if rate limited
+      expect([401, 422, 429]).toContain(response.status);
     });
     
     // NOW IMPLEMENTED in Batch 3 - accepts any body (placeholder)
