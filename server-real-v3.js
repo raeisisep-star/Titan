@@ -1303,12 +1303,14 @@ app.get('/api/settings/user', authMiddleware, async (c) => {
     }
     
     const user = result.rows[0];
+    const settings = user.settings || {};
+    
     return c.json({
       success: true,
       data: {
         language: user.language || 'en',
         timezone: user.timezone || 'UTC',
-        ...user.settings
+        ...(typeof settings === 'object' ? settings : {})
       }
     }, 200);
   } catch (error) {
@@ -1542,17 +1544,61 @@ app.get('/api/wallet/history', authMiddleware, async (c) => {
 // Dashboard - Portfolio Demo (auth-protected with rate limiting)
 app.get('/api/dashboard/portfolio-demo', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
+    const userId = c.get('userId');
+    
+    // Query user's orders to build portfolio
+    const query = `
+      SELECT 
+        symbol,
+        SUM(CASE WHEN side = 'buy' AND status = 'filled' THEN qty ELSE 0 END) as bought_qty,
+        SUM(CASE WHEN side = 'sell' AND status = 'filled' THEN qty ELSE 0 END) as sold_qty,
+        AVG(CASE WHEN side = 'buy' AND status = 'filled' THEN price ELSE NULL END) as avg_buy_price,
+        AVG(CASE WHEN side = 'sell' AND status = 'filled' THEN price ELSE NULL END) as avg_sell_price,
+        COUNT(CASE WHEN status IN ('pending', 'partial') THEN 1 END) as open_orders
+      FROM orders
+      WHERE user_id = $1
+      GROUP BY symbol
+      HAVING SUM(CASE WHEN side = 'buy' AND status = 'filled' THEN qty ELSE 0 END) - 
+             SUM(CASE WHEN side = 'sell' AND status = 'filled' THEN qty ELSE 0 END) > 0
+    `;
+    
+    const result = await pool.query(query, [userId]);
+    
+    const positions = result.rows.map(row => {
+      const currentQty = parseFloat(row.bought_qty) - parseFloat(row.sold_qty);
+      const avgBuyPrice = parseFloat(row.avg_buy_price || 0);
+      // For demo, assume current market price is 5% higher than avg buy
+      const currentPrice = avgBuyPrice * 1.05;
+      const totalValue = currentQty * currentPrice;
+      const totalCost = currentQty * avgBuyPrice;
+      const pnl = totalValue - totalCost;
+      const pnlPercent = totalCost > 0 ? (pnl / totalCost) * 100 : 0;
+      
+      return {
+        symbol: row.symbol,
+        qty: currentQty,
+        avgPrice: avgBuyPrice,
+        currentPrice: currentPrice,
+        totalValue: totalValue,
+        pnl: pnl,
+        pnlPercent: pnlPercent,
+        openOrders: parseInt(row.open_orders)
+      };
+    });
+    
+    const summary = {
+      totalValue: positions.reduce((sum, p) => sum + p.totalValue, 0),
+      totalPnL: positions.reduce((sum, p) => sum + p.pnl, 0),
+      openPositions: positions.length
+    };
+    
     return c.json({
       success: true,
       data: {
-        positions: [],
-        summary: {
-          totalValue: 0,
-          totalPnL: 0,
-          openPositions: 0
-        }
+        positions,
+        summary
       },
-      meta: { source: 'demo', ts: Date.now() }
+      meta: { source: 'calculated', ts: Date.now() }
     }, 200);
   } catch (error) {
     console.error('Portfolio-demo error:', error);
@@ -1563,11 +1609,50 @@ app.get('/api/dashboard/portfolio-demo', authMiddleware, rateLimitMiddleware(), 
 // Dashboard - Activities (auth-protected with rate limiting)
 app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
+    const userId = c.get('userId');
+    const limit = parseInt(c.req.query('limit') || '50');
+    const offset = parseInt(c.req.query('offset') || '0');
+    
+    // Query activities from database
+    const query = `
+      SELECT 
+        id, action, category, description, details, 
+        status, error_message, created_at
+      FROM activities
+      WHERE user_id = $1
+      ORDER BY created_at DESC
+      LIMIT $2 OFFSET $3
+    `;
+    
+    const countQuery = `
+      SELECT COUNT(*) as total
+      FROM activities
+      WHERE user_id = $1
+    `;
+    
+    const [activitiesResult, countResult] = await Promise.all([
+      pool.query(query, [userId, limit, offset]),
+      pool.query(countQuery, [userId])
+    ]);
+    
+    const activities = activitiesResult.rows.map(row => ({
+      id: row.id,
+      action: row.action,
+      category: row.category,
+      description: row.description,
+      details: row.details,
+      status: row.status,
+      errorMessage: row.error_message,
+      createdAt: row.created_at
+    }));
+    
     return c.json({
       success: true,
       data: {
-        items: [],
-        total: 0
+        items: activities,
+        total: parseInt(countResult.rows[0].total),
+        limit,
+        offset
       },
       meta: { source: 'real', ts: Date.now() }
     }, 200);
@@ -1593,20 +1678,64 @@ app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), asy
     }
     
     const validatedData = validation.data;
+    const userId = c.get('userId');
     
-    // TODO: Implement real order placement logic
-    return c.json({
-      success: true,
-      data: {
-        orderId: `demo-${Date.now()}`,
-        status: 'pending',
+    // Insert order into database
+    const insertQuery = `
+      INSERT INTO orders (
+        user_id, symbol, side, qty, price, order_type, status, created_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+      RETURNING id, user_id, symbol, side, qty, price, order_type, status, created_at
+    `;
+    
+    const result = await pool.query(insertQuery, [
+      userId,
+      validatedData.symbol,
+      validatedData.side,
+      validatedData.qty,
+      validatedData.price || null,
+      validatedData.type,
+      'pending'
+    ]);
+    
+    const order = result.rows[0];
+    
+    // Log activity
+    const activityQuery = `
+      INSERT INTO activities (
+        user_id, action, category, description, details, order_id, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `;
+    
+    await pool.query(activityQuery, [
+      userId,
+      'place_order',
+      'trading',
+      `Placed ${validatedData.type} ${validatedData.side} order for ${validatedData.qty} ${validatedData.symbol}`,
+      JSON.stringify({
         symbol: validatedData.symbol,
         side: validatedData.side,
         qty: validatedData.qty,
-        type: validatedData.type,
-        createdAt: new Date().toISOString()
+        price: validatedData.price,
+        type: validatedData.type
+      }),
+      order.id,
+      'success'
+    ]);
+    
+    return c.json({
+      success: true,
+      data: {
+        orderId: order.id,
+        status: order.status,
+        symbol: order.symbol,
+        side: order.side,
+        qty: order.qty,
+        price: order.price,
+        type: order.order_type,
+        createdAt: order.created_at
       }
-    }, 200);
+    }, 201);
   } catch (error) {
     console.error('Place order error:', error);
     return c.json({ success: false, error: error.message }, 500);
@@ -1629,15 +1758,72 @@ app.post('/api/manual-trading/orders/cancel', authMiddleware, rateLimitMiddlewar
     }
     
     const validatedData = validation.data;
+    const userId = c.get('userId');
     
-    // TODO: Implement real order cancellation logic
+    // Check if order exists and belongs to user
+    const checkQuery = `
+      SELECT id, status, symbol, side, qty
+      FROM orders
+      WHERE id = $1 AND user_id = $2
+    `;
+    
+    const checkResult = await pool.query(checkQuery, [validatedData.orderId, userId]);
+    
+    if (checkResult.rows.length === 0) {
+      return c.json({
+        success: false,
+        error: 'Order not found or does not belong to you'
+      }, 404);
+    }
+    
+    const order = checkResult.rows[0];
+    
+    if (order.status !== 'pending' && order.status !== 'partial') {
+      return c.json({
+        success: false,
+        error: `Cannot cancel order with status: ${order.status}`
+      }, 400);
+    }
+    
+    // Update order status to cancelled
+    const updateQuery = `
+      UPDATE orders
+      SET status = 'cancelled', cancelled_at = NOW(), updated_at = NOW()
+      WHERE id = $1
+      RETURNING id, status, cancelled_at
+    `;
+    
+    const updateResult = await pool.query(updateQuery, [validatedData.orderId]);
+    const cancelledOrder = updateResult.rows[0];
+    
+    // Log activity
+    const activityQuery = `
+      INSERT INTO activities (
+        user_id, action, category, description, details, order_id, status
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+    `;
+    
+    await pool.query(activityQuery, [
+      userId,
+      'cancel_order',
+      'trading',
+      `Cancelled ${order.side} order for ${order.qty} ${order.symbol}`,
+      JSON.stringify({
+        orderId: validatedData.orderId,
+        reason: validatedData.reason || 'User requested',
+        previousStatus: order.status
+      }),
+      validatedData.orderId,
+      'success'
+    ]);
+    
     return c.json({
       success: true,
       data: {
         cancelled: true,
-        orderId: validatedData.orderId,
+        orderId: cancelledOrder.id,
         reason: validatedData.reason,
-        cancelledAt: new Date().toISOString()
+        cancelledAt: cancelledOrder.cancelled_at
       }
     }, 200);
   } catch (error) {
