@@ -10,8 +10,8 @@ module.exports = {
       env: {
         NODE_ENV: 'production',
         PORT: 5000,
-        JWT_SECRET: 'your-super-secret-jwt-key-change-this-in-production-2024',
-        REDIS_URL: 'redis://localhost:6379'
+        JWT_SECRET: process.env.JWT_SECRET,
+        REDIS_URL: process.env.REDIS_URL || 'redis://localhost:6379'
       },
       error_file: './logs/backend-error.log',
       out_file: './logs/backend-out.log',

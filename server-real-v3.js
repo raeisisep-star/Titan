@@ -1569,4 +1569,3 @@ process.on('SIGTERM', async () => {
   process.exit(0);
 });
 
-// Updated ecosystem config with JWT_SECRET
