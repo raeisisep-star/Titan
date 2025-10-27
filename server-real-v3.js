@@ -10,6 +10,8 @@ const { cors } = require('hono/cors');
 const { Pool } = require('pg');
 const { createClient } = require('redis');
 const jwt = require('jsonwebtoken');
+const { rateLimitMiddleware } = require('./middleware/rateLimit');
+const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
 
 // Initialize Hono App
 const app = new Hono();
@@ -29,6 +31,13 @@ let redisClient;
   redisClient.on('error', (err) => console.error('Redis Client Error', err));
   await redisClient.connect();
   console.log('✅ Redis connected');
+  
+  // Initialize rate limiter after Redis connection
+  const { initRateLimiter } = require('./middleware/rateLimit');
+  initRateLimiter(redisClient, {
+    points: 50,      // 50 requests
+    duration: 60,    // per 60 seconds
+  });
 })();
 
 // CORS Configuration
@@ -1530,8 +1539,8 @@ app.get('/api/wallet/history', authMiddleware, async (c) => {
 // Sprint 1: Skeleton Endpoints for Missing APIs
 // =============================================================================
 
-// Dashboard - Portfolio Demo (auth-protected skeleton)
-app.get('/api/dashboard/portfolio-demo', authMiddleware, async (c) => {
+// Dashboard - Portfolio Demo (auth-protected with rate limiting)
+app.get('/api/dashboard/portfolio-demo', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
     return c.json({
       success: true,
@@ -1551,8 +1560,8 @@ app.get('/api/dashboard/portfolio-demo', authMiddleware, async (c) => {
   }
 });
 
-// Dashboard - Activities (auth-protected skeleton)
-app.get('/api/dashboard/activities', authMiddleware, async (c) => {
+// Dashboard - Activities (auth-protected with rate limiting)
+app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
     return c.json({
       success: true,
@@ -1568,17 +1577,33 @@ app.get('/api/dashboard/activities', authMiddleware, async (c) => {
   }
 });
 
-// Manual Trading - Place Order (auth-protected skeleton)
-app.post('/api/manual-trading/order', authMiddleware, async (c) => {
+// Manual Trading - Place Order (auth-protected with validation & rate limiting)
+app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
-    // TODO: Add validation for order body
     const body = await c.req.json();
     
+    // Validate request body
+    const validation = validateBody(placeOrderSchema, body);
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: validation.errors
+      }, 422);
+    }
+    
+    const validatedData = validation.data;
+    
+    // TODO: Implement real order placement logic
     return c.json({
       success: true,
       data: {
         orderId: `demo-${Date.now()}`,
         status: 'pending',
+        symbol: validatedData.symbol,
+        side: validatedData.side,
+        qty: validatedData.qty,
+        type: validatedData.type,
         createdAt: new Date().toISOString()
       }
     }, 200);
@@ -1588,17 +1613,30 @@ app.post('/api/manual-trading/order', authMiddleware, async (c) => {
   }
 });
 
-// Manual Trading - Cancel Order (auth-protected skeleton)
-app.post('/api/manual-trading/orders/cancel', authMiddleware, async (c) => {
+// Manual Trading - Cancel Order (auth-protected with validation & rate limiting)
+app.post('/api/manual-trading/orders/cancel', authMiddleware, rateLimitMiddleware(), async (c) => {
   try {
-    // TODO: Add validation for cancel order body
     const body = await c.req.json();
     
+    // Validate request body
+    const validation = validateBody(cancelOrderSchema, body);
+    if (!validation.success) {
+      return c.json({
+        success: false,
+        error: 'Validation failed',
+        details: validation.errors
+      }, 422);
+    }
+    
+    const validatedData = validation.data;
+    
+    // TODO: Implement real order cancellation logic
     return c.json({
       success: true,
       data: {
         cancelled: true,
-        orderId: body.orderId || 'unknown',
+        orderId: validatedData.orderId,
+        reason: validatedData.reason,
         cancelledAt: new Date().toISOString()
       }
     }, 200);
