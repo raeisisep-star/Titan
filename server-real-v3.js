@@ -198,6 +198,55 @@ app.get('/api/health', async (c) => {
   }
 });
 
+// Dependency Health Check (for monitoring systems)
+app.get('/healthz/deps', async (c) => {
+  const checks = {
+    database: { status: 'unknown', latency: null, error: null },
+    redis: { status: 'unknown', latency: null, error: null }
+  };
+  
+  let overallHealthy = true;
+  
+  // Check Database
+  try {
+    const dbStart = Date.now();
+    await pool.query('SELECT 1');
+    checks.database.latency = Date.now() - dbStart;
+    checks.database.status = 'healthy';
+  } catch (error) {
+    checks.database.status = 'unhealthy';
+    checks.database.error = error.message;
+    overallHealthy = false;
+  }
+  
+  // Check Redis
+  try {
+    const redisStart = Date.now();
+    if (redisClient && redisClient.isOpen) {
+      await redisClient.ping();
+      checks.redis.latency = Date.now() - redisStart;
+      checks.redis.status = 'healthy';
+    } else {
+      checks.redis.status = 'disconnected';
+      checks.redis.error = 'Redis client not connected';
+      overallHealthy = false;
+    }
+  } catch (error) {
+    checks.redis.status = 'unhealthy';
+    checks.redis.error = error.message;
+    overallHealthy = false;
+  }
+  
+  const response = {
+    status: overallHealthy ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    checks
+  };
+  
+  // Return 503 if any dependency is unhealthy
+  return c.json(response, overallHealthy ? 200 : 503);
+});
+
 // =============================================================================
 // AUTHENTICATION APIs
 // =============================================================================
