@@ -6,12 +6,170 @@
 
 ## 📋 Table of Contents
 
-1. [High 429 Rate (Too Many Requests)](#incident-1-high-429-rate)
-2. [Database Connection Issues](#incident-2-database-connection-issues)
-3. [High Response Latency](#incident-3-high-response-latency)
-4. [PM2 Service Down](#incident-4-pm2-service-down)
-5. [Database Disk Full](#incident-5-database-disk-full)
-6. [Memory Leak Detection](#incident-6-memory-leak-detection)
+1. [Health Check Failures](#incident-0-health-check-failures) 🆕
+2. [High 429 Rate (Too Many Requests)](#incident-1-high-429-rate)
+3. [Database Connection Issues](#incident-2-database-connection-issues)
+4. [High Response Latency](#incident-3-high-response-latency)
+5. [PM2 Service Down](#incident-4-pm2-service-down)
+6. [Database Disk Full](#incident-5-database-disk-full)
+7. [Memory Leak Detection](#incident-6-memory-leak-detection)
+
+---
+
+## Incident 0: Health Check Failures 🆕
+
+### 🔍 Symptoms
+- `/healthz/deps` endpoint returning 503 (Service Unavailable)
+- Monitoring alerts for degraded system health
+- One or more dependencies reporting as "unhealthy"
+
+### 📊 Diagnosis
+
+**Check overall system health:**
+```bash
+# Check health endpoint
+curl http://localhost:3000/healthz/deps | jq .
+
+# Expected healthy response:
+# {
+#   "status": "healthy",
+#   "timestamp": "2025-10-27T13:00:00.000Z",
+#   "checks": {
+#     "database": { "status": "healthy", "latency": 5 },
+#     "redis": { "status": "healthy", "latency": 2 }
+#   }
+# }
+```
+
+**Check specific dependencies:**
+```bash
+# Test database connection directly
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT NOW();"
+
+# Test Redis connection
+redis-cli -h localhost -p 6379 PING
+```
+
+### ✅ Resolution
+
+#### Scenario A: Database Unhealthy
+
+**Symptoms:** `checks.database.status = "unhealthy"`
+
+**Diagnosis:**
+```bash
+# Check PostgreSQL service
+sudo systemctl status postgresql
+
+# Check database connections
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT count(*) FROM pg_stat_activity;"
+
+# Check for long-running queries
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pid, now() - query_start as duration, query FROM pg_stat_activity WHERE state = 'active' AND now() - query_start > interval '30 seconds';"
+```
+
+**Resolution:**
+```bash
+# Restart PostgreSQL if service is down
+sudo systemctl restart postgresql
+
+# Kill long-running queries (if found)
+PGPASSWORD="Titan@2024!Strong" psql -h localhost -p 5433 -U titan_user -d titan_trading -c "SELECT pg_terminate_backend(PID_HERE);"
+
+# Check connection pool in application
+pm2 logs titan-backend --nostream --lines 50 | grep -i "database\|pool"
+
+# Restart application to reset connection pool
+pm2 restart ecosystem.config.js
+```
+
+#### Scenario B: Redis Unhealthy
+
+**Symptoms:** `checks.redis.status = "unhealthy"` or `"disconnected"`
+
+**Diagnosis:**
+```bash
+# Check Redis service
+sudo systemctl status redis
+
+# Check Redis memory usage
+redis-cli INFO memory | grep used_memory_human
+
+# Check Redis connections
+redis-cli CLIENT LIST | wc -l
+```
+
+**Resolution:**
+```bash
+# Restart Redis if service is down
+sudo systemctl restart redis
+
+# Clear Redis cache if memory is full
+redis-cli FLUSHDB
+
+# Application will automatically reconnect
+# Monitor logs for reconnection
+pm2 logs titan-backend --lines 50 | grep -i redis
+```
+
+#### Scenario C: High Latency
+
+**Symptoms:** Health checks succeeding but with high latency (> 100ms)
+
+**Diagnosis:**
+```bash
+# Check system load
+top
+htop
+
+# Check disk I/O
+iostat -x 1 5
+
+# Check network latency
+ping localhost
+```
+
+**Resolution:**
+```bash
+# Check for resource-intensive queries
+# See Incident 3 (High Response Latency) for full details
+
+# Consider scaling database connections
+# Edit server-real-v3.js: max: 20 → max: 30
+pm2 restart ecosystem.config.js
+```
+
+### 🔥 Escalation
+
+If health checks continue to fail after above steps:
+
+1. **Check system resources:**
+   ```bash
+   df -h  # Disk space
+   free -h  # Memory
+   top  # CPU and processes
+   ```
+
+2. **Review recent changes:**
+   ```bash
+   cd /home/ubuntu/Titan
+   git log --oneline -10
+   pm2 logs titan-backend --lines 100
+   ```
+
+3. **Restart all services:**
+   ```bash
+   sudo systemctl restart postgresql redis
+   pm2 restart ecosystem.config.js
+   ```
+
+4. **Contact senior engineer if issue persists** ☎️
+
+### 📝 Post-Incident
+
+- Document root cause in incident log
+- Update monitoring thresholds if false positive
+- Consider implementing auto-recovery for common scenarios
 
 ---
 

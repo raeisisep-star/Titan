@@ -11,6 +11,9 @@ const { Pool } = require('pg');
 const { createClient } = require('redis');
 const jwt = require('jsonwebtoken');
 const { rateLimitMiddleware } = require('./middleware/rateLimit');
+const { idempotencyMiddleware } = require('./middleware/idempotency');
+const { requestIdMiddleware } = require('./middleware/requestId');
+const { metricsMiddleware, startMetricsCollection, getMetricsSnapshot } = require('./middleware/metrics');
 const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
 
 // Initialize Hono App
@@ -42,11 +45,17 @@ let redisClient;
   });
 })();
 
+// Request ID Middleware (apply globally for tracing)
+app.use('/*', requestIdMiddleware());
+
+// Metrics Middleware (apply globally for monitoring)
+app.use('/*', metricsMiddleware());
+
 // CORS Configuration
 app.use('/*', cors({
   origin: process.env.CORS_ORIGIN || '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-Request-ID'],
   credentials: true,
 }));
 
@@ -194,6 +203,71 @@ app.get('/api/health', async (c) => {
         uptime: Math.floor(startTime),
         timestamp: new Date().toISOString()
       }
+    }, 500);
+  }
+});
+
+// Dependency Health Check (for monitoring systems)
+app.get('/healthz/deps', async (c) => {
+  const checks = {
+    database: { status: 'unknown', latency: null, error: null },
+    redis: { status: 'unknown', latency: null, error: null }
+  };
+  
+  let overallHealthy = true;
+  
+  // Check Database
+  try {
+    const dbStart = Date.now();
+    await pool.query('SELECT 1');
+    checks.database.latency = Date.now() - dbStart;
+    checks.database.status = 'healthy';
+  } catch (error) {
+    checks.database.status = 'unhealthy';
+    checks.database.error = error.message;
+    overallHealthy = false;
+  }
+  
+  // Check Redis
+  try {
+    const redisStart = Date.now();
+    if (redisClient && redisClient.isOpen) {
+      await redisClient.ping();
+      checks.redis.latency = Date.now() - redisStart;
+      checks.redis.status = 'healthy';
+    } else {
+      checks.redis.status = 'disconnected';
+      checks.redis.error = 'Redis client not connected';
+      overallHealthy = false;
+    }
+  } catch (error) {
+    checks.redis.status = 'unhealthy';
+    checks.redis.error = error.message;
+    overallHealthy = false;
+  }
+  
+  const response = {
+    status: overallHealthy ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    checks
+  };
+  
+  // Return 503 if any dependency is unhealthy
+  return c.json(response, overallHealthy ? 200 : 503);
+});
+
+// Metrics endpoint (requires authentication)
+app.get('/api/metrics', authMiddleware, requireRole('admin'), async (c) => {
+  try {
+    const snapshot = getMetricsSnapshot();
+    return c.json({
+      success: true,
+      data: snapshot
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message
     }, 500);
   }
 });
@@ -1664,10 +1738,15 @@ app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), asyn
   }
 });
 
-// Manual Trading - Place Order (auth-protected with validation & rate limiting)
-app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), async (c) => {
+// Manual Trading - Place Order (auth-protected with validation & rate limiting & idempotency)
+app.post('/api/manual-trading/order', 
+  authMiddleware, 
+  rateLimitMiddleware(), 
+  idempotencyMiddleware(pool),
+  async (c) => {
   try {
-    const body = await c.req.json();
+    // Get body from context (already parsed by idempotency middleware)
+    const body = c.get('requestBody') || await c.req.json();
     
     // Validate request body
     const validation = validateBody(placeOrderSchema, body);
@@ -1709,18 +1788,33 @@ app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), asy
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
     
+    // Prepare activity details with idempotency tracking
+    const activityDetails = {
+      symbol: validatedData.symbol,
+      side: validatedData.side,
+      qty: validatedData.qty,
+      price: validatedData.price,
+      type: validatedData.type
+    };
+    
+    // Add idempotency key if present
+    const idempotencyKey = c.get('idempotencyKey');
+    if (idempotencyKey) {
+      activityDetails.idempotency_key = idempotencyKey;
+    }
+    
+    // Add request ID if present (for tracing)
+    const requestId = c.get('requestId');
+    if (requestId) {
+      activityDetails.request_id = requestId;
+    }
+    
     await pool.query(activityQuery, [
       userId,
       'place_order',
       'trading',
       `Placed ${validatedData.type} ${validatedData.side} order for ${validatedData.qty} ${validatedData.symbol}`,
-      JSON.stringify({
-        symbol: validatedData.symbol,
-        side: validatedData.side,
-        qty: validatedData.qty,
-        price: validatedData.price,
-        type: validatedData.type
-      }),
+      JSON.stringify(activityDetails),
       order.id,
       'success'
     ]);
@@ -1866,12 +1960,22 @@ serve({
   hostname: host,
 }, (info) => {
   console.log(`\n✅ Server is running on http://${info.address}:${info.port}`);
-  console.log(`📊 Health check: http://${info.address}:${info.port}/health\n`);
+  console.log(`📊 Health check: http://${info.address}:${info.port}/health`);
+  console.log(`📈 Metrics: http://${info.address}:${info.port}/api/metrics\n`);
+  
+  // Start metrics collection (flush every 60 seconds)
+  startMetricsCollection(60);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing connections...');
+  
+  // Stop metrics collection
+  const { stopMetricsCollection, flushMetricsToLog } = require('./middleware/metrics');
+  flushMetricsToLog(); // Final flush
+  stopMetricsCollection();
+  
   await pool.end();
   await redisClient.quit();
   process.exit(0);
