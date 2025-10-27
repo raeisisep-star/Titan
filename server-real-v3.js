@@ -11,6 +11,8 @@ const { Pool } = require('pg');
 const { createClient } = require('redis');
 const jwt = require('jsonwebtoken');
 const { rateLimitMiddleware } = require('./middleware/rateLimit');
+const { idempotencyMiddleware } = require('./middleware/idempotency');
+const { requestIdMiddleware } = require('./middleware/requestId');
 const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
 
 // Initialize Hono App
@@ -42,11 +44,14 @@ let redisClient;
   });
 })();
 
+// Request ID Middleware (apply globally for tracing)
+app.use('/*', requestIdMiddleware());
+
 // CORS Configuration
 app.use('/*', cors({
   origin: process.env.CORS_ORIGIN || '*',
   allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowHeaders: ['Content-Type', 'Authorization'],
+  allowHeaders: ['Content-Type', 'Authorization', 'Idempotency-Key', 'X-Request-ID'],
   credentials: true,
 }));
 
@@ -1713,10 +1718,15 @@ app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), asyn
   }
 });
 
-// Manual Trading - Place Order (auth-protected with validation & rate limiting)
-app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), async (c) => {
+// Manual Trading - Place Order (auth-protected with validation & rate limiting & idempotency)
+app.post('/api/manual-trading/order', 
+  authMiddleware, 
+  rateLimitMiddleware(), 
+  idempotencyMiddleware(pool),
+  async (c) => {
   try {
-    const body = await c.req.json();
+    // Get body from context (already parsed by idempotency middleware)
+    const body = c.get('requestBody') || await c.req.json();
     
     // Validate request body
     const validation = validateBody(placeOrderSchema, body);
@@ -1758,18 +1768,33 @@ app.post('/api/manual-trading/order', authMiddleware, rateLimitMiddleware(), asy
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
     
+    // Prepare activity details with idempotency tracking
+    const activityDetails = {
+      symbol: validatedData.symbol,
+      side: validatedData.side,
+      qty: validatedData.qty,
+      price: validatedData.price,
+      type: validatedData.type
+    };
+    
+    // Add idempotency key if present
+    const idempotencyKey = c.get('idempotencyKey');
+    if (idempotencyKey) {
+      activityDetails.idempotency_key = idempotencyKey;
+    }
+    
+    // Add request ID if present (for tracing)
+    const requestId = c.get('requestId');
+    if (requestId) {
+      activityDetails.request_id = requestId;
+    }
+    
     await pool.query(activityQuery, [
       userId,
       'place_order',
       'trading',
       `Placed ${validatedData.type} ${validatedData.side} order for ${validatedData.qty} ${validatedData.symbol}`,
-      JSON.stringify({
-        symbol: validatedData.symbol,
-        side: validatedData.side,
-        qty: validatedData.qty,
-        price: validatedData.price,
-        type: validatedData.type
-      }),
+      JSON.stringify(activityDetails),
       order.id,
       'success'
     ]);
