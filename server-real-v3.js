@@ -13,6 +13,7 @@ const jwt = require('jsonwebtoken');
 const { rateLimitMiddleware } = require('./middleware/rateLimit');
 const { idempotencyMiddleware } = require('./middleware/idempotency');
 const { requestIdMiddleware } = require('./middleware/requestId');
+const { metricsMiddleware, startMetricsCollection, getMetricsSnapshot } = require('./middleware/metrics');
 const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
 
 // Initialize Hono App
@@ -46,6 +47,9 @@ let redisClient;
 
 // Request ID Middleware (apply globally for tracing)
 app.use('/*', requestIdMiddleware());
+
+// Metrics Middleware (apply globally for monitoring)
+app.use('/*', metricsMiddleware());
 
 // CORS Configuration
 app.use('/*', cors({
@@ -250,6 +254,22 @@ app.get('/healthz/deps', async (c) => {
   
   // Return 503 if any dependency is unhealthy
   return c.json(response, overallHealthy ? 200 : 503);
+});
+
+// Metrics endpoint (requires authentication)
+app.get('/api/metrics', authMiddleware, requireRole('admin'), async (c) => {
+  try {
+    const snapshot = getMetricsSnapshot();
+    return c.json({
+      success: true,
+      data: snapshot
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: error.message
+    }, 500);
+  }
 });
 
 // =============================================================================
@@ -1940,12 +1960,22 @@ serve({
   hostname: host,
 }, (info) => {
   console.log(`\n✅ Server is running on http://${info.address}:${info.port}`);
-  console.log(`📊 Health check: http://${info.address}:${info.port}/health\n`);
+  console.log(`📊 Health check: http://${info.address}:${info.port}/health`);
+  console.log(`📈 Metrics: http://${info.address}:${info.port}/api/metrics\n`);
+  
+  // Start metrics collection (flush every 60 seconds)
+  startMetricsCollection(60);
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
   console.log('SIGTERM received, closing connections...');
+  
+  // Stop metrics collection
+  const { stopMetricsCollection, flushMetricsToLog } = require('./middleware/metrics');
+  flushMetricsToLog(); // Final flush
+  stopMetricsCollection();
+  
   await pool.end();
   await redisClient.quit();
   process.exit(0);
