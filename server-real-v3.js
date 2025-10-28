@@ -10,7 +10,8 @@ const { cors } = require('hono/cors');
 const { Pool } = require('pg');
 const { createClient } = require('redis');
 const jwt = require('jsonwebtoken');
-const { rateLimitMiddleware } = require('./middleware/rateLimit');
+// OLD: const { rateLimitMiddleware } = require('./middleware/rateLimit');
+const { initRateLimiterV2, rateLimitMiddlewareV2 } = require('./middleware/rateLimitV2');
 const { idempotencyMiddleware } = require('./middleware/idempotency');
 const { requestIdMiddleware } = require('./middleware/requestId');
 const { metricsMiddleware, startMetricsCollection, getMetricsSnapshot } = require('./middleware/metrics');
@@ -37,14 +38,9 @@ let redisClient;
   await redisClient.connect();
   console.log('✅ Redis connected');
   
-  // Initialize rate limiter after Redis connection
-  // Note: Redis v5 has compatibility issues with rate-limiter-flexible
-  // Temporarily using Memory-based rate limiter until we upgrade/fix the integration
-  const { initRateLimiter } = require('./middleware/rateLimit');
-  initRateLimiter(null, {  // Pass null to use Memory fallback
-    points: 50,      // 50 requests
-    duration: 60,    // per 60 seconds
-  });
+  // Initialize NEW rate limiter V2 (modular Redis/Memory driver)
+  await initRateLimiterV2();
+  console.log('✅ Rate Limiter V2 initialized');
 })();
 
 // Initialize Exchange Adapter
@@ -71,6 +67,74 @@ app.use('/*', requestIdMiddleware());
 
 // Metrics Middleware (apply globally for monitoring)
 app.use('/*', metricsMiddleware());
+
+// Rate Limit Middleware V2 (Hono-native adapter)
+app.use('/*', async (c, next) => {
+  try {
+    const { getService } = require('./middleware/rateLimitV2');
+    const { policies, detectPolicy, makeKey } = require('./config/rateLimit');
+    const service = getService();
+    
+    if (!service) {
+      // Rate limiter not initialized yet, allow request
+      return await next();
+    }
+    
+    // Build Express-like request object
+    const req = {
+      path: c.req.path,
+      headers: Object.fromEntries(c.req.raw.headers.entries()),
+      ip: c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '127.0.0.1',
+      user: { id: c.get('userId') },
+    };
+    
+    const policyName = detectPolicy(req);
+    const policy = policies[policyName] || policies.public;
+    
+    // Skip rate limiting for whitelisted endpoints
+    if (policyName === 'whitelist') {
+      c.header('X-RateLimit-Backend', service.backend());
+      c.header('X-RateLimit-Policy', 'whitelist');
+      return await next();
+    }
+    
+    const key = makeKey(req);
+    const burst = policies.burst || { points: 10, duration: 5 };
+    
+    // Burst check
+    const r1 = await service.consume(`${key}:burst`, burst);
+    if (!r1.allowed) {
+      c.header('Retry-After', String(Math.ceil((r1.retryAfterMs || r1.resetMs || 1000) / 1000)));
+      return c.json({ 
+        ok: false, 
+        error: 'Too Many Requests (burst)', 
+        retryAfterMs: r1.retryAfterMs || r1.resetMs 
+      }, 429);
+    }
+    
+    // Policy check
+    const r2 = await service.consume(`${key}:${policyName}`, policy);
+    c.header('X-RateLimit-Remaining', String(r2.remaining));
+    c.header('X-RateLimit-Reset', String(Math.ceil((r2.resetMs || 0) / 1000)));
+    c.header('X-RateLimit-Backend', service.backend());
+    
+    if (!r2.allowed) {
+      c.header('Retry-After', String(Math.ceil((r2.retryAfterMs || r2.resetMs || 1000) / 1000)));
+      return c.json({ 
+        ok: false, 
+        error: 'Too Many Requests', 
+        retryAfterMs: r2.retryAfterMs || r2.resetMs 
+      }, 429);
+    }
+    
+    // Continue to next middleware
+    await next();
+  } catch (error) {
+    console.error('[RateLimit] error:', error.message);
+    // Fail-open: allow request on error
+    await next();
+  }
+});
 
 // CORS Configuration
 app.use('/*', cors({
@@ -1663,7 +1727,7 @@ app.get('/api/wallet/history', authMiddleware, async (c) => {
 // =============================================================================
 
 // Dashboard - Portfolio Demo (auth-protected with rate limiting)
-app.get('/api/dashboard/portfolio-demo', authMiddleware, rateLimitMiddleware(), async (c) => {
+app.get('/api/dashboard/portfolio-demo', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId');
     
@@ -1728,7 +1792,7 @@ app.get('/api/dashboard/portfolio-demo', authMiddleware, rateLimitMiddleware(), 
 });
 
 // Dashboard - Activities (auth-protected with rate limiting)
-app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), async (c) => {
+app.get('/api/dashboard/activities', authMiddleware, async (c) => {
   try {
     const userId = c.get('userId');
     const limit = parseInt(c.req.query('limit') || '50');
@@ -1786,7 +1850,6 @@ app.get('/api/dashboard/activities', authMiddleware, rateLimitMiddleware(), asyn
 // Manual Trading - Place Order (auth-protected with validation & rate limiting & idempotency)
 app.post('/api/manual-trading/order', 
   authMiddleware, 
-  rateLimitMiddleware(), 
   idempotencyMiddleware(pool),
   async (c) => {
   try {
@@ -1922,7 +1985,7 @@ app.post('/api/manual-trading/order',
 });
 
 // Manual Trading - Cancel Order (auth-protected with validation & rate limiting)
-app.post('/api/manual-trading/orders/cancel', authMiddleware, rateLimitMiddleware(), async (c) => {
+app.post('/api/manual-trading/orders/cancel', authMiddleware, async (c) => {
   try {
     const body = await c.req.json();
     
