@@ -20,11 +20,21 @@ module.exports = {
       points: parseInt(process.env.RATE_LIMIT_BURST_POINTS || 10, 10),
       duration: parseInt(process.env.RATE_LIMIT_BURST_DURATION || 5, 10) 
     },
+
+    // Whitelist برای health/metrics (monitoring tools)
+    whitelist: { 
+      points: Infinity, 
+      duration: 1 
+    },
   },
 
   // نگاشت مسیر → سیاست
   detectPolicy: (req) => {
     const p = req.path || '';
+    // Whitelist monitoring endpoints
+    if (p === '/health' || p.startsWith('/api/metrics') || p.startsWith('/api/reconciler/health')) {
+      return 'whitelist';
+    }
     if (p.startsWith('/api/auth')) return 'auth';
     if (p.startsWith('/api/manual-trading')) return 'trading';
     return 'public';
