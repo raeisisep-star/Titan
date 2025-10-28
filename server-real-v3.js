@@ -15,6 +15,8 @@ const { idempotencyMiddleware } = require('./middleware/idempotency');
 const { requestIdMiddleware } = require('./middleware/requestId');
 const { metricsMiddleware, startMetricsCollection, getMetricsSnapshot } = require('./middleware/metrics');
 const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
+const ExchangeFactory = require('./adapters/ExchangeFactory');
+const { logger } = require('./utils/logMasking');
 
 // Initialize Hono App
 const app = new Hono();
@@ -43,6 +45,25 @@ let redisClient;
     points: 50,      // 50 requests
     duration: 60,    // per 60 seconds
   });
+})();
+
+// Initialize Exchange Adapter
+let exchange;
+(async () => {
+  try {
+    exchange = ExchangeFactory.createFromEnv();
+    await exchange.initialize();
+    logger.info('[Exchange] Initialized successfully', { 
+      exchange: exchange.name,
+      testnet: exchange.isTestnet 
+    });
+  } catch (error) {
+    logger.error('[Exchange] Initialization failed:', error.message);
+    // Fallback to paper trading if exchange init fails
+    exchange = ExchangeFactory.create('paper');
+    await exchange.initialize();
+    logger.warn('[Exchange] Fallback to Paper Trading');
+  }
 })();
 
 // Request ID Middleware (apply globally for tracing)
@@ -1453,6 +1474,30 @@ app.get('/api/manual-trading/pairs', authMiddleware, async (c) => {
   }
 });
 
+// GET /api/exchange/balance - Get account balance from exchange
+app.get('/api/exchange/balance', authMiddleware, async (c) => {
+  try {
+    const { asset } = c.req.query();
+    
+    const balance = await exchange.getBalance(asset || null);
+    
+    return c.json({
+      success: true,
+      data: {
+        exchange: exchange.name,
+        balances: balance
+      }
+    });
+  } catch (error) {
+    logger.error('[Exchange] Get balance failed:', error.message);
+    return c.json({ 
+      success: false, 
+      error: 'Failed to fetch balance from exchange',
+      details: error.message 
+    }, 500);
+  }
+});
+
 // GET /api/manual-trading/orders/open - Return open orders (read-only)
 app.get('/api/manual-trading/orders/open', authMiddleware, async (c) => {
   try {
@@ -1761,12 +1806,40 @@ app.post('/api/manual-trading/order',
     const validatedData = validation.data;
     const userId = c.get('userId');
     
-    // Insert order into database
+    // Place order on exchange
+    let exchangeResult;
+    try {
+      exchangeResult = await exchange.placeOrder({
+        symbol: validatedData.symbol,
+        side: validatedData.side,
+        type: validatedData.type,
+        quantity: validatedData.qty.toString(),
+        price: validatedData.price ? validatedData.price.toString() : undefined,
+        clientOrderId: c.get('requestId') // Use request ID as client order ID
+      });
+      
+      logger.info('[Order] Placed on exchange', {
+        orderId: exchangeResult.orderId,
+        symbol: validatedData.symbol,
+        exchange: exchange.name
+      });
+    } catch (exchangeError) {
+      logger.error('[Order] Exchange placement failed:', exchangeError.message);
+      return c.json({
+        success: false,
+        error: 'Failed to place order on exchange',
+        details: exchangeError.message
+      }, 500);
+    }
+    
+    // Insert order into database with external_order_id
     const insertQuery = `
       INSERT INTO orders (
-        user_id, symbol, side, qty, price, order_type, status, created_at
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
-      RETURNING id, user_id, symbol, side, qty, price, order_type, status, created_at
+        user_id, symbol, side, qty, price, order_type, status, 
+        external_order_id, exchange, created_at, last_synced_at
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW(), NOW())
+      RETURNING id, user_id, symbol, side, qty, price, order_type, status, 
+                external_order_id, exchange, created_at
     `;
     
     const result = await pool.query(insertQuery, [
@@ -1776,7 +1849,9 @@ app.post('/api/manual-trading/order',
       validatedData.qty,
       validatedData.price || null,
       validatedData.type,
-      'pending'
+      exchangeResult.status, // Use status from exchange
+      exchangeResult.orderId, // Store external order ID
+      exchange.name
     ]);
     
     const order = result.rows[0];
@@ -1788,13 +1863,17 @@ app.post('/api/manual-trading/order',
       ) VALUES ($1, $2, $3, $4, $5, $6, $7)
     `;
     
-    // Prepare activity details with idempotency tracking
+    // Prepare activity details with idempotency tracking and exchange info
     const activityDetails = {
       symbol: validatedData.symbol,
       side: validatedData.side,
       qty: validatedData.qty,
       price: validatedData.price,
-      type: validatedData.type
+      type: validatedData.type,
+      exchange: exchange.name,
+      external_order_id: exchangeResult.orderId,
+      executed_qty: exchangeResult.executedQty,
+      avg_price: exchangeResult.avgPrice
     };
     
     // Add idempotency key if present
@@ -1823,12 +1902,16 @@ app.post('/api/manual-trading/order',
       success: true,
       data: {
         orderId: order.id,
+        externalOrderId: order.external_order_id,
         status: order.status,
         symbol: order.symbol,
         side: order.side,
         qty: order.qty,
         price: order.price,
         type: order.order_type,
+        exchange: order.exchange,
+        executedQty: exchangeResult.executedQty,
+        avgPrice: exchangeResult.avgPrice,
         createdAt: order.created_at
       }
     }, 201);
@@ -1858,7 +1941,7 @@ app.post('/api/manual-trading/orders/cancel', authMiddleware, rateLimitMiddlewar
     
     // Check if order exists and belongs to user
     const checkQuery = `
-      SELECT id, status, symbol, side, qty
+      SELECT id, status, symbol, side, qty, external_order_id, exchange
       FROM orders
       WHERE id = $1 AND user_id = $2
     `;
@@ -1873,6 +1956,21 @@ app.post('/api/manual-trading/orders/cancel', authMiddleware, rateLimitMiddlewar
     }
     
     const order = checkResult.rows[0];
+    
+    // Cancel order on exchange if external_order_id exists
+    if (order.external_order_id) {
+      try {
+        await exchange.cancelOrder(order.external_order_id, order.symbol);
+        logger.info('[Order] Cancelled on exchange', {
+          orderId: order.id,
+          externalOrderId: order.external_order_id,
+          exchange: order.exchange
+        });
+      } catch (exchangeError) {
+        logger.error('[Order] Exchange cancellation failed:', exchangeError.message);
+        // Continue with database update even if exchange cancel fails
+      }
+    }
     
     if (order.status !== 'pending' && order.status !== 'partial') {
       return c.json({
