@@ -15,6 +15,10 @@
     "deploy:enhanced": "npm run build:enhanced && wrangler deploy --config wrangler.enhanced.jsonc",
     "cf-typegen": "wrangler types --env-interface CloudflareBindings",
     "clean-port": "fuser -k 3000/tcp 2>/dev/null || true",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --check .",
+    "format:fix": "prettier --write .",
     "test": "jest",
     "test:contracts": "jest tests/contracts --coverage",
     "test:watch": "jest --watch",
@@ -33,7 +37,8 @@
     "monitor:dashboard": "open http://localhost:8787/dashboard/unified-monitoring-dashboard.html",
     "security:audit": "curl -X POST http://localhost:8787/api/enhanced/security/audit -H 'Authorization: Bearer demo_token_123'",
     "ai:optimize": "curl -X POST http://localhost:8787/api/enhanced/ai/optimize -H 'Authorization: Bearer demo_token_123' -H 'Content-Type: application/json' -d '{\"modelId\":\"main_predictor\"}'",
-    "performance:metrics": "curl http://localhost:8787/api/enhanced/performance/metrics -H 'Authorization: Bearer demo_token_123'"
+    "performance:metrics": "curl http://localhost:8787/api/enhanced/performance/metrics -H 'Authorization: Bearer demo_token_123'",
+    "prepare": "husky"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.9.0",
@@ -68,8 +73,14 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.9.1",
     "@types/supertest": "^6.0.3",
+    "@typescript-eslint/eslint-plugin": "^8.46.2",
+    "@typescript-eslint/parser": "^8.46.2",
+    "eslint": "^9.39.0",
+    "husky": "^9.1.7",
     "jest": "^30.2.0",
+    "lint-staged": "^16.2.6",
     "nock": "^14.0.10",
+    "prettier": "^3.6.2",
     "puppeteer": "^24.19.0",
     "supertest": "^7.1.4",
     "ts-jest": "^29.4.5",
@@ -77,5 +88,14 @@
     "vite": "^5.4.20",
     "wrangler": "^3.114.14",
     "yaml": "^2.8.1"
+  },
+  "lint-staged": {
+    "*.{js,ts,tsx,jsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md,yml,yaml}": [
+      "prettier --write"
+    ]
   }
 }

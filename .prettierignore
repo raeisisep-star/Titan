@@ -1,0 +1,20 @@
+# Dependencies
+node_modules/
+dist/
+.wrangler/
+
+# Build artifacts
+*.min.js
+*.min.css
+coverage/
+
+# Logs
+*.log
+logs/
+
+# Environment files
+.env
+.env.*
+
+# Lock files
+package-lock.json
