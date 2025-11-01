@@ -1,0 +1,88 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:base"
+  ],
+  "rangeStrategy": "bump",
+  "labels": ["dependencies", "renovate"],
+  "assignees": ["@raeisisep-star"],
+  "reviewers": ["@raeisisep-star"],
+  "schedule": [
+    "after 21:00 and before 06:00 on every weekday"
+  ],
+  "timezone": "Asia/Tehran",
+  "semanticCommits": "enabled",
+  "commitMessagePrefix": "chore(deps):",
+  "prHourlyLimit": 2,
+  "prConcurrentLimit": 5,
+  "packageRules": [
+    {
+      "description": "Production dependencies - manual review required",
+      "matchDepTypes": ["dependencies"],
+      "automerge": false,
+      "groupName": "production dependencies"
+    },
+    {
+      "description": "Development dependencies - automerge minor/patch",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "automergeType": "branch",
+      "groupName": "devDependencies (non-major)"
+    },
+    {
+      "description": "Development dependencies - major updates need review",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["major"],
+      "automerge": false,
+      "groupName": "devDependencies (major)"
+    },
+    {
+      "description": "Security updates - high priority",
+      "matchUpdateTypes": ["patch"],
+      "matchPackagePatterns": ["*"],
+      "automerge": true,
+      "stabilityDays": 0,
+      "groupName": "security patches"
+    },
+    {
+      "description": "Group ESLint packages together",
+      "matchPackagePatterns": ["^eslint", "^@typescript-eslint"],
+      "groupName": "eslint packages"
+    },
+    {
+      "description": "Group TypeScript packages together",
+      "matchPackagePatterns": ["^typescript", "^@types/"],
+      "groupName": "typescript packages"
+    },
+    {
+      "description": "Group Playwright packages together",
+      "matchPackagePatterns": ["^@playwright"],
+      "groupName": "playwright packages"
+    },
+    {
+      "description": "Pin Cloudflare Workers types (compatibility)",
+      "matchPackageNames": ["@cloudflare/workers-types"],
+      "rangeStrategy": "pin"
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security", "dependencies"],
+    "assignees": ["@raeisisep-star"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 6am on monday"],
+    "commitMessageAction": "Update",
+    "groupName": "lockfile maintenance"
+  },
+  "separateMinorPatch": true,
+  "separateMajorMinor": true,
+  "minimumReleaseAge": "3 days",
+  "stabilityDays": 3,
+  "ignoreUnstable": true,
+  "respectLatest": true,
+  "npm": {
+    "minimumReleaseAge": "3 days"
+  }
+}
