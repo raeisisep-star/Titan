@@ -27,9 +27,6 @@ const slowRequests = new Counter('slow_requests');
 
 // Test configuration
 export const options = {
-  vus: 5,
-  duration: '30m',
-  
   thresholds: {
     // Very strict thresholds for endurance testing
     'http_req_failed': ['rate<0.005'],  // < 0.5% failure
@@ -49,10 +46,10 @@ export const options = {
     'slow_requests': ['count<50'],  // Less than 50 requests > 1s
   },
   
-  // Graceful stages
+  // Graceful stages (total duration: 30 minutes)
   stages: [
-    { duration: '2m', target: 5 },   // Ramp up
-    { duration: '26m', target: 5 },  // Steady state
+    { duration: '2m', target: 5 },   // Ramp up to 5 VUs
+    { duration: '26m', target: 5 },  // Steady state at 5 VUs
     { duration: '2m', target: 0 },   // Ramp down
   ],
 };

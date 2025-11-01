@@ -21,9 +21,6 @@ const healthCheckDuration = new Trend('health_check_duration');
 
 // Test configuration
 export const options = {
-  vus: 10,
-  duration: '1m',
-  
   thresholds: {
     // Less than 1% of requests should fail
     'http_req_failed': ['rate<0.01'],
@@ -38,9 +35,9 @@ export const options = {
     'health_check_duration': ['p(95)<500'],
   },
   
-  // Graceful ramp down
+  // Graceful ramp with stages (total duration: 1 minute)
   stages: [
-    { duration: '10s', target: 10 },  // Ramp up
+    { duration: '10s', target: 10 },  // Ramp up to 10 VUs
     { duration: '40s', target: 10 },  // Stay at 10 VUs
     { duration: '10s', target: 0 },   // Ramp down
   ],
