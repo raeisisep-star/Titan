@@ -565,6 +565,74 @@ redis-cli KEYS "rate-limit:*" | wc -l
 
 ---
 
+## How to Disable Phase 5 Quickly
+
+If you need to temporarily disable Phase 5 monitoring (e.g., during maintenance or troubleshooting), follow these steps:
+
+### Step 1: Disable Cron Jobs (2 minutes)
+
+```bash
+# Edit crontab
+crontab -e
+
+# Comment out the 4 Phase 5 cron jobs:
+# */5 * * * * /home/ubuntu/Titan/scripts/health-checks.sh
+# */2 * * * * /home/ubuntu/Titan/scripts/pm2-watchdog.sh
+# 0 7 * * 0 /home/ubuntu/Titan/scripts/pg-weekly-report.sh
+# */10 * * * * /home/ubuntu/Titan/scripts/external-synthetic.sh
+
+# Verify
+crontab -l | grep -E "health-checks|pm2-watchdog|pg-weekly|external-synthetic"
+```
+
+### Step 2: Remove Nginx Monitoring Endpoints (1 minute)
+
+```bash
+# Remove stub_status and rate limit configs
+sudo rm /etc/nginx/conf.d/stub_status.conf
+sudo rm /etc/nginx/conf.d/ratelimit.conf  # Optional: only if causing issues
+
+# Validate and reload
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+### Step 3: Disable Security Headers (1 minute)
+
+**Option A: Quick Disable** (comment out in server-real-v3.js):
+```javascript
+// app.use('*', securityHeadersMiddleware);
+// app.use('*', strictCorsMiddleware);
+```
+
+**Option B: Temporary Rename** (no code change):
+```bash
+cd /home/ubuntu/Titan/middleware
+mv securityHeaders.js securityHeaders.js.disabled
+pm2 restart titan-backend
+```
+
+### Step 4: Verify Disablement (30 seconds)
+
+```bash
+# Check cron jobs are commented
+crontab -l | grep "health-checks" || echo "✅ Cron jobs disabled"
+
+# Check Nginx configs removed
+ls /etc/nginx/conf.d/stub_status.conf 2>&1 | grep "No such file" && echo "✅ Nginx configs removed"
+
+# Check security headers removed
+curl -I http://localhost:5000/api/health | grep -q "x-frame-options" || echo "✅ Security headers disabled"
+```
+
+### Step 5: Re-enable When Ready
+
+To re-enable all Phase 5 components, simply reverse the above steps or re-run the deployment from PR #44.
+
+**Total Disable Time**: ~5 minutes  
+**No Data Loss**: All monitoring data remains in log files
+
+---
+
 ## Documentation Updates
 
 - **Created**: November 1, 2024

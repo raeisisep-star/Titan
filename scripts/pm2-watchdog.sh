@@ -37,6 +37,8 @@ HIGH_RESTARTS="$(pm2 jlist 2>/dev/null | jq -r '.[] | select(.pm2_env.restart_ti
 if [[ -n "$HIGH_RESTARTS" ]]; then
   echo "[$(date -u)] ⚠️  High restart count detected:" | tee -a "$LOG"
   echo "$HIGH_RESTARTS" | tee -a "$LOG"
-  "$ALERT" "⚠️ High PM2 restart count detected:
-$HIGH_RESTARTS"
+  
+  # Send detailed alert with restart counts
+  RESTART_MSG="⚠️ High PM2 restart count detected:\n\n$HIGH_RESTARTS\n\n📊 Check logs: pm2 logs --nostream"
+  "$ALERT" "$RESTART_MSG"
 fi

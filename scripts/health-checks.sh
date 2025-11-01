@@ -53,4 +53,24 @@ else
   ok "disk space ok: ${DISK_FREE}% used"
 fi
 
+# 7) CPU load check (alert if 1-min load > number of vCPUs)
+CPU_CORES=$(nproc)
+CPU_LOAD_1=$(awk '{print $1}' /proc/loadavg)
+CPU_LOAD_INT=$(printf "%.0f" "$CPU_LOAD_1")
+if [[ "$CPU_LOAD_INT" -gt "$CPU_CORES" ]]; then
+  echo "[$TS] WARN CPU load high: $CPU_LOAD_1 (cores: $CPU_CORES)" | tee -a "$LOG"
+  [[ -x "$ALERT" ]] && "$ALERT" "⚠️ CPU load high: $CPU_LOAD_1 (cores: $CPU_CORES)"
+else
+  ok "CPU load ok: $CPU_LOAD_1 (cores: $CPU_CORES)"
+fi
+
+# 8) Memory usage check (alert if > 85%)
+MEM_USED_PCT=$(free | awk '/Mem:/ {printf("%.0f", $3/$2*100)}')
+if [[ "$MEM_USED_PCT" -gt 85 ]]; then
+  echo "[$TS] WARN Memory high: ${MEM_USED_PCT}% used" | tee -a "$LOG"
+  [[ -x "$ALERT" ]] && "$ALERT" "⚠️ Memory usage high: ${MEM_USED_PCT}%"
+else
+  ok "memory usage ok: ${MEM_USED_PCT}%"
+fi
+
 ok "All health checks passed"
