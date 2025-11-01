@@ -18,6 +18,7 @@ const { metricsMiddleware, startMetricsCollection, getMetricsSnapshot } = requir
 const { placeOrderSchema, cancelOrderSchema, validateBody } = require('./validators/trading');
 const ExchangeFactory = require('./adapters/ExchangeFactory');
 const { logger } = require('./utils/logMasking');
+const { securityHeadersMiddleware, strictCorsMiddleware } = require('./middleware/securityHeaders');
 
 // Initialize Hono App
 const app = new Hono();
@@ -64,6 +65,10 @@ let exchange;
 
 // Request ID Middleware (apply globally for tracing)
 app.use('/*', requestIdMiddleware());
+
+// Security Headers Middleware (Phase 5: Monitoring & Safety)
+app.use('*', securityHeadersMiddleware);
+app.use('*', strictCorsMiddleware);
 
 // Metrics Middleware (apply globally for monitoring)
 app.use('/*', metricsMiddleware());
