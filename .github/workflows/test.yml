@@ -25,10 +25,13 @@ jobs:
       - name: Install dependencies
         run: npm ci
       
-      - name: Run unit tests
-        run: npm test -- --passWithNoTests || echo "⚠️ No test script found"
+      - name: Prepare environment for tests
+        run: cp .env.example .env
       
-      - name: Upload coverage (if exists)
+      - name: Run tests with coverage
+        run: npm run test:ci
+      
+      - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
