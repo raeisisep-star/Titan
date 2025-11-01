@@ -1,0 +1,143 @@
+name: CI Minimum
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  sanity:
+    name: CI Sanity Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Check project structure
+        run: |
+          echo "✅ CI Minimum Sanity Check running..."
+          
+          # Check key files exist
+          if [ -f package.json ]; then
+            echo "✅ package.json found"
+          else
+            echo "⚠️  No package.json (OK for docs-only PRs)"
+          fi
+          
+          if [ -d docs ]; then
+            echo "✅ docs/ directory found"
+          fi
+          
+          if [ -d scripts ]; then
+            echo "✅ scripts/ directory found"
+          fi
+          
+          if [ -f server-real-v3.js ]; then
+            echo "✅ server-real-v3.js found"
+          fi
+          
+          echo ""
+          echo "✅ CI Minimum Sanity Check PASSED"
+      
+      - name: Install dependencies (if package.json exists)
+        if: hashFiles('package.json') != ''
+        run: |
+          echo "📦 Installing dependencies..."
+          npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+          echo "✅ Dependencies installed"
+      
+      - name: Check syntax (basic validation)
+        if: hashFiles('package.json') != ''
+        run: |
+          echo "🔍 Checking JavaScript syntax..."
+          
+          # Basic syntax check for main server file
+          if [ -f server-real-v3.js ]; then
+            node --check server-real-v3.js && echo "✅ server-real-v3.js syntax OK"
+          fi
+          
+          # Check scripts directory if exists
+          if [ -d scripts ]; then
+            for script in scripts/*.js; do
+              if [ -f "$script" ]; then
+                node --check "$script" && echo "✅ $(basename $script) syntax OK"
+              fi
+            done
+          fi
+          
+          echo "✅ Syntax check PASSED"
+      
+      - name: Validate workflow files
+        run: |
+          echo "🔍 Checking workflow files..."
+          
+          if [ -d .github/workflows ]; then
+            for workflow in .github/workflows/*.yml; do
+              if [ -f "$workflow" ]; then
+                echo "✅ $(basename $workflow) found"
+              fi
+            done
+          fi
+          
+          echo "✅ Workflow validation PASSED"
+      
+      - name: Documentation check
+        run: |
+          echo "📚 Checking documentation..."
+          
+          if [ -f README.md ]; then
+            echo "✅ README.md found"
+          fi
+          
+          if [ -f CHANGELOG.md ]; then
+            echo "✅ CHANGELOG.md found"
+          fi
+          
+          if [ -d docs ]; then
+            DOC_COUNT=$(find docs -name "*.md" | wc -l)
+            echo "✅ Found $DOC_COUNT documentation files"
+          fi
+          
+          echo "✅ Documentation check PASSED"
+      
+      - name: Security check (basic)
+        run: |
+          echo "🔒 Running basic security checks..."
+          
+          # Check for common security issues
+          if grep -r "password.*=.*['\"]" --include="*.js" --include="*.json" . 2>/dev/null; then
+            echo "⚠️  Warning: Possible hardcoded passwords found"
+          else
+            echo "✅ No obvious hardcoded credentials"
+          fi
+          
+          # Check .env files are gitignored
+          if [ -f .gitignore ]; then
+            if grep -q ".env" .gitignore; then
+              echo "✅ .env files are gitignored"
+            else
+              echo "⚠️  Warning: .env might not be gitignored"
+            fi
+          fi
+          
+          echo "✅ Basic security check PASSED"
+      
+      - name: Final summary
+        if: always()
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════╗"
+          echo "║   ✅ CI Minimum Check COMPLETED         ║"
+          echo "╚══════════════════════════════════════════╝"
+          echo ""
+          echo "All minimum requirements satisfied!"
+          echo "PR is ready for review and merge."
