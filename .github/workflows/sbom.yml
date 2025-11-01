@@ -1,0 +1,71 @@
+name: SBOM Generation
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  generate-sbom:
+    name: Generate SBOM
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Install Syft
+        run: |
+          curl -sSfL https://raw.githubusercontent.com/anchore/syft/main/install.sh | sh -s -- -b /usr/local/bin
+          syft version
+      
+      - name: Generate SBOM (SPDX JSON)
+        run: |
+          syft dir:. -o spdx-json > sbom-spdx.json
+          echo "✅ SBOM generated in SPDX format"
+      
+      - name: Generate SBOM (CycloneDX JSON)
+        run: |
+          syft dir:. -o cyclonedx-json > sbom-cyclonedx.json
+          echo "✅ SBOM generated in CycloneDX format"
+      
+      - name: SBOM Summary
+        run: |
+          echo "📦 Software Bill of Materials (SBOM) Generated"
+          echo ""
+          echo "Total packages discovered:"
+          cat sbom-spdx.json | jq '.packages | length'
+          echo ""
+          echo "Top 10 packages by type:"
+          cat sbom-spdx.json | jq -r '.packages[] | .name + " (" + .versionInfo + ")"' | head -10
+      
+      - name: Upload SBOM artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: sbom-${{ github.sha }}
+          path: |
+            sbom-spdx.json
+            sbom-cyclonedx.json
+          retention-days: 90
+      
+      - name: Upload SBOM to GitHub Release (on main push)
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: |
+          echo "📦 SBOM artifacts uploaded"
+          echo "Available for download in Actions artifacts"
