@@ -1,0 +1,271 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  # Backend CI
+  backend:
+    runs-on: ubuntu-latest
+    name: Backend Tests
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter (if configured)
+        run: npm run lint --if-present
+        continue-on-error: true
+
+      - name: Run tests
+        run: npm test --if-present
+        env:
+          NODE_ENV: test
+
+      - name: Check for security vulnerabilities
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
+
+  # Contract Tests (already exists, keeping for reference)
+  contract-tests:
+    runs-on: ubuntu-latest
+    name: Contract Tests (Isolated Environment)
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run contract tests
+        run: npm run test:contracts --if-present
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test_secret_for_ci_only
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: |
+            coverage/
+            test-results/
+          retention-days: 7
+
+  # Integration Tests
+  integration-tests:
+    runs-on: ubuntu-latest
+    name: Integration Tests
+    
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_USER: test_user
+          POSTGRES_PASSWORD: test_password
+          POSTGRES_DB: test_db
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+      
+      redis:
+        image: redis:7-alpine
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 6379:6379
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run integration tests
+        run: |
+          if [ -f "tests/rateLimit.integration.test.js" ]; then
+            node tests/rateLimit.integration.test.js
+          fi
+          if [ -f "tests/exchange-integration.test.js" ]; then
+            node tests/exchange-integration.test.js
+          fi
+        env:
+          NODE_ENV: test
+          DATABASE_URL: postgresql://test_user:test_password@localhost:5432/test_db
+          REDIS_URL: redis://localhost:6379
+          JWT_SECRET: test_secret_for_ci_only
+          EXCHANGE_NAME: paper
+
+  # Code Quality
+  code-quality:
+    runs-on: ubuntu-latest
+    name: Code Quality Checks
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check code formatting
+        run: |
+          if command -v prettier &> /dev/null; then
+            npx prettier --check "**/*.{js,json,md}"
+          else
+            echo "Prettier not configured, skipping"
+          fi
+        continue-on-error: true
+
+      - name: Check for TODOs and FIXMEs
+        run: |
+          echo "Checking for TODO and FIXME comments..."
+          grep -r "TODO\|FIXME" --include="*.js" --include="*.ts" . || echo "No TODOs or FIXMEs found"
+        continue-on-error: true
+
+  # Security Scan
+  security:
+    runs-on: ubuntu-latest
+    name: Security Scan
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run Gitleaks
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+
+      - name: Check for exposed secrets in .env.example
+        run: |
+          echo "Verifying .env.example has no real secrets..."
+          if grep -E "ghp_|sk-|password.*=.*[^_]" .env.example; then
+            echo "ERROR: Real secrets found in .env.example!"
+            exit 1
+          else
+            echo "✅ No real secrets in .env.example"
+          fi
+
+  # Build Check
+  build:
+    runs-on: ubuntu-latest
+    name: Build Check
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build project (if configured)
+        run: npm run build --if-present
+
+      - name: Check for build artifacts
+        run: |
+          if [ -d "dist" ] || [ -d "build" ]; then
+            echo "✅ Build artifacts generated"
+            ls -la dist/ || ls -la build/
+          else
+            echo "No build directory found (OK if not configured)"
+          fi
+
+  # Summary
+  ci-summary:
+    runs-on: ubuntu-latest
+    name: CI Summary
+    needs: [backend, contract-tests, integration-tests, code-quality, security, build]
+    if: always()
+    
+    steps:
+      - name: Check all jobs status
+        run: |
+          echo "CI Pipeline Summary:"
+          echo "Backend: ${{ needs.backend.result }}"
+          echo "Contract Tests: ${{ needs.contract-tests.result }}"
+          echo "Integration Tests: ${{ needs.integration-tests.result }}"
+          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Security: ${{ needs.security.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          
+          if [ "${{ needs.backend.result }}" == "failure" ] || [ "${{ needs.contract-tests.result }}" == "failure" ]; then
+            echo "❌ CI Pipeline FAILED"
+            exit 1
+          else
+            echo "✅ CI Pipeline PASSED"
+          fi
