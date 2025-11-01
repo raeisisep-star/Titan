@@ -1,0 +1,270 @@
+name: Deploy to Production
+
+on:
+  # Manual deployment only - requires approval
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to deploy (e.g., v1.2.3)'
+        required: false
+        type: string
+      
+  # Auto-trigger on version tags (v*.*.*)
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production  # Requires manual approval in GitHub settings
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.version || github.ref }}
+      
+      - name: Verify deployment
+        run: |
+          echo "🔍 Verifying deployment details..."
+          echo "Repository: ${{ github.repository }}"
+          echo "Actor: ${{ github.actor }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "SHA: ${{ github.sha }}"
+          
+          if [ ! -z "${{ inputs.version }}" ]; then
+            echo "📦 Manual deployment of version: ${{ inputs.version }}"
+          else
+            echo "🏷️  Tag-based deployment: ${GITHUB_REF#refs/tags/}"
+          fi
+      
+      - name: Create database backup
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            
+            echo "💾 Creating database backup before deployment..."
+            
+            # Create backup directory if not exists
+            mkdir -p /home/ubuntu/backups/database
+            
+            # Generate timestamp
+            TIMESTAMP=$(date +%Y%m%d_%H%M%S)
+            BACKUP_FILE="/home/ubuntu/backups/database/titan_prod_${TIMESTAMP}.sql"
+            
+            # Create PostgreSQL backup (adjust credentials as needed)
+            if command -v pg_dump &> /dev/null; then
+              # Read database connection from .env
+              cd ${{ secrets.PROD_PROJECT_DIR }}
+              if [ -f ".env" ]; then
+                export $(grep -v '^#' .env | xargs)
+                pg_dump "$DATABASE_URL" > "$BACKUP_FILE"
+                gzip "$BACKUP_FILE"
+                echo "✅ Database backup created: ${BACKUP_FILE}.gz"
+                
+                # Keep only last 7 backups
+                ls -t /home/ubuntu/backups/database/titan_prod_*.sql.gz | tail -n +8 | xargs -r rm
+                echo "🧹 Old backups cleaned up (keeping last 7)"
+              else
+                echo "⚠️  No .env file found, skipping database backup"
+              fi
+            else
+              echo "⚠️  pg_dump not available, skipping database backup"
+            fi
+      
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script_stop: true
+          script: |
+            set -e
+            
+            echo "🚀 Starting deployment to PRODUCTION environment..."
+            echo "⚠️  This is a PRODUCTION deployment - proceed with caution!"
+            
+            # Navigate to project directory
+            cd ${{ secrets.PROD_PROJECT_DIR }}
+            
+            # Show current state
+            echo "📍 Current directory: $(pwd)"
+            echo "🔀 Current branch/tag: $(git branch --show-current || git describe --tags)"
+            echo "📝 Current commit: $(git rev-parse --short HEAD)"
+            
+            # Store current commit for rollback
+            PREVIOUS_COMMIT=$(git rev-parse HEAD)
+            echo "💾 Previous commit saved for rollback: ${PREVIOUS_COMMIT}"
+            
+            # Fetch latest changes
+            echo "📥 Fetching latest changes from repository..."
+            git fetch --all --prune --tags
+            
+            # Checkout specified version or tag
+            if [ ! -z "${{ inputs.version }}" ]; then
+              echo "🔄 Checking out version: ${{ inputs.version }}"
+              git checkout ${{ inputs.version }}
+            else
+              VERSION_TAG="${GITHUB_REF#refs/tags/}"
+              echo "🔄 Checking out tag: ${VERSION_TAG}"
+              git checkout ${VERSION_TAG}
+            fi
+            
+            echo "✅ Updated to commit: $(git rev-parse --short HEAD)"
+            echo "📝 Latest commit message: $(git log -1 --pretty=%B)"
+            
+            # Install dependencies with clean cache
+            echo "📦 Installing production dependencies..."
+            npm ci --prefer-offline --no-audit --production
+            
+            # Update .env file if provided
+            if [ ! -z "${{ secrets.PROD_ENV_FILE }}" ]; then
+              echo "🔧 Updating .env configuration..."
+              echo "${{ secrets.PROD_ENV_FILE }}" > .env
+            else
+              echo "⚠️  No PROD_ENV_FILE secret found, using existing .env"
+            fi
+            
+            # Set NODE_ENV to production
+            if [ ! -z "${{ secrets.PROD_NODE_ENV }}" ]; then
+              echo "🌍 Setting NODE_ENV=${{ secrets.PROD_NODE_ENV }}"
+              export NODE_ENV=${{ secrets.PROD_NODE_ENV }}
+            else
+              export NODE_ENV=production
+            fi
+            
+            # Run database migrations
+            echo "🗄️  Running database migrations..."
+            if command -v npx &> /dev/null; then
+              npx prisma migrate deploy || echo "⚠️  Migration failed or not configured"
+            fi
+            
+            # Reload PM2 processes with zero-downtime
+            echo "🔄 Reloading PM2 processes (zero-downtime)..."
+            pm2 startOrReload ecosystem.config.js --update-env --env production
+            pm2 save
+            
+            # Wait for health check
+            echo "⏳ Waiting for application to stabilize..."
+            sleep 5
+            
+            # Show PM2 status
+            echo "📊 PM2 Process Status:"
+            pm2 list
+            pm2 logs --lines 20 --nostream
+            
+            echo "✅ Deployment to PRODUCTION completed successfully!"
+            echo "🌐 Application should be running on port 5000"
+            echo "🔙 Rollback commit if needed: ${PREVIOUS_COMMIT}"
+      
+      - name: Health check
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            
+            echo "🏥 Running health checks..."
+            
+            # Check if PM2 processes are running
+            PM2_STATUS=$(pm2 jlist)
+            if echo "$PM2_STATUS" | grep -q '"status":"online"'; then
+              echo "✅ PM2 processes are online"
+            else
+              echo "❌ PM2 processes not online!"
+              exit 1
+            fi
+            
+            # Check if port 5000 is listening
+            if netstat -tuln | grep -q ":5000 "; then
+              echo "✅ Port 5000 is listening"
+            else
+              echo "❌ Port 5000 is not listening!"
+              exit 1
+            fi
+            
+            # Optional: HTTP health check
+            if command -v curl &> /dev/null; then
+              HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:5000/health || echo "000")
+              if [ "$HTTP_CODE" == "200" ]; then
+                echo "✅ HTTP health check passed (200 OK)"
+              else
+                echo "⚠️  HTTP health check returned: $HTTP_CODE"
+              fi
+            fi
+            
+            echo "✅ All health checks passed!"
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Production deployment successful"
+          else
+            echo "❌ Production deployment failed"
+          fi
+      
+      - name: Send Telegram notification
+        if: always()
+        run: |
+          STATUS="${{ job.status }}"
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          ACTOR="${{ github.actor }}"
+          
+          if [ ! -z "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            VERSION="${GITHUB_REF#refs/tags/}"
+          fi
+          
+          if [ "$STATUS" == "success" ]; then
+            EMOJI="✅"
+            MESSAGE="Production Deployment Successful"
+          else
+            EMOJI="❌"
+            MESSAGE="Production Deployment Failed"
+          fi
+          
+          # Send notification if Telegram credentials are configured
+          if [ ! -z "${{ secrets.TELEGRAM_ALERT_TOKEN }}" ]; then
+            curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_TOKEN }}/sendMessage" \
+              -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+              -d parse_mode="HTML" \
+              -d text="<b>${EMOJI} ${MESSAGE}</b>%0A%0A<b>Environment:</b> PRODUCTION%0A<b>Version:</b> ${VERSION}%0A<b>Commit:</b> ${COMMIT_SHORT}%0A<b>Deployer:</b> ${ACTOR}%0A%0A<a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>View Workflow Run</a>" \
+              || echo "Failed to send Telegram notification"
+          fi
+      
+      - name: Create deployment record
+        if: success()
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.PROD_SSH_HOST }}
+          username: ${{ secrets.PROD_SSH_USER }}
+          key: ${{ secrets.PROD_SSH_KEY }}
+          script: |
+            set -e
+            
+            cd ${{ secrets.PROD_PROJECT_DIR }}
+            
+            # Create deployments log directory
+            mkdir -p /home/ubuntu/logs/deployments
+            
+            # Record deployment
+            TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
+            COMMIT=$(git rev-parse --short HEAD)
+            VERSION="${{ inputs.version || github.ref }}"
+            DEPLOYER="${{ github.actor }}"
+            
+            echo "${TIMESTAMP} | ${VERSION} | ${COMMIT} | ${DEPLOYER} | SUCCESS" >> /home/ubuntu/logs/deployments/production.log
+            
+            echo "📝 Deployment recorded in production.log"

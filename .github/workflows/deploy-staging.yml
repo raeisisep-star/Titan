@@ -1,0 +1,115 @@
+name: Deploy to Staging
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Deploy to Staging Server
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_SSH_HOST }}
+          username: ${{ secrets.STAGING_SSH_USER }}
+          key: ${{ secrets.STAGING_SSH_KEY }}
+          script_stop: true  # Stop on first error
+          script: |
+            set -e
+            
+            echo "🚀 Starting deployment to staging environment..."
+            
+            # Navigate to project directory
+            cd ${{ secrets.STAGING_PROJECT_DIR }}
+            
+            # Show current state
+            echo "📍 Current directory: $(pwd)"
+            echo "🔀 Current branch: $(git branch --show-current)"
+            echo "📝 Current commit: $(git rev-parse --short HEAD)"
+            
+            # Fetch latest changes
+            echo "📥 Fetching latest changes from repository..."
+            git fetch --all --prune
+            
+            # Checkout and pull main branch
+            echo "🔄 Checking out main branch..."
+            git checkout main
+            git pull --ff-only origin main
+            
+            echo "✅ Updated to commit: $(git rev-parse --short HEAD)"
+            echo "📝 Latest commit message: $(git log -1 --pretty=%B)"
+            
+            # Install dependencies with clean cache
+            echo "📦 Installing dependencies..."
+            npm ci --prefer-offline --no-audit
+            
+            # Update .env file if provided
+            if [ ! -z "${{ secrets.STAGING_ENV_FILE }}" ]; then
+              echo "🔧 Updating .env configuration..."
+              echo "${{ secrets.STAGING_ENV_FILE }}" > .env
+            else
+              echo "⚠️  No STAGING_ENV_FILE secret found, using existing .env"
+            fi
+            
+            # Set NODE_ENV
+            if [ ! -z "${{ secrets.STAGING_NODE_ENV }}" ]; then
+              echo "🌍 Setting NODE_ENV=${{ secrets.STAGING_NODE_ENV }}"
+              export NODE_ENV=${{ secrets.STAGING_NODE_ENV }}
+            fi
+            
+            # Run database migrations
+            echo "🗄️  Running database migrations..."
+            if command -v npx &> /dev/null; then
+              npx prisma migrate deploy || echo "⚠️  Migration failed or not configured"
+            fi
+            
+            # Reload PM2 processes
+            echo "🔄 Reloading PM2 processes..."
+            pm2 startOrReload ecosystem.config.js --update-env
+            pm2 save
+            
+            # Show PM2 status
+            echo "📊 PM2 Process Status:"
+            pm2 list
+            
+            echo "✅ Deployment to staging completed successfully!"
+            echo "🌐 Application should be running on port 5001"
+      
+      - name: Notify deployment status
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "✅ Staging deployment successful"
+          else
+            echo "❌ Staging deployment failed"
+          fi
+      
+      - name: Send Telegram notification (optional)
+        if: always() && secrets.TELEGRAM_ALERT_TOKEN != ''
+        run: |
+          STATUS="${{ job.status }}"
+          COMMIT_SHA="${{ github.sha }}"
+          COMMIT_SHORT="${COMMIT_SHA:0:7}"
+          COMMIT_MSG="${{ github.event.head_commit.message }}"
+          ACTOR="${{ github.actor }}"
+          
+          if [ "$STATUS" == "success" ]; then
+            EMOJI="✅"
+            MESSAGE="Staging Deployment Successful"
+          else
+            EMOJI="❌"
+            MESSAGE="Staging Deployment Failed"
+          fi
+          
+          curl -s -X POST "https://api.telegram.org/bot${{ secrets.TELEGRAM_ALERT_TOKEN }}/sendMessage" \
+            -d chat_id="${{ secrets.TELEGRAM_CHAT_ID }}" \
+            -d parse_mode="HTML" \
+            -d text="<b>${EMOJI} ${MESSAGE}</b>%0A%0A<b>Environment:</b> Staging%0A<b>Commit:</b> ${COMMIT_SHORT}%0A<b>Author:</b> ${ACTOR}%0A<b>Message:</b> ${COMMIT_MSG}%0A%0A<a href='https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}'>View Workflow Run</a>" \
+            || echo "Failed to send Telegram notification"
