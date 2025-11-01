@@ -1,0 +1,127 @@
+name: E2E (Staging Only)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_url:
+        description: 'Target URL to test (staging only)'
+        required: false
+        default: 'https://staging.zala.ir'
+  push:
+    branches: [main]
+    paths:
+      - 'server-real-v3.js'
+      - 'middleware/**'
+      - '.github/workflows/e2e-staging.yml'
+
+jobs:
+  e2e-staging:
+    name: E2E Smoke Tests (Staging)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment: staging
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+      
+      - name: Install Playwright
+        run: npx playwright install --with-deps chromium
+      
+      - name: Verify target is staging only
+        run: |
+          TARGET_URL="${{ github.event.inputs.target_url || 'https://staging.zala.ir' }}"
+          if [[ ! "$TARGET_URL" =~ staging ]]; then
+            echo "❌ ERROR: E2E tests can only run on staging!"
+            echo "Target URL: $TARGET_URL"
+            exit 1
+          fi
+          echo "✅ Target URL verified: $TARGET_URL"
+      
+      - name: Wait for staging deployment
+        run: |
+          TARGET_URL="${{ github.event.inputs.target_url || 'https://staging.zala.ir' }}"
+          echo "⏳ Waiting for staging to be ready..."
+          for i in {1..30}; do
+            if curl -sf "$TARGET_URL/api/health" > /dev/null; then
+              echo "✅ Staging is ready!"
+              exit 0
+            fi
+            echo "Attempt $i/30 failed, retrying in 10s..."
+            sleep 10
+          done
+          echo "❌ Staging not reachable after 5 minutes"
+          exit 1
+      
+      - name: Create Playwright test file
+        run: |
+          mkdir -p tests/e2e
+          cat > tests/e2e/smoke-staging.spec.js << 'EOF'
+          const { test, expect } = require('@playwright/test');
+          const BASE_URL = process.env.BASE_URL || 'https://staging.zala.ir';
+          
+          test('health endpoint returns success', async ({ request }) => {
+            const response = await request.get(`${BASE_URL}/api/health`);
+            expect(response.status()).toBe(200);
+            const body = await response.json();
+            expect(body.success).toBe(true);
+            expect(body.data.status).toBe('healthy');
+            expect(body.data.environment).toMatch(/staging|production/);
+          });
+          
+          test('health endpoint has required fields', async ({ request }) => {
+            const response = await request.get(`${BASE_URL}/api/health`);
+            const body = await response.json();
+            expect(body.data).toHaveProperty('version');
+            expect(body.data).toHaveProperty('commit');
+            expect(body.data).toHaveProperty('uptime');
+            expect(body.data).toHaveProperty('services');
+            expect(body.data.services).toHaveProperty('database');
+            expect(body.data.services).toHaveProperty('redis');
+          });
+          
+          test('health endpoint has security headers', async ({ request }) => {
+            const response = await request.get(`${BASE_URL}/api/health`);
+            const headers = response.headers();
+            expect(headers['strict-transport-security']).toBeTruthy();
+            expect(headers['x-frame-options']).toBeTruthy();
+            expect(headers['x-content-type-options']).toBe('nosniff');
+          });
+          
+          test('database connectivity check', async ({ request }) => {
+            const response = await request.get(`${BASE_URL}/api/health`);
+            const body = await response.json();
+            expect(body.data.services.database.status).toBe('connected');
+            expect(body.data.services.database.latency).toBeLessThan(1000);
+          });
+          
+          test('redis connectivity check', async ({ request }) => {
+            const response = await request.get(`${BASE_URL}/api/health`);
+            const body = await response.json();
+            expect(body.data.services.redis.status).toBe('connected');
+            expect(body.data.services.redis.latency).toBeLessThan(500);
+          });
+          EOF
+      
+      - name: Run E2E smoke tests
+        env:
+          BASE_URL: ${{ github.event.inputs.target_url || 'https://staging.zala.ir' }}
+        run: npx playwright test tests/e2e/smoke-staging.spec.js
+      
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report-staging
+          path: playwright-report/
+          if-no-files-found: ignore
+          retention-days: 7

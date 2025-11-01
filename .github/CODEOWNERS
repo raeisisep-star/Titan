@@ -1,0 +1,43 @@
+# CODEOWNERS - Define code ownership and mandatory reviewers
+# 
+# Lines starting with '#' are comments.
+# Each line is a file pattern followed by one or more owners (@username or @org/team-name)
+# 
+# More information:
+# https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @raeisisep-star
+
+# Critical infrastructure files require explicit review
+/.github/ @raeisisep-star
+/scripts/ @raeisisep-star
+/database/migrations/ @raeisisep-star
+
+# CI/CD workflows require review
+/.github/workflows/ @raeisisep-star
+
+# Security-sensitive files
+/middleware/securityHeaders.js @raeisisep-star
+/.env* @raeisisep-star
+/.nvmrc @raeisisep-star
+
+# Documentation
+/docs/ @raeisisep-star
+README.md @raeisisep-star
+CHANGELOG.md @raeisisep-star
+SECURITY.md @raeisisep-star
+
+# Core application files
+/server-real-v3.js @raeisisep-star
+/ecosystem.config.js @raeisisep-star
+package.json @raeisisep-star
+package-lock.json @raeisisep-star
+
+# Database operations
+/database/ @raeisisep-star
+
+# Deployment and operations
+/ops/ @raeisisep-star
+/scripts/backup-*.sh @raeisisep-star
+/scripts/release-tag.sh @raeisisep-star
