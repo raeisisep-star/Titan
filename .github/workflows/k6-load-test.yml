@@ -1,0 +1,254 @@
+name: k6 Load Testing
+
+on:
+  # Manual trigger for ad-hoc load testing
+  workflow_dispatch:
+    inputs:
+      test_type:
+        description: 'Test type to run'
+        required: true
+        default: 'smoke'
+        type: choice
+        options:
+          - smoke
+          - stress
+          - soak
+      target_url:
+        description: 'Target URL (leave empty for staging)'
+        required: false
+        type: string
+  
+  # Scheduled nightly load tests on staging
+  schedule:
+    # Run smoke test nightly at 2 AM UTC (off-peak)
+    - cron: '0 2 * * *'
+  
+  # Optional: Run smoke test before production deployment
+  # Uncomment to enable automatic testing on release tags
+  # push:
+  #   tags:
+  #     - 'v*.*.*'
+
+env:
+  K6_VERSION: '0.48.0'
+
+jobs:
+  k6-load-test:
+    name: Run k6 Load Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Determine test parameters
+        id: params
+        run: |
+          # Determine test type
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TEST_TYPE="${{ github.event.inputs.test_type }}"
+            TARGET_URL="${{ github.event.inputs.target_url }}"
+          elif [ "${{ github.event_name }}" = "schedule" ]; then
+            TEST_TYPE="smoke"
+            TARGET_URL=""
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            TEST_TYPE="smoke"
+            TARGET_URL=""
+          else
+            TEST_TYPE="smoke"
+            TARGET_URL=""
+          fi
+          
+          # Default to staging if no URL provided
+          if [ -z "$TARGET_URL" ]; then
+            TARGET_URL="https://staging.zala.ir"
+          fi
+          
+          echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
+          echo "target_url=$TARGET_URL" >> $GITHUB_OUTPUT
+          
+          echo "🎯 Test Type: $TEST_TYPE"
+          echo "🌐 Target URL: $TARGET_URL"
+      
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+          
+          echo "✅ k6 installed"
+          k6 version
+      
+      - name: Pre-flight health check
+        run: |
+          TARGET_URL="${{ steps.params.outputs.target_url }}"
+          echo "🔍 Checking if $TARGET_URL is reachable..."
+          
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/api/health" || echo "000")
+          
+          if [ "$STATUS_CODE" = "200" ]; then
+            echo "✅ Service is reachable (HTTP $STATUS_CODE)"
+          else
+            echo "❌ Service not reachable (HTTP $STATUS_CODE)"
+            echo "⚠️  Aborting load test"
+            exit 1
+          fi
+          
+          # Show baseline metrics
+          echo "📊 Baseline metrics:"
+          curl -s "$TARGET_URL/api/health" | jq -C '.' || echo "Could not parse health response"
+      
+      - name: Run k6 smoke test
+        if: steps.params.outputs.test_type == 'smoke'
+        env:
+          BASE_URL: ${{ steps.params.outputs.target_url }}
+        run: |
+          echo "🚀 Running k6 smoke test..."
+          k6 run ops/loadtest/k6-smoke.js \
+            --out json=smoke-results.json \
+            --summary-export=smoke-summary.json
+          
+          echo "✅ Smoke test completed"
+      
+      - name: Run k6 stress test
+        if: steps.params.outputs.test_type == 'stress'
+        env:
+          BASE_URL: ${{ steps.params.outputs.target_url }}
+        run: |
+          echo "🔥 Running k6 stress test..."
+          k6 run ops/loadtest/k6-stress.js \
+            --out json=stress-results.json \
+            --summary-export=stress-summary.json
+          
+          echo "✅ Stress test completed"
+      
+      - name: Run k6 soak test
+        if: steps.params.outputs.test_type == 'soak'
+        env:
+          BASE_URL: ${{ steps.params.outputs.target_url }}
+        run: |
+          echo "⏰ Running k6 soak test (30 minutes)..."
+          k6 run ops/loadtest/k6-soak.js \
+            --out json=soak-results.json \
+            --summary-export=soak-summary.json
+          
+          echo "✅ Soak test completed"
+      
+      - name: Parse and display results
+        if: always()
+        run: |
+          TEST_TYPE="${{ steps.params.outputs.test_type }}"
+          SUMMARY_FILE="${TEST_TYPE}-summary.json"
+          
+          if [ -f "$SUMMARY_FILE" ]; then
+            echo "📊 Test Summary:"
+            cat "$SUMMARY_FILE" | jq -C '.'
+            
+            # Extract key metrics
+            echo ""
+            echo "🔍 Key Metrics:"
+            
+            # Total requests
+            TOTAL_REQS=$(cat "$SUMMARY_FILE" | jq -r '.metrics.http_reqs.values.count // 0')
+            echo "  Total Requests: $TOTAL_REQS"
+            
+            # Error rate
+            ERROR_RATE=$(cat "$SUMMARY_FILE" | jq -r '.metrics.http_req_failed.values.rate // 0')
+            ERROR_PCT=$(echo "scale=2; $ERROR_RATE * 100" | bc)
+            echo "  Error Rate: ${ERROR_PCT}%"
+            
+            # Response times
+            P95=$(cat "$SUMMARY_FILE" | jq -r '.metrics.http_req_duration.values["p(95)"] // 0')
+            AVG=$(cat "$SUMMARY_FILE" | jq -r '.metrics.http_req_duration.values.avg // 0')
+            echo "  Average Response Time: ${AVG}ms"
+            echo "  p95 Response Time: ${P95}ms"
+            
+            # Determine pass/fail
+            if (( $(echo "$ERROR_RATE < 0.02" | bc -l) )) && (( $(echo "$P95 < 1000" | bc -l) )); then
+              echo ""
+              echo "✅ Load test PASSED"
+              exit 0
+            else
+              echo ""
+              echo "❌ Load test FAILED"
+              echo "  Error rate or response time exceeded thresholds"
+              exit 1
+            fi
+          else
+            echo "⚠️  No summary file found"
+          fi
+      
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: k6-results-${{ steps.params.outputs.test_type }}-${{ github.run_number }}
+          path: |
+            *-results.json
+            *-summary.json
+          retention-days: 30
+      
+      - name: Post-test health check
+        if: always()
+        run: |
+          TARGET_URL="${{ steps.params.outputs.target_url }}"
+          echo "🔍 Post-test health check..."
+          
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" "$TARGET_URL/api/health" || echo "000")
+          
+          if [ "$STATUS_CODE" = "200" ]; then
+            echo "✅ Service still healthy after load test (HTTP $STATUS_CODE)"
+          else
+            echo "⚠️  Service health degraded after load test (HTTP $STATUS_CODE)"
+          fi
+          
+          # Show post-test metrics
+          curl -s "$TARGET_URL/api/health" | jq -C '.' || echo "Could not parse health response"
+      
+      - name: Comment on PR (if applicable)
+        if: github.event_name == 'pull_request' && always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const testType = '${{ steps.params.outputs.test_type }}';
+            const summaryFile = `${testType}-summary.json`;
+            
+            if (!fs.existsSync(summaryFile)) {
+              console.log('No summary file found, skipping PR comment');
+              return;
+            }
+            
+            const summary = JSON.parse(fs.readFileSync(summaryFile, 'utf8'));
+            
+            const totalReqs = summary.metrics?.http_reqs?.values?.count || 0;
+            const errorRate = (summary.metrics?.http_req_failed?.values?.rate || 0) * 100;
+            const p95 = summary.metrics?.http_req_duration?.values?.['p(95)'] || 0;
+            const avg = summary.metrics?.http_req_duration?.values?.avg || 0;
+            
+            const passed = errorRate < 2 && p95 < 1000;
+            
+            const comment = `## 📊 k6 Load Test Results (${testType})
+            
+            **Status**: ${passed ? '✅ PASSED' : '❌ FAILED'}
+            
+            **Metrics**:
+            - Total Requests: ${totalReqs}
+            - Error Rate: ${errorRate.toFixed(2)}%
+            - Average Response Time: ${avg.toFixed(0)}ms
+            - p95 Response Time: ${p95.toFixed(0)}ms
+            
+            **Target**: ${{ steps.params.outputs.target_url }}
+            
+            📄 [View detailed results in artifacts](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})
+            `;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
