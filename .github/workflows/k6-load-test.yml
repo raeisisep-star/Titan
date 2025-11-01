@@ -65,8 +65,17 @@ jobs:
             TARGET_URL="https://staging.zala.ir"
           fi
           
+          # SECURITY: Only allow staging URLs for load testing
+          if [[ ! "$TARGET_URL" =~ staging ]]; then
+            echo "❌ ERROR: Load testing is only allowed on staging environment!"
+            echo "Target URL: $TARGET_URL"
+            echo "Please use staging.zala.ir for load tests."
+            exit 1
+          fi
+          
           echo "test_type=$TEST_TYPE" >> $GITHUB_OUTPUT
           echo "target_url=$TARGET_URL" >> $GITHUB_OUTPUT
+          echo "✅ Target URL verified (staging only): $TARGET_URL"
           
           echo "🎯 Test Type: $TEST_TYPE"
           echo "🌐 Target URL: $TARGET_URL"
