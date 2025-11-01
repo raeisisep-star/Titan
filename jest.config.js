@@ -10,14 +10,21 @@ module.exports = {
   setupFilesAfterEnv: ['<rootDir>/tests/setup.ts'],
   collectCoverageFrom: [
     'server-real-v3.js',
+    'src/**/*.{js,ts}',
+    'middleware/**/*.{js,ts}',
+    'services/**/*.{js,ts}',
     '!**/node_modules/**',
     '!**/dist/**',
     '!**/coverage/**',
+    '!**/*.test.{js,ts}',
+    '!**/*.spec.{js,ts}',
   ],
   coverageThreshold: {
     global: {
-      lines: 60,
-      statements: 60,
+      branches: 70,
+      functions: 75,
+      lines: 80,
+      statements: 80,
     },
   },
   coverageDirectory: 'coverage',
