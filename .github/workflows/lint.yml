@@ -21,10 +21,10 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm install --legacy-peer-deps
+        run: npm ci
       
       - name: Run ESLint
-        run: npm run lint --if-present || echo "⚠️ No lint script found"
+        run: npm run lint || echo "⚠️ Lint check failed - warnings found"
       
       - name: Check code formatting (Prettier)
         run: npx prettier --check . || echo "⚠️ Prettier not configured"
