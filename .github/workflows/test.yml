@@ -28,14 +28,14 @@ jobs:
       - name: Prepare environment for tests
         run: cp .env.example .env
       
-      - name: Run unit tests
-        run: npm test -- --passWithNoTests || echo "⚠️ No test script found"
+      - name: Run tests with coverage
+        run: npm run test:ci
       
-      - name: Upload coverage (if exists)
+      - name: Upload coverage reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: coverage/
           if-no-files-found: ignore
-          retention-days: 7
+          retention-days: 30
