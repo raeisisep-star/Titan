@@ -542,17 +542,27 @@ export default class SystemTab {
     
     // Load system logs
     async loadSystemLogs() {
+        console.log('🔄 Loading system logs...');
         try {
             const response = await this.apiCall('/api/logs/recent?limit=20&level=all');
+            console.log('📦 Logs API response:', response);
+            
             if (response.success && response.data && response.data.logs) {
+                console.log(`✅ Loaded ${response.data.logs.length} logs`);
                 this.updateSystemLogsDisplay(response.data.logs);
+            } else {
+                console.warn('⚠️ Response missing logs data:', response);
+                const logsContainer = document.querySelector('.bg-black.rounded-lg.p-4');
+                if (logsContainer) {
+                    logsContainer.innerHTML = '<div class="text-yellow-400">⚠️ پاسخ نامعتبر از سرور</div>';
+                }
             }
         } catch (error) {
-            console.error('Error loading system logs:', error);
-            // Show fallback message in UI
+            console.error('❌ Error loading system logs:', error);
+            // Show detailed error in UI for debugging
             const logsContainer = document.querySelector('.bg-black.rounded-lg.p-4');
             if (logsContainer) {
-                logsContainer.innerHTML = '<div class="text-yellow-400">⚠️ خطا در بارگذاری لاگ‌ها. لطفاً بعداً تلاش کنید.</div>';
+                logsContainer.innerHTML = `<div class="text-red-400">❌ خطا: ${error.message || 'نامشخص'}</div>`;
             }
         }
     }
