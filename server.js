@@ -4,6 +4,10 @@
  */
 
 require('dotenv').config();
+
+// Initialize structured logging (must be before other requires)
+const logger = require('./src/utils/logger.js');
+
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { cors } = require('hono/cors');
