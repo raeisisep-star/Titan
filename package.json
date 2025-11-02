@@ -40,6 +40,9 @@
     "security:audit": "curl -X POST http://localhost:8787/api/enhanced/security/audit -H 'Authorization: Bearer demo_token_123'",
     "ai:optimize": "curl -X POST http://localhost:8787/api/enhanced/ai/optimize -H 'Authorization: Bearer demo_token_123' -H 'Content-Type: application/json' -d '{\"modelId\":\"main_predictor\"}'",
     "performance:metrics": "curl http://localhost:8787/api/enhanced/performance/metrics -H 'Authorization: Bearer demo_token_123'",
+    "health:local": "curl -i http://127.0.0.1:5000/health || true",
+    "start:pm2": "pm2 start ecosystem.config.js --env production",
+    "reload:pm2": "pm2 reload titan-backend",
     "prepare": "husky"
   },
   "dependencies": {
