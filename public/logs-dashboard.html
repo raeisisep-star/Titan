@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>داشبورد لاگ‌ها - TITAN</title>
+    
+    <!-- External Libraries -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    
+    <style>
+        body {
+            font-family: 'Vazir', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+            min-height: 100vh;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(59, 130, 246, 0.3);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(107, 114, 128, 0.3);
+        }
+        
+        .log-item {
+            transition: all 0.2s ease;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .log-item:hover {
+            background: #1f2937 !important;
+            transform: translateX(-5px);
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .error-item {
+            animation: shake 0.5s ease;
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        
+        ::-webkit-scrollbar-track {
+            background: #1f2937;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            background: #4b5563;
+            border-radius: 4px;
+        }
+        
+        ::-webkit-scrollbar-thumb:hover {
+            background: #6b7280;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white">
+    <!-- Header -->
+    <nav class="bg-gray-800 border-b border-gray-700 shadow-lg">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center space-x-4 space-x-reverse">
+                    <a href="/public/index.html" class="text-2xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent flex items-center">
+                        <i class="fas fa-rocket ml-2"></i>
+                        تایتان
+                    </a>
+                    <span class="text-gray-400">|</span>
+                    <span class="text-gray-300">داشبورد لاگ‌ها</span>
+                </div>
+                <div class="flex items-center space-x-3 space-x-reverse">
+                    <div class="flex items-center space-x-2 space-x-reverse text-sm text-gray-400">
+                        <div class="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                        <span>آنلاین</span>
+                    </div>
+                    <a href="/public/index.html" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition">
+                        <i class="fas fa-arrow-right ml-2"></i>
+                        بازگشت به داشبورد
+                    </a>
+                    <button id="logoutBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg transition">
+                        <i class="fas fa-sign-out-alt ml-2"></i>
+                        خروج
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Main Content -->
+    <div class="container mx-auto px-6 py-8">
+        <!-- Dashboard Container - Will be populated by JS -->
+        <div id="logsDashboardContainer">
+            <div class="text-center py-20">
+                <i class="fas fa-spinner fa-spin text-6xl text-blue-500 mb-4"></i>
+                <p class="text-xl text-gray-400">در حال بارگذاری داشبورد...</p>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Footer -->
+    <footer class="bg-gray-800 border-t border-gray-700 mt-12">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between text-sm text-gray-400">
+                <p>
+                    <i class="fas fa-copyright ml-2"></i>
+                    2024 TITAN Trading System | Phase 3.3: Log Monitoring Dashboard
+                </p>
+                <p>
+                    <i class="fas fa-shield-alt ml-2"></i>
+                    Admin Access Required
+                </p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Authentication Check Script -->
+    <script>
+        // Check authentication before loading dashboard
+        (function() {
+            const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+            
+            if (!token) {
+                alert('برای دسترسی به این صفحه باید وارد سیستم شوید');
+                window.location.href = '/public/index.html';
+                return;
+            }
+            
+            // For now, allow all authenticated users
+            // In production, check for admin role via JWT decode or API call
+            console.log('✅ Authentication verified, loading dashboard...');
+        })();
+        
+        // Logout handler
+        document.getElementById('logoutBtn')?.addEventListener('click', function() {
+            if (confirm('آیا مطمئن هستید که می‌خواهید از سیستم خارج شوید؟')) {
+                localStorage.removeItem('token');
+                sessionStorage.removeItem('token');
+                window.location.href = '/public/index.html';
+            }
+        });
+    </script>
+    
+    <!-- Load Logs Dashboard Module -->
+    <script src="/static/modules/logs-dashboard.js"></script>
+</body>
+</html>
