@@ -9090,7 +9090,7 @@ TITAN Trading System - Log Export
                          localStorage.getItem('auth_token') || 
                          'demo_token_123';
             
-            const response = await fetch('/api/logs?limit=5&level=all', {
+            const response = await fetch('/api/logs/recent?limit=5&level=all', {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
@@ -9101,8 +9101,15 @@ TITAN Trading System - Log Export
 
             const data = await response.json();
             
-            if (data.success && data.data && data.data.length > 0) {
-                const logsHtml = data.data.map(log => {
+            if (data.success && data.data && data.data.logs && data.data.logs.length > 0) {
+                const logsHtml = data.data.logs.map(log => {
+                    // Map numeric levels to string names (Pino format)
+                    const levelMap = {
+                        10: 'trace', 20: 'debug', 30: 'info',
+                        40: 'warn', 50: 'error', 60: 'fatal'
+                    };
+                    const levelName = levelMap[log.level] || 'info';
+                    
                     const levelColors = {
                         fatal: 'text-red-500 bg-red-900/20',
                         error: 'text-red-400 bg-red-900/20',
@@ -9112,13 +9119,13 @@ TITAN Trading System - Log Export
                         trace: 'text-gray-500 bg-gray-800'
                     };
                     
-                    const levelClass = levelColors[log.level] || 'text-gray-400 bg-gray-800';
+                    const levelClass = levelColors[levelName] || 'text-gray-400 bg-gray-800';
                     const timestamp = new Date(log.time).toLocaleString('fa-IR');
                     
                     return `
                         <div class="flex items-start gap-3 p-2 ${levelClass} rounded text-xs">
                             <span class="text-gray-500 font-mono">${timestamp}</span>
-                            <span class="font-semibold uppercase">${log.level}</span>
+                            <span class="font-semibold uppercase">${levelName}</span>
                             <span class="flex-1">${log.msg || 'No message'}</span>
                         </div>
                     `;
