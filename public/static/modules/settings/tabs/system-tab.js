@@ -348,40 +348,32 @@ export default class SystemTab {
 
             <!-- System Logs -->
             <div class="bg-gray-900 rounded-lg p-6">
-                <h4 class="text-lg font-semibold text-white mb-4 flex items-center">
-                    <i class="fas fa-list-alt text-gray-400 mr-3"></i>
-                    📋 لاگ‌های سیستم
-                </h4>
+                <div class="flex items-center justify-between mb-4">
+                    <h4 class="text-lg font-semibold text-white flex items-center">
+                        <i class="fas fa-list-alt text-gray-400 mr-3"></i>
+                        📋 لاگ‌های سیستم
+                    </h4>
+                    <button onclick="systemTab.openFullLogsViewer()" class="px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                        <i class="fas fa-external-link-alt mr-1"></i>
+                        مشاهده کامل
+                    </button>
+                </div>
                 
                 <div class="bg-black rounded-lg p-4 mb-4 max-h-64 overflow-y-auto font-mono text-sm">
-                    <div class="text-green-400">[2025-09-08 16:20:15] INFO: سیستم با موفقیت راه‌اندازی شد</div>
-                    <div class="text-blue-400">[2025-09-08 16:20:16] INFO: آرتمیس AI متصل شد</div>
-                    <div class="text-yellow-400">[2025-09-08 16:20:17] WARN: صرافی Binance در حالت testnet</div>
-                    <div class="text-green-400">[2025-09-08 16:20:18] INFO: 15 ایجنت AI بارگذاری شد</div>
-                    <div class="text-blue-400">[2025-09-08 16:20:19] INFO: سیستم معاملات آماده است</div>
-                    <div class="text-purple-400">[2025-09-08 16:20:20] DEBUG: کش بهینه‌سازی شد (127MB)</div>
-                    <div class="text-green-400">[2025-09-08 16:20:21] INFO: اتصال دیتابیس تأیید شد</div>
+                    <div class="text-gray-400">در حال بارگذاری لاگ‌ها...</div>
                 </div>
                 
                 <div class="flex space-x-2 space-x-reverse">
-                    <button onclick="systemTab.downloadLogs()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                        <i class="fas fa-download mr-2"></i>
-                        دانلود لاگ‌ها
-                    </button>
-                    <button onclick="systemTab.clearLogs()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
-                        <i class="fas fa-trash mr-2"></i>
-                        پاک کردن لاگ‌ها
-                    </button>
                     <button onclick="systemTab.refreshLogs()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
                         <i class="fas fa-sync mr-2"></i>
                         بروزرسانی
                     </button>
-                    <select id="log-filter" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
+                    <select id="log-filter" onchange="systemTab.filterLogs(this.value)" class="px-3 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white">
                         <option value="all">همه لاگ‌ها</option>
-                        <option value="error">فقط خطاها</option>
-                        <option value="warn">هشدارها</option>
-                        <option value="info">اطلاعات</option>
-                        <option value="debug">Debug</option>
+                        <option value="50">فقط خطاها</option>
+                        <option value="40">هشدارها</option>
+                        <option value="30">اطلاعات</option>
+                        <option value="20">Debug</option>
                     </select>
                 </div>
             </div>
@@ -551,12 +543,17 @@ export default class SystemTab {
     // Load system logs
     async loadSystemLogs() {
         try {
-            const response = await this.apiCall('/api/system/logs?limit=20');
-            if (response.success) {
+            const response = await this.apiCall('/api/logs/recent?limit=20&level=all');
+            if (response.success && response.data && response.data.logs) {
                 this.updateSystemLogsDisplay(response.data.logs);
             }
         } catch (error) {
             console.error('Error loading system logs:', error);
+            // Show fallback message in UI
+            const logsContainer = document.querySelector('.bg-black.rounded-lg.p-4');
+            if (logsContainer) {
+                logsContainer.innerHTML = '<div class="text-yellow-400">⚠️ خطا در بارگذاری لاگ‌ها. لطفاً بعداً تلاش کنید.</div>';
+            }
         }
     }
     
@@ -621,20 +618,39 @@ export default class SystemTab {
     // Update system logs display
     updateSystemLogsDisplay(logs) {
         const logsContainer = document.querySelector('.bg-black');
-        if (!logsContainer || !logs) return;
+        if (!logsContainer || !logs || logs.length === 0) {
+            if (logsContainer) {
+                logsContainer.innerHTML = '<div class="text-gray-400">هیچ لاگی موجود نیست</div>';
+            }
+            return;
+        }
+        
+        // Map Pino log levels to names
+        const levelMap = {
+            10: { name: 'trace', color: 'text-gray-400' },
+            20: { name: 'debug', color: 'text-purple-400' },
+            30: { name: 'info', color: 'text-green-400' },
+            40: { name: 'warn', color: 'text-yellow-400' },
+            50: { name: 'error', color: 'text-red-400' },
+            60: { name: 'fatal', color: 'text-red-600' }
+        };
         
         const logsHTML = logs.map(log => {
-            const colorClass = {
-                'error': 'text-red-400',
-                'warn': 'text-yellow-400',
-                'info': 'text-green-400',
-                'debug': 'text-purple-400'
-            }[log.level] || 'text-gray-400';
+            const levelInfo = levelMap[log.level] || { name: 'info', color: 'text-gray-400' };
+            const timestamp = new Date(log.time).toLocaleString('fa-IR', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+            const message = log.msg || log.message || 'بدون پیام';
             
-            return `<div class="${colorClass}">[${log.timestamp.substring(0, 19).replace('T', ' ')}] ${log.level.toUpperCase()}: ${log.message}</div>`;
+            return `<div class="${levelInfo.color}">[${timestamp}] ${levelInfo.name.toUpperCase()}: ${message}</div>`;
         }).join('');
         
-        logsContainer.innerHTML = logsHTML;
+        logsContainer.innerHTML = logsHTML || '<div class="text-gray-400">لاگی برای نمایش وجود ندارد</div>';
     }
     
     setupEventListeners() {
@@ -1350,5 +1366,31 @@ export default class SystemTab {
         `;
         
         document.body.appendChild(modal);
+    }
+    
+    // Open full logs viewer (loads logs module)
+    openFullLogsViewer() {
+        console.log('🔗 Opening full logs viewer...');
+        if (typeof app !== 'undefined' && typeof app.loadModule === 'function') {
+            app.loadModule('logs');
+        } else {
+            console.error('❌ app.loadModule is not available');
+            this.showNotification('خطا در باز کردن داشبورد لاگ‌ها', 'error');
+        }
+    }
+    
+    // Filter logs by level
+    async filterLogs(level) {
+        console.log('🔍 Filtering logs by level:', level);
+        try {
+            const levelParam = level === 'all' ? 'all' : level;
+            const response = await this.apiCall(`/api/logs/recent?limit=20&level=${levelParam}`);
+            if (response.success && response.data && response.data.logs) {
+                this.updateSystemLogsDisplay(response.data.logs);
+            }
+        } catch (error) {
+            console.error('Error filtering logs:', error);
+            this.showNotification('خطا در فیلتر کردن لاگ‌ها: ' + error.message, 'error');
+        }
     }
 }
