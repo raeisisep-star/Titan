@@ -416,12 +416,12 @@ class TitanApp {
                                                 اخبار بازار
                                             </a>
                                             <a href="#" onclick="app.loadModule('alerts')" class="nav-dropdown-link">
-                                            <a href="#" onclick="app.loadModule('logs')" class="nav-dropdown-link">
-                                                <i class="fas fa-list-alt text-blue-400"></i>
-                                                لاگu200cهای سیستم
-                                            </a>
                                                 <i class="fas fa-bell text-yellow-400"></i>
                                                 هشدارها
+                                            </a>
+                                            <a href="#" onclick="app.loadModule('logs')" class="nav-dropdown-link">
+                                                <i class="fas fa-list-alt text-blue-400"></i>
+                                                لاگ‌های سیستم
                                             </a>
                                             <a href="#" onclick="app.loadModule('settings')" class="nav-dropdown-link">
                                                 <i class="fas fa-cog text-gray-400"></i>
