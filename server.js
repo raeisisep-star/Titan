@@ -1148,21 +1148,46 @@ app.get('/api/logs/recent', async (c) => {
     const limit = Math.min(Number(query.limit) || 100, 1000);
     const level = query.level || 'all';
     const search = query.search || '';
+    const logsDemo = process.env.LOGS_DEMO === 'true';
     
     const logFilePath = path.join(process.cwd(), 'logs/titan.log');
     const rawLines = readLastLines(logFilePath, limit * 2);
     let logs = rawLines.map(parseLogLine).filter(log => log !== null);
     
+    // Add source field to each log (test logs have exact :00.000Z timestamps)
+    logs = logs.map(log => ({
+      ...log,
+      source: log.time && log.time.endsWith(':00.000Z') ? 'test' : 'real'
+    }));
+    
+    // Filter out test logs in production (unless LOGS_DEMO=true)
+    if (!logsDemo) {
+      logs = logs.filter(log => log.source === 'real');
+    }
+    
     logs = filterByLevel(logs, level);
     logs = searchLogs(logs, search);
     logs = logs.slice(-limit).reverse();
+    
+    // Calculate byLevel stats
+    const byLevel = { fatal: 0, error: 0, warn: 0, info: 0, debug: 0, trace: 0 };
+    logs.forEach(log => {
+      const levelNum = typeof log.level === 'number' ? log.level : 30;
+      if (levelNum >= 60) byLevel.fatal++;
+      else if (levelNum >= 50) byLevel.error++;
+      else if (levelNum >= 40) byLevel.warn++;
+      else if (levelNum >= 30) byLevel.info++;
+      else if (levelNum >= 20) byLevel.debug++;
+      else byLevel.trace++;
+    });
     
     return c.json({
       success: true,
       data: {
         logs,
         count: logs.length,
-        filters: { limit, level, search: search || null },
+        byLevel,
+        filters: { limit, level, search: search || null, demoMode: logsDemo },
         timestamp: new Date().toISOString()
       }
     });
