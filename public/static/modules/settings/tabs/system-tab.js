@@ -50,6 +50,12 @@ export default class SystemTab {
             
             return await response.json();
         };
+        
+        // Make instance globally accessible for onclick handlers
+        if (typeof window !== 'undefined') {
+            window.systemTab = this;
+            console.log('✅ window.systemTab registered');
+        }
     }
 
     render() {
@@ -359,7 +365,7 @@ export default class SystemTab {
                     </button>
                 </div>
                 
-                <div class="bg-black rounded-lg p-4 mb-4 max-h-64 overflow-y-auto font-mono text-sm">
+                <div id="system-logs-box" class="bg-black rounded-lg p-4 mb-4 max-h-64 overflow-y-auto font-mono text-sm">
                     <div class="text-gray-400">در حال بارگذاری لاگ‌ها...</div>
                 </div>
                 
@@ -542,25 +548,41 @@ export default class SystemTab {
     
     // Load system logs
     async loadSystemLogs() {
-        console.log('🔄 Loading system logs...');
+        console.log('🔄 Loading system logs...', { origin: location.origin, pathname: location.pathname });
+        
+        // Safety timeout: Show warning if logs don't load in 5 seconds
+        const timeoutId = setTimeout(() => {
+            const logsContainer = document.getElementById('system-logs-box');
+            if (logsContainer && logsContainer.innerText.includes('در حال بارگذاری')) {
+                logsContainer.innerHTML = '<div class="text-yellow-400">⚠️ لاگ‌ها هنوز بارگذاری نشده‌اند. DevTools Console را بررسی کنید.</div>';
+            }
+        }, 5000);
+        
+        // Debug: Test raw fetch
+        fetch('/api/logs/recent?limit=1&level=all')
+            .then(r => r.clone().text().then(t => console.log('🛰️ /api/logs/recent raw:', r.status, t.slice(0, 200))))
+            .catch(e => console.error('🛰️ Fetch failed:', e));
+        
         try {
             const response = await this.apiCall('/api/logs/recent?limit=20&level=all');
             console.log('📦 Logs API response:', response);
+            clearTimeout(timeoutId); // Clear safety timeout on success
             
             if (response.success && response.data && response.data.logs) {
                 console.log(`✅ Loaded ${response.data.logs.length} logs`);
                 this.updateSystemLogsDisplay(response.data.logs);
             } else {
                 console.warn('⚠️ Response missing logs data:', response);
-                const logsContainer = document.querySelector('.bg-black.rounded-lg.p-4');
+                const logsContainer = document.getElementById('system-logs-box');
                 if (logsContainer) {
                     logsContainer.innerHTML = '<div class="text-yellow-400">⚠️ پاسخ نامعتبر از سرور</div>';
                 }
             }
         } catch (error) {
             console.error('❌ Error loading system logs:', error);
+            clearTimeout(timeoutId); // Clear safety timeout on error
             // Show detailed error in UI for debugging
-            const logsContainer = document.querySelector('.bg-black.rounded-lg.p-4');
+            const logsContainer = document.getElementById('system-logs-box');
             if (logsContainer) {
                 logsContainer.innerHTML = `<div class="text-red-400">❌ خطا: ${error.message || 'نامشخص'}</div>`;
             }
@@ -627,11 +649,14 @@ export default class SystemTab {
     
     // Update system logs display
     updateSystemLogsDisplay(logs) {
-        const logsContainer = document.querySelector('.bg-black');
-        if (!logsContainer || !logs || logs.length === 0) {
-            if (logsContainer) {
-                logsContainer.innerHTML = '<div class="text-gray-400">هیچ لاگی موجود نیست</div>';
-            }
+        const logsContainer = document.getElementById('system-logs-box');
+        if (!logsContainer) {
+            console.error('❌ system-logs-box not found in DOM!');
+            return;
+        }
+        
+        if (!logs || logs.length === 0) {
+            logsContainer.innerHTML = '<div class="text-gray-400">هیچ لاگی موجود نیست</div>';
             return;
         }
         
