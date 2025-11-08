@@ -5,12 +5,20 @@
  */
 
 const { Hono } = require('hono');
-const { ok, error: errorResponse } = require('../../src/utils/response-utils.js');
 
 const router = new Hono();
 
 // Demo mode check
 const isDemoMode = () => process.env.INTERNAL_APIS_DEMO === 'true';
+
+// Response helpers
+function ok(data, meta = {}) { 
+  return { success: true, data, ...meta, timestamp: new Date().toISOString() }; 
+}
+
+function error(msg = 'Error', code = 500) { 
+  return { success: false, error: msg, code, timestamp: new Date().toISOString() }; 
+}
 
 /**
  * GET /api/markets/:symbol/price
@@ -49,7 +57,7 @@ router.get('/:symbol/price', async (c) => {
     }
     
     // Production mode: connect to real exchange APIs
-    return c.json(errorResponse('Production price API not yet implemented', 501));
+    return c.json(error('Production price API not yet implemented', 501), 501);
 });
 
 /**
@@ -120,7 +128,7 @@ router.get('/:symbol/history', async (c) => {
     }
     
     // Production mode: connect to real exchange APIs
-    return c.json(errorResponse('Production history API not yet implemented', 501));
+    return c.json(error('Production history API not yet implemented', 501), 501);
 });
 
 /**
