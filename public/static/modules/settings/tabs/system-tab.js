@@ -21,24 +21,23 @@ export default class SystemTab {
             }
         };
         
-        // API call helper with auth
+        // API call helper with optional auth
         this.apiCall = async (endpoint, options = {}) => {
             const token = this.getAuthToken();
-            if (!token) {
-                throw new Error('Authentication required');
-            }
             
-            const defaultOptions = {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+            // Build headers (add token only if available)
+            const headers = {
+                'Content-Type': 'application/json',
+                ...(options.headers || {})
             };
             
+            if (token) {
+                headers['Authorization'] = `Bearer ${token}`;
+            }
+            
             const mergedOptions = {
-                ...defaultOptions,
                 ...options,
-                headers: { ...defaultOptions.headers, ...(options.headers || {}) }
+                headers
             };
             
             const response = await fetch(this.apiBaseUrl + endpoint, mergedOptions);
