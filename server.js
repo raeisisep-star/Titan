@@ -1141,6 +1141,87 @@ function searchLogs(logs, query) {
   });
 }
 
+// ========================================================================
+// INTERNAL APIS (Phase 3.5) - Settings, Analytics, Mode, Alerts, News
+// ========================================================================
+
+// Import internal API routes
+const settingsRoutes = require('./backend/routes/settings.js');
+const aiAnalyticsRoutes = require('./backend/routes/ai-analytics.js');
+const modeRoutes = require('./backend/routes/mode.js');
+const alertsRoutes = require('./backend/routes/alerts.js');
+const newsRoutes = require('./backend/routes/news.js');
+const compatRoutes = require('./backend/routes/compat.js');
+
+// Register routes (use app.route() for Hono subrouters)
+app.route('/api/settings', settingsRoutes);
+app.route('/api/ai-analytics', aiAnalyticsRoutes);
+app.route('/api/mode', modeRoutes);
+app.route('/api/alerts', alertsRoutes);
+app.route('/api/news', newsRoutes);
+
+// Register compatibility routes (legacy endpoints) - MUST come LAST to avoid catching specific routes
+app.route('/api', compatRoutes);
+
+// =============================================================================
+// MARKET PRICE APIs (Mock for Demo Mode)
+// =============================================================================
+
+// Mock price endpoint for portfolio optimization agent
+app.get('/api/markets/:symbol/price', async (c) => {
+  const symbol = c.req.param('symbol');
+  const isDemoMode = process.env.INTERNAL_APIS_DEMO === 'true';
+  
+  if (!isDemoMode) {
+    return c.json({
+      success: false,
+      error: 'Market data not available in production mode'
+    }, 503);
+  }
+  
+  // Mock prices for common crypto assets
+  const mockPrices = {
+    'BTC': { price: 48500, volume: 28500000000, marketCap: 950000000000, change24h: 2.4 },
+    'ETH': { price: 3400, volume: 15200000000, marketCap: 410000000000, change24h: 1.8 },
+    'BNB': { price: 420, volume: 1200000000, marketCap: 65000000000, change24h: -0.5 },
+    'ADA': { price: 0.44, volume: 450000000, marketCap: 15500000000, change24h: 3.2 },
+    'DOT': { price: 5.2, volume: 280000000, marketCap: 7200000000, change24h: 1.1 },
+    'SOL': { price: 150, volume: 2100000000, marketCap: 65000000000, change24h: 4.5 },
+    'MATIC': { price: 0.72, volume: 380000000, marketCap: 6700000000, change24h: 2.1 },
+    'LINK': { price: 12.3, volume: 520000000, marketCap: 7100000000, change24h: -1.2 },
+    'UNI': { price: 6.1, volume: 180000000, marketCap: 4600000000, change24h: 0.8 },
+    'AVAX': { price: 28.5, volume: 420000000, marketCap: 10500000000, change24h: 2.9 }
+  };
+  
+  const symbolUpper = symbol.toUpperCase().replace('USDT', '').replace('USD', '');
+  const priceData = mockPrices[symbolUpper];
+  
+  if (!priceData) {
+    // Generate random price for unknown symbols
+    const randomPrice = Math.random() * 1000 + 1;
+    return c.json({
+      success: true,
+      data: {
+        symbol: symbol,
+        price: randomPrice,
+        volume: randomPrice * 1000000,
+        marketCap: randomPrice * 10000000,
+        change24h: (Math.random() - 0.5) * 10,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  
+  return c.json({
+    success: true,
+    data: {
+      symbol: symbol,
+      ...priceData,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 // GET /api/logs/recent - دریافت آخرین لاگ‌ها
 app.get('/api/logs/recent', async (c) => {
   try {
