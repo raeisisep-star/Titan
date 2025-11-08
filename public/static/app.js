@@ -1533,7 +1533,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -1544,7 +1544,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
@@ -1718,7 +1718,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -1729,7 +1729,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
@@ -2406,7 +2406,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -2417,7 +2417,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
@@ -4820,7 +4820,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -4831,7 +4831,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
@@ -7664,7 +7664,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -7675,7 +7675,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
@@ -8065,7 +8065,7 @@ class TitanApp {
                         console.log('📋 Starting Logs Dashboard...');
                         mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
                         
-                        if (!window.LogsModule) {
+                        if (!window.TitanModules.LogsModule) {
                             const script = document.createElement('script');
                             script.type = 'module';
                             script.src = '/static/modules/logs.js?v=' + Date.now();
@@ -8076,7 +8076,7 @@ class TitanApp {
                             });
                         }
                         
-                        window.logsModule = new window.LogsModule();
+                        window.logsModule = new window.TitanModules.LogsModule();
                         mainContent.innerHTML = await window.logsModule.render();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
