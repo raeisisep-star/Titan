@@ -1,117 +1,134 @@
 /**
- * TITAN Trading System - Axios API Client Singleton
+ * TITAN Trading System - API Client Singleton
  * 
- * Centralized axios instance with proper baseURL configuration
- * to prevent 404 errors and ensure consistent API calls.
+ * Centralized axios instance with proper baseURL configuration.
+ * Prevents issues where baseURL is not set or gets overridden.
  * 
+ * @author TITAN Trading System
  * @version 1.0.0
  */
 
-(function(window) {
+(function() {
     'use strict';
     
-    // Wait for config to be loaded
-    function initApiClient() {
-        if (!window.TITAN_CONFIG || !window.TITAN_CONFIG.API_BASE_URL) {
-            console.warn('⚠️ TITAN_CONFIG not loaded yet, retrying apiClient init...');
-            setTimeout(initApiClient, 100);
-            return;
-        }
+    // Wait for TITAN_CONFIG to be available
+    function createApiClient() {
+        const config = window.TITAN_CONFIG || {};
+        const baseURL = config.API_BASE_URL || config.API_BASE || '/api';
         
         // Create axios instance with proper configuration
         const apiClient = axios.create({
-            baseURL: window.TITAN_CONFIG.API_BASE_URL || '/api',
-            timeout: window.TITAN_CONFIG.TIMEOUTS?.API_REQUEST || 30000,
+            baseURL: baseURL,
+            timeout: config.TIMEOUTS?.API_REQUEST || 30000,
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            withCredentials: false
+            withCredentials: false, // CORS: don't send cookies in cross-origin requests
         });
         
-        // Request interceptor for adding auth token
+        // Request interceptor - add auth token if available
         apiClient.interceptors.request.use(
-            function(config) {
+            (config) => {
                 const token = localStorage.getItem('titan_auth_token');
                 if (token) {
-                    config.headers['Authorization'] = `Bearer ${token}`;
+                    config.headers.Authorization = `Bearer ${token}`;
                 }
                 
-                // Log request in development
-                if (window.ENV?.DEBUG === 'true' || window.TITAN_CONFIG?.ENV !== 'production') {
-                    console.log(`🌐 API Request: ${config.method.toUpperCase()} ${config.baseURL}${config.url}`);
-                }
-                
+                console.log(`📤 API Request: ${config.method.toUpperCase()} ${config.baseURL}${config.url}`);
                 return config;
             },
-            function(error) {
+            (error) => {
                 console.error('❌ Request interceptor error:', error);
                 return Promise.reject(error);
             }
         );
         
-        // Response interceptor for handling errors
+        // Response interceptor - handle common errors
         apiClient.interceptors.response.use(
-            function(response) {
-                // Log response in development
-                if (window.ENV?.DEBUG === 'true' || window.TITAN_CONFIG?.ENV !== 'production') {
-                    console.log(`✅ API Response: ${response.status} ${response.config.url}`);
-                }
+            (response) => {
+                console.log(`✅ API Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
                 return response;
             },
-            function(error) {
-                // Handle common errors
+            (error) => {
                 if (error.response) {
-                    const status = error.response.status;
-                    const url = error.config?.url || 'unknown';
+                    const { status, config } = error.response;
+                    console.error(`❌ API Error: ${config.method.toUpperCase()} ${config.url} - ${status}`);
                     
-                    console.error(`❌ API Error ${status} on ${url}:`, error.response.data);
-                    
-                    // Handle 401 Unauthorized - redirect to login
+                    // Handle 401 Unauthorized - token expired or invalid
                     if (status === 401) {
-                        console.warn('🔐 Unauthorized - clearing token and redirecting to login');
-                        localStorage.removeItem('titan_auth_token');
-                        if (window.app && typeof window.app.showLoginScreen === 'function') {
-                            window.app.showLoginScreen();
-                        }
+                        console.warn('⚠️ Unauthorized - token may be invalid');
+                        // Optionally: clear token and redirect to login
+                        // localStorage.removeItem('titan_auth_token');
+                        // window.location.href = '/';
                     }
                     
                     // Handle 404 Not Found
                     if (status === 404) {
-                        console.error(`🔍 Endpoint not found: ${error.config.baseURL}${url}`);
+                        console.error(`❌ 404 Not Found: ${config.url}`);
+                        console.error('Full URL attempted:', config.baseURL + config.url);
                     }
                 } else if (error.request) {
-                    console.error('❌ No response received from API:', error.request);
+                    console.error('❌ No response received:', error.request);
                 } else {
-                    console.error('❌ API request setup error:', error.message);
+                    console.error('❌ Request setup error:', error.message);
                 }
                 
                 return Promise.reject(error);
             }
         );
         
-        // Expose as global
+        // Expose globally
         window.apiClient = apiClient;
         
-        console.log('✅ API Client initialized with baseURL:', apiClient.defaults.baseURL);
-        console.log('📊 API Client configuration:', {
+        console.log('✅ API Client initialized with baseURL:', baseURL);
+        console.log('📊 API Client config:', {
             baseURL: apiClient.defaults.baseURL,
             timeout: apiClient.defaults.timeout,
-            withCredentials: apiClient.defaults.withCredentials
+            headers: apiClient.defaults.headers
         });
         
-        // Also configure the global axios instance as fallback
-        axios.defaults.baseURL = apiClient.defaults.baseURL;
-        axios.defaults.timeout = apiClient.defaults.timeout;
-        axios.defaults.headers.common['Content-Type'] = 'application/json';
-        
-        console.log('✅ Global axios also configured with same baseURL');
+        return apiClient;
     }
     
-    // Initialize when DOM is ready
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', initApiClient);
+    // Initialize when TITAN_CONFIG is ready
+    if (window.TITAN_CONFIG) {
+        createApiClient();
     } else {
-        initApiClient();
+        // Wait for TITAN_CONFIG to load
+        console.log('⏳ Waiting for TITAN_CONFIG...');
+        const checkInterval = setInterval(() => {
+            if (window.TITAN_CONFIG) {
+                clearInterval(checkInterval);
+                createApiClient();
+            }
+        }, 100);
+        
+        // Timeout after 5 seconds
+        setTimeout(() => {
+            clearInterval(checkInterval);
+            if (!window.apiClient) {
+                console.error('❌ TITAN_CONFIG not loaded after 5 seconds, creating apiClient with default baseURL');
+                createApiClient();
+            }
+        }, 5000);
     }
     
-})(window);
+    // Convenience methods for common operations
+    window.apiClient = window.apiClient || {};
+    
+    // Helper: Login
+    window.apiClient.login = async function(credentials) {
+        return this.post('/auth/login', credentials);
+    };
+    
+    // Helper: Logout
+    window.apiClient.logout = async function() {
+        return this.post('/auth/logout');
+    };
+    
+    // Helper: Verify token
+    window.apiClient.verifyToken = async function(token) {
+        return this.post('/auth/verify', { token });
+    };
+    
+})();
