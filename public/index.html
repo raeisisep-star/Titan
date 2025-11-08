@@ -227,21 +227,23 @@
     <!-- ES6 Module Agents (migrated) -->
     <script type="module">
         // Load agent loader and initialize ES6 agents
-        import { loadAgent } from '/static/modules/ai-agents/agent-loader.js';
-        
-        // Load agents with singleton pattern
-        (async () => {
-            try {
-                await Promise.all([
+        // Cache-busted agent loader import
+        const loaderVersion = Date.now();
+        import(`/static/modules/ai-agents/agent-loader.js?v=${loaderVersion}`)
+            .then(({ loadAgent }) => {
+                // Load agents with singleton pattern
+                return Promise.all([
                     loadAgent('agent-11'), // Portfolio Optimization
                     loadAgent('agent-14'), // Performance Analytics
                     loadAgent('agent-15')  // System Orchestrator
                 ]);
+            })
+            .then(() => {
                 console.log('✅ All ES6 agents loaded successfully');
-            } catch (error) {
+            })
+            .catch(error => {
                 console.error('❌ Failed to load some ES6 agents:', error);
-            }
-        })();
+            });
     </script>
     <script src="/static/modules/ai-agents/agent-12-risk-assessment.js"></script>
     <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js"></script>

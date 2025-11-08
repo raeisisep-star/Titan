@@ -226,4 +226,27 @@ router.get('/alerts/alerts/:id', async (c) => {
   return c.redirect(redirectUrl, 301);
 });
 
+/**
+ * GET /api/external/coingecko/ping
+ * Legacy endpoint for CoinGecko API health check
+ * No longer used - agents now use /api/markets/:symbol/price
+ */
+router.get('/external/coingecko/ping', async (c) => {
+  return c.json(ok({
+    gecko_says: '(V3) To the Moon!',
+    message: 'Legacy endpoint - use /api/markets/:symbol/price instead'
+  }));
+});
+
+/**
+ * GET /api/external/binance/ping
+ * Legacy endpoint for Binance API health check
+ * No longer used - agents now use /api/markets/:symbol/price
+ */
+router.get('/external/binance/ping', async (c) => {
+  return c.json(ok({
+    message: 'Legacy endpoint - use /api/markets/:symbol/price instead'
+  }));
+});
+
 module.exports = router;

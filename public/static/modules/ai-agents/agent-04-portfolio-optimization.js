@@ -1779,29 +1779,23 @@ class PortfolioOptimizationAgent {
      * Test External APIs
      */
     async testExternalAPIs() {
-        console.log(`🔍 [Agent ${this.agentId}] Testing external API connections...`);
+        console.log(`🔍 [Agent ${this.agentId}] Testing price adapter connection...`);
         
         const results = {};
         
-        // Test CoinGecko API (free)
+        // Test internal price adapter (replaces external CoinGecko/Binance)
         try {
-            const testCoingecko = await this.makeAPICall('/api/external/coingecko/ping', 'GET');
-            results.coingecko = testCoingecko.success || false;
+            const testAdapter = await this.makeAPICall('/api/markets/BTC/price', 'GET');
+            results.priceAdapter = testAdapter.success || false;
+            if (results.priceAdapter) {
+                console.log(`✅ [Agent ${this.agentId}] Price adapter working (BTC: ${testAdapter.data?.price})`);
+            }
         } catch (error) {
-            results.coingecko = false;
-            console.warn(`⚠️ [Agent ${this.agentId}] CoinGecko API test failed:`, error.message);
+            results.priceAdapter = false;
+            console.warn(`⚠️ [Agent ${this.agentId}] Price adapter test failed:`, error.message);
         }
         
-        // Test Binance API (free)
-        try {
-            const testBinance = await this.makeAPICall('/api/external/binance/ping', 'GET');
-            results.binance = testBinance.success || false;
-        } catch (error) {
-            results.binance = false;
-            console.warn(`⚠️ [Agent ${this.agentId}] Binance API test failed:`, error.message);
-        }
-        
-        console.log(`📊 [Agent ${this.agentId}] External API test results:`, results);
+        console.log(`📊 [Agent ${this.agentId}] Price adapter test results:`, results);
         return results;
     }
     
@@ -1944,36 +1938,17 @@ class PortfolioOptimizationAgent {
     
     /**
      * Get Current Price for Asset
+     * Uses internal price adapter endpoint instead of external APIs to avoid circuit breaker issues
      */
     async getCurrentPrice(asset) {
         try {
-            // Try CoinGecko first (higher rate limits)
-            const response = await this.makeAPICall(`/api/external/coingecko/simple/price?ids=${asset.toLowerCase()}&vs_currencies=usd&include_24hr_change=true&include_24hr_vol=true&include_market_cap=true`);
-            
-            if (response.success && response.data) {
-                const assetData = response.data[asset.toLowerCase()];
-                if (assetData) {
-                    return {
-                        price: assetData.usd,
-                        volume: assetData.usd_24h_vol || 0,
-                        marketCap: assetData.usd_market_cap || 0,
-                        change24h: assetData.usd_24h_change || 0
-                    };
-                }
+            // Use internal price adapter endpoint (works in both demo and production)
+            const response = await this.fetchPriceFromAdapter(asset);
+            if (response) {
+                return response;
             }
             
-            // Fallback: try internal API
-            const internalResponse = await this.makeAPICall(`/api/markets/${asset}/price`);
-            if (internalResponse.success && internalResponse.data) {
-                return {
-                    price: internalResponse.data.price,
-                    volume: internalResponse.data.volume || 0,
-                    marketCap: internalResponse.data.marketCap || 0,
-                    change24h: internalResponse.data.change24h || 0
-                };
-            }
-            
-            // Last resort: simulate price movement
+            // Fallback: simulate price movement if adapter fails
             const currentData = this.marketData.get(asset);
             if (currentData) {
                 const volatility = 0.001; // 0.1% volatility per update
@@ -1992,6 +1967,32 @@ class PortfolioOptimizationAgent {
             
         } catch (error) {
             console.error(`❌ [Agent ${this.agentId}] Failed to get current price for ${asset}:`, error);
+            return null;
+        }
+    }
+    
+    /**
+     * Fetch price from internal adapter
+     * Adapter pattern: centralized price fetching that can be easily swapped
+     * In demo mode: returns mock data
+     * In production: can be connected to real exchange APIs
+     */
+    async fetchPriceFromAdapter(symbol) {
+        try {
+            const response = await this.makeAPICall(`/api/markets/${symbol}/price`);
+            
+            if (response.success && response.data) {
+                return {
+                    price: response.data.price,
+                    volume: response.data.volume || 0,
+                    marketCap: response.data.marketCap || 0,
+                    change24h: response.data.change24h || 0
+                };
+            }
+            
+            return null;
+        } catch (error) {
+            console.warn(`⚠️ [Agent ${this.agentId}] Price adapter failed for ${symbol}:`, error.message);
             return null;
         }
     }

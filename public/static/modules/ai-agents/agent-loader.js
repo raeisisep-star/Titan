@@ -37,23 +37,26 @@ export async function loadAgent(agentId) {
         try {
             let AgentClass;
             
+            // Cache busting version parameter
+            const version = Date.now();
+            
             // Dynamic import based on agent ID
             switch(agentId) {
                 case 'agent-11':
                 case 'portfolio-optimization':
-                    const mod11 = await import('./agent-11-portfolio-optimization.js');
+                    const mod11 = await import(`./agent-11-portfolio-optimization.js?v=${version}`);
                     AgentClass = mod11.default || mod11.PortfolioOptimizationAgent;
                     break;
                     
                 case 'agent-14':
                 case 'performance-analytics':
-                    const mod14 = await import('./agent-14-performance-analytics.js');
+                    const mod14 = await import(`./agent-14-performance-analytics.js?v=${version}`);
                     AgentClass = mod14.default || mod14.PerformanceAnalyticsAgent;
                     break;
                     
                 case 'agent-15':
                 case 'system-orchestrator':
-                    const mod15 = await import('./agent-15-system-orchestrator.js');
+                    const mod15 = await import(`./agent-15-system-orchestrator.js?v=${version}`);
                     AgentClass = mod15.default || mod15.SystemOrchestratorAgent;
                     break;
                     
