@@ -224,11 +224,27 @@
     <script src="/static/modules/ai-agents/agent-08-hft.js"></script>
     <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js"></script>
     <script src="/static/modules/ai-agents/agent-10-macro-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-11-portfolio-optimization.js"></script>
+    <!-- ES6 Module Agents (migrated) -->
+    <script type="module">
+        // Load agent loader and initialize ES6 agents
+        import { loadAgent } from '/static/modules/ai-agents/agent-loader.js';
+        
+        // Load agents with singleton pattern
+        (async () => {
+            try {
+                await Promise.all([
+                    loadAgent('agent-11'), // Portfolio Optimization
+                    loadAgent('agent-14'), // Performance Analytics
+                    loadAgent('agent-15')  // System Orchestrator
+                ]);
+                console.log('✅ All ES6 agents loaded successfully');
+            } catch (error) {
+                console.error('❌ Failed to load some ES6 agents:', error);
+            }
+        })();
+    </script>
     <script src="/static/modules/ai-agents/agent-12-risk-assessment.js"></script>
     <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js"></script>
-    <script src="/static/modules/ai-agents/agent-14-performance-analytics.js"></script>
-    <script src="/static/modules/ai-agents/agent-15-system-orchestrator.js"></script>
     
     <!-- Load Configuration First -->
     <script src="/config.js?v=1760459731"></script>
