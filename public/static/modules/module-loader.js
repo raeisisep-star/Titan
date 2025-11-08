@@ -18,7 +18,8 @@ class ModuleLoader {
             'analytics': 'AnalyticsModule',
             'news': 'NewsModule',
             'alerts': 'AlertsModule',
-            'settings': 'SettingsModule'
+            'settings': 'SettingsModule',
+            'logs': 'LogsModule'
         };
         
         // Cache busting timestamp

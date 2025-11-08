@@ -416,6 +416,10 @@ class TitanApp {
                                                 اخبار بازار
                                             </a>
                                             <a href="#" onclick="app.loadModule('alerts')" class="nav-dropdown-link">
+                                            <a href="#" onclick="app.loadModule('logs')" class="nav-dropdown-link">
+                                                <i class="fas fa-list-alt text-blue-400"></i>
+                                                لاگu200cهای سیستم
+                                            </a>
                                                 <i class="fas fa-bell text-yellow-400"></i>
                                                 هشدارها
                                             </a>
@@ -1528,7 +1532,6 @@ class TitanApp {
                     this.refreshCurrentModuleData();
                     break;
         
-
                 default:
                     console.log('🤖 Artemis action:', action);
             }
@@ -1685,7 +1688,6 @@ class TitanApp {
                 // Refresh dashboard
                 this.loadModule('dashboard');
                 break;
-
             default:
                 console.log('No specific refresh method for', currentModule);
         }
@@ -2345,35 +2347,6 @@ class TitanApp {
 
 
             
-                case 'logs':
-                    try {
-                        console.log('📋 Starting Logs Dashboard...');
-                        mainContent.innerHTML = '<div class="text-center p-8"><div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"></div></div>';
-                        
-                        if (!window.TitanModules.LogsModule) {
-                            const script = document.createElement('script');
-                            script.type = 'module';
-                            script.src = '/static/modules/logs.js?v=' + Date.now();
-                            await new Promise((resolve, reject) => {
-                                script.onload = resolve;
-                                script.onerror = () => reject(new Error('خطا در بارگذاری logs.js'));
-                                document.head.appendChild(script);
-                            });
-                        }
-                        
-                        window.logsModule = new window.TitanModules.LogsModule();
-                        mainContent.innerHTML = await window.logsModule.getContent();
-                        await window.logsModule.initialize();
-                        console.log('✅ Logs loaded');
-                        this.showAlert('داشبورد لاگ‌ها بارگذاری شد', 'success');
-                    } catch (error) {
-                        console.error('❌ Logs error:', error);
-                        this.showAlert('خطا: ' + error.message, 'error');
-                        mainContent.innerHTML = '<div class="text-center p-8 text-red-400">خطا: ' + error.message + '</div>';
-                    }
-                    break;
-
-
                 default:
                     this.showAlert(`ماژول ${moduleName} یافت نشد`, 'error');
             }
@@ -4759,7 +4732,6 @@ class TitanApp {
                 case 'ai_recommendations':
                     content = await this.renderAIRecommendationsWidget(widget);
                     break;
-
                 default:
                     content = '<div class="text-center text-gray-400">نوع ویجت ناشناخته</div>';
             }
@@ -7575,7 +7547,6 @@ class TitanApp {
                 case 'stats':
                     tabContent = await this.renderStatsProfileTab();
                     break;
-
                 default:
                     tabContent = '<div class="text-center text-red-400">تب پیدا نشد</div>';
             }
@@ -7948,7 +7919,6 @@ class TitanApp {
                 case 'create':
                     tabContent = await this.renderAdminCreateTab();
                     break;
-
                 default:
                     tabContent = '<div class="text-center text-red-400">تب پیدا نشد</div>';
             }

@@ -2022,19 +2022,6 @@ class SettingsModule {
                     </button>
                 </div>
             </div>
-
-            <!-- System Logs Viewer -->
-            <div class="bg-gray-900 rounded-lg p-4">
-                <div class="flex items-center justify-between mb-4">
-                    <h4 class="text-lg font-semibold text-white">📋 لاگ‌های سیستم</h4>
-                    <button onclick="settingsModule.openFullLogsViewer()" class="bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded text-white text-sm">
-                        <i class="fas fa-external-link-alt ml-2"></i>مشاهده کامل
-                    </button>
-                </div>
-                <div id="system-logs-preview" class="space-y-2">
-                    <p class="text-gray-400 text-sm">در حال بارگذاری لاگ‌های سیستم...</p>
-                </div>
-            </div>
         </div>`;
     }
 
@@ -9071,96 +9058,10 @@ TITAN Trading System - Log Export
         }
     }
 
-    openFullLogsViewer() {
-        // Navigate to logs module
-        if (typeof app !== 'undefined' && typeof app.loadModule === 'function') {
-            app.loadModule('logs');
-        } else {
-            console.error('App module loader not available');
-            alert('خطا در بارگذاری ماژول لاگ‌ها');
-        }
-    }
-
-    async loadSystemLogsPreview() {
-        const previewContainer = document.getElementById('system-logs-preview');
-        if (!previewContainer) return;
-
-        try {
-            const token = localStorage.getItem('titan_auth_token') || 
-                         localStorage.getItem('auth_token') || 
-                         'demo_token_123';
-            
-            const response = await fetch('/api/logs/recent?limit=5&level=all', {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) throw new Error('Failed to fetch logs');
-
-            const data = await response.json();
-            
-            if (data.success && data.data && data.data.logs && data.data.logs.length > 0) {
-                const logsHtml = data.data.logs.map(log => {
-                    // Map numeric levels to string names (Pino format)
-                    const levelMap = {
-                        10: 'trace', 20: 'debug', 30: 'info',
-                        40: 'warn', 50: 'error', 60: 'fatal'
-                    };
-                    const levelName = levelMap[log.level] || 'info';
-                    
-                    const levelColors = {
-                        fatal: 'text-red-500 bg-red-900/20',
-                        error: 'text-red-400 bg-red-900/20',
-                        warn: 'text-yellow-400 bg-yellow-900/20',
-                        info: 'text-blue-400 bg-blue-900/20',
-                        debug: 'text-gray-400 bg-gray-800',
-                        trace: 'text-gray-500 bg-gray-800'
-                    };
-                    
-                    const levelClass = levelColors[levelName] || 'text-gray-400 bg-gray-800';
-                    const timestamp = new Date(log.time).toLocaleString('fa-IR');
-                    
-                    return `
-                        <div class="flex items-start gap-3 p-2 ${levelClass} rounded text-xs">
-                            <span class="text-gray-500 font-mono">${timestamp}</span>
-                            <span class="font-semibold uppercase">${levelName}</span>
-                            <span class="flex-1">${log.msg || 'No message'}</span>
-                        </div>
-                    `;
-                }).join('');
-                
-                previewContainer.innerHTML = logsHtml + `
-                    <div class="text-center pt-2">
-                        <button onclick="settingsModule.openFullLogsViewer()" class="text-blue-400 hover:text-blue-300 text-sm">
-                            مشاهده همه لاگ‌ها →
-                        </button>
-                    </div>
-                `;
-            } else {
-                previewContainer.innerHTML = '<p class="text-gray-500 text-sm">هیچ لاگی یافت نشد</p>';
-            }
-        } catch (error) {
-            console.error('Error loading logs preview:', error);
-            previewContainer.innerHTML = `
-                <p class="text-red-400 text-sm">خطا در بارگذاری لاگ‌ها</p>
-                <button onclick="settingsModule.loadSystemLogsPreview()" class="text-blue-400 hover:text-blue-300 text-sm mt-2">
-                    تلاش مجدد
-                </button>
-            `;
-        }
-    }
-
     refreshCurrentTab() {
         const content = document.getElementById('settings-tab-content');
         if (content) {
             content.innerHTML = this.getTabContent();
-            
-            // Load logs preview if on system tab
-            if (this.currentTab === 'system') {
-                setTimeout(() => this.loadSystemLogsPreview(), 100);
-            }
         }
     }
 }

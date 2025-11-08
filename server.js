@@ -4,6 +4,10 @@
  */
 
 require('dotenv').config();
+
+// Initialize structured logging (must be before other requires)
+const logger = require('./src/utils/logger.js');
+
 const { Hono } = require('hono');
 const { serve } = require('@hono/node-server');
 const { cors } = require('hono/cors');
@@ -1076,6 +1080,211 @@ app.get('/api/users', async (c) => {
     });
   } catch (error) {
     return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// =============================================================================
+// LOG MONITORING APIs (Phase 3.3)
+// =============================================================================
+
+const fs = require('fs');
+const path = require('path');
+
+// Helper: Read last N lines from file
+function readLastLines(filePath, lines = 100) {
+  try {
+    if (!fs.existsSync(filePath)) return [];
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const allLines = fileContent.trim().split('\n').filter(line => line.trim());
+    return allLines.slice(-lines);
+  } catch (error) {
+    console.error('Error reading log file:', error);
+    return [];
+  }
+}
+
+// Helper: Parse JSON log line
+function parseLogLine(line) {
+  try {
+    return JSON.parse(line);
+  } catch (error) {
+    return {
+      level: 'info',
+      time: new Date().toISOString(),
+      msg: line,
+      raw: true
+    };
+  }
+}
+
+// Helper: Filter by level
+function filterByLevel(logs, level) {
+  if (!level || level === 'all') return logs;
+  const levelMap = { 'fatal': 60, 'error': 50, 'warn': 40, 'info': 30, 'debug': 20, 'trace': 10 };
+  const targetLevel = levelMap[level.toLowerCase()];
+  if (!targetLevel) return logs;
+  return logs.filter(log => {
+    const logLevel = typeof log.level === 'number' ? log.level : levelMap[log.level?.toLowerCase()] || 30;
+    return logLevel >= targetLevel;
+  });
+}
+
+// Helper: Search logs
+function searchLogs(logs, query) {
+  if (!query) return logs;
+  const lowerQuery = query.toLowerCase();
+  return logs.filter(log => {
+    const msgText = log.msg?.toLowerCase() || '';
+    const errText = log.err?.message?.toLowerCase() || '';
+    const serviceText = log.service?.toLowerCase() || '';
+    return msgText.includes(lowerQuery) || errText.includes(lowerQuery) || serviceText.includes(lowerQuery);
+  });
+}
+
+// GET /api/logs/recent - دریافت آخرین لاگ‌ها
+app.get('/api/logs/recent', async (c) => {
+  try {
+    const query = c.req.query();
+    const limit = Math.min(Number(query.limit) || 100, 1000);
+    const level = query.level || 'all';
+    const search = query.search || '';
+    const logsDemo = process.env.LOGS_DEMO === 'true';
+    
+    const logFilePath = path.join(process.cwd(), 'logs/titan.log');
+    const rawLines = readLastLines(logFilePath, limit * 2);
+    let logs = rawLines.map(parseLogLine).filter(log => log !== null);
+    
+    // Add source field to each log (test logs have exact :00.000Z timestamps)
+    logs = logs.map(log => ({
+      ...log,
+      source: log.time && log.time.endsWith(':00.000Z') ? 'test' : 'real'
+    }));
+    
+    // Filter out test logs in production (unless LOGS_DEMO=true)
+    if (!logsDemo) {
+      logs = logs.filter(log => log.source === 'real');
+    }
+    
+    logs = filterByLevel(logs, level);
+    logs = searchLogs(logs, search);
+    logs = logs.slice(-limit).reverse();
+    
+    // Calculate byLevel stats
+    const byLevel = { fatal: 0, error: 0, warn: 0, info: 0, debug: 0, trace: 0 };
+    logs.forEach(log => {
+      const levelNum = typeof log.level === 'number' ? log.level : 30;
+      if (levelNum >= 60) byLevel.fatal++;
+      else if (levelNum >= 50) byLevel.error++;
+      else if (levelNum >= 40) byLevel.warn++;
+      else if (levelNum >= 30) byLevel.info++;
+      else if (levelNum >= 20) byLevel.debug++;
+      else byLevel.trace++;
+    });
+    
+    return c.json({
+      success: true,
+      data: {
+        logs,
+        count: logs.length,
+        byLevel,
+        filters: { limit, level, search: search || null, demoMode: logsDemo },
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching recent logs:', error);
+    return c.json({ success: false, error: 'Failed to fetch logs', message: error.message }, 500);
+  }
+});
+
+// GET /api/logs/errors - دریافت لاگ‌های خطا
+app.get('/api/logs/errors', async (c) => {
+  try {
+    const query = c.req.query();
+    const limit = Math.min(Number(query.limit) || 50, 500);
+    
+    const errorLogPath = path.join(process.cwd(), 'logs/error-alerts.log');
+    const rawLines = readLastLines(errorLogPath, limit);
+    
+    const errors = rawLines.map((line, index) => {
+      const timestampMatch = line.match(/\[(\d{4}-\d{2}-\d{2}[T\s]\d{2}:\d{2}:\d{2})/);
+      const timestamp = timestampMatch ? timestampMatch[1] : new Date().toISOString();
+      return {
+        id: index,
+        timestamp,
+        message: line,
+        severity: 'error'
+      };
+    }).reverse();
+    
+    return c.json({
+      success: true,
+      data: {
+        errors,
+        count: errors.length,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching error logs:', error);
+    return c.json({ success: false, error: 'Failed to fetch error logs', message: error.message }, 500);
+  }
+});
+
+// GET /api/logs/stats - آمار لاگ‌ها
+app.get('/api/logs/stats', async (c) => {
+  try {
+    const logFilePath = path.join(process.cwd(), 'logs/titan.log');
+    const errorLogPath = path.join(process.cwd(), 'logs/error-alerts.log');
+    
+    const logStats = fs.existsSync(logFilePath) ? fs.statSync(logFilePath) : null;
+    const errorStats = fs.existsSync(errorLogPath) ? fs.statSync(errorLogPath) : null;
+    
+    const rawLines = readLastLines(logFilePath, 500);
+    const logs = rawLines.map(parseLogLine);
+    
+    const byLevel = { fatal: 0, error: 0, warn: 0, info: 0, debug: 0, trace: 0 };
+    logs.forEach(log => {
+      const levelNum = typeof log.level === 'number' ? log.level : 30;
+      if (levelNum >= 60) byLevel.fatal++;
+      else if (levelNum >= 50) byLevel.error++;
+      else if (levelNum >= 40) byLevel.warn++;
+      else if (levelNum >= 30) byLevel.info++;
+      else if (levelNum >= 20) byLevel.debug++;
+      else byLevel.trace++;
+    });
+    
+    const formatBytes = (bytes) => {
+      if (!bytes) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return Math.round(bytes / Math.pow(k, i) * 100) / 100 + ' ' + sizes[i];
+    };
+    
+    return c.json({
+      success: true,
+      data: {
+        total: logs.length,
+        byLevel,
+        files: {
+          main: {
+            path: 'logs/titan.log',
+            size: logStats ? formatBytes(logStats.size) : '0 B',
+            lastModified: logStats ? logStats.mtime : null
+          },
+          errors: {
+            path: 'logs/error-alerts.log',
+            size: errorStats ? formatBytes(errorStats.size) : '0 B',
+            lastModified: errorStats ? errorStats.mtime : null
+          }
+        },
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching log stats:', error);
+    return c.json({ success: false, error: 'Failed to fetch log stats', message: error.message }, 500);
   }
 });
 
