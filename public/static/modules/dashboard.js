@@ -2393,6 +2393,12 @@ class DashboardModule {
             if (response.ok) {
                 const data = await response.json();
                 
+                // Defensive array checking: handle both direct array and nested object structures
+                const agents = Array.isArray(data?.data) ? data.data
+                             : Array.isArray(data?.agents) ? data.agents
+                             : Array.isArray(data?.data?.agents) ? data.data.agents
+                             : [];
+                
                 // Update main stats
                 const agentsCount = document.getElementById('ai-agents-count');
                 const performanceSummary = document.getElementById('ai-performance-summary');
@@ -2401,26 +2407,26 @@ class DashboardModule {
                 const standbyCount = document.getElementById('ai-standby-count');
 
                 if (agentsCount) {
-                    agentsCount.textContent = `${data.agents.length} Agent`;
+                    agentsCount.textContent = `${agents.length} Agent`;
                 }
 
                 if (performanceSummary) {
-                    const avgPerformance = data.agents.reduce((sum, agent) => sum + agent.performance, 0) / data.agents.length;
+                    const avgPerformance = agents.reduce((sum, agent) => sum + agent.performance, 0) / agents.length;
                     performanceSummary.textContent = `میانگین عملکرد: ${Math.round(avgPerformance)}%`;
                 }
 
                 if (activeCount) {
-                    const active = data.agents.filter(agent => agent.status === 'active').length;
+                    const active = agents.filter(agent => agent.status === 'active').length;
                     activeCount.textContent = active;
                 }
 
                 if (trainingCount) {
-                    const training = data.agents.filter(agent => agent.status === 'training').length;
+                    const training = agents.filter(agent => agent.status === 'training').length;
                     trainingCount.textContent = training;
                 }
 
                 if (standbyCount) {
-                    const standby = data.agents.filter(agent => agent.status === 'standby').length;
+                    const standby = agents.filter(agent => agent.status === 'standby').length;
                     standbyCount.textContent = standby;
                 }
 

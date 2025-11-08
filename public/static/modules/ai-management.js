@@ -52,8 +52,15 @@
                     }
                     
                     const agentsResponse = await axios.get('/api/ai-analytics/agents');
-                    if (agentsResponse.data.agents) {
-                        this.state.agents = agentsResponse.data.agents;
+                    
+                    // Defensive array checking: handle both direct array and nested object structures
+                    const agents = Array.isArray(agentsResponse.data?.data) ? agentsResponse.data.data
+                                 : Array.isArray(agentsResponse.data?.agents) ? agentsResponse.data.agents
+                                 : Array.isArray(agentsResponse.data?.data?.agents) ? agentsResponse.data.data.agents
+                                 : [];
+                    
+                    if (agents.length > 0) {
+                        this.state.agents = agents;
                     }
                 } catch (apiError) {
                     console.warn('❌ API data unavailable, using fallback data:', apiError);
