@@ -2362,7 +2362,7 @@ class TitanApp {
                         }
                         
                         window.logsModule = new window.TitanModules.LogsModule();
-                        mainContent.innerHTML = await window.logsModule.render();
+                        mainContent.innerHTML = await window.logsModule.getContent();
                         await window.logsModule.initialize();
                         console.log('✅ Logs loaded');
                         this.showAlert('داشبورد لاگ‌ها بارگذاری شد', 'success');
