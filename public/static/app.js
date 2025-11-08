@@ -12,6 +12,14 @@ class TitanApp {
     }
 
     async init() {
+        // Configure axios with baseURL from TITAN_CONFIG
+        if (window.TITAN_CONFIG && window.TITAN_CONFIG.API_BASE_URL) {
+            axios.defaults.baseURL = window.TITAN_CONFIG.API_BASE_URL;
+            console.log('✅ Axios configured with baseURL:', axios.defaults.baseURL);
+        } else {
+            console.error('❌ TITAN_CONFIG not found or missing API_BASE_URL!');
+        }
+
         // Initialize module loader first
         await this.initializeModuleLoader();
 
