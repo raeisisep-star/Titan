@@ -1151,6 +1151,7 @@ const aiAnalyticsRoutes = require('./backend/routes/ai-analytics.js');
 const modeRoutes = require('./backend/routes/mode.js');
 const alertsRoutes = require('./backend/routes/alerts.js');
 const newsRoutes = require('./backend/routes/news.js');
+const marketsRoutes = require('./backend/routes/markets.js');
 const compatRoutes = require('./backend/routes/compat.js');
 
 // Register routes (use app.route() for Hono subrouters)
@@ -1159,6 +1160,7 @@ app.route('/api/ai-analytics', aiAnalyticsRoutes);
 app.route('/api/mode', modeRoutes);
 app.route('/api/alerts', alertsRoutes);
 app.route('/api/news', newsRoutes);
+app.route('/api/markets', marketsRoutes);
 
 // Register compatibility routes (legacy endpoints) - MUST come LAST to avoid catching specific routes
 app.route('/api', compatRoutes);

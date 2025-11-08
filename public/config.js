@@ -11,11 +11,14 @@ window.ENV = {
 };
 
 window.TITAN_CONFIG = {
-  // Backend API URLs - Local Development
-  API_BASE_URL: '',  // Empty means same-origin (relative URLs)
+  // Backend API URLs - Production (same-origin)
+  API_BASE_URL: '/api',  // All API requests go to /api prefix
+  API_BASE: '/api',      // Alias for compatibility
   API_BASE_URL_ALT: '',
+  WS_BASE: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host,
   
   // Environment
+  ENV: 'production',
   ENVIRONMENT: 'production',
   VERSION: '1.0.0',
   

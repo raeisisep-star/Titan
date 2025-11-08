@@ -30,6 +30,18 @@
     <meta name="keywords" content="تایتان, معاملات, ارز دیجیتال, هشدار, بازار">
     <meta name="author" content="TITAN Trading System">
     
+    <!-- Early TITAN_CONFIG Initialization (Before ANY modules load) -->
+    <script>
+        // Initialize TITAN_CONFIG immediately to prevent "not found" errors
+        window.TITAN_CONFIG = {
+            ENV: 'production',
+            API_BASE: '/api',
+            API_BASE_URL: '/api',
+            WS_BASE: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
+        };
+        console.log('🚀 Early TITAN_CONFIG initialized:', window.TITAN_CONFIG);
+    </script>
+    
     <!-- External Libraries -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
@@ -254,11 +266,15 @@
     <!-- Configure Axios -->
     <script>
         // Configure axios with base URL from config
-        if (window.TITAN_CONFIG && window.TITAN_CONFIG.API_BASE_URL) {
-            axios.defaults.baseURL = window.TITAN_CONFIG.API_BASE_URL;
+        const apiBase = window.TITAN_CONFIG?.API_BASE_URL || window.TITAN_CONFIG?.API_BASE || '/api';
+        
+        if (apiBase) {
+            axios.defaults.baseURL = apiBase;
             console.log('✅ Axios configured with baseURL:', axios.defaults.baseURL);
+            console.log('✅ TITAN_CONFIG:', window.TITAN_CONFIG);
         } else {
-            console.error('❌ TITAN_CONFIG not found! Using relative URLs.');
+            console.error('❌ TITAN_CONFIG not found! Falling back to /api');
+            axios.defaults.baseURL = '/api';
         }
         
         // Set default headers
