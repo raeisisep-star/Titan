@@ -17,7 +17,9 @@
  * @version 2.1.0
  */
 
-class PortfolioOptimizationAgent {
+import { CircuitBreaker } from '../../utils/circuit-breaker.js';
+
+export class PortfolioOptimizationAgent {
     constructor(config = {}) {
         this.agentId = 'AGENT_11_PORTFOLIO_OPT';
         this.name = 'Portfolio Optimization Specialist';
@@ -2160,73 +2162,5 @@ class AssetAllocationNN {
     }
 }
 
-// ============================================================================
-// CIRCUIT BREAKER IMPLEMENTATION
-// ============================================================================
-
-class CircuitBreaker {
-    constructor(config = {}) {
-        this.failureThreshold = config.failureThreshold || 5;
-        this.recoveryTimeout = config.recoveryTimeout || 30000; // 30 seconds
-        this.monitoringPeriod = config.monitoringPeriod || 60000; // 1 minute
-        
-        this.state = 'CLOSED'; // CLOSED, OPEN, HALF_OPEN
-        this.failureCount = 0;
-        this.lastFailureTime = null;
-        this.nextAttempt = null;
-    }
-    
-    async execute(operation) {
-        if (this.state === 'OPEN') {
-            if (Date.now() < this.nextAttempt) {
-                throw new Error('Circuit breaker is OPEN - operation blocked');
-            }
-            this.state = 'HALF_OPEN';
-        }
-        
-        try {
-            const result = await operation();
-            this.recordSuccess();
-            return result;
-        } catch (error) {
-            this.recordFailure();
-            throw error;
-        }
-    }
-    
-    recordSuccess() {
-        this.failureCount = 0;
-        this.state = 'CLOSED';
-        this.lastFailureTime = null;
-    }
-    
-    recordFailure() {
-        this.failureCount++;
-        this.lastFailureTime = Date.now();
-        
-        if (this.failureCount >= this.failureThreshold) {
-            this.state = 'OPEN';
-            this.nextAttempt = Date.now() + this.recoveryTimeout;
-        }
-    }
-    
-    getState() {
-        return {
-            state: this.state,
-            failureCount: this.failureCount,
-            lastFailureTime: this.lastFailureTime,
-            nextAttempt: this.nextAttempt
-        };
-    }
-}
-
-// Export for use in other modules
-if (typeof module !== 'undefined' && module.exports) {
-    module.exports = PortfolioOptimizationAgent;
-}
-
-// Auto-initialize if in browser
-if (typeof window !== 'undefined') {
-    window.PortfolioOptimizationAgent = PortfolioOptimizationAgent;
-    window.CircuitBreaker = CircuitBreaker;
-}
+// ES6 Module Export
+export default PortfolioOptimizationAgent;
