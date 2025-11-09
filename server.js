@@ -132,6 +132,106 @@ app.get('/api/health', async (c) => {
   }
 });
 
+// Full health check (for UI display with human-readable status)
+app.get('/api/health/full', async (c) => {
+  const startTime = process.uptime();
+  const services = [];
+  let overallHealthy = true;
+  
+  try {
+    // Test API service (always healthy if we got here)
+    services.push({
+      name: 'API Server',
+      status: 'healthy',
+      icon: '✅',
+      details: `Uptime: ${Math.floor(startTime)}s`
+    });
+    
+    // Test database connection
+    try {
+      const dbStart = Date.now();
+      const dbResult = await pool.query('SELECT NOW(), pg_database_size(current_database()) as db_size');
+      const dbLatency = Date.now() - dbStart;
+      const dbSizeMB = Math.round(parseInt(dbResult.rows[0].db_size) / 1024 / 1024);
+      
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${dbLatency}ms, Size: ${dbSizeMB}MB`
+      });
+    } catch (dbError) {
+      overallHealthy = false;
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${dbError.message}`
+      });
+    }
+    
+    // Test Redis connection
+    try {
+      const redisStart = Date.now();
+      await redisClient.ping();
+      const redisLatency = Date.now() - redisStart;
+      
+      services.push({
+        name: 'Redis Cache',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${redisLatency}ms`
+      });
+    } catch (redisError) {
+      overallHealthy = false;
+      services.push({
+        name: 'Redis Cache',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${redisError.message}`
+      });
+    }
+    
+    // Queue status (placeholder - no actual queue in this version)
+    services.push({
+      name: 'Job Queue',
+      status: 'not_configured',
+      icon: 'ℹ️',
+      details: 'Queue not configured in this version'
+    });
+    
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    const heapUsedPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+    services.push({
+      name: 'Memory Usage',
+      status: heapUsedPercent < 90 ? 'healthy' : 'warning',
+      icon: heapUsedPercent < 90 ? '✅' : '⚠️',
+      details: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB (${heapUsedPercent}%)`
+    });
+    
+    return c.json({
+      success: true,
+      data: {
+        overallStatus: overallHealthy ? 'healthy' : 'degraded',
+        version: '1.0.0',
+        commit: 'c6b3b08',
+        environment: process.env.NODE_ENV || 'development',
+        serverTime: new Date().toISOString(),
+        uptime: `${Math.floor(startTime)} seconds`,
+        services: services
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Health check failed',
+      message: error.message,
+      services: services
+    }, 500);
+  }
+});
+
 // =============================================================================
 // AUTHENTICATION APIs
 // =============================================================================
@@ -790,6 +890,156 @@ app.post('/api/ai/chat', async (c) => {
     success: true,
     data: {
       reply: `You said: ${message}. This is a mock response.`
+    }
+  });
+});
+
+// =============================================================================
+// AI AGENTS APIs (Agents 1-11 with proper 200 responses)
+// =============================================================================
+
+// Helper: Not Available Response
+const agentNotAvailable = (id) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: false,
+  available: false,
+  message: 'This agent is not yet implemented'
+});
+
+// Helper: Mock Active Status
+const mockActiveStatus = (id, customData = {}) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: true,
+  available: true,
+  status: 'active',
+  health: 'good',
+  lastUpdate: new Date().toISOString(),
+  ...customData
+});
+
+// Agents 1-4 & 11: Enhanced data
+const enhancedAgentData = {
+  1: { // Technical Analysis
+    accuracy: 87.3,
+    confidence: 92.1,
+    indicators: {
+      rsi: 65.4,
+      macd: 0.002,
+      bollinger: 'neutral',
+      volume: 1234567890
+    },
+    signals: [
+      { type: 'BUY', value: 'Strong', timestamp: Date.now() - 3600000 }
+    ],
+    trend: 'bullish'
+  },
+  2: { // Portfolio Risk Management
+    accuracy: 83.7,
+    confidence: 88.4,
+    portfolioRisk: {
+      valueAtRisk: 12.5,
+      exposure: 68.3,
+      sharpeRatio: 1.82
+    },
+    recommendations: ['تنوع‌بخشی بیشتر', 'کاهش اکسپوژر']
+  },
+  3: { // Market Sentiment
+    accuracy: 79.2,
+    confidence: 82.6,
+    overallMarket: {
+      score: 0.65,
+      trend: 'positive'
+    },
+    sources: [
+      { name: 'Twitter', score: 0.72 },
+      { name: 'News', score: 0.58 }
+    ]
+  },
+  4: { // Portfolio Optimization
+    accuracy: 85.9,
+    confidence: 89.2,
+    totals: {
+      totalValue: 125000,
+      positions: 8
+    },
+    recommendations: ['افزایش BTC', 'کاهش ETH']
+  },
+  11: { // Advanced Portfolio Optimization
+    accuracy: 88.1,
+    confidence: 91.3,
+    blackLitterman: {
+      tau: 0.025,
+      views: '4 active',
+      optimized: true
+    },
+    optimizationStatus: 'Portfolio fully optimized'
+  }
+};
+
+// Agents 1-4 & 11: Status endpoints
+for (const id of [1, 2, 3, 4, 11]) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    const data = enhancedAgentData[id] || {};
+    return c.json(mockActiveStatus(id, data));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: true,
+      pollingIntervalMs: 5000,
+      settings: {}
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: [
+        {
+          timestamp: Date.now() - 3600000,
+          event: 'signal_generated',
+          data: { type: 'BUY', confidence: 0.85 }
+        }
+      ]
+    });
+  });
+}
+
+// Agents 5-10: Not Available (200 with available: false)
+for (let id = 5; id <= 10; id++) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/status - returning not available`);
+    return c.json(agentNotAvailable(id));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/config - returning not available`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: false,
+      pollingIntervalMs: 5000
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/history - returning empty`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: []
+    });
+  });
+}
+
+// Health check for AI agents
+app.get('/api/ai/agents/health', async (c) => {
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    agents: {
+      available: [1, 2, 3, 4, 11],
+      coming_soon: [5, 6, 7, 8, 9, 10],
+      unavailable: [12, 13, 14, 15]
     }
   });
 });

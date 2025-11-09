@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست مستقیم API - بدون Cache</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 800px;
+            width: 100%;
+        }
+        h1 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        .test-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .test-section h3 {
+            color: #764ba2;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: transform 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover { transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+        .result {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 15px;
+            border-right: 4px solid #667eea;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .success { border-right-color: #10b981; background: #ecfdf5; }
+        .error { border-right-color: #ef4444; background: #fef2f2; }
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .status.ok { background: #10b981; color: white; }
+        .status.fail { background: #ef4444; color: white; }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-top: 8px;
+            font-family: inherit;
+        }
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .info-box {
+            background: #e0e7ff;
+            border-right: 4px solid #667eea;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+        .info-box strong { color: #667eea; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 تست مستقیم API</h1>
+        <p class="subtitle">این صفحه با cache-busting header ها درخواست می‌فرستد</p>
+        
+        <div class="info-box">
+            <strong>📌 هدف:</strong> تست مستقیم API بدون تداخل cache مرورگر یا Cloudflare
+        </div>
+
+        <!-- Test 1: Config Check -->
+        <div class="test-section">
+            <h3>
+                <span>1️⃣</span>
+                بررسی تنظیمات (Config)
+            </h3>
+            <button onclick="testConfig()">بررسی config.js و axios</button>
+            <div id="config-result"></div>
+        </div>
+
+        <!-- Test 2: Health Check -->
+        <div class="test-section">
+            <h3>
+                <span>2️⃣</span>
+                تست سلامت API
+            </h3>
+            <button onclick="testHealth()">تست /api/health</button>
+            <div id="health-result"></div>
+        </div>
+
+        <!-- Test 3: Login with Fetch -->
+        <div class="test-section">
+            <h3>
+                <span>3️⃣</span>
+                تست ورود (Fetch مستقیم)
+            </h3>
+            <input type="text" id="username" placeholder="نام کاربری" value="admin">
+            <input type="password" id="password" placeholder="رمز عبور" value="test">
+            <button onclick="testLoginDirect()">ورود با Fetch (بدون cache)</button>
+            <div id="login-result"></div>
+        </div>
+
+        <!-- Test 4: Login with Axios -->
+        <div class="test-section">
+            <h3>
+                <span>4️⃣</span>
+                تست ورود (Axios)
+            </h3>
+            <button onclick="testLoginAxios()">ورود با Axios</button>
+            <div id="axios-result"></div>
+        </div>
+    </div>
+
+    <!-- Load Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    
+    <!-- Early Config Init -->
+    <script>
+        // تنظیمات اولیه (همانند index.html)
+        window.TITAN_CONFIG = {
+            ENV: 'production',
+            API_BASE: '/api',
+            API_BASE_URL: '/api',
+            WS_BASE: (location.protocol === 'https:' ? 'wss://' : 'ws://') + location.host
+        };
+        console.log('🚀 TITAN_CONFIG initialized:', window.TITAN_CONFIG);
+
+        // Configure Axios
+        if (typeof axios !== 'undefined') {
+            axios.defaults.baseURL = '/api';
+            axios.defaults.headers.common['Content-Type'] = 'application/json';
+            axios.defaults.timeout = 30000;
+            
+            // Cache busting for every request
+            axios.interceptors.request.use(config => {
+                config.headers['Cache-Control'] = 'no-cache, no-store, must-revalidate';
+                config.headers['Pragma'] = 'no-cache';
+                config.headers['Expires'] = '0';
+                config.params = config.params || {};
+                config.params['_t'] = Date.now(); // Timestamp to prevent caching
+                return config;
+            });
+            
+            console.log('✅ Axios configured with baseURL:', axios.defaults.baseURL);
+        }
+    </script>
+
+    <script>
+        function showResult(elementId, content, isSuccess) {
+            const el = document.getElementById(elementId);
+            el.className = 'result ' + (isSuccess ? 'success' : 'error');
+            el.innerHTML = content;
+        }
+
+        function testConfig() {
+            const config = window.TITAN_CONFIG;
+            const axiosBase = axios.defaults.baseURL;
+            
+            let result = '📊 نتایج بررسی:\n\n';
+            result += '🔹 TITAN_CONFIG.API_BASE: ' + (config.API_BASE || '❌ خالی') + '\n';
+            result += '🔹 TITAN_CONFIG.API_BASE_URL: ' + (config.API_BASE_URL || '❌ خالی') + '\n';
+            result += '🔹 axios.defaults.baseURL: ' + (axiosBase || '❌ خالی') + '\n\n';
+            
+            const allOk = config.API_BASE === '/api' && axiosBase === '/api';
+            
+            if (allOk) {
+                result += '✅ همه تنظیمات صحیح است!';
+            } else {
+                result += '❌ تنظیمات نادرست است - مشکل از cache است!';
+            }
+            
+            showResult('config-result', result, allOk);
+        }
+
+        async function testHealth() {
+            try {
+                // استفاده از fetch با cache busting headers
+                const response = await fetch('/api/health?_t=' + Date.now(), {
+                    method: 'GET',
+                    headers: {
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                let result = '📡 درخواست به: /api/health\n';
+                result += '📊 وضعیت HTTP: ' + response.status + '\n\n';
+                result += '📦 پاسخ:\n';
+                result += JSON.stringify(data, null, 2);
+                
+                showResult('health-result', result, response.ok);
+            } catch (error) {
+                let result = '❌ خطا در درخواست:\n\n';
+                result += error.message;
+                showResult('health-result', result, false);
+            }
+        }
+
+        async function testLoginDirect() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await fetch('/api/auth/login?_t=' + Date.now(), {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Cache-Control': 'no-cache, no-store, must-revalidate',
+                        'Pragma': 'no-cache',
+                        'Expires': '0'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                let result = '📡 درخواست به: /api/auth/login\n';
+                result += '📊 وضعیت HTTP: ' + response.status + '\n\n';
+                result += '📦 پاسخ:\n';
+                result += JSON.stringify(data, null, 2);
+                
+                showResult('login-result', result, response.ok);
+            } catch (error) {
+                let result = '❌ خطا در درخواست:\n\n';
+                result += error.message;
+                showResult('login-result', result, false);
+            }
+        }
+
+        async function testLoginAxios() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                const response = await axios.post('/auth/login', {
+                    username,
+                    password
+                });
+                
+                let result = '📡 درخواست با Axios به: ' + axios.defaults.baseURL + '/auth/login\n';
+                result += '📊 وضعیت HTTP: ' + response.status + '\n\n';
+                result += '📦 پاسخ:\n';
+                result += JSON.stringify(response.data, null, 2);
+                
+                showResult('axios-result', result, true);
+            } catch (error) {
+                let result = '❌ خطا در درخواست:\n\n';
+                if (error.response) {
+                    result += '📊 وضعیت HTTP: ' + error.response.status + '\n';
+                    result += '📦 پاسخ:\n';
+                    result += JSON.stringify(error.response.data, null, 2);
+                } else {
+                    result += error.message;
+                }
+                showResult('axios-result', result, false);
+            }
+        }
+
+        // Auto-run config check on load
+        window.addEventListener('load', () => {
+            setTimeout(testConfig, 500);
+        });
+    </script>
+</body>
+</html>
