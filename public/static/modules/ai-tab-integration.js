@@ -7,11 +7,15 @@
 // 3. Handling unavailable agents gracefully
 //
 // Date: 2025-01-11
+// Version: v1731153600 (2024-11-09)
 
 (function() {
     'use strict';
     
-    console.log('🔧 Applying AI Tab Integration Patches...');
+    console.info('🔧 AI Tab Integration Patches - Waiting for dependencies...');
+    
+    // Set global flag for verification
+    window.__AI_TAB_PATCHED__ = false;
     
     // Wait for aiTabInstance to be available
     const checkAndPatch = setInterval(() => {
@@ -25,8 +29,9 @@
         }
         
         clearInterval(checkAndPatch);
+        console.info('🔧 Applying AI Tab Integration Patches...');
         applyPatches();
-    }, 100);
+    }, 50);
     
     function applyPatches() {
         const instance = window.aiTabInstance;
@@ -504,6 +509,44 @@
             };
         }
         
-        console.log('✅ AI Tab Integration Patches Applied Successfully');
+        // ============================================================================
+        // OVERRIDE loadAIData to use TITAN_AI_API
+        // ============================================================================
+        const originalLoadAIData = instance.loadAIData;
+        instance.loadAIData = async function() {
+            try {
+                // Get AI overview data using centralized API with proper error handling
+                const response = await axios.get('/api/ai/overview', {
+                    headers: { 'Authorization': `Bearer ${window.authToken || ''}` }
+                }).catch(err => {
+                    console.warn('⚠️ AI overview endpoint not available, using fallback');
+                    return null;
+                });
+                
+                if (response && response.data && response.data.success) {
+                    const data = response.data.data;
+                    this.state.artemis = data.artemis;
+                    this.state.agents = data.agents;
+                    this.state.systemMetrics = data.systemMetrics;
+                    console.log('✅ AI data loaded successfully');
+                } else {
+                    // Fallback to mock data
+                    console.warn('⚠️ Using mock AI data (API not available)');
+                    this.state.agents = this.generateMockAgents();
+                }
+            } catch (error) {
+                console.warn('⚠️ Error in loadAIData, using fallback:', error.message);
+                // Call original if needed for fallback logic
+                if (originalLoadAIData) {
+                    await originalLoadAIData.call(this);
+                }
+            }
+        };
+        
+        // Set global flag and log success
+        window.__AI_TAB_PATCHED__ = true;
+        console.info('✅ AI Tab Integration Patches Applied Successfully');
+        console.info('✅ Patched methods: loadAIData, showAgent01-11Details');
+        console.info('✅ Agents 5-10 will show Coming Soon modal');
     }
 })();

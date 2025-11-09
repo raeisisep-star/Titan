@@ -891,6 +891,156 @@ app.post('/api/ai/chat', async (c) => {
 });
 
 // =============================================================================
+// AI AGENTS APIs (Agents 1-11 with proper 200 responses)
+// =============================================================================
+
+// Helper: Not Available Response
+const agentNotAvailable = (id) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: false,
+  available: false,
+  message: 'This agent is not yet implemented'
+});
+
+// Helper: Mock Active Status
+const mockActiveStatus = (id, customData = {}) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: true,
+  available: true,
+  status: 'active',
+  health: 'good',
+  lastUpdate: new Date().toISOString(),
+  ...customData
+});
+
+// Agents 1-4 & 11: Enhanced data
+const enhancedAgentData = {
+  1: { // Technical Analysis
+    accuracy: 87.3,
+    confidence: 92.1,
+    indicators: {
+      rsi: 65.4,
+      macd: 0.002,
+      bollinger: 'neutral',
+      volume: 1234567890
+    },
+    signals: [
+      { type: 'BUY', value: 'Strong', timestamp: Date.now() - 3600000 }
+    ],
+    trend: 'bullish'
+  },
+  2: { // Portfolio Risk Management
+    accuracy: 83.7,
+    confidence: 88.4,
+    portfolioRisk: {
+      valueAtRisk: 12.5,
+      exposure: 68.3,
+      sharpeRatio: 1.82
+    },
+    recommendations: ['تنوع‌بخشی بیشتر', 'کاهش اکسپوژر']
+  },
+  3: { // Market Sentiment
+    accuracy: 79.2,
+    confidence: 82.6,
+    overallMarket: {
+      score: 0.65,
+      trend: 'positive'
+    },
+    sources: [
+      { name: 'Twitter', score: 0.72 },
+      { name: 'News', score: 0.58 }
+    ]
+  },
+  4: { // Portfolio Optimization
+    accuracy: 85.9,
+    confidence: 89.2,
+    totals: {
+      totalValue: 125000,
+      positions: 8
+    },
+    recommendations: ['افزایش BTC', 'کاهش ETH']
+  },
+  11: { // Advanced Portfolio Optimization
+    accuracy: 88.1,
+    confidence: 91.3,
+    blackLitterman: {
+      tau: 0.025,
+      views: '4 active',
+      optimized: true
+    },
+    optimizationStatus: 'Portfolio fully optimized'
+  }
+};
+
+// Agents 1-4 & 11: Status endpoints
+for (const id of [1, 2, 3, 4, 11]) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    const data = enhancedAgentData[id] || {};
+    return c.json(mockActiveStatus(id, data));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: true,
+      pollingIntervalMs: 5000,
+      settings: {}
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: [
+        {
+          timestamp: Date.now() - 3600000,
+          event: 'signal_generated',
+          data: { type: 'BUY', confidence: 0.85 }
+        }
+      ]
+    });
+  });
+}
+
+// Agents 5-10: Not Available (200 with available: false)
+for (let id = 5; id <= 10; id++) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/status - returning not available`);
+    return c.json(agentNotAvailable(id));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/config - returning not available`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: false,
+      pollingIntervalMs: 5000
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/history - returning empty`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: []
+    });
+  });
+}
+
+// Health check for AI agents
+app.get('/api/ai/agents/health', async (c) => {
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    agents: {
+      available: [1, 2, 3, 4, 11],
+      coming_soon: [5, 6, 7, 8, 9, 10],
+      unavailable: [12, 13, 14, 15]
+    }
+  });
+});
+
+// =============================================================================
 // DATABASE APIs (Mock)
 // =============================================================================
 
