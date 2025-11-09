@@ -41,6 +41,40 @@ app.use('/*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
+// ========================================================================
+// CACHE CONTROL MIDDLEWARE
+// ========================================================================
+
+// Aggressive caching for hash-based static files (immutable)
+app.use("/static/*.*.js", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+app.use("/static/*.*.css", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+app.use("/static/modules/*.*.js", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+// No caching for non-hash static files
+app.use("/static/modules/*.js", async (c, next) => {
+  const url = c.req.url;
+  // Skip if already has hash (handled above)
+  if (/\.[a-f0-9]{8}\.js/.test(url)) {
+    await next();
+    return;
+  }
+  await next();
+  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
+  c.header("Pragma", "no-cache");
+  c.header("Expires", "0");
+});
+
 
 // ========================================================================
 // HEALTH CHECK & MONITORING
