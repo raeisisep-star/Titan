@@ -1044,6 +1044,31 @@ app.get('/api/ai/agents/health', async (c) => {
   });
 });
 
+// AI Overview endpoint - provides summary of all agents
+app.get('/api/ai/overview', async (c) => {
+  console.log('📥 GET /api/ai/overview');
+  
+  return c.json({
+    available: true,
+    totals: {
+      agents: 15,
+      active: 5,
+      degraded: 0,
+      unavailable: 10
+    },
+    activeAgents: [
+      { id: 1, name: 'Technical Analysis', status: 'active', health: 'good' },
+      { id: 2, name: 'Risk Management', status: 'active', health: 'good' },
+      { id: 3, name: 'Sentiment Analysis', status: 'active', health: 'good' },
+      { id: 4, name: 'Portfolio Optimization', status: 'active', health: 'good' },
+      { id: 11, name: 'Advanced Portfolio', status: 'active', health: 'good' }
+    ],
+    comingSoon: [5, 6, 7, 8, 9, 10],
+    unavailable: [12, 13, 14, 15],
+    updatedAt: new Date().toISOString()
+  });
+});
+
 // =============================================================================
 // DATABASE APIs (Mock)
 // =============================================================================

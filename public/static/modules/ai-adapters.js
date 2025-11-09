@@ -178,9 +178,72 @@
         return `${parseFloat(value).toFixed(decimals)}%`;
     }
     
+    /**
+     * Adapt agent configuration data
+     * @param {number|string} agentId - Agent ID
+     * @param {Object} raw - Raw config data from backend
+     * @returns {Object} Normalized config data with safe defaults
+     */
+    function adaptAgentConfig(agentId, raw) {
+        try {
+            const cfg = raw || {};
+            return {
+                agentId: cfg.agentId || `agent-${String(agentId).padStart(2, '0')}`,
+                enabled: Boolean(cfg.enabled),
+                pollingIntervalMs: Number.isFinite(cfg.pollingIntervalMs) ? cfg.pollingIntervalMs : 5000,
+                maxConcurrency: Number.isFinite(cfg.maxConcurrency) ? cfg.maxConcurrency : 1,
+                retries: Number.isFinite(cfg.retries) ? cfg.retries : 0,
+                // Additional config fields
+                thresholds: cfg.thresholds || {},
+                params: cfg.params || {},
+                // Raw data pass-through for any additional fields
+                ...(cfg.rawData || {})
+            };
+        } catch (error) {
+            console.warn(`⚠️ Agent ${agentId} config adapter failed, using safe defaults:`, error);
+            return {
+                agentId: `agent-${String(agentId).padStart(2, '0')}`,
+                enabled: false,
+                pollingIntervalMs: 5000,
+                maxConcurrency: 1,
+                retries: 0,
+                thresholds: {},
+                params: {}
+            };
+        }
+    }
+    
+    /**
+     * Adapt agent history data
+     * @param {number|string} agentId - Agent ID
+     * @param {Array|Object} raw - Raw history data from backend
+     * @returns {Array} Normalized history array
+     */
+    function adaptAgentHistory(agentId, raw) {
+        try {
+            // If raw is an object with items array, extract it
+            if (raw && typeof raw === 'object' && Array.isArray(raw.items)) {
+                return raw.items;
+            }
+            
+            // If raw is already an array, use it
+            if (Array.isArray(raw)) {
+                return raw;
+            }
+            
+            // Otherwise return empty array
+            return [];
+        } catch (error) {
+            console.warn(`⚠️ Agent ${agentId} history adapter failed, returning empty array:`, error);
+            return [];
+        }
+    }
+    
     // Export to window
     window.TITAN_AI_ADAPTERS = {
         adaptAgentStatus,
+        adaptAgentConfig,
+        adaptAgentHistory,
         safeGet,
         safeRender,
         safeFormatNumber,

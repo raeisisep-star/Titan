@@ -5,11 +5,28 @@
  * Prevents issues where baseURL is not set or gets overridden.
  * 
  * @author TITAN Trading System
- * @version 1.0.0
+ * @version 1.1.0 - Added normalizePath to prevent double /api/api/ prefix
  */
 
 (function() {
     'use strict';
+    
+    /**
+     * Normalize API path to prevent double /api/api/ prefix
+     * @param {string} path - The API path to normalize
+     * @returns {string} - Normalized path without leading /api/
+     */
+    function normalizePath(path) {
+        if (typeof path !== 'string') return path;
+        
+        // Remove leading /api/ prefix (since baseURL already contains /api)
+        path = path.replace(/^\/?api\//, '');
+        
+        // Remove single leading slash to keep it relative for axios baseURL
+        path = path.replace(/^\/+/, '');
+        
+        return path;
+    }
     
     // Wait for TITAN_CONFIG to be available
     function createApiClient() {
@@ -17,7 +34,7 @@
         const baseURL = config.API_BASE_URL || config.API_BASE || '/api';
         
         // Create axios instance with proper configuration
-        const apiClient = axios.create({
+        const axiosInstance = axios.create({
             baseURL: baseURL,
             timeout: config.TIMEOUTS?.API_REQUEST || 30000,
             headers: {
@@ -27,7 +44,7 @@
         });
         
         // Request interceptor - add auth token if available
-        apiClient.interceptors.request.use(
+        axiosInstance.interceptors.request.use(
             (config) => {
                 const token = localStorage.getItem('titan_auth_token');
                 if (token) {
@@ -44,7 +61,7 @@
         );
         
         // Response interceptor - handle common errors
-        apiClient.interceptors.response.use(
+        axiosInstance.interceptors.response.use(
             (response) => {
                 console.log(`✅ API Response: ${response.config.method.toUpperCase()} ${response.config.url} - ${response.status}`);
                 return response;
@@ -77,14 +94,32 @@
             }
         );
         
+        // Create wrapper with normalized paths
+        const apiClient = {
+            get: (url, ...rest) => axiosInstance.get(normalizePath(url), ...rest),
+            post: (url, data, ...rest) => axiosInstance.post(normalizePath(url), data, ...rest),
+            put: (url, data, ...rest) => axiosInstance.put(normalizePath(url), data, ...rest),
+            patch: (url, data, ...rest) => axiosInstance.patch(normalizePath(url), data, ...rest),
+            delete: (url, ...rest) => axiosInstance.delete(normalizePath(url), ...rest),
+            request: (config) => {
+                if (config.url) {
+                    config.url = normalizePath(config.url);
+                }
+                return axiosInstance.request(config);
+            },
+            defaults: axiosInstance.defaults,
+            interceptors: axiosInstance.interceptors
+        };
+        
         // Expose globally
         window.apiClient = apiClient;
         
         console.log('✅ API Client initialized with baseURL:', baseURL);
+        console.log('✅ Path normalization active - double /api/api/ prefix prevented');
         console.log('📊 API Client config:', {
-            baseURL: apiClient.defaults.baseURL,
-            timeout: apiClient.defaults.timeout,
-            headers: apiClient.defaults.headers
+            baseURL: axiosInstance.defaults.baseURL,
+            timeout: axiosInstance.defaults.timeout,
+            headers: axiosInstance.defaults.headers
         });
         
         return apiClient;
