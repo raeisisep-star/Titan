@@ -147,7 +147,7 @@ class TitanApp {
                 loginData.username = usernameOrEmail;
             }
 
-            const response = await axios.post('/api/auth/login', loginData);
+            const response = await axios.post('/auth/login', loginData);
 
             if (response.data.success) {
                 // Fix: Use accessToken instead of token
@@ -172,7 +172,7 @@ class TitanApp {
 
     async verifyToken(token) {
         try {
-            const response = await axios.post('/api/auth/verify', { token });
+            const response = await axios.post('/auth/verify', { token });
     
             if (response.data.success) {
                 this.currentUser = response.data.data.user;
@@ -2362,7 +2362,7 @@ class TitanApp {
 
     async logout() {
         try {
-            await axios.post('/api/auth/logout');
+            await axios.post('/auth/logout');
             localStorage.removeItem('titan_auth_token');
             this.currentUser = null;
             this.showLoginScreen();
@@ -2549,7 +2549,7 @@ class TitanApp {
     // Exchange Management Functions
     async loadExchangeStatus() {
         try {
-            const response = await axios.get('/api/trading/exchange/exchanges');
+            const response = await axios.get('/trading/exchange/exchanges');
     
             if (response.data.success) {
                 this.renderExchangeCards(response.data.data);
@@ -2622,7 +2622,7 @@ class TitanApp {
         }
 
         try {
-            const response = await axios.post('/api/trading/exchange/test-all');
+            const response = await axios.post('/trading/exchange/test-all');
     
             if (response.data.success) {
                 const results = response.data.data.results;
@@ -2674,7 +2674,7 @@ class TitanApp {
 
     async testSingleExchange(exchange) {
         try {
-            const response = await axios.post('/api/trading/exchange/test-connection', {
+            const response = await axios.post('/trading/exchange/test-connection', {
                 exchange: exchange
             });
     
@@ -2738,7 +2738,7 @@ class TitanApp {
         };
 
         try {
-            const response = await axios.post('/api/notifications/test', {
+            const response = await axios.post('/notifications/test', {
                 channel: type,
                 message: testMessages[type],
                 recipient: this.getNotificationRecipient(type)
@@ -2862,7 +2862,7 @@ class TitanApp {
 
     async pollInAppNotifications() {
         try {
-            const response = await axios.get('/api/notifications/inapp');
+            const response = await axios.get('/notifications/inapp');
             if (response.data.success && response.data.notifications.length > 0) {
                 response.data.notifications.forEach(notification => {
                     this.displayInAppNotification(notification);
@@ -2923,7 +2923,7 @@ class TitanApp {
     // AI Services Management
     async testAIServices() {
         try {
-            const response = await axios.get('/api/ai/test');
+            const response = await axios.get('/ai/test');
             if (response.data.success) {
                 this.displayAIServiceStatus(response.data.services);
                 this.showAlert('تست سرویس‌های AI تکمیل شد', 'success');
@@ -3119,7 +3119,7 @@ class TitanApp {
 
     async storeAnalysisInDB(analysisData) {
         try {
-            await axios.post('/api/database/ai-analyses', {
+            await axios.post('/database/ai-analyses', {
                 symbol: analysisData.analysis.symbol || document.getElementById('analysis-symbol')?.value,
                 analysis_type: document.getElementById('analysis-type')?.value,
                 ai_provider: analysisData.metadata.model_used.includes('gpt') ? 'openai' : 'anthropic',
@@ -3140,7 +3140,7 @@ class TitanApp {
 
     async loadRecentAnalyses() {
         try {
-            const response = await axios.get('/api/database/ai-analyses?limit=5');
+            const response = await axios.get('/database/ai-analyses?limit=5');
             if (response.data.success) {
                 this.displayRecentAnalyses(response.data.data);
             }
@@ -3232,7 +3232,7 @@ class TitanApp {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
         try {
-            const response = await axios.post('/api/ai/chat', {
+            const response = await axios.post('/ai/chat', {
                 message: message,
                 context: 'TITAN Trading System Chat'
             });
@@ -3283,7 +3283,7 @@ class TitanApp {
     // Environment Variables Management
     async loadEnvVars() {
         try {
-            const response = await axios.get('/api/system/env-vars');
+            const response = await axios.get('/system/env-vars');
             if (response.data.success) {
                 const vars = response.data.variables;
         
@@ -3324,7 +3324,7 @@ class TitanApp {
                 }
             });
 
-            const response = await axios.post('/api/system/env-vars', {
+            const response = await axios.post('/system/env-vars', {
                 variables: envVars
             });
 
@@ -3362,7 +3362,7 @@ class TitanApp {
             `;
             statusDiv.classList.remove('hidden');
 
-            const response = await axios.post('/api/system/restart-services');
+            const response = await axios.post('/system/restart-services');
 
             if (response.data.success) {
                 statusDiv.className = 'mt-4 p-4 bg-green-900/50 border border-green-600 rounded-lg';
@@ -3719,7 +3719,7 @@ class TitanApp {
                 notes: notes
             };
 
-            const response = await axios.post('/api/watchlist/add', data);
+            const response = await axios.post('/watchlist/add', data);
     
             if (response.data.success) {
                 this.showAlert(`${name} (${symbol}) به watchlist اضافه شد`, 'success');
@@ -3819,7 +3819,7 @@ class TitanApp {
 
     async loadMarketOverview() {
         try {
-            const response = await axios.get('/api/market/overview');
+            const response = await axios.get('/market/overview');
     
             if (response.data.success) {
                 this.updateMarketOverview(response.data.data);
@@ -3852,8 +3852,8 @@ class TitanApp {
     async loadMarketMovers() {
         try {
             const [gainersResponse, losersResponse] = await Promise.all([
-                axios.get('/api/market/movers?type=gainers&limit=5'),
-                axios.get('/api/market/movers?type=losers&limit=5')
+                axios.get('/market/movers?type=gainers&limit=5'),
+                axios.get('/market/movers?type=losers&limit=5')
             ]);
     
             if (gainersResponse.data.success) {
@@ -3902,7 +3902,7 @@ class TitanApp {
 
     async loadFearGreedIndex() {
         try {
-            const response = await axios.get('/api/market/fear-greed');
+            const response = await axios.get('/market/fear-greed');
     
             if (response.data.success) {
                 this.updateFearGreedIndex(response.data.data);
@@ -3963,7 +3963,7 @@ class TitanApp {
 
     async loadTrendingCoins() {
         try {
-            const response = await axios.get('/api/market/trending');
+            const response = await axios.get('/market/trending');
     
             if (response.data.success) {
                 this.renderTrendingCoins(response.data.data);
@@ -4035,7 +4035,7 @@ class TitanApp {
                 type: 'crypto'
             };
 
-            const response = await axios.post('/api/watchlist/add', data);
+            const response = await axios.post('/watchlist/add', data);
     
             if (response.data.success) {
                 this.showAlert(`${name} (${symbol.toUpperCase()}) به watchlist اضافه شد`, 'success');
@@ -4432,7 +4432,7 @@ class TitanApp {
         const userId = this.currentUser?.id || 'demo_user';
 
         try {
-            const response = await axios.post('/api/alerts/rules', {
+            const response = await axios.post('/alerts/rules', {
                 userId,
                 type,
                 symbol,
@@ -4968,7 +4968,7 @@ class TitanApp {
         const userId = this.currentUser?.id || 'demo_user';
 
         try {
-            const response = await axios.post('/api/widgets/layout', {
+            const response = await axios.post('/widgets/layout', {
                 userId,
                 layoutName: 'default',
                 widgets: this.dashboardLayout.widgets
@@ -5580,7 +5580,7 @@ class TitanApp {
         try {
             const [themeResponse, optionsResponse] = await Promise.all([
                 axios.get(`/api/widgets/theme/${this.currentUser?.id || 'demo_user'}`),
-                axios.get('/api/widgets/options')
+                axios.get('/widgets/options')
             ]);
     
             if (themeResponse.data.success && optionsResponse.data.success) {
@@ -5778,7 +5778,7 @@ class TitanApp {
         const grid = document.getElementById('widget-library-grid');
 
         try {
-            const response = await axios.get('/api/widgets/types');
+            const response = await axios.get('/widgets/types');
     
             if (response.data.success) {
                 const widgetTypes = response.data.data;
@@ -5814,7 +5814,7 @@ class TitanApp {
 
     async addWidget(widgetType) {
         try {
-            const response = await axios.get('/api/widgets/types');
+            const response = await axios.get('/widgets/types');
             if (!response.data.success) return;
     
             const widgetData = response.data.data.find(w => w.id === widgetType);
@@ -6730,7 +6730,7 @@ class TitanApp {
     
             // Try to get current mode from API (use test endpoint for now)
             try {
-                const response = await axios.get('/api/mode/test');
+                const response = await axios.get('/mode/test');
         
                 if (response.data.success) {
                     this.currentTradingMode = savedMode; // Use saved mode
@@ -6852,7 +6852,7 @@ class TitanApp {
             this.showAlert('در حال تغییر حالت معاملات...', 'info');
 
             // Use test endpoint for now
-            const response = await axios.post('/api/mode/test-switch', {
+            const response = await axios.post('/mode/test-switch', {
                 mode,
                 confirmation: mode === 'live'
             });
@@ -7118,7 +7118,7 @@ class TitanApp {
             }
 
             // Use test endpoint for now
-            const response = await axios.post('/api/mode/test-demo-wallet', {
+            const response = await axios.post('/mode/test-demo-wallet', {
                 action: this.currentFundsAction,
                 amount: amount
             });
@@ -7148,7 +7148,7 @@ class TitanApp {
             if (!confirmed) return;
 
             // Use test endpoint for now
-            const response = await axios.post('/api/mode/test-demo-wallet', {
+            const response = await axios.post('/mode/test-demo-wallet', {
                 action: 'reset'
             });
 
@@ -7299,7 +7299,7 @@ class TitanApp {
             }
 
             const userId = this.currentUser?.id || 'demo_user';
-            const response = await axios.post('/api/mode/demo/add-funds', {
+            const response = await axios.post('/mode/demo/add-funds', {
                 userId,
                 currency,
                 amount
@@ -7328,7 +7328,7 @@ class TitanApp {
     async quickAddFunds(currency, amount) {
         try {
             const userId = this.currentUser?.id || 'demo_user';
-            const response = await axios.post('/api/mode/demo/add-funds', {
+            const response = await axios.post('/mode/demo/add-funds', {
                 userId,
                 currency,
                 amount
@@ -7360,7 +7360,7 @@ class TitanApp {
             if (!confirmed) return;
 
             const userId = this.currentUser?.id || 'demo_user';
-            const response = await axios.post('/api/mode/demo/reset-wallet', { userId });
+            const response = await axios.post('/mode/demo/reset-wallet', { userId });
 
             if (response.data.success) {
                 this.showAlert(response.data.message, 'success');
@@ -7936,7 +7936,7 @@ class TitanApp {
 
     async renderAdminOverviewTab() {
         try {
-            const response = await axios.get('/api/admin/users/stats');
+            const response = await axios.get('/admin/users/stats');
             const stats = response.data.success ? response.data.data : {};
     
             return `
@@ -8031,7 +8031,7 @@ class TitanApp {
 
     async renderAdminUsersTab() {
         try {
-            const response = await axios.get('/api/admin/users/list');
+            const response = await axios.get('/admin/users/list');
             const users = response.data.success ? response.data.data.users : [];
     
             return `
@@ -8103,7 +8103,7 @@ class TitanApp {
 
     async renderAdminSuspiciousTab() {
         try {
-            const response = await axios.get('/api/admin/users/suspicious-activities');
+            const response = await axios.get('/admin/users/suspicious-activities');
             const activities = response.data.success ? response.data.data : [];
     
             return `
@@ -8601,7 +8601,7 @@ class TitanApp {
         }
 
         try {
-            const response = await axios.post('/api/admin/users/create', {
+            const response = await axios.post('/admin/users/create', {
                 fullName: name,
                 email,
                 password,
@@ -9863,10 +9863,10 @@ Object.assign(TitanApp.prototype, {
         try {
             // Fetch all system data concurrently
             const [statusResponse, metricsResponse, healthResponse, activityResponse] = await Promise.all([
-                axios.get('/api/monitoring/status'),
-                axios.get('/api/monitoring/metrics'),
-                axios.get('/api/monitoring/health'),
-                axios.get('/api/monitoring/activity?limit=6')
+                axios.get('/monitoring/status'),
+                axios.get('/monitoring/metrics'),
+                axios.get('/monitoring/health'),
+                axios.get('/monitoring/activity?limit=6')
             ]);
 
             if (statusResponse.data.success) {
