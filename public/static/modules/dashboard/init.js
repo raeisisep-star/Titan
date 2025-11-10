@@ -152,7 +152,14 @@
       
       // 4. بارگذاری داده‌های بازار (اگر در صفحه داشبورد هستیم)
       if (window.location.pathname === '/dashboard' || document.getElementById('portfolioChart')) {
-        setTimeout(() => loadRealMarketData(), 500);
+        setTimeout(() => {
+          loadRealMarketData();
+          // شروع auto-refresh از MarketIntegration
+          if (global.MarketIntegration) {
+            global.MarketIntegration.loadAllMarketData();
+            global.MarketIntegration.startAutoRefresh();
+          }
+        }, 500);
       }
       
       console.log('✅ Dashboard initialization complete');

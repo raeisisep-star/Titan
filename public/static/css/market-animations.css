@@ -1,0 +1,149 @@
+/* Market Data Animations - Phase B2 */
+
+/* انیمیشن تغییر قیمت */
+@keyframes price-flash {
+  0% { 
+    background-color: rgba(34, 197, 94, 0.3);
+    transform: scale(1);
+  }
+  50% { 
+    background-color: rgba(34, 197, 94, 0.5);
+    transform: scale(1.05);
+  }
+  100% { 
+    background-color: transparent;
+    transform: scale(1);
+  }
+}
+
+.price-update-flash {
+  animation: price-flash 0.6s ease-out;
+}
+
+/* انیمیشن loading */
+@keyframes pulse-loading {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.market-data-loading {
+  animation: pulse-loading 1.5s ease-in-out infinite;
+}
+
+/* Shimmer effect برای skeleton */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.05) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  );
+  background-size: 468px 100%;
+  animation: shimmer 2s infinite linear;
+  border-radius: 4px;
+  height: 20px;
+}
+
+/* Error box fade-in */
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -20px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.market-data-error {
+  animation: fade-in-down 0.3s ease-out;
+}
+
+/* Order book flash */
+.order-book-update {
+  transition: background-color 0.3s ease;
+}
+
+.order-book-update.flash {
+  background-color: rgba(59, 130, 246, 0.2);
+}
+
+/* Chart loading overlay */
+.chart-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(17, 24, 39, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  backdrop-filter: blur(4px);
+}
+
+.chart-loading-overlay .spinner {
+  width: 40px;
+  height: 40px;
+  border: 4px solid rgba(59, 130, 246, 0.2);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Success badge */
+.data-source-badge {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background: rgba(34, 197, 94, 0.9);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  z-index: 9998;
+  animation: fade-in-up 0.4s ease-out;
+}
+
+@keyframes fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .market-data-error {
+    left: 10px;
+    right: 10px;
+    transform: none;
+    width: calc(100% - 20px);
+  }
+  
+  .data-source-badge {
+    bottom: 10px;
+    right: 10px;
+  }
+}
