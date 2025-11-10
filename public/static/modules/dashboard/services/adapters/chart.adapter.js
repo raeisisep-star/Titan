@@ -120,16 +120,29 @@
 
   /**
    * تبدیل داده‌های کندل به فرمت Chart.js
+   * [Task 3.4] ارتقا با لیبل‌های هوشمند فارسی
    * @param {Array} candles - آرایه کندل‌ها از ChartAdapter
+   * @param {string} timeframe - بازه زمانی (اختیاری) برای لیبل‌های هوشمند
    * @returns {Object} فرمت Chart.js: {labels, datasets}
    */
-  function toChartJsFormat(candles) {
+  function toChartJsFormat(candles, timeframe = '1h') {
     if (!Array.isArray(candles)) return { labels: [], datasets: [] };
 
-    const labels = candles.map(c => new Date(c.time).toLocaleTimeString('fa-IR', {
-      hour: '2-digit',
-      minute: '2-digit'
-    }));
+    // [Task 3.4] لیبل‌های هوشمند: برای بازه‌های بلند، تاریخ+ساعت؛ برای کوتاه، فقط ساعت
+    const longFrames = new Set(['1d','1w','4h','3d','1M']); // بازه‌های بلند
+    
+    const labels = candles.map(c => {
+      const dt = new Date(c.time);
+      if (longFrames.has(timeframe)) {
+        // بازه‌های بلند: تاریخ کوتاه + ساعت
+        const d = dt.toLocaleDateString('fa-IR', { year:'2-digit', month:'2-digit', day:'2-digit' });
+        const t = dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+        return `${d} ${t}`;
+      } else {
+        // بازه‌های کوتاه: فقط ساعت:دقیقه
+        return dt.toLocaleTimeString('fa-IR', { hour:'2-digit', minute:'2-digit' });
+      }
+    });
 
     const prices = candles.map(c => parseFloat(c.close));
     const volumes = candles.map(c => parseFloat(c.volume));

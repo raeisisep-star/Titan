@@ -37,7 +37,7 @@
       const html = `
         <div class="widget-header">
           <h3 class="text-lg font-bold">نمای کلی بازار</h3>
-          <span class="last-updated text-xs text-gray-400">${formatTime(new Date())}</span>
+          <span class="last-updated text-xs text-gray-400">${TitanDT.formatDateTimeFA(Date.now())}</span>
         </div>
         <div class="market-stats grid grid-cols-2 gap-4 mt-4">
           <div class="stat-card">
@@ -88,7 +88,7 @@
       const html = `
         <div class="widget-header">
           <h3 class="text-lg font-bold">بازیگران بازار</h3>
-          <span class="last-updated text-xs text-gray-400">${formatTime(new Date())}</span>
+          <span class="last-updated text-xs text-gray-400">${TitanDT.formatDateTimeFA(Date.now())}</span>
         </div>
         <div class="movers-container grid grid-cols-2 gap-4 mt-4">
           <div class="gainers">
@@ -142,7 +142,7 @@
         <div class="widget-header">
           <h3 class="text-lg font-bold">عملکرد پورتفولیو</h3>
           <span class="badge ${perf.mode === 'demo' ? 'bg-yellow-600' : 'bg-blue-600'}">${perf.mode || 'live'}</span>
-          <span class="last-updated text-xs text-gray-400">${formatTime(new Date())}</span>
+          <span class="last-updated text-xs text-gray-400">${TitanDT.formatDateTimeFA(Date.now())}</span>
         </div>
         <div class="portfolio-stats grid grid-cols-3 gap-4 mt-4">
           <div class="stat-card">
@@ -205,7 +205,7 @@
         <div class="widget-header">
           <h3 class="text-lg font-bold">وضعیت سیستم</h3>
           <span class="badge ${healthy ? 'bg-green-600' : 'bg-red-600'}">${healthy ? '✓ عملیاتی' : '✗ خطا'}</span>
-          <span class="last-updated text-xs text-gray-400">${formatTime(new Date())}</span>
+          <span class="last-updated text-xs text-gray-400">${TitanDT.formatDateTimeFA(Date.now())}</span>
         </div>
         <div class="monitoring-stats mt-4">
           <div class="stat-row flex justify-between py-2">
@@ -394,3 +394,36 @@
   }
 
 })(window);
+
+// === [Task 3.4] Farsi Date/Time Helpers (append at end of file) ===
+(function () {
+  /**
+   * تاریخ/زمان فارسی با فرمت خوانا:
+   * مثال: "۱۴۰۴/۰۸/۱۹ — ۱۴:۳۰:۴۵"
+   */
+  function formatDateTimeFA(ts) {
+    const d = new Date(ts);
+    const dateStr = d.toLocaleDateString('fa-IR', {
+      year: 'numeric', month: '2-digit', day: '2-digit'
+    });
+    const timeStr = d.toLocaleTimeString('fa-IR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+    return `${dateStr} — ${timeStr}`;
+  }
+
+  /**
+   * زمان کوتاه (فقط ساعت) برای ویدجت‌ها
+   * مثال: "۱۴:۳۰:۴۵"
+   */
+  function formatTimeFA(ts) {
+    return new Date(ts).toLocaleTimeString('fa-IR', {
+      hour: '2-digit', minute: '2-digit', second: '2-digit'
+    });
+  }
+
+  // در دسترس برای سایر ماژول‌ها
+  window.TitanDT = window.TitanDT || {};
+  window.TitanDT.formatDateTimeFA = formatDateTimeFA;
+  window.TitanDT.formatTimeFA = formatTimeFA;
+})();
