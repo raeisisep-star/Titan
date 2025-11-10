@@ -334,7 +334,26 @@ export default class AITab {
             if (overviewResponse.data.success) {
                 const data = overviewResponse.data.data;
                 this.state.artemis = data.artemis;
-                this.state.agents = data.agents;
+                
+                // Defensive array checking: handle both direct array and nested object structures
+                // Also handle stringified JSON responses
+                let agentsData = [];
+                if (typeof data === 'string') {
+                    try { 
+                        const parsed = JSON.parse(data);
+                        agentsData = Array.isArray(parsed) ? parsed
+                                   : Array.isArray(parsed?.data) ? parsed.data
+                                   : Array.isArray(parsed?.agents) ? parsed.agents
+                                   : [];
+                    } catch { agentsData = []; }
+                } else {
+                    agentsData = Array.isArray(data) ? data
+                               : Array.isArray(data?.agents) ? data.agents
+                               : Array.isArray(data?.data) ? data.data
+                               : [];
+                }
+                
+                this.state.agents = agentsData;
                 this.state.systemMetrics = data.systemMetrics;
             }
             
@@ -758,6 +777,11 @@ export default class AITab {
 
     // Render individual agent cards
     renderAgentCards() {
+        // Defensive check: ensure agents is always an array
+        if (!Array.isArray(this.state.agents)) {
+            this.state.agents = [];
+        }
+        
         return this.state.agents.map(agent => `
             <div class="ai-agent-card bg-gray-800 rounded-lg border border-gray-700 p-6">
                 <!-- Header -->

@@ -3275,9 +3275,16 @@ class SettingsModule {
         try {
             // Load agents data
             const response = await axios.get('/api/ai-analytics/agents');
-            if (response.data && response.data.agents) {
-                this.renderAIAgentsList(response.data.agents);
-                this.updateAIStats(response.data.agents);
+            
+            // Defensive array checking: handle both direct array and nested object structures
+            const agents = Array.isArray(response.data?.data) ? response.data.data
+                         : Array.isArray(response.data?.agents) ? response.data.agents
+                         : Array.isArray(response.data?.data?.agents) ? response.data.data.agents
+                         : [];
+            
+            if (agents.length > 0) {
+                this.renderAIAgentsList(agents);
+                this.updateAIStats(agents);
             }
             
             // Load system overview

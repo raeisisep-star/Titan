@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>تست تشخیصی ورود</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔍 تست تشخیصی سیستم ورود</h1>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+            <div class="bg-gray-800 p-4 rounded">
+                <h3 class="font-bold mb-2">ورودی‌ها</h3>
+                <input type="text" id="username" value="sepehr" 
+                       class="w-full px-3 py-2 bg-gray-700 rounded mb-2" placeholder="نام کاربری">
+                <input type="password" id="password" value="test123" 
+                       class="w-full px-3 py-2 bg-gray-700 rounded mb-2" placeholder="رمز عبور">
+            </div>
+            
+            <div class="bg-gray-800 p-4 rounded">
+                <h3 class="font-bold mb-2">تست‌ها</h3>
+                <button onclick="testAxiosDefault()" class="w-full bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded mb-2">
+                    تست با axios (default)
+                </button>
+                <button onclick="testApiClient()" class="w-full bg-green-600 hover:bg-green-700 px-4 py-2 rounded mb-2">
+                    تست با apiClient
+                </button>
+                <button onclick="testFetch()" class="w-full bg-purple-600 hover:bg-purple-700 px-4 py-2 rounded">
+                    تست با fetch خام
+                </button>
+            </div>
+        </div>
+        
+        <div id="results" class="space-y-2"></div>
+    </div>
+
+    <script src="/config.js?v=1762621214"></script>
+    <script src="/static/apiClient.js?v=1762627296"></script>
+    
+    <script>
+        const results = document.getElementById('results');
+        
+        function addLog(msg, type = 'info') {
+            const colors = {
+                success: 'bg-green-900 border-green-500',
+                error: 'bg-red-900 border-red-500',
+                info: 'bg-blue-900 border-blue-500',
+                warning: 'bg-yellow-900 border-yellow-500'
+            };
+            
+            const time = new Date().toLocaleTimeString('fa-IR');
+            results.innerHTML += `
+                <div class="${colors[type]} border-l-4 p-3 rounded text-sm">
+                    <span class="text-gray-400">[${time}]</span> ${msg}
+                </div>
+            `;
+            results.scrollTop = results.scrollHeight;
+        }
+        
+        // Display initial config
+        setTimeout(() => {
+            addLog(`<strong>📊 TITAN_CONFIG:</strong> ${JSON.stringify(window.TITAN_CONFIG || 'NOT LOADED')}`, 'info');
+            addLog(`<strong>📊 axios.defaults.baseURL:</strong> ${axios.defaults.baseURL || 'NOT SET'}`, 'info');
+            addLog(`<strong>📊 window.apiClient:</strong> ${window.apiClient ? 'LOADED' : 'NOT LOADED'}`, 'info');
+            
+            if (window.apiClient) {
+                addLog(`<strong>📊 apiClient.defaults.baseURL:</strong> ${window.apiClient.defaults.baseURL}`, 'info');
+            }
+        }, 500);
+        
+        async function testAxiosDefault() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            addLog('🔄 تست با axios.post (default instance)...', 'info');
+            addLog(`📤 URL: ${axios.defaults.baseURL}/auth/login`, 'info');
+            
+            try {
+                const response = await axios.post('/auth/login', {
+                    username,
+                    password
+                });
+                
+                addLog(`✅ موفق: ${JSON.stringify(response.data)}`, 'success');
+            } catch (error) {
+                addLog(`❌ خطا: ${error.response?.status} - ${error.response?.data?.error || error.message}`, 'error');
+                addLog(`📍 URL درخواست شده: ${error.config?.url}`, 'warning');
+                addLog(`📍 baseURL: ${error.config?.baseURL}`, 'warning');
+            }
+        }
+        
+        async function testApiClient() {
+            if (!window.apiClient) {
+                addLog('❌ apiClient بارگذاری نشده است', 'error');
+                return;
+            }
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            addLog('🔄 تست با apiClient.post...', 'info');
+            addLog(`📤 URL: ${window.apiClient.defaults.baseURL}/auth/login`, 'info');
+            
+            try {
+                const response = await window.apiClient.post('/auth/login', {
+                    username,
+                    password
+                });
+                
+                addLog(`✅ موفق: ${JSON.stringify(response.data)}`, 'success');
+            } catch (error) {
+                addLog(`❌ خطا: ${error.response?.status} - ${error.response?.data?.error || error.message}`, 'error');
+                addLog(`📍 URL درخواست شده: ${error.config?.url}`, 'warning');
+                addLog(`📍 baseURL: ${error.config?.baseURL}`, 'warning');
+            }
+        }
+        
+        async function testFetch() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            addLog('🔄 تست با fetch (خام)...', 'info');
+            addLog(`📤 URL: /api/auth/login`, 'info');
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        username,
+                        password
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    addLog(`✅ موفق (${response.status}): ${JSON.stringify(data)}`, 'success');
+                } else {
+                    addLog(`❌ خطا (${response.status}): ${JSON.stringify(data)}`, 'error');
+                }
+            } catch (error) {
+                addLog(`❌ خطای شبکه: ${error.message}`, 'error');
+            }
+        }
+        
+        console.log('🔍 Diagnostic page loaded');
+        console.log('TITAN_CONFIG:', window.TITAN_CONFIG);
+        console.log('axios.defaults.baseURL:', axios.defaults.baseURL);
+        console.log('apiClient:', window.apiClient);
+    </script>
+</body>
+</html>

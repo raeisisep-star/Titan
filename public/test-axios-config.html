@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Axios Configuration</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-2xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">🔧 Axios Configuration Test</h1>
+        
+        <div id="results" class="space-y-4"></div>
+        
+        <div class="mt-6">
+            <button onclick="testLogin()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg">
+                Test Login API Call
+            </button>
+        </div>
+    </div>
+
+    <script src="/config.js?v=1762621214"></script>
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(title, value, type = 'info') {
+            const colors = {
+                success: 'bg-green-900 border-green-500 text-green-200',
+                error: 'bg-red-900 border-red-500 text-red-200',
+                info: 'bg-blue-900 border-blue-500 text-blue-200'
+            };
+            
+            results.innerHTML += `
+                <div class="${colors[type]} border-l-4 p-4 rounded">
+                    <strong>${title}:</strong> 
+                    <pre class="mt-2 text-sm overflow-x-auto">${JSON.stringify(value, null, 2)}</pre>
+                </div>
+            `;
+        }
+        
+        // Test 1: Check TITAN_CONFIG
+        if (window.TITAN_CONFIG) {
+            addResult('✅ TITAN_CONFIG Loaded', {
+                API_BASE_URL: window.TITAN_CONFIG.API_BASE_URL,
+                API_BASE: window.TITAN_CONFIG.API_BASE,
+                ENV: window.TITAN_CONFIG.ENV
+            }, 'success');
+        } else {
+            addResult('❌ TITAN_CONFIG Missing', 'window.TITAN_CONFIG is undefined', 'error');
+        }
+        
+        // Test 2: Configure axios
+        if (window.TITAN_CONFIG && window.TITAN_CONFIG.API_BASE_URL) {
+            axios.defaults.baseURL = window.TITAN_CONFIG.API_BASE_URL;
+            addResult('✅ Axios Configured', {
+                baseURL: axios.defaults.baseURL
+            }, 'success');
+        } else {
+            addResult('❌ Axios Not Configured', 'TITAN_CONFIG missing', 'error');
+        }
+        
+        // Test 3: Login function
+        async function testLogin() {
+            const username = 'sepehr';
+            const password = 'test123';
+            
+            addResult('🔄 Testing Login', {
+                username,
+                endpoint: '/auth/login',
+                fullURL: axios.defaults.baseURL + '/auth/login'
+            }, 'info');
+            
+            try {
+                const response = await axios.post('/auth/login', {
+                    username,
+                    password
+                });
+                
+                addResult('✅ Login Response', response.data, 'success');
+            } catch (error) {
+                addResult('❌ Login Error', {
+                    status: error.response?.status,
+                    statusText: error.response?.statusText,
+                    message: error.message,
+                    data: error.response?.data
+                }, 'error');
+            }
+        }
+        
+        console.log('📊 Axios baseURL:', axios.defaults.baseURL);
+        console.log('📊 TITAN_CONFIG:', window.TITAN_CONFIG);
+    </script>
+</body>
+</html>

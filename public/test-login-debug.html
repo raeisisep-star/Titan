@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Login Debug Test</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-4xl font-bold mb-6">🔍 TITAN Login Debug Test</h1>
+        
+        <div id="results" class="space-y-4 mb-6"></div>
+        
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Test 1: Direct Console Test</h2>
+                <p class="text-gray-400 mb-4">Copy & paste this into your browser console:</p>
+                <pre class="bg-gray-900 p-4 rounded text-sm overflow-x-auto text-green-400">
+axios.post('/auth/login', { 
+  username: 'admin', 
+  password: 'test' 
+})
+.then(r => console.log('✅ OK', r.status, r.data))
+.catch(e => console.log('❌ ERR', e.response?.status, e.response?.data))
+                </pre>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Test 2: Check Config</h2>
+                <button onclick="checkConfig()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg w-full">
+                    Check TITAN_CONFIG
+                </button>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Test 3: Test Login API</h2>
+                <input type="text" id="testUsername" placeholder="Username" class="w-full mb-2 px-3 py-2 bg-gray-700 rounded">
+                <input type="password" id="testPassword" placeholder="Password" class="w-full mb-2 px-3 py-2 bg-gray-700 rounded">
+                <button onclick="testLogin()" class="bg-green-600 hover:bg-green-700 px-6 py-3 rounded-lg w-full">
+                    Test Login
+                </button>
+            </div>
+            
+            <div class="bg-gray-800 p-6 rounded-lg">
+                <h2 class="text-2xl font-bold mb-4">Test 4: Check Network</h2>
+                <button onclick="checkNetwork()" class="bg-purple-600 hover:bg-purple-700 px-6 py-3 rounded-lg w-full">
+                    Test Backend Health
+                </button>
+            </div>
+        </div>
+        
+        <div class="mt-8 bg-yellow-900 border-l-4 border-yellow-500 p-6 rounded">
+            <h3 class="text-xl font-bold mb-2">📋 Expected Results:</h3>
+            <ul class="list-disc list-inside space-y-2 text-sm">
+                <li><strong>Request URL</strong> should be: <code class="bg-gray-800 px-2 py-1 rounded">https://zala.ir/api/auth/login</code></li>
+                <li><strong>NOT</strong>: <code class="bg-red-900 px-2 py-1 rounded">https://zala.ir/auth/login</code> (missing /api)</li>
+                <li>Status <strong>401</strong> means backend is working (wrong credentials)</li>
+                <li>Status <strong>404</strong> means URL is wrong or endpoint missing</li>
+                <li>Status <strong>200</strong> means login successful!</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="/config.js?v=1762621214"></script>
+    <script src="/static/apiClient.js?v=1762621800"></script>
+    <script>
+        const results = document.getElementById('results');
+        
+        function addResult(title, value, type = 'info') {
+            const colors = {
+                success: 'bg-green-900 border-green-500 text-green-200',
+                error: 'bg-red-900 border-red-500 text-red-200',
+                info: 'bg-blue-900 border-blue-500 text-blue-200',
+                warning: 'bg-yellow-900 border-yellow-500 text-yellow-200'
+            };
+            
+            const div = document.createElement('div');
+            div.className = `${colors[type]} border-l-4 p-4 rounded`;
+            div.innerHTML = `
+                <strong>${title}:</strong>
+                <pre class="mt-2 text-sm overflow-x-auto whitespace-pre-wrap">${typeof value === 'object' ? JSON.stringify(value, null, 2) : value}</pre>
+            `;
+            results.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+        
+        function checkConfig() {
+            results.innerHTML = '';
+            
+            if (window.TITAN_CONFIG) {
+                addResult('✅ TITAN_CONFIG Found', {
+                    API_BASE_URL: window.TITAN_CONFIG.API_BASE_URL,
+                    API_BASE: window.TITAN_CONFIG.API_BASE,
+                    ENV: window.TITAN_CONFIG.ENV
+                }, 'success');
+            } else {
+                addResult('❌ TITAN_CONFIG Missing', 'window.TITAN_CONFIG is undefined!', 'error');
+            }
+            
+            if (axios.defaults.baseURL) {
+                addResult('✅ Axios baseURL Set', {
+                    baseURL: axios.defaults.baseURL,
+                    timeout: axios.defaults.timeout
+                }, 'success');
+            } else {
+                addResult('❌ Axios baseURL NOT Set', 'axios.defaults.baseURL is empty or undefined!', 'error');
+            }
+            
+            if (window.apiClient) {
+                addResult('✅ apiClient Available', {
+                    baseURL: window.apiClient.defaults.baseURL,
+                    timeout: window.apiClient.defaults.timeout
+                }, 'success');
+            } else {
+                addResult('⚠️ apiClient Not Available', 'window.apiClient is undefined (may still be loading)', 'warning');
+            }
+        }
+        
+        async function testLogin() {
+            const username = document.getElementById('testUsername').value || 'admin';
+            const password = document.getElementById('testPassword').value || 'test';
+            
+            results.innerHTML = '';
+            addResult('🔄 Testing Login', {
+                username,
+                endpoint: '/auth/login',
+                fullURL: (axios.defaults.baseURL || '') + '/auth/login',
+                method: 'POST'
+            }, 'info');
+            
+            try {
+                const response = await axios.post('/auth/login', {
+                    username,
+                    password
+                });
+                
+                addResult('✅ Login Success!', {
+                    status: response.status,
+                    data: response.data
+                }, 'success');
+            } catch (error) {
+                if (error.response) {
+                    addResult('❌ Login Failed (Server Response)', {
+                        status: error.response.status,
+                        statusText: error.response.statusText,
+                        url: error.config.url,
+                        baseURL: error.config.baseURL,
+                        fullURL: (error.config.baseURL || '') + error.config.url,
+                        data: error.response.data,
+                        message: error.message
+                    }, error.response.status === 401 ? 'warning' : 'error');
+                } else if (error.request) {
+                    addResult('❌ No Response from Server', {
+                        message: error.message,
+                        request: 'Request was sent but no response received'
+                    }, 'error');
+                } else {
+                    addResult('❌ Request Setup Error', {
+                        message: error.message
+                    }, 'error');
+                }
+            }
+        }
+        
+        async function checkNetwork() {
+            results.innerHTML = '';
+            
+            // Test 1: Health check
+            try {
+                const response = await axios.get('/health');
+                addResult('✅ Backend Health Check', {
+                    status: response.status,
+                    data: response.data
+                }, 'success');
+            } catch (error) {
+                addResult('❌ Backend Health Failed', {
+                    status: error.response?.status,
+                    message: error.message
+                }, 'error');
+            }
+            
+            // Test 2: Check if /api prefix is working
+            try {
+                const response = await fetch('/api/health');
+                const data = await response.json();
+                addResult('✅ /api/health Check', {
+                    status: response.status,
+                    data: data
+                }, 'success');
+            } catch (error) {
+                addResult('❌ /api/health Failed', error.message, 'error');
+            }
+        }
+        
+        // Auto-check on load
+        setTimeout(checkConfig, 1000);
+    </script>
+</body>
+</html>

@@ -41,6 +41,40 @@ app.use('/*', cors({
   allowHeaders: ['Content-Type', 'Authorization'],
   credentials: true,
 }));
+// ========================================================================
+// CACHE CONTROL MIDDLEWARE
+// ========================================================================
+
+// Aggressive caching for hash-based static files (immutable)
+app.use("/static/*.*.js", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+app.use("/static/*.*.css", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+app.use("/static/modules/*.*.js", async (c, next) => {
+  await next();
+  c.header("Cache-Control", "public, max-age=31536000, immutable");
+});
+
+// No caching for non-hash static files
+app.use("/static/modules/*.js", async (c, next) => {
+  const url = c.req.url;
+  // Skip if already has hash (handled above)
+  if (/\.[a-f0-9]{8}\.js/.test(url)) {
+    await next();
+    return;
+  }
+  await next();
+  c.header("Cache-Control", "no-cache, no-store, must-revalidate");
+  c.header("Pragma", "no-cache");
+  c.header("Expires", "0");
+});
+
 
 // ========================================================================
 // HEALTH CHECK & MONITORING
@@ -87,6 +121,26 @@ app.get('/api/health', async (c) => {
       redisStatus = 'error';
     }
     
+    // Test MEXC API connectivity (Phase B3)
+    let marketStatus = 'unknown';
+    let marketLatency = 0;
+    try {
+      const marketStart = Date.now();
+      await mexcService.getPrice('BTCUSDT');
+      marketLatency = Date.now() - marketStart;
+      
+      // تعیین وضعیت بر اساس latency
+      if (marketLatency < 500) {
+        marketStatus = 'ok';
+      } else if (marketLatency < 1500) {
+        marketStatus = 'degraded';
+      } else {
+        marketStatus = 'slow';
+      }
+    } catch (e) {
+      marketStatus = 'down';
+    }
+    
     // Get system info
     const memUsage = process.memoryUsage();
     
@@ -109,8 +163,15 @@ app.get('/api/health', async (c) => {
           redis: {
             status: redisStatus,
             latency: redisLatency
+          },
+          market: {
+            status: marketStatus,
+            latency: marketLatency,
+            provider: 'MEXC',
+            circuitBreaker: mexcCircuitBreaker.getStatus()
           }
         },
+        cache: cacheService.stats(),
         memory: {
           rss: Math.round(memUsage.rss / 1024 / 1024),
           heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -128,6 +189,106 @@ app.get('/api/health', async (c) => {
         uptime: Math.floor(startTime),
         timestamp: new Date().toISOString()
       }
+    }, 500);
+  }
+});
+
+// Full health check (for UI display with human-readable status)
+app.get('/api/health/full', async (c) => {
+  const startTime = process.uptime();
+  const services = [];
+  let overallHealthy = true;
+  
+  try {
+    // Test API service (always healthy if we got here)
+    services.push({
+      name: 'API Server',
+      status: 'healthy',
+      icon: '✅',
+      details: `Uptime: ${Math.floor(startTime)}s`
+    });
+    
+    // Test database connection
+    try {
+      const dbStart = Date.now();
+      const dbResult = await pool.query('SELECT NOW(), pg_database_size(current_database()) as db_size');
+      const dbLatency = Date.now() - dbStart;
+      const dbSizeMB = Math.round(parseInt(dbResult.rows[0].db_size) / 1024 / 1024);
+      
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${dbLatency}ms, Size: ${dbSizeMB}MB`
+      });
+    } catch (dbError) {
+      overallHealthy = false;
+      services.push({
+        name: 'PostgreSQL Database',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${dbError.message}`
+      });
+    }
+    
+    // Test Redis connection
+    try {
+      const redisStart = Date.now();
+      await redisClient.ping();
+      const redisLatency = Date.now() - redisStart;
+      
+      services.push({
+        name: 'Redis Cache',
+        status: 'healthy',
+        icon: '✅',
+        details: `Latency: ${redisLatency}ms`
+      });
+    } catch (redisError) {
+      overallHealthy = false;
+      services.push({
+        name: 'Redis Cache',
+        status: 'error',
+        icon: '❌',
+        details: `Error: ${redisError.message}`
+      });
+    }
+    
+    // Queue status (placeholder - no actual queue in this version)
+    services.push({
+      name: 'Job Queue',
+      status: 'not_configured',
+      icon: 'ℹ️',
+      details: 'Queue not configured in this version'
+    });
+    
+    // Memory usage
+    const memUsage = process.memoryUsage();
+    const heapUsedPercent = Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100);
+    services.push({
+      name: 'Memory Usage',
+      status: heapUsedPercent < 90 ? 'healthy' : 'warning',
+      icon: heapUsedPercent < 90 ? '✅' : '⚠️',
+      details: `${Math.round(memUsage.heapUsed / 1024 / 1024)}MB / ${Math.round(memUsage.heapTotal / 1024 / 1024)}MB (${heapUsedPercent}%)`
+    });
+    
+    return c.json({
+      success: true,
+      data: {
+        overallStatus: overallHealthy ? 'healthy' : 'degraded',
+        version: '1.0.0',
+        commit: 'c6b3b08',
+        environment: process.env.NODE_ENV || 'development',
+        serverTime: new Date().toISOString(),
+        uptime: `${Math.floor(startTime)} seconds`,
+        services: services
+      }
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'Health check failed',
+      message: error.message,
+      services: services
     }, 500);
   }
 });
@@ -217,7 +378,7 @@ app.post('/api/auth/register', async (c) => {
   }
 });
 
-// Verify Token (for auto-login)
+// Verify Token (for auto-login) - POST version
 app.post('/api/auth/verify', async (c) => {
   try {
     const { token } = await c.req.json();
@@ -242,6 +403,51 @@ app.post('/api/auth/verify', async (c) => {
   } catch (error) {
     console.error('Verify error:', error);
     return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Verify Token (for auto-login) - GET version with Authorization header
+app.get('/api/auth/verify', async (c) => {
+  try {
+    // Check Authorization header
+    const authHeader = c.req.header('Authorization');
+    let token = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+    
+    // Fallback: Check cookie
+    if (!token) {
+      token = c.req.header('Cookie')?.match(/token=([^;]+)/)?.[1];
+    }
+    
+    // No token provided - not authenticated
+    if (!token) {
+      return c.json({ ok: false, authenticated: false, error: 'No token provided' }, 401);
+    }
+    
+    // Simple demo token verification
+    if (token.startsWith('demo_token_')) {
+      const userId = token.split('_')[2]; // Extract user ID from demo_token_<id>_<timestamp>
+      return c.json({
+        ok: true,
+        authenticated: true,
+        user: {
+          id: userId || '1',
+          username: 'demo_user',
+          email: 'demo@titan.com',
+          firstName: 'Demo',
+          lastName: 'User'
+        }
+      });
+    }
+    
+    // Invalid token
+    return c.json({ ok: false, authenticated: false, error: 'Invalid token' }, 401);
+  } catch (error) {
+    console.error('Verify error:', error);
+    return c.json({ ok: false, authenticated: false, error: error.message }, 500);
   }
 });
 
@@ -795,6 +1001,181 @@ app.post('/api/ai/chat', async (c) => {
 });
 
 // =============================================================================
+// AI AGENTS APIs (Agents 1-11 with proper 200 responses)
+// =============================================================================
+
+// Helper: Not Available Response
+const agentNotAvailable = (id) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: false,
+  available: false,
+  message: 'This agent is not yet implemented'
+});
+
+// Helper: Mock Active Status
+const mockActiveStatus = (id, customData = {}) => ({
+  agentId: `agent-${String(id).padStart(2, '0')}`,
+  installed: true,
+  available: true,
+  status: 'active',
+  health: 'good',
+  lastUpdate: new Date().toISOString(),
+  ...customData
+});
+
+// Agents 1-4 & 11: Enhanced data
+const enhancedAgentData = {
+  1: { // Technical Analysis
+    accuracy: 87.3,
+    confidence: 92.1,
+    indicators: {
+      rsi: 65.4,
+      macd: 0.002,
+      bollinger: 'neutral',
+      volume: 1234567890
+    },
+    signals: [
+      { type: 'BUY', value: 'Strong', timestamp: Date.now() - 3600000 }
+    ],
+    trend: 'bullish'
+  },
+  2: { // Portfolio Risk Management
+    accuracy: 83.7,
+    confidence: 88.4,
+    portfolioRisk: {
+      valueAtRisk: 12.5,
+      exposure: 68.3,
+      sharpeRatio: 1.82
+    },
+    recommendations: ['تنوع‌بخشی بیشتر', 'کاهش اکسپوژر']
+  },
+  3: { // Market Sentiment
+    accuracy: 79.2,
+    confidence: 82.6,
+    overallMarket: {
+      score: 0.65,
+      trend: 'positive'
+    },
+    sources: [
+      { name: 'Twitter', score: 0.72 },
+      { name: 'News', score: 0.58 }
+    ]
+  },
+  4: { // Portfolio Optimization
+    accuracy: 85.9,
+    confidence: 89.2,
+    totals: {
+      totalValue: 125000,
+      positions: 8
+    },
+    recommendations: ['افزایش BTC', 'کاهش ETH']
+  },
+  11: { // Advanced Portfolio Optimization
+    accuracy: 88.1,
+    confidence: 91.3,
+    blackLitterman: {
+      tau: 0.025,
+      views: '4 active',
+      optimized: true
+    },
+    optimizationStatus: 'Portfolio fully optimized'
+  }
+};
+
+// Agents 1-4 & 11: Status endpoints
+for (const id of [1, 2, 3, 4, 11]) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    const data = enhancedAgentData[id] || {};
+    return c.json(mockActiveStatus(id, data));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: true,
+      pollingIntervalMs: 5000,
+      settings: {}
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: [
+        {
+          timestamp: Date.now() - 3600000,
+          event: 'signal_generated',
+          data: { type: 'BUY', confidence: 0.85 }
+        }
+      ]
+    });
+  });
+}
+
+// Agents 5-10: Not Available (200 with available: false)
+for (let id = 5; id <= 10; id++) {
+  app.get(`/api/ai/agents/${id}/status`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/status - returning not available`);
+    return c.json(agentNotAvailable(id));
+  });
+
+  app.get(`/api/ai/agents/${id}/config`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/config - returning not available`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      enabled: false,
+      pollingIntervalMs: 5000
+    });
+  });
+
+  app.get(`/api/ai/agents/${id}/history`, async (c) => {
+    console.log(`📥 GET /api/ai/agents/${id}/history - returning empty`);
+    return c.json({
+      agentId: `agent-${String(id).padStart(2, '0')}`,
+      items: []
+    });
+  });
+}
+
+// Health check for AI agents
+app.get('/api/ai/agents/health', async (c) => {
+  return c.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    agents: {
+      available: [1, 2, 3, 4, 11],
+      coming_soon: [5, 6, 7, 8, 9, 10],
+      unavailable: [12, 13, 14, 15]
+    }
+  });
+});
+
+// AI Overview endpoint - provides summary of all agents
+app.get('/api/ai/overview', async (c) => {
+  console.log('📥 GET /api/ai/overview');
+  
+  return c.json({
+    available: true,
+    totals: {
+      agents: 15,
+      active: 5,
+      degraded: 0,
+      unavailable: 10
+    },
+    activeAgents: [
+      { id: 1, name: 'Technical Analysis', status: 'active', health: 'good' },
+      { id: 2, name: 'Risk Management', status: 'active', health: 'good' },
+      { id: 3, name: 'Sentiment Analysis', status: 'active', health: 'good' },
+      { id: 4, name: 'Portfolio Optimization', status: 'active', health: 'good' },
+      { id: 11, name: 'Advanced Portfolio', status: 'active', health: 'good' }
+    ],
+    comingSoon: [5, 6, 7, 8, 9, 10],
+    unavailable: [12, 13, 14, 15],
+    updatedAt: new Date().toISOString()
+  });
+});
+
+// =============================================================================
 // DATABASE APIs (Mock)
 // =============================================================================
 
@@ -1141,6 +1522,89 @@ function searchLogs(logs, query) {
   });
 }
 
+// ========================================================================
+// INTERNAL APIS (Phase 3.5) - Settings, Analytics, Mode, Alerts, News
+// ========================================================================
+
+// Import internal API routes
+const settingsRoutes = require('./backend/routes/settings.js');
+const aiAnalyticsRoutes = require('./backend/routes/ai-analytics.js');
+const modeRoutes = require('./backend/routes/mode.js');
+const alertsRoutes = require('./backend/routes/alerts.js');
+const newsRoutes = require('./backend/routes/news.js');
+const marketsRoutes = require('./backend/routes/markets.js');
+const compatRoutes = require('./backend/routes/compat.js');
+
+// Register routes (use app.route() for Hono subrouters)
+app.route('/api/settings', settingsRoutes);
+app.route('/api/ai-analytics', aiAnalyticsRoutes);
+app.route('/api/mode', modeRoutes);
+app.route('/api/alerts', alertsRoutes);
+app.route('/api/news', newsRoutes);
+app.route('/api/markets', marketsRoutes);
+
+// Register compatibility routes (legacy endpoints) - MUST come LAST to avoid catching specific routes
+app.route('/api', compatRoutes);
+
+// =============================================================================
+// MARKET PRICE APIs (Mock for Demo Mode)
+// =============================================================================
+
+// Mock price endpoint for portfolio optimization agent
+app.get('/api/markets/:symbol/price', async (c) => {
+  const symbol = c.req.param('symbol');
+  const isDemoMode = process.env.INTERNAL_APIS_DEMO === 'true';
+  
+  if (!isDemoMode) {
+    return c.json({
+      success: false,
+      error: 'Market data not available in production mode'
+    }, 503);
+  }
+  
+  // Mock prices for common crypto assets
+  const mockPrices = {
+    'BTC': { price: 48500, volume: 28500000000, marketCap: 950000000000, change24h: 2.4 },
+    'ETH': { price: 3400, volume: 15200000000, marketCap: 410000000000, change24h: 1.8 },
+    'BNB': { price: 420, volume: 1200000000, marketCap: 65000000000, change24h: -0.5 },
+    'ADA': { price: 0.44, volume: 450000000, marketCap: 15500000000, change24h: 3.2 },
+    'DOT': { price: 5.2, volume: 280000000, marketCap: 7200000000, change24h: 1.1 },
+    'SOL': { price: 150, volume: 2100000000, marketCap: 65000000000, change24h: 4.5 },
+    'MATIC': { price: 0.72, volume: 380000000, marketCap: 6700000000, change24h: 2.1 },
+    'LINK': { price: 12.3, volume: 520000000, marketCap: 7100000000, change24h: -1.2 },
+    'UNI': { price: 6.1, volume: 180000000, marketCap: 4600000000, change24h: 0.8 },
+    'AVAX': { price: 28.5, volume: 420000000, marketCap: 10500000000, change24h: 2.9 }
+  };
+  
+  const symbolUpper = symbol.toUpperCase().replace('USDT', '').replace('USD', '');
+  const priceData = mockPrices[symbolUpper];
+  
+  if (!priceData) {
+    // Generate random price for unknown symbols
+    const randomPrice = Math.random() * 1000 + 1;
+    return c.json({
+      success: true,
+      data: {
+        symbol: symbol,
+        price: randomPrice,
+        volume: randomPrice * 1000000,
+        marketCap: randomPrice * 10000000,
+        change24h: (Math.random() - 0.5) * 10,
+        timestamp: new Date().toISOString()
+      }
+    });
+  }
+  
+  return c.json({
+    success: true,
+    data: {
+      symbol: symbol,
+      ...priceData,
+      timestamp: new Date().toISOString()
+    }
+  });
+});
+
 // GET /api/logs/recent - دریافت آخرین لاگ‌ها
 app.get('/api/logs/recent', async (c) => {
   try {
@@ -1329,5 +1793,230 @@ process.on('SIGTERM', async () => {
   await pool.end();
   await redisClient.quit();
   process.exit(0);
+});
+
+
+// =============================================================================
+// MEXC MARKET DATA APIs (Public - No KYC Required)
+// Added: Phase 2 - Real market data integration
+// =============================================================================
+
+// Import MEXC service, cache, and circuit breaker
+const mexcService = require('./server/services/exchange/mexc');
+const cacheService = require('./server/services/cache');
+const CircuitBreaker = require('./server/services/circuit-breaker');
+
+// Circuit breaker instance برای MEXC API
+const mexcCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,    // 3 خطای متوالی
+  resetTimeout: 30000,    // 30 ثانیه
+  monitorInterval: 60000  // 1 دقیقه
+});
+
+// GET /api/mexc/price/:symbol - Real-time price from MEXC (Cache: 15s)
+app.get('/api/mexc/price/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const cacheKey = `mexc:price:${symbol}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getPrice(symbol);
+    });
+    
+    // ذخیره در cache (15 ثانیه)
+    cacheService.set(cacheKey, data, 15);
+    
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC price error:', error.message);
+    
+    // بررسی circuit breaker
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست. لطفاً چند لحظه دیگر تلاش کنید.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت قیمت از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/ticker/:symbol - 24hr ticker from MEXC (Cache: 30s)
+app.get('/api/mexc/ticker/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const cacheKey = `mexc:ticker:${symbol}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getTicker24hr(symbol);
+    });
+    
+    // ذخیره در cache (30 ثانیه)
+    cacheService.set(cacheKey, data, 30);
+    
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC ticker error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت تیکر از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/history/:symbol?interval=1h&limit=500 (Cache: 60s)
+app.get('/api/mexc/history/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const interval = c.req.query('interval') || '1h';
+    const limit = parseInt(c.req.query('limit') || '500');
+    const cacheKey = `mexc:history:${symbol}:${interval}:${limit}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const candles = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getKlines(symbol, interval, limit);
+    });
+    
+    const data = { symbol, interval, candles };
+    
+    // ذخیره در cache (60 ثانیه)
+    cacheService.set(cacheKey, data, 60);
+    
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC history error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت داده‌های تاریخی از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/depth/:symbol?limit=50 (Cache: 5s)
+app.get('/api/mexc/depth/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const limit = parseInt(c.req.query('limit') || '50');
+    const cacheKey = `mexc:depth:${symbol}:${limit}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getDepth(symbol, limit);
+    });
+    
+    // ذخیره در cache (5 ثانیه - بسیار تازه)
+    cacheService.set(cacheKey, data, 5);
+    
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC depth error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت عمق بازار از MEXC'
+    }, 502);
+  }
+});
+
+// =============================================================================
+// TRADING MODE API
+// =============================================================================
+
+let currentTradingMode = process.env.TRADING_MODE || 'demo';
+
+app.get('/api/mode', async (c) => {
+  return c.json({
+    success: true,
+    mode: currentTradingMode,
+    timestamp: Date.now()
+  });
+});
+
+app.put('/api/mode', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { mode } = body;
+    
+    if (!mode || !['demo', 'live'].includes(mode)) {
+      return c.json({
+        success: false,
+        error: 'حالت نامعتبر. باید demo یا live باشد.'
+      }, 400);
+    }
+    
+    const previousMode = currentTradingMode;
+    currentTradingMode = mode;
+    
+    console.log(`🔄 Trading mode changed: ${previousMode} → ${mode}`);
+    
+    return c.json({
+      success: true,
+      mode: currentTradingMode,
+      previousMode,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'خطا در تغییر حالت معاملاتی.'
+    }, 500);
+  }
 });
 

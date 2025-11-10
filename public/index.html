@@ -1,6 +1,5 @@
-<!-- DEPLOYMENT_MARKER_202511021426 -->
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -30,8 +29,11 @@
     <meta name="keywords" content="تایتان, معاملات, ارز دیجیتال, هشدار, بازار">
     <meta name="author" content="TITAN Trading System">
     
+    <!-- Tailwind CSS - MUST BE LOADED FIRST BEFORE ALL SCRIPTS -->
+    <link rel="stylesheet" href="/static/css/tailwind.c8db4b32.css">
+    <link rel="stylesheet" href="/static/css/market-animations.css">
+    
     <!-- External Libraries -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -131,6 +133,20 @@
         </div>
     </div>
 
+    <!-- Dark Mode Initialization -->
+    <script>
+        // ✨ Dark mode initialization - MUST BE BEFORE ANY CONTENT RENDERING
+        (function() {
+            const savedTheme = localStorage.getItem('titan_theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // Default to dark mode
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <!-- Environment Configuration -->
     <script>
         // 🌍 تنظیمات محیط برای Titan Trading System
@@ -214,40 +230,24 @@
         });
     </script>
     <!-- Load AI Agents -->
-    <script src="/static/modules/ai-agents/agent-01-technical-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-02-risk-management.js"></script>
-    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.js"></script>
-    <script src="/static/modules/ai-agents/agent-05-market-making.js"></script>
-    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.js"></script>
-    <script src="/static/modules/ai-agents/agent-07-news-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-08-hft.js"></script>
-    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js"></script>
-    <script src="/static/modules/ai-agents/agent-10-macro-analysis.js"></script>
-    <!-- ES6 Module Agents (migrated) -->
-    <script type="module">
-        // Load agent loader and initialize ES6 agents
-        import { loadAgent } from '/static/modules/ai-agents/agent-loader.js';
-        
-        // Load agents with singleton pattern
-        (async () => {
-            try {
-                await Promise.all([
-                    loadAgent('agent-11'), // Portfolio Optimization
-                    loadAgent('agent-14'), // Performance Analytics
-                    loadAgent('agent-15')  // System Orchestrator
-                ]);
-                console.log('✅ All ES6 agents loaded successfully');
-            } catch (error) {
-                console.error('❌ Failed to load some ES6 agents:', error);
-            }
-        })();
-    </script>
-    <script src="/static/modules/ai-agents/agent-12-risk-assessment.js"></script>
-    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js"></script>
+    <script src="/static/modules/ai-agents/agent-01-technical-analysis.9f4e3084.js"></script>
+    <script src="/static/modules/ai-agents/agent-02-risk-management.d389f3a2.js"></script>
+    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.e0319b49.js"></script>
+    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.5e87caa1.js"></script>
+    <script src="/static/modules/ai-agents/agent-05-market-making.270b96e9.js"></script>
+    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js"></script>
+    <script src="/static/modules/ai-agents/agent-07-news-analysis.97a5453b.js"></script>
+    <script src="/static/modules/ai-agents/agent-08-hft.d705779a.js"></script>
+    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.808c9747.js"></script>
+    <script src="/static/modules/ai-agents/agent-10-macro-analysis.8ccb7c3a.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-11-portfolio-optimization.96715d8f.js"></script>
+    <script src="/static/modules/ai-agents/agent-12-risk-assessment.a7e07a0e.js"></script>
+    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-14-performance-analytics.2420c814.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-15-system-orchestrator.a2a367fe.js"></script>
     
     <!-- Load Configuration First -->
-    <script src="/config.js?v=1760459731"></script>
+    <script src="/config.b03d0459.js"></script>
     
     <!-- Configure Axios -->
     <script>
@@ -264,14 +264,21 @@
         axios.defaults.timeout = 30000;
     </script>
     
+    <!-- Load API Services & Adapters (Phase B) -->
+    <script src="/static/modules/dashboard/services/api/http.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/market.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/mode.adapter.js"></script>
+    <script src="/static/modules/dashboard/init.js"></script>
+    <script src="/static/modules/dashboard/market-integration.js"></script>
+    
     <!-- Load Main Modules -->
-    <script src="/static/modules/ai-management.js"></script>
-    <script src="/static/modules/module-loader.js"></script>
-    <script src="/static/modules/alerts.js"></script>
-    <script src="/static/modules/logs.js?v=1762605372912"></script>
-    <script src="/static/app.js?v=1762605372912"></script>
+    <script src="/static/modules/ai-adapters.cd476956.js"></script>
+    <script src="/static/modules/ai-management.86422546.js"></script>
+    <script src="/static/modules/module-loader.89cb3ab0.js"></script>
+    <script src="/static/modules/alerts.ab657483.js"></script>
+    <script src="/static/app.f5839b97.js"></script>
     
     <!-- Login Button Fix - Comprehensive Fallback System -->
-    <script src="/static/fix_login_button.js?v=1729083400000"></script>
+    <script src="/static/fix_login_button.js"></script>
 </body>
 </html>

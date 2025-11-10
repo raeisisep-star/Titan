@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✅ مشکل حل شد!</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .container {
+            background: white;
+            padding: 50px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 700px;
+            text-align: center;
+        }
+        .success-icon {
+            font-size: 80px;
+            margin-bottom: 20px;
+            animation: bounce 1s ease infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+        h1 {
+            color: #059669;
+            margin-bottom: 20px;
+            font-size: 36px;
+        }
+        .info {
+            background: #ecfdf5;
+            padding: 20px;
+            border-radius: 10px;
+            border-right: 4px solid #10b981;
+            margin: 20px 0;
+            text-align: right;
+        }
+        .info h3 {
+            color: #059669;
+            margin-bottom: 10px;
+        }
+        .checkmark {
+            color: #10b981;
+            margin-left: 5px;
+        }
+        .buttons {
+            display: flex;
+            gap: 15px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+        }
+        button, a {
+            flex: 1;
+            min-width: 200px;
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            color: white;
+        }
+        .btn-secondary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        button:hover, a:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+        }
+        .details {
+            background: #f9fafb;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            text-align: left;
+        }
+        .code {
+            background: #1f2937;
+            color: #10b981;
+            padding: 10px;
+            border-radius: 5px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="success-icon">✅</div>
+        <h1>مشکل login حل شد!</h1>
+        
+        <div class="info">
+            <h3>کارهای انجام شده:</h3>
+            <p><span class="checkmark">✅</span> Cloudflare cache پاک شد (Purge Everything)</p>
+            <p><span class="checkmark">✅</span> فایل config.js جدید در حال سرو شدن است</p>
+            <p><span class="checkmark">✅</span> API_BASE به درستی '/api' تنظیم شده</p>
+            <p><span class="checkmark">✅</span> Login endpoint تست شد و کار می‌کند</p>
+        </div>
+
+        <div class="details">
+            <div class="code">
+                <div>🔍 Test Results:</div>
+                <div>━━━━━━━━━━━━━━━━━━━━━━━━━━━━</div>
+                <div>✅ config.js → API_BASE: '/api'</div>
+                <div>✅ /api/health → 200 OK</div>
+                <div>✅ /api/auth/login → 200 OK</div>
+                <div>✅ Token: demo_token_...</div>
+                <div>✅ cf-cache-status: MISS</div>
+            </div>
+        </div>
+
+        <div class="info">
+            <h3>حالا چیکار کنید؟</h3>
+            <p><span class="checkmark">1️⃣</span> <strong>Browser Cache را پاک کنید:</strong> Ctrl + Shift + Delete</p>
+            <p><span class="checkmark">2️⃣</span> <strong>یا از Incognito mode استفاده کنید:</strong> Ctrl + Shift + N</p>
+            <p><span class="checkmark">3️⃣</span> <strong>به صفحه اصلی بروید و login کنید</strong></p>
+        </div>
+
+        <div class="buttons">
+            <a href="/" class="btn-primary">🏠 برو به صفحه اصلی</a>
+            <a href="/api-test-direct.html" class="btn-secondary">🧪 تست API</a>
+        </div>
+
+        <div style="margin-top: 30px; color: #6b7280; font-size: 14px;">
+            <p>🕐 زمان اجرا: <span id="time"></span></p>
+            <p>📦 Commit: <code>f25a25e</code> + <code>05e2c80</code></p>
+            <p>🔗 PR: <a href="https://github.com/raeisisep-star/Titan/pull/11" target="_blank" style="color: #667eea;">#11</a></p>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('time').textContent = new Date().toLocaleString('fa-IR');
+        
+        // Auto-check config after 2 seconds
+        setTimeout(() => {
+            if (window.TITAN_CONFIG && window.TITAN_CONFIG.API_BASE === '/api') {
+                console.log('✅ TITAN_CONFIG verified:', window.TITAN_CONFIG);
+            } else {
+                console.warn('⚠️ TITAN_CONFIG not loaded yet or incorrect');
+            }
+        }, 2000);
+    </script>
+</body>
+</html>
