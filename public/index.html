@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html lang="fa" dir="rtl" class="dark">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -29,8 +29,10 @@
     <meta name="keywords" content="تایتان, معاملات, ارز دیجیتال, هشدار, بازار">
     <meta name="author" content="TITAN Trading System">
     
+    <!-- Tailwind CSS - MUST BE LOADED FIRST BEFORE ALL SCRIPTS -->
+    <link rel="stylesheet" href="/static/css/tailwind.c8db4b32.css">
+    
     <!-- External Libraries -->
-    <link rel="stylesheet" href="/static/css/tailwind.ab7e5ead.css">
     <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
@@ -130,6 +132,20 @@
         </div>
     </div>
 
+    <!-- Dark Mode Initialization -->
+    <script>
+        // ✨ Dark mode initialization - MUST BE BEFORE ANY CONTENT RENDERING
+        (function() {
+            const savedTheme = localStorage.getItem('titan_theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // Default to dark mode
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
     <!-- Environment Configuration -->
     <script>
         // 🌍 تنظیمات محیط برای Titan Trading System
@@ -157,107 +173,11 @@
         
         async function testConnection() {
             try {
-                const response = await axios.get('/api/health/full');
-                showHealthModal(response.data);
+                const response = await axios.get('/api/health');
+                alert('✅ اتصال موفقیت آمیز!\n' + JSON.stringify(response.data, null, 2));
             } catch (error) {
-                showHealthModal({
-                    success: false,
-                    error: 'خطا در اتصال به سرور',
-                    message: error.message
-                });
+                alert('❌ خطا در اتصال:\n' + error.message);
             }
-        }
-        
-        function showHealthModal(data) {
-            // Create modal overlay
-            const modal = document.createElement('div');
-            modal.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            modal.onclick = (e) => {
-                if (e.target === modal) modal.remove();
-            };
-            
-            // Modal content
-            const modalContent = document.createElement('div');
-            modalContent.className = 'bg-gray-800 rounded-lg shadow-2xl p-6 max-w-md w-full mx-4';
-            
-            if (data.success && data.data) {
-                const healthData = data.data;
-                const isHealthy = healthData.overallStatus === 'healthy';
-                
-                modalContent.innerHTML = `
-                    <div class="text-center mb-6">
-                        <div class="text-5xl mb-3">${isHealthy ? '✅' : '⚠️'}</div>
-                        <h2 class="text-2xl font-bold text-white mb-2">وضعیت سیستم</h2>
-                        <p class="text-gray-400">${isHealthy ? 'همه سرویس‌ها عملکرد طبیعی دارند' : 'برخی سرویس‌ها با مشکل مواجه هستند'}</p>
-                    </div>
-                    
-                    <div class="space-y-3 mb-6">
-                        ${healthData.services.map(service => `
-                            <div class="flex items-center justify-between p-3 bg-gray-700 rounded-lg">
-                                <div class="flex items-center gap-3">
-                                    <span class="text-2xl">${service.icon}</span>
-                                    <div>
-                                        <div class="font-medium text-white">${service.name}</div>
-                                        <div class="text-sm text-gray-400">${service.details}</div>
-                                    </div>
-                                </div>
-                                <span class="text-xs px-2 py-1 rounded ${
-                                    service.status === 'healthy' ? 'bg-green-600 text-white' :
-                                    service.status === 'error' ? 'bg-red-600 text-white' :
-                                    'bg-blue-600 text-white'
-                                }">
-                                    ${service.status === 'healthy' ? 'سالم' : 
-                                      service.status === 'error' ? 'خطا' : 'غیرفعال'}
-                                </span>
-                            </div>
-                        `).join('')}
-                    </div>
-                    
-                    <div class="grid grid-cols-2 gap-3 mb-6 text-sm">
-                        <div class="bg-gray-700 p-3 rounded-lg">
-                            <div class="text-gray-400 mb-1">نسخه</div>
-                            <div class="text-white font-medium">${healthData.version}</div>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-lg">
-                            <div class="text-gray-400 mb-1">محیط</div>
-                            <div class="text-white font-medium">${healthData.environment}</div>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-lg">
-                            <div class="text-gray-400 mb-1">زمان سرور</div>
-                            <div class="text-white font-medium text-xs">${new Date(healthData.serverTime).toLocaleString('fa-IR')}</div>
-                        </div>
-                        <div class="bg-gray-700 p-3 rounded-lg">
-                            <div class="text-gray-400 mb-1">Uptime</div>
-                            <div class="text-white font-medium">${healthData.uptime}</div>
-                        </div>
-                    </div>
-                    
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
-                        بستن
-                    </button>
-                `;
-            } else {
-                modalContent.innerHTML = `
-                    <div class="text-center mb-6">
-                        <div class="text-5xl mb-3">❌</div>
-                        <h2 class="text-2xl font-bold text-white mb-2">خطا در اتصال</h2>
-                        <p class="text-gray-400">${data.error || 'خطای ناشناخته'}</p>
-                    </div>
-                    
-                    <div class="bg-red-900 bg-opacity-30 border border-red-600 rounded-lg p-4 mb-6">
-                        <div class="text-sm text-red-300">${data.message || 'لطفاً مجدداً تلاش کنید'}</div>
-                    </div>
-                    
-                    <button onclick="this.closest('.fixed').remove()" 
-                            class="w-full bg-gradient-to-r from-red-500 to-red-600 text-white py-2 px-4 rounded-md hover:from-red-600 hover:to-red-700 transition duration-300">
-                        بستن
-                    </button>
-                `;
-            }
-            
-            modal.appendChild(modalContent);
-            document.body.appendChild(modal);
         }
 
         // Register form handler
@@ -309,27 +229,24 @@
         });
     </script>
     <!-- Load AI Agents -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-01-technical-analysis.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-02-risk-management.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-05-market-making.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-07-news-analysis.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-08-hft.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-10-macro-analysis.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-11-portfolio-optimization.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-12-risk-assessment.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-14-performance-analytics.js"></script> -->
-    <!-- Lazy load after login: <script src="/static/modules/ai-agents/agent-15-system-orchestrator.js"></script> -->
+    <script src="/static/modules/ai-agents/agent-01-technical-analysis.9f4e3084.js"></script>
+    <script src="/static/modules/ai-agents/agent-02-risk-management.d389f3a2.js"></script>
+    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.e0319b49.js"></script>
+    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.5e87caa1.js"></script>
+    <script src="/static/modules/ai-agents/agent-05-market-making.270b96e9.js"></script>
+    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js"></script>
+    <script src="/static/modules/ai-agents/agent-07-news-analysis.97a5453b.js"></script>
+    <script src="/static/modules/ai-agents/agent-08-hft.d705779a.js"></script>
+    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.808c9747.js"></script>
+    <script src="/static/modules/ai-agents/agent-10-macro-analysis.8ccb7c3a.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-11-portfolio-optimization.96715d8f.js"></script>
+    <script src="/static/modules/ai-agents/agent-12-risk-assessment.a7e07a0e.js"></script>
+    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-14-performance-analytics.2420c814.js"></script>
+    <script type="module" src="/static/modules/ai-agents/agent-15-system-orchestrator.a2a367fe.js"></script>
     
     <!-- Load Configuration First -->
-    <script src="/config.js"></script>
-    
-    <!-- API Client Singleton -->
-    <script src="/static/apiClient.18710608.js"></script>
+    <script src="/config.b03d0459.js"></script>
     
     <!-- Configure Axios -->
     <script>
@@ -347,16 +264,13 @@
     </script>
     
     <!-- Load Main Modules -->
-    <script src="/static/modules/idempotent-guards.0b5fa443.js"></script>
-    <script src="/static/modules/ai-api.d7a314b3.js"></script>
-    <script src="/static/modules/ai-adapters.1e991627.js"></script>
-    <script src="/static/modules/ai-tab-integration.c2b6a3b2.js"></script>
-    <script src="/static/modules/ai-management.9099fbff.js"></script>
-    <script src="/static/modules/module-loader.b74b9253.js"></script>
+    <script src="/static/modules/ai-adapters.cd476956.js"></script>
+    <script src="/static/modules/ai-management.86422546.js"></script>
+    <script src="/static/modules/module-loader.89cb3ab0.js"></script>
     <script src="/static/modules/alerts.ab657483.js"></script>
-    <script src="/static/app.3c96e59c.js"></script>
+    <script src="/static/app.f5839b97.js"></script>
     
     <!-- Login Button Fix - Comprehensive Fallback System -->
-    <script src="/static/fix_login_button.js?v=1729083400000"></script>
+    <script src="/static/fix_login_button.js"></script>
 </body>
 </html>

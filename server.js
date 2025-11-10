@@ -351,7 +351,7 @@ app.post('/api/auth/register', async (c) => {
   }
 });
 
-// Verify Token (for auto-login)
+// Verify Token (for auto-login) - POST version
 app.post('/api/auth/verify', async (c) => {
   try {
     const { token } = await c.req.json();
@@ -376,6 +376,51 @@ app.post('/api/auth/verify', async (c) => {
   } catch (error) {
     console.error('Verify error:', error);
     return c.json({ success: false, error: error.message }, 500);
+  }
+});
+
+// Verify Token (for auto-login) - GET version with Authorization header
+app.get('/api/auth/verify', async (c) => {
+  try {
+    // Check Authorization header
+    const authHeader = c.req.header('Authorization');
+    let token = null;
+    
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7);
+    }
+    
+    // Fallback: Check cookie
+    if (!token) {
+      token = c.req.header('Cookie')?.match(/token=([^;]+)/)?.[1];
+    }
+    
+    // No token provided - not authenticated
+    if (!token) {
+      return c.json({ ok: false, authenticated: false, error: 'No token provided' }, 401);
+    }
+    
+    // Simple demo token verification
+    if (token.startsWith('demo_token_')) {
+      const userId = token.split('_')[2]; // Extract user ID from demo_token_<id>_<timestamp>
+      return c.json({
+        ok: true,
+        authenticated: true,
+        user: {
+          id: userId || '1',
+          username: 'demo_user',
+          email: 'demo@titan.com',
+          firstName: 'Demo',
+          lastName: 'User'
+        }
+      });
+    }
+    
+    // Invalid token
+    return c.json({ ok: false, authenticated: false, error: 'Invalid token' }, 401);
+  } catch (error) {
+    console.error('Verify error:', error);
+    return c.json({ ok: false, authenticated: false, error: error.message }, 500);
   }
 });
 
@@ -1721,5 +1766,127 @@ process.on('SIGTERM', async () => {
   await pool.end();
   await redisClient.quit();
   process.exit(0);
+});
+
+
+// =============================================================================
+// MEXC MARKET DATA APIs (Public - No KYC Required)
+// Added: Phase 2 - Real market data integration
+// =============================================================================
+
+// Import MEXC service
+const mexcService = require('./server/services/exchange/mexc');
+
+// GET /api/mexc/price/:symbol - Real-time price from MEXC
+app.get('/api/mexc/price/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const data = await mexcService.getPrice(symbol);
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC price error:', error.message);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت قیمت از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/ticker/:symbol - 24hr ticker from MEXC
+app.get('/api/mexc/ticker/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const data = await mexcService.getTicker24hr(symbol);
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC ticker error:', error.message);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت تیکر از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/history/:symbol?interval=1h&limit=500
+app.get('/api/mexc/history/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const interval = c.req.query('interval') || '1h';
+    const limit = parseInt(c.req.query('limit') || '500');
+    
+    const candles = await mexcService.getKlines(symbol, interval, limit);
+    return c.json({
+      success: true,
+      data: { symbol, interval, candles }
+    });
+  } catch (error) {
+    console.error('MEXC history error:', error.message);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت داده‌های تاریخی از MEXC'
+    }, 502);
+  }
+});
+
+// GET /api/mexc/depth/:symbol?limit=50
+app.get('/api/mexc/depth/:symbol', async (c) => {
+  try {
+    const symbol = c.req.param('symbol');
+    const limit = parseInt(c.req.query('limit') || '50');
+    
+    const data = await mexcService.getDepth(symbol, limit);
+    return c.json({ success: true, data });
+  } catch (error) {
+    console.error('MEXC depth error:', error.message);
+    return c.json({
+      success: false,
+      error: 'خطا در دریافت عمق بازار از MEXC'
+    }, 502);
+  }
+});
+
+// =============================================================================
+// TRADING MODE API
+// =============================================================================
+
+let currentTradingMode = process.env.TRADING_MODE || 'demo';
+
+app.get('/api/mode', async (c) => {
+  return c.json({
+    success: true,
+    mode: currentTradingMode,
+    timestamp: Date.now()
+  });
+});
+
+app.put('/api/mode', async (c) => {
+  try {
+    const body = await c.req.json();
+    const { mode } = body;
+    
+    if (!mode || !['demo', 'live'].includes(mode)) {
+      return c.json({
+        success: false,
+        error: 'حالت نامعتبر. باید demo یا live باشد.'
+      }, 400);
+    }
+    
+    const previousMode = currentTradingMode;
+    currentTradingMode = mode;
+    
+    console.log(`🔄 Trading mode changed: ${previousMode} → ${mode}`);
+    
+    return c.json({
+      success: true,
+      mode: currentTradingMode,
+      previousMode,
+      timestamp: Date.now()
+    });
+  } catch (error) {
+    return c.json({
+      success: false,
+      error: 'خطا در تغییر حالت معاملاتی.'
+    }, 500);
+  }
 });
 
