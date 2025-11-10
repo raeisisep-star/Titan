@@ -121,6 +121,26 @@ app.get('/api/health', async (c) => {
       redisStatus = 'error';
     }
     
+    // Test MEXC API connectivity (Phase B3)
+    let marketStatus = 'unknown';
+    let marketLatency = 0;
+    try {
+      const marketStart = Date.now();
+      await mexcService.getPrice('BTCUSDT');
+      marketLatency = Date.now() - marketStart;
+      
+      // تعیین وضعیت بر اساس latency
+      if (marketLatency < 500) {
+        marketStatus = 'ok';
+      } else if (marketLatency < 1500) {
+        marketStatus = 'degraded';
+      } else {
+        marketStatus = 'slow';
+      }
+    } catch (e) {
+      marketStatus = 'down';
+    }
+    
     // Get system info
     const memUsage = process.memoryUsage();
     
@@ -143,8 +163,15 @@ app.get('/api/health', async (c) => {
           redis: {
             status: redisStatus,
             latency: redisLatency
+          },
+          market: {
+            status: marketStatus,
+            latency: marketLatency,
+            provider: 'MEXC',
+            circuitBreaker: mexcCircuitBreaker.getStatus()
           }
         },
+        cache: cacheService.stats(),
         memory: {
           rss: Math.round(memUsage.rss / 1024 / 1024),
           heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
@@ -1774,17 +1801,51 @@ process.on('SIGTERM', async () => {
 // Added: Phase 2 - Real market data integration
 // =============================================================================
 
-// Import MEXC service
+// Import MEXC service, cache, and circuit breaker
 const mexcService = require('./server/services/exchange/mexc');
+const cacheService = require('./server/services/cache');
+const CircuitBreaker = require('./server/services/circuit-breaker');
 
-// GET /api/mexc/price/:symbol - Real-time price from MEXC
+// Circuit breaker instance برای MEXC API
+const mexcCircuitBreaker = new CircuitBreaker({
+  failureThreshold: 3,    // 3 خطای متوالی
+  resetTimeout: 30000,    // 30 ثانیه
+  monitorInterval: 60000  // 1 دقیقه
+});
+
+// GET /api/mexc/price/:symbol - Real-time price from MEXC (Cache: 15s)
 app.get('/api/mexc/price/:symbol', async (c) => {
   try {
     const symbol = c.req.param('symbol');
-    const data = await mexcService.getPrice(symbol);
+    const cacheKey = `mexc:price:${symbol}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getPrice(symbol);
+    });
+    
+    // ذخیره در cache (15 ثانیه)
+    cacheService.set(cacheKey, data, 15);
+    
     return c.json({ success: true, data });
   } catch (error) {
     console.error('MEXC price error:', error.message);
+    
+    // بررسی circuit breaker
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست. لطفاً چند لحظه دیگر تلاش کنید.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
     return c.json({
       success: false,
       error: 'خطا در دریافت قیمت از MEXC'
@@ -1792,14 +1853,38 @@ app.get('/api/mexc/price/:symbol', async (c) => {
   }
 });
 
-// GET /api/mexc/ticker/:symbol - 24hr ticker from MEXC
+// GET /api/mexc/ticker/:symbol - 24hr ticker from MEXC (Cache: 30s)
 app.get('/api/mexc/ticker/:symbol', async (c) => {
   try {
     const symbol = c.req.param('symbol');
-    const data = await mexcService.getTicker24hr(symbol);
+    const cacheKey = `mexc:ticker:${symbol}`;
+    
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getTicker24hr(symbol);
+    });
+    
+    // ذخیره در cache (30 ثانیه)
+    cacheService.set(cacheKey, data, 30);
+    
     return c.json({ success: true, data });
   } catch (error) {
     console.error('MEXC ticker error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
     return c.json({
       success: false,
       error: 'خطا در دریافت تیکر از MEXC'
@@ -1807,20 +1892,42 @@ app.get('/api/mexc/ticker/:symbol', async (c) => {
   }
 });
 
-// GET /api/mexc/history/:symbol?interval=1h&limit=500
+// GET /api/mexc/history/:symbol?interval=1h&limit=500 (Cache: 60s)
 app.get('/api/mexc/history/:symbol', async (c) => {
   try {
     const symbol = c.req.param('symbol');
     const interval = c.req.query('interval') || '1h';
     const limit = parseInt(c.req.query('limit') || '500');
+    const cacheKey = `mexc:history:${symbol}:${interval}:${limit}`;
     
-    const candles = await mexcService.getKlines(symbol, interval, limit);
-    return c.json({
-      success: true,
-      data: { symbol, interval, candles }
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const candles = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getKlines(symbol, interval, limit);
     });
+    
+    const data = { symbol, interval, candles };
+    
+    // ذخیره در cache (60 ثانیه)
+    cacheService.set(cacheKey, data, 60);
+    
+    return c.json({ success: true, data });
   } catch (error) {
     console.error('MEXC history error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
     return c.json({
       success: false,
       error: 'خطا در دریافت داده‌های تاریخی از MEXC'
@@ -1828,16 +1935,39 @@ app.get('/api/mexc/history/:symbol', async (c) => {
   }
 });
 
-// GET /api/mexc/depth/:symbol?limit=50
+// GET /api/mexc/depth/:symbol?limit=50 (Cache: 5s)
 app.get('/api/mexc/depth/:symbol', async (c) => {
   try {
     const symbol = c.req.param('symbol');
     const limit = parseInt(c.req.query('limit') || '50');
+    const cacheKey = `mexc:depth:${symbol}:${limit}`;
     
-    const data = await mexcService.getDepth(symbol, limit);
+    // چک کردن cache
+    const cached = cacheService.get(cacheKey);
+    if (cached) {
+      return c.json({ success: true, data: cached, cached: true });
+    }
+    
+    // دریافت با circuit breaker
+    const data = await mexcCircuitBreaker.execute(async () => {
+      return await mexcService.getDepth(symbol, limit);
+    });
+    
+    // ذخیره در cache (5 ثانیه - بسیار تازه)
+    cacheService.set(cacheKey, data, 5);
+    
     return c.json({ success: true, data });
   } catch (error) {
     console.error('MEXC depth error:', error.message);
+    
+    if (error.circuitBreakerOpen) {
+      return c.json({
+        success: false,
+        error: 'سرویس بازار موقتاً در دسترس نیست.',
+        circuitBreakerOpen: true
+      }, 503);
+    }
+    
     return c.json({
       success: false,
       error: 'خطا در دریافت عمق بازار از MEXC'
