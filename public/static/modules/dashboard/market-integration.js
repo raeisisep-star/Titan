@@ -17,22 +17,26 @@
 
   /**
    * بارگذاری نمودار اصلی با داده‌های واقعی از MEXC
+   * Updated: Sprint 2 - Now using /api/chart/data/:symbol/:timeframe endpoint
    */
-  async function loadPrimaryChart() {
+  async function loadPrimaryChart(timeframe = '1h', limit = 200) {
     if (isLoading) return;
     
     try {
       isLoading = true;
       const symbol = global.TITAN_SYMBOL || DEFAULT_SYMBOL;
       
-      // دریافت 200 کندل از ساعت گذشته
-      const candles = await MarketAdapter.getHistory(symbol, '1h', 200);
+      // دریافت کندل‌ها از API جدید
+      // Sprint 2: Using ChartAdapter instead of MarketAdapter
+      const candles = typeof ChartAdapter !== 'undefined'
+        ? await ChartAdapter.getCandles(symbol, timeframe, limit)
+        : await MarketAdapter.getHistory(symbol, timeframe, limit); // Fallback
       
       if (!candles || candles.length === 0) {
         throw new Error('No candles received from API');
       }
       
-      console.log(`✅ Loaded ${candles.length} candles for ${symbol}`);
+      console.log(`✅ Loaded ${candles.length} candles for ${symbol} (${timeframe})`);
       
       // تبدیل به فرمت مورد نیاز چارت
       const chartData = candles.map(c => ({
