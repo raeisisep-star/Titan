@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تست ویجت‌های Phase C</title>
+    <link rel="stylesheet" href="/static/css/tailwind.c8db4b32.css">
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .widget {
+            background: #1f2937;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        .widget-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+            padding-bottom: 0.75rem;
+            border-bottom: 1px solid #374151;
+        }
+        .badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .stat-card {
+            background: #374151;
+            padding: 1rem;
+            border-radius: 6px;
+        }
+        .stat-label {
+            font-size: 0.875rem;
+            color: #9ca3af;
+            margin-bottom: 0.5rem;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+        .stat-row {
+            border-bottom: 1px solid #374151;
+        }
+        .stat-row:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-white p-8">
+    <div class="container mx-auto max-w-7xl">
+        <div class="header mb-8">
+            <h1 class="text-4xl font-bold mb-2">🚀 تست ویجت‌های Phase C</h1>
+            <p class="text-gray-400">Sprint 2 - Frontend Adapters Integration</p>
+            <button onclick="WidgetsIntegration.refresh()" class="mt-4 px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">
+                🔄 Refresh All Widgets
+            </button>
+        </div>
+
+        <div class="widgets-grid grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Market Overview Widget -->
+            <div id="market-overview-widget" class="widget">
+                <div class="animate-pulse">Loading...</div>
+            </div>
+
+            <!-- Market Movers Widget -->
+            <div id="market-movers-widget" class="widget">
+                <div class="animate-pulse">Loading...</div>
+            </div>
+
+            <!-- Portfolio Widget -->
+            <div id="portfolio-widget" class="widget">
+                <div class="animate-pulse">Loading...</div>
+            </div>
+
+            <!-- Monitoring Widget -->
+            <div id="monitoring-widget" class="widget">
+                <div class="animate-pulse">Loading...</div>
+            </div>
+        </div>
+
+        <div class="footer mt-8 text-center text-gray-500 text-sm">
+            <p>Auto-refresh every 30s (paused when tab hidden)</p>
+            <p class="mt-2">Check console for logs (F12)</p>
+        </div>
+    </div>
+
+    <!-- Load Dependencies -->
+    <script src="/static/modules/dashboard/services/api/http.js"></script>
+    
+    <!-- Load Adapters (Sprint 2) -->
+    <script src="/static/modules/dashboard/services/adapters/overview.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/movers.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/portfolio.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/monitoring.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/chart.adapter.js"></script>
+    
+    <!-- Load Widgets Integration (Phase C) -->
+    <script src="/static/modules/dashboard/widgets-integration.js"></script>
+</body>
+</html>

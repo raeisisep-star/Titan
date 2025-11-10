@@ -264,12 +264,20 @@
         axios.defaults.timeout = 30000;
     </script>
     
-    <!-- Load API Services & Adapters (Phase B) -->
+    <!-- Load API Services & Adapters (Phase B + Sprint 2) -->
     <script src="/static/modules/dashboard/services/api/http.js"></script>
     <script src="/static/modules/dashboard/services/adapters/market.adapter.js"></script>
     <script src="/static/modules/dashboard/services/adapters/mode.adapter.js"></script>
+    <!-- Sprint 2: New Adapters for Dashboard Widgets -->
+    <script src="/static/modules/dashboard/services/adapters/overview.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/movers.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/portfolio.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/monitoring.adapter.js"></script>
+    <script src="/static/modules/dashboard/services/adapters/chart.adapter.js"></script>
     <script src="/static/modules/dashboard/init.js"></script>
     <script src="/static/modules/dashboard/market-integration.js"></script>
+    <!-- Phase C: Widget Integration Layer -->
+    <script src="/static/modules/dashboard/widgets-integration.js"></script>
     
     <!-- Load Main Modules -->
     <script src="/static/modules/ai-adapters.cd476956.js"></script>
