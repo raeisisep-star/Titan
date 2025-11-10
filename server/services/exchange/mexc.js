@@ -104,15 +104,19 @@ async function getKlines(symbol, interval = '1h', limit = 500) {
     const intervalMap = {
       '1m': '1m', '5m': '5m', '15m': '15m', '30m': '30m',
       '1h': '60m', '2h': '120m', '4h': '4h', '6h': '6h', '8h': '8h', '12h': '12h',
-      '1d': '1d', '3d': '3d', '1w': '1W', '1M': '1M'
+      '1d': '1d', '3d': '3d', '1w': '1W', '1M': '1M',
+      // Accept MEXC native formats too
+      '60m': '60m', '120m': '120m', '1w': '1W'
     };
     
-    const mexcInterval = intervalMap[interval.toLowerCase()] || interval;
+    const normalizedInterval = interval.toLowerCase();
     
     // Validate interval
-    if (!intervalMap[interval.toLowerCase()]) {
+    if (!intervalMap[normalizedInterval]) {
       throw new Error(`Invalid interval: ${interval}. Must be one of: 1m, 5m, 15m, 30m, 1h, 2h, 4h, 6h, 8h, 12h, 1d, 3d, 1w, 1M`);
     }
+    
+    const mexcInterval = intervalMap[normalizedInterval];
 
     const { data } = await api.get('/api/v3/klines', {
       params: {
