@@ -2641,19 +2641,3 @@ app.get('*', (c) => {
     return c.text('Error loading application', 500);
   }
 });
-
-// ========================================================================
-// START SERVER
-// ========================================================================
-
-const PORT = process.env.PORT || 5000;
-
-serve({
-  fetch: app.fetch,
-  port: PORT
-}, (info) => {
-  console.log(`🚀 Titan Backend Server running on http://localhost:${info.port}`);
-  console.log(`📊 Dashboard: http://localhost:${info.port}/`);
-  console.log(`🔧 Health: http://localhost:${info.port}/health`);
-  console.log(`📡 API: http://localhost:${info.port}/api/`);
-});
