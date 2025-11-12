@@ -204,9 +204,14 @@
    * بارگذاری widgets با استفاده از widgets-integration.js
    */
   function loadWidgets() {
-    // بررسی وجود widgets-integration module
-    if (typeof loadMarketOverview !== 'function') {
-      console.error('❌ [Dashboard Widgets] widgets-integration.js not loaded');
+    // بررسی منعطف آمادگی widgets-integration module
+    const ready =
+      window.__WidgetsIntegrationLoaded === true ||
+      (window.TitanLegacyBind && typeof window.TitanLegacyBind.bindAllLegacy === 'function');
+
+    if (!ready) {
+      console.warn('⚠️ [Dashboard Widgets] widgets-integration.js not ready yet; retrying...');
+      setTimeout(loadWidgets, 400);
       return;
     }
 

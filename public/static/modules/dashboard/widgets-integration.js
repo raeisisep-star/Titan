@@ -8,6 +8,11 @@
   // اطمینان از قطع mock و استفاده از API واقعی
   window.TitanFlags = window.TitanFlags || {};
   window.TitanFlags.useMockData = false; // ⛔ mock off - force real API
+  window.TitanFlags.preferLegacyWidgets = true; // استفاده از ویجت‌های قدیمی
+
+  // 👇 اعلام آمادگی برای dashboard-widgets-loader.js
+  window.__WidgetsIntegrationLoaded = true;
+  window.dispatchEvent(new Event('titan:widgets-ready'));
   
   // تنظیمات Auto-refresh
   const REFRESH_INTERVAL = 30000; // 30 seconds

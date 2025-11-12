@@ -5,23 +5,38 @@
   
   const T = (s) => (typeof s === 'string' ? s.trim() : '');
 
+  // نرمال‌سازی متن فارسی: رفع اختلاف ی/ک عربی، فاصله‌ها، dash های مختلف
+  function normalizeFA(str='') {
+    return String(str)
+      .replace(/[ي]/g,'ی').replace(/[ك]/g,'ک')  // ی و ک عربی → فارسی
+      .replace(/[‌\-–—]/g,'-')                    // انواع dash و فاصله مجازی
+      .replace(/\s+/g,' ')                        // فاصله‌های متعدد → یک فاصله
+      .trim();
+  }
+
+  // تطبیق عنوان با لیست candidates با استفاده از includes
+  function matchTitle(headingText, candidates) {
+    const h = normalizeFA(headingText);
+    return candidates.some(t => h.includes(normalizeFA(t)));
+  }
+
   // عنوان‌های فارسی که روی کارت‌های قدیمی دیده می‌شود
   // به‌روزرسانی شده با تیترهای دقیق از داشبورد واقعی
   const TITLES = {
-    // کارت قیمت‌های بازار (بالا یا پایین صفحه)
-    overview:  ['بازار رمز ارزها', 'نمای کلی بازار', 'خلاصه بازار', 'شاخص بازار', 'Market Overview'],
+    // کارت Overview در UI شما با تیتر "ریپاب قیمت" یا "ریپاپ قیمت" دیده می‌شود
+    overview:  ['ریپاب قیمت','ریپاپ قیمت','خلاصه بازار','Market Overview'],
 
     // اگر «بازیگران بازار» ندارید مهم نیست؛ Annotator نادیده می‌گیرد
-    movers:    ['بازیگران بازار', 'Top Movers', 'گینرز/لوزرز'],
+    movers:    ['بازیگران بازار','Top Movers','گینرز/لوزرز'],
 
     // خلاصه سبد
-    portfolio: ['خلاصه پرتفولیو', 'خلاصه پورتفولیو', 'عملکرد پورتفولیو', 'Portfolio'],
+    portfolio: ['خلاصه پرتفولیو','خلاصه پورتفویو','عملکرد پورتفولیو','نمودار پورتفولیو','Portfolio'],
 
     // سلامت سیستم
-    monitor:   ['وضعیت سیستم', 'سلامت سیستم', 'Monitoring', 'System Status'],
+    monitor:   ['وضعیت سیستم','سلامت سیستم','System Status','Monitoring'],
 
     // نمودار
-    chart:     ['نمودار عملکرد', 'نمودار', 'نمودار قیمت‌ها', 'Chart'],
+    chart:     ['نمودار عملکرد','نمودار پورتفولیو','Chart'],
 
     // اختیاری: کارت‌های دیگر که در داشبورد دیده می‌شوند
     // 'پیشنهادهای آرتیمیس'، 'خلاصه هشدارها'، 'پیشرفت یادگیری'، 'ربات قیمت'، 'معاملات فعال'
@@ -63,12 +78,13 @@
     return el;
   }
 
-  // تلاش برای تشخیص یک کارت با عنوان
+  // تلاش برای تشخیص یک کارت با عنوان (با نرمال‌سازی و includes)
   function findCardByTitles(titleList) {
     const headings = Array.from(document.querySelectorAll('h2,h3,h4,.widget-title,.card-title'));
     for (const h of headings) {
       const txt = T(h.textContent);
-      if (titleList.some(t => txt.includes(t))) {
+      // استفاده از matchTitle برای نرمال‌سازی و includes
+      if (matchTitle(txt, titleList)) {
         // کارت والد را برگردان (container نزدیک)
         let p = h.closest('.card, .panel, .box, .widget, .grid, .shadow, .rounded, section, div[class*="container"]');
         if (!p) p = h.parentElement;
@@ -184,7 +200,8 @@
     window.TitanLegacy = Object.assign(window.TitanLegacy || {}, {
       annotated: true,
       result,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      scan: annotateAll  // برای تست دستی: window.TitanLegacy.scan()
     });
     
     return result;
