@@ -5,6 +5,10 @@
 (function(global) {
   'use strict';
 
+  // اطمینان از قطع mock و استفاده از API واقعی
+  window.TitanFlags = window.TitanFlags || {};
+  window.TitanFlags.useMockData = false; // ⛔ mock off - force real API
+  
   // تنظیمات Auto-refresh
   const REFRESH_INTERVAL = 30000; // 30 seconds
   let refreshTimers = {};
@@ -748,4 +752,284 @@
   };
 
   console.log('✅ [TitanBind] Legacy data binding system loaded');
+})();
+
+// === Direct Legacy Widget Binders: اتصال مستقیم ویجت‌های قدیمی به APIهای واقعی ===
+(function () {
+  'use strict';
+
+  // 3.1 Overview (بازار رمز ارزها)
+  async function bindLegacyOverview() {
+    try {
+      const host = document.querySelector('[data-widget="overview"]');
+      if (!host) {
+        console.log('ℹ️ [bindLegacyOverview] Widget not found');
+        return;
+      }
+
+      const data = await OverviewAdapter.getMarketOverview();
+      console.log('✅ [bindLegacyOverview] Data received:', data);
+
+      // انتظار: { symbols: [{symbol:'BTCUSDT', price, volume, change24h}, ...], market, timestamp }
+      const find = (f) => host.querySelector(`[data-field="${f}"]`);
+
+      const by = (sym) => (data.symbols || []).find(s => s.symbol?.startsWith(sym));
+      const btc = by('BTC');
+      const eth = by('ETH');
+      const bnb = by('BNB');
+
+      if (btc) {
+        if (find('btc-price'))  find('btc-price').textContent  = `$${(+btc.price).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+        if (find('btc-change')) find('btc-change').textContent = `${btc.change24h >= 0 ? '+' : ''}${(+btc.change24h).toFixed(2)}%`;
+        if (find('btc-volume')) find('btc-volume').textContent = `$${(+btc.volume24h).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+      }
+      if (eth) {
+        if (find('eth-price'))  find('eth-price').textContent  = `$${(+eth.price).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+        if (find('eth-change')) find('eth-change').textContent = `${eth.change24h >= 0 ? '+' : ''}${(+eth.change24h).toFixed(2)}%`;
+        if (find('eth-volume')) find('eth-volume').textContent = `$${(+eth.volume24h).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+      }
+      if (bnb) {
+        if (find('bnb-price'))  find('bnb-price').textContent  = `$${(+bnb.price).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+        if (find('bnb-change')) find('bnb-change').textContent = `${bnb.change24h >= 0 ? '+' : ''}${(+bnb.change24h).toFixed(2)}%`;
+        if (find('bnb-volume')) find('bnb-volume').textContent = `$${(+bnb.volume24h).toLocaleString('en-US', {maximumFractionDigits: 0})}`;
+      }
+
+      // Total volume and average change
+      if (data.market) {
+        if (find('total-volume')) find('total-volume').textContent = formatVolume(data.market.totalVolume24h);
+        if (find('avg-change'))   find('avg-change').textContent = `${data.market.avgChange24h >= 0 ? '+' : ''}${data.market.avgChange24h.toFixed(2)}%`;
+      }
+
+      const ts = data.timestamp || Date.now();
+      const lt = find('last-updated');
+      if (lt) lt.textContent = window.TitanDT?.formatDateTimeFA
+        ? window.TitanDT.formatDateTimeFA(ts)
+        : new Date(ts).toLocaleString('fa-IR');
+
+      console.log('✅ [bindLegacyOverview] Binding complete');
+    } catch (e) {
+      console.error('❌ [bindLegacyOverview] Error:', e);
+    }
+  }
+
+  // 3.2 Movers (بازیگران بازار)
+  async function bindLegacyMovers() {
+    try {
+      const host = document.querySelector('[data-widget="movers"]');
+      if (!host) {
+        console.log('ℹ️ [bindLegacyMovers] Widget not found');
+        return;
+      }
+
+      const { gainers = [], losers = [] } = await MoversAdapter.getMovers(5);
+      console.log('✅ [bindLegacyMovers] Data received:', { gainersCount: gainers.length, losersCount: losers.length });
+
+      const gBox = host.querySelector('[data-field="gainers-list"]');
+      const lBox = host.querySelector('[data-field="losers-list"]');
+
+      const make = (arr, isGainer) => (arr || []).map(it =>
+        `<div class="flex justify-between py-1 border-b border-gray-700">
+          <span class="font-semibold">${it.symbol}</span>
+          <span class="${isGainer ? 'text-green-400' : 'text-red-400'}">${isGainer ? '+' : ''}${(+it.change24h).toFixed(2)}%</span>
+        </div>`
+      ).join('');
+
+      if (gBox) gBox.innerHTML = make(gainers, true);
+      if (lBox) lBox.innerHTML = make(losers, false);
+
+      // Top gainer/loser
+      const find = (f) => host.querySelector(`[data-field="${f}"]`);
+      if (gainers[0]) {
+        if (find('top-gainer-symbol')) find('top-gainer-symbol').textContent = gainers[0].symbol;
+        if (find('top-gainer-change')) find('top-gainer-change').textContent = `+${gainers[0].change24h.toFixed(2)}%`;
+      }
+      if (losers[0]) {
+        if (find('top-loser-symbol')) find('top-loser-symbol').textContent = losers[0].symbol;
+        if (find('top-loser-change')) find('top-loser-change').textContent = `${losers[0].change24h.toFixed(2)}%`;
+      }
+
+      const lt = find('last-updated');
+      if (lt) lt.textContent = window.TitanDT?.formatDateTimeFA(Date.now());
+
+      console.log('✅ [bindLegacyMovers] Binding complete');
+    } catch (e) {
+      console.error('❌ [bindLegacyMovers] Error:', e);
+    }
+  }
+
+  // 3.3 Portfolio (خلاصه پرتفولیو)
+  async function bindLegacyPortfolio() {
+    try {
+      const host = document.querySelector('[data-widget="portfolio"]');
+      if (!host) {
+        console.log('ℹ️ [bindLegacyPortfolio] Widget not found');
+        return;
+      }
+
+      const perf = await PortfolioAdapter.getPerformance();
+      console.log('✅ [bindLegacyPortfolio] Data received:', perf);
+
+      // انتظار: { mode, summary: {totalEquity, unrealizedPnl, availableBalance}, positions, ... }
+      const F = (f) => host.querySelector(`[data-field="${f}"]`);
+      
+      if (F('mode')) F('mode').textContent = (perf.mode || 'live').toUpperCase();
+      
+      if (perf.summary) {
+        if (F('total-equity')) F('total-equity').textContent = `$${(+perf.summary.totalEquity || 0).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+        if (F('unrealized-pnl')) {
+          const pnl = +perf.summary.unrealizedPnl || 0;
+          F('unrealized-pnl').textContent = `${pnl >= 0 ? '+' : ''}$${Math.abs(pnl).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+          F('unrealized-pnl').className = pnl >= 0 ? 'text-green-400' : 'text-red-400';
+        }
+        if (F('available-balance')) F('available-balance').textContent = `$${(+perf.summary.availableBalance || 0).toLocaleString('en-US', {maximumFractionDigits: 2})}`;
+      }
+      
+      if (F('positions-count')) F('positions-count').textContent = `${(perf.positions || []).length}`;
+
+      // Positions list
+      if (perf.positions && perf.positions.length > 0) {
+        const posList = F('positions-list');
+        if (posList) {
+          posList.innerHTML = perf.positions.map(p => `
+            <div class="position-row flex justify-between items-center py-2 border-b border-gray-700">
+              <span class="font-bold">${p.symbol}</span>
+              <span class="text-sm ${p.side === 'LONG' ? 'text-green-400' : 'text-red-400'}">${p.side}</span>
+              <span>${p.size}</span>
+              <span class="${(p.unrealizedPnl || 0) >= 0 ? 'text-green-400' : 'text-red-400'}">
+                ${(p.unrealizedPnl || 0) >= 0 ? '+' : ''}$${Math.abs(p.unrealizedPnl || 0).toFixed(2)}
+              </span>
+            </div>
+          `).join('');
+        }
+      }
+
+      const lt = F('last-updated');
+      if (lt) lt.textContent = window.TitanDT?.formatDateTimeFA(Date.now());
+
+      console.log('✅ [bindLegacyPortfolio] Binding complete');
+    } catch (e) {
+      console.error('❌ [bindLegacyPortfolio] Error:', e);
+    }
+  }
+
+  // 3.4 Monitor (وضعیت سیستم)
+  async function bindLegacyMonitor() {
+    try {
+      const host = document.querySelector('[data-widget="monitor"]');
+      if (!host) {
+        console.log('ℹ️ [bindLegacyMonitor] Widget not found');
+        return;
+      }
+
+      const m = await MonitoringAdapter.getStatus();
+      const healthy = await MonitoringAdapter.isHealthy();
+      const cbState = await MonitoringAdapter.getCircuitBreakerState();
+      
+      console.log('✅ [bindLegacyMonitor] Data received:', { healthy, cbState });
+
+      // انتظار: { server: {status, uptimeSeconds}, services, ... }
+      const F = (f) => host.querySelector(`[data-field="${f}"]`);
+      
+      if (F('health-badge')) {
+        F('health-badge').textContent = healthy ? '✓ عملیاتی' : '✗ خطا';
+        F('health-badge').className = healthy ? 'badge bg-green-600' : 'badge bg-red-600';
+      }
+      
+      if (F('server-status')) F('server-status').textContent = m.server?.status || 'N/A';
+      
+      if (F('circuit-breaker')) {
+        const cbStateFa = MonitoringAdapter.translateCBState(cbState);
+        F('circuit-breaker').textContent = cbStateFa;
+        F('circuit-breaker').className = cbState === 'CLOSED' ? 'text-green-400' : 'text-red-400';
+      }
+      
+      if (F('uptime')) {
+        const uptimeSec = m.server?.uptimeSeconds || 0;
+        F('uptime').textContent = formatUptime(uptimeSec);
+      }
+      
+      if (F('cache-hit-rate') && m.services?.mexcApi?.cache) {
+        F('cache-hit-rate').textContent = `${m.services.mexcApi.cache.hitRate || 0}%`;
+      }
+
+      const lt = F('last-updated');
+      if (lt) lt.textContent = window.TitanDT?.formatDateTimeFA(Date.now());
+
+      console.log('✅ [bindLegacyMonitor] Binding complete');
+    } catch (e) {
+      console.error('❌ [bindLegacyMonitor] Error:', e);
+    }
+  }
+
+  // 3.5 Bind All Legacy Widgets
+  async function bindAllLegacy() {
+    if (window.TitanFlags?.preferLegacyWidgets === false) {
+      console.log('ℹ️ [bindAllLegacy] Legacy widgets disabled by flag');
+      return;
+    }
+
+    console.log('🔄 [bindAllLegacy] Starting legacy widget binding...');
+    
+    await Promise.allSettled([
+      bindLegacyOverview(),
+      bindLegacyMovers(),
+      bindLegacyPortfolio(),
+      bindLegacyMonitor()
+    ]);
+
+    console.log('✅ [bindAllLegacy] All legacy widgets processed');
+  }
+
+  // Helper: formatUptime (if not already defined)
+  function formatUptime(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h ${mins}m`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  }
+
+  // Helper: formatVolume (if not already defined)
+  function formatVolume(volume) {
+    if (volume >= 1e9) return `$${(volume / 1e9).toFixed(2)}B`;
+    if (volume >= 1e6) return `$${(volume / 1e6).toFixed(2)}M`;
+    if (volume >= 1e3) return `$${(volume / 1e3).toFixed(2)}K`;
+    return `$${volume.toFixed(2)}`;
+  }
+
+  // 3.6 Auto-execution after DOM ready + 30s interval refresh
+  function initLegacyBinding() {
+    // Wait for Annotator to complete (400ms delay)
+    setTimeout(() => {
+      bindAllLegacy();
+    }, 400);
+
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+      if (!document.hidden) { // Only refresh when page is visible
+        bindAllLegacy();
+      }
+    }, 30000);
+
+    console.log('✅ [Legacy Binding] Auto-refresh system initialized (30s interval)');
+  }
+
+  // Execute on DOM ready
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initLegacyBinding);
+  } else {
+    initLegacyBinding();
+  }
+
+  // Export for manual testing
+  window.TitanLegacyBind = {
+    bindLegacyOverview,
+    bindLegacyMovers,
+    bindLegacyPortfolio,
+    bindLegacyMonitor,
+    bindAllLegacy
+  };
+
+  console.log('✅ [Legacy Binding] Direct API binding system loaded');
 })();
