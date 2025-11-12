@@ -2612,3 +2612,49 @@ app.get('/api/widgets/types', async (c) => {
     }, 500);
   }
 });
+
+// ========================================================================
+// STATIC FILES & SPA ROUTING
+// ========================================================================
+
+const { serveStatic } = require('@hono/node-server/serve-static');
+const path = require('path');
+const fs = require('fs');
+
+// Serve static files from public directory
+app.use('/static/*', serveStatic({ root: './public' }));
+app.use('/favicon.ico', serveStatic({ path: './public/favicon.ico' }));
+
+// Serve index.html for root and all non-API routes (SPA catch-all)
+app.get('*', (c) => {
+  // Skip API routes
+  if (c.req.path.startsWith('/api/')) {
+    return c.json({ success: false, error: 'Route not found', path: c.req.path }, 404);
+  }
+  
+  // Serve index.html
+  const indexPath = path.join(__dirname, 'public', 'index.html');
+  try {
+    const html = fs.readFileSync(indexPath, 'utf-8');
+    return c.html(html);
+  } catch (err) {
+    console.error('Error serving index.html:', err);
+    return c.text('Error loading application', 500);
+  }
+});
+
+// ========================================================================
+// START SERVER
+// ========================================================================
+
+const PORT = process.env.PORT || 5000;
+
+serve({
+  fetch: app.fetch,
+  port: PORT
+}, (info) => {
+  console.log(`🚀 Titan Backend Server running on http://localhost:${info.port}`);
+  console.log(`📊 Dashboard: http://localhost:${info.port}/`);
+  console.log(`🔧 Health: http://localhost:${info.port}/health`);
+  console.log(`📡 API: http://localhost:${info.port}/api/`);
+});
