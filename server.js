@@ -2618,8 +2618,7 @@ app.get('/api/widgets/types', async (c) => {
 // ========================================================================
 
 const { serveStatic } = require('@hono/node-server/serve-static');
-const path = require('path');
-const fs = require('fs');
+// path and fs are already required at lines 1471-1472
 
 // Serve static files from public directory
 app.use('/static/*', serveStatic({ root: './public' }));
