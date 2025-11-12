@@ -36,14 +36,29 @@
       clearInterval(checkInterval);
       console.warn('⚠️ [Widgets Loader] Max retries reached, attempting dynamic load...');
       
-      // تلاش برای بارگذاری دینامیک
+      // تلاش برای بارگذاری دینامیک با CSP nonce و cache busting
       const script = document.createElement('script');
-      script.src = '/static/modules/dashboard/widgets-integration.js';
+      
+      // Cache busting
+      const cacheParam = window.__BUILD_ID__ || Date.now();
+      script.src = `/static/modules/dashboard/widgets-integration.js?v=${cacheParam}`;
       script.async = false;
+      
+      // CSP nonce support
+      const metaNonce = document.querySelector('meta[name="csp-nonce"]')?.getAttribute('content');
+      if (metaNonce) {
+        script.nonce = metaNonce;
+        console.log('🔒 [Widgets Loader] CSP nonce applied');
+      }
       
       script.onload = () => {
         console.log('✅ [Widgets Loader] Dynamic load successful');
-        window.dispatchEvent(new Event('titan:widgets-ready'));
+        if (!window.__TitanWidgetsReadyFired) {
+          window.__TitanWidgetsReadyFired = true;
+          const ev = new Event('titan:widgets-ready');
+          try { document.dispatchEvent(ev); } catch {}
+          try { window.dispatchEvent(ev); } catch {}
+        }
       };
       
       script.onerror = () => {
@@ -55,4 +70,32 @@
   }, 500);
   
   console.log('🔄 [Widgets Loader] Waiting for widgets-integration.js...');
+  
+  // Auto-bind when ready event fires
+  function tryBindAll() {
+    console.log('🔄 [Widgets Loader] Ready event received, attempting auto-bind...');
+    
+    // Run annotation scan
+    if (window.TitanLegacy?.scan) {
+      try {
+        window.TitanLegacy.scan();
+        console.log('✅ [Widgets Loader] Auto-scan completed');
+      } catch(e) {
+        console.warn('⚠️ [Widgets Loader] Auto-scan failed:', e);
+      }
+    }
+    
+    // Run data binding
+    if (window.TitanLegacyBind?.bindAllLegacy) {
+      window.TitanLegacyBind.bindAllLegacy()
+        .then(() => console.log('✅ [Widgets Loader] Auto-bind completed'))
+        .catch(e => console.warn('⚠️ [Widgets Loader] Auto-bind failed:', e));
+    }
+  }
+  
+  // Listen on both document and window (with once:true to prevent double-fire)
+  document.addEventListener('titan:widgets-ready', tryBindAll, { once: true });
+  window.addEventListener('titan:widgets-ready', tryBindAll, { once: true });
+  
+  console.log('✅ [Widgets Loader] Auto-bind listeners registered');
 })();

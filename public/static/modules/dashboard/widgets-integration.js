@@ -1038,12 +1038,27 @@
 
   console.log('✅ [Legacy Binding] Direct API binding system loaded');
   
-  // تضمین رویداد آمادگی نهایی بعد از لود کامل
-  if (document.readyState === 'complete') {
-    window.dispatchEvent(new Event('titan:widgets-ready'));
-  } else {
+  // یکنواخت‌سازی رویداد Ready با گارد anti-double-fire
+  (function ensureReadyOnce(){
+    if (window.__TitanWidgetsReadyFired) return;
+    window.__TitanWidgetsReadyFired = true;
+    
+    const ev = new Event('titan:widgets-ready');
+    try { document.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on document:', e); }
+    try { window.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on window:', e); }
+    
+    console.log('✅ [Widgets Ready] Event dispatched to both document and window');
+  })();
+  
+  // اگر صفحه بعداً لود شد، دوباره سیگنال بفرست
+  if (document.readyState !== 'complete') {
     window.addEventListener('load', () => {
-      window.dispatchEvent(new Event('titan:widgets-ready'));
+      if (!window.__TitanWidgetsReadyFired) {
+        window.__TitanWidgetsReadyFired = true;
+        const ev = new Event('titan:widgets-ready');
+        try { document.dispatchEvent(ev); } catch {}
+        try { window.dispatchEvent(ev); } catch {}
+      }
     });
   }
 })();
