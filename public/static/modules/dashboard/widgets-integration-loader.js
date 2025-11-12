@@ -71,9 +71,17 @@
   
   console.log('🔄 [Widgets Loader] Waiting for widgets-integration.js...');
   
-  // Auto-bind when ready event fires
+  // Auto-bind when ready event fires (with anti-double-bind guard)
   function tryBindAll() {
     console.log('🔄 [Widgets Loader] Ready event received, attempting auto-bind...');
+    
+    // Guard: جلوگیری از Bind بی‌پایان
+    if (window.__TitanBindOnce) {
+      console.log('⏭️ [Widgets Loader] Bind already in progress, skipping...');
+      return;
+    }
+    window.__TitanBindOnce = true;
+    setTimeout(() => { window.__TitanBindOnce = false; }, 1500);
     
     // Run annotation scan
     if (window.TitanLegacy?.scan) {
@@ -98,4 +106,21 @@
   window.addEventListener('titan:widgets-ready', tryBindAll, { once: true });
   
   console.log('✅ [Widgets Loader] Auto-bind listeners registered');
+  
+  // 🔄 Improvement 1: MutationObserver for SPA route changes (debounced)
+  (function setupWidgetObserver(){
+    let t;
+    const debouncedBind = ()=> {
+      clearTimeout(t);
+      t = setTimeout(() => {
+        if (window.TitanLegacy?.scan) window.TitanLegacy.scan();
+        if (window.TitanLegacyBind?.bindAllLegacy) window.TitanLegacyBind.bindAllLegacy().catch(console.error);
+      }, 250);
+    };
+    const mo = new MutationObserver(debouncedBind);
+    mo.observe(document.body, { childList: true, subtree: true });
+    // first kick
+    debouncedBind();
+    console.log('✅ [Widgets Loader] MutationObserver active for SPA route changes');
+  })();
 })();

@@ -19,14 +19,31 @@
   let refreshTimers = {};
   let isPageVisible = true;
 
-  // Visibility API برای توقف refresh در تب مخفی
+  // 👁️ Improvement 2: Visibility API با توقف/ازسرگیری Auto-Refresh
   document.addEventListener('visibilitychange', () => {
     isPageVisible = !document.hidden;
     console.log(`📊 [Widgets] Page visibility: ${isPageVisible ? 'visible' : 'hidden'}`);
     
-    if (isPageVisible) {
-      // وقتی تب دوباره visible شد، همه را refresh کن
-      refreshAllWidgets();
+    if (document.hidden) {
+      // توقف همه تایمرها
+      Object.values(refreshTimers || {}).forEach(clearInterval);
+      refreshTimers = {};
+      console.log('⏸️ [Widgets] Auto-refresh paused (tab hidden)');
+    } else {
+      // ازسرگیری با scan و bind
+      if (window.TitanLegacy?.scan) window.TitanLegacy.scan();
+      if (window.TitanLegacyBind?.bindAllLegacy) {
+        window.TitanLegacyBind.bindAllLegacy()
+          .then(() => {
+            // ازسرگیری تایمرها
+            startAutoRefresh('MarketOverview', loadMarketOverview);
+            startAutoRefresh('MarketMovers', loadMarketMovers);
+            startAutoRefresh('Portfolio', loadPortfolioWidget);
+            startAutoRefresh('Monitoring', loadMonitoringWidget);
+            console.log('▶️ [Widgets] Auto-refresh resumed (tab visible)');
+          })
+          .catch(console.error);
+      }
     }
   });
 
@@ -1061,4 +1078,18 @@
       }
     });
   }
+  
+  // 🩺 Improvement 3: گزارش سلامت سبک در کنسول (دیباگ سریع)
+  window.TitanDiag = async function(){
+    const widgets = [...document.querySelectorAll('[data-widget]')].map(n=>n.getAttribute('data-widget'));
+    const api = !!(window.TitanAPI && typeof TitanAPI.getMarketSummary==='function');
+    const bind = !!(window.TitanLegacyBind && typeof TitanLegacyBind.bindAllLegacy==='function');
+    const ready = !!window.__TitanWidgetsReadyFired;
+    console.table([{ widgets: widgets.join(', ') || '—', count: widgets.length, api, bind, ready }]);
+    try {
+      const r = await fetch('/api/market/overview', { cache:'no-store' });
+      console.log('overview:', r.status, r.ok ? 'OK' : 'FAIL');
+    } catch (e) { console.log('overview: network error'); }
+  };
+  console.log('ℹ️ Type TitanDiag() for a one-shot health table');
 })();
