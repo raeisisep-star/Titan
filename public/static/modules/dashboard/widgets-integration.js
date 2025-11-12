@@ -1037,4 +1037,13 @@
   };
 
   console.log('✅ [Legacy Binding] Direct API binding system loaded');
+  
+  // تضمین رویداد آمادگی نهایی بعد از لود کامل
+  if (document.readyState === 'complete') {
+    window.dispatchEvent(new Event('titan:widgets-ready'));
+  } else {
+    window.addEventListener('load', () => {
+      window.dispatchEvent(new Event('titan:widgets-ready'));
+    });
+  }
 })();
