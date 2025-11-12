@@ -6,6 +6,59 @@
 (function(global) {
   'use strict';
 
+  // === Prefer Legacy Widgets (Green) over New Ones (Red) ===
+  window.TitanFlags = window.TitanFlags || {};
+  window.TitanFlags.preferLegacyWidgets = true;
+
+  // انتخاب‌گرهای کانتینرهای قدیمی (legacy)
+  const LEGACY_SELECTORS = {
+    overview:  ['[data-widget="overview"]',  '#overview-widget',  '.widget-overview'],
+    movers:    ['[data-widget="movers"]',    '#movers-widget',    '.widget-movers'],
+    portfolio: ['[data-widget="portfolio"]', '#portfolio-widget', '.widget-portfolio'],
+    monitor:   ['[data-widget="monitor"]',   '#monitor-widget',   '.widget-monitor'],
+    chart:     ['[data-widget="chart"]',     '#chart-widget',     '.widget-chart'],
+  };
+
+  /**
+   * پیدا کردن کانتینر قدیمی اگر وجود داشته باشد
+   * @param {string} key - کلید ویجت (overview, movers, portfolio, monitor, chart)
+   * @returns {HTMLElement|null}
+   */
+  function findLegacyContainer(key) {
+    if (!window.TitanFlags.preferLegacyWidgets) return null;
+    const selectors = LEGACY_SELECTORS[key] || [];
+    for (const sel of selectors) {
+      const n = document.querySelector(sel);
+      if (n) {
+        console.log(`✅ [Legacy Container] Found legacy container for ${key}: ${sel}`);
+        return n;
+      }
+    }
+    console.log(`ℹ️ [Legacy Container] No legacy container found for ${key}`);
+    return null;
+  }
+
+  /**
+   * دریافت یا ایجاد کانتینر
+   * اگر preferLegacyWidgets فعال باشد، ابتدا legacy را جستجو می‌کند
+   * در غیر این صورت یک div fallback ایجاد می‌کند
+   * 
+   * @param {string} key - کلید ویجت
+   * @param {string} fallbackClass - کلاس CSS برای fallback container
+   * @returns {HTMLElement}
+   */
+  function getOrCreateContainer(key, fallbackClass) {
+    const legacy = findLegacyContainer(key);
+    if (legacy) return legacy;
+
+    // اگر legacy پیدا نشد، یک fallback مخفی بساز
+    const div = document.createElement('div');
+    div.className = (fallbackClass || '') + ' legacy-fallback hidden';
+    div.id = `fallback-${key}-widget`;
+    console.log(`ℹ️ [Fallback Container] Created fallback container for ${key} (hidden)`);
+    return div;
+  }
+
   // تنظیمات
   const WIDGETS_CONFIG = {
     marketOverview: {
@@ -36,17 +89,41 @@
 
   /**
    * ایجاد ساختار HTML برای widget containerها
+   * اگر legacy containers وجود داشته باشند، از آنها استفاده می‌شود
+   * در غیر این صورت fallback containers ایجاد می‌شود (مخفی)
    */
   function createWidgetsSection() {
     const section = document.createElement('div');
     section.id = 'dashboard-widgets-section';
     section.className = 'widgets-section mt-6 mb-6';
     
+    // چک کردن اینکه آیا legacy containers وجود دارند
+    const hasLegacy = window.TitanFlags.preferLegacyWidgets && (
+      findLegacyContainer('overview') ||
+      findLegacyContainer('movers') ||
+      findLegacyContainer('portfolio') ||
+      findLegacyContainer('monitor')
+    );
+
+    if (hasLegacy) {
+      // اگر legacy widgets موجود هستند، فقط یک section خالی برگردان
+      console.log('ℹ️ [Widgets Section] Using existing legacy containers, not creating new ones');
+      section.innerHTML = `
+        <!-- Legacy Widgets در DOM موجود هستند، فقط به آنها سیم‌کشی می‌شود -->
+        <div class="legacy-mode-indicator text-center text-xs text-gray-500 py-2">
+          ✓ Legacy Mode: Using existing dashboard widgets
+        </div>
+      `;
+      return section;
+    }
+
+    // اگر legacy نیست، fallback containers بساز (مخفی)
+    console.log('⚠️ [Widgets Section] No legacy containers found, creating hidden fallbacks');
     section.innerHTML = `
-      <!-- Dashboard Widgets Grid -->
+      <!-- Fallback Widgets (Hidden) - فقط زمانی که legacy موجود نیست -->
       <div class="widgets-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <!-- Market Overview Widget -->
-        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700">
+        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 legacy-fallback hidden">
           <div id="market-overview-widget">
             <div class="widget-loading text-center py-8">
               <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -56,7 +133,7 @@
         </div>
 
         <!-- Market Movers Widget -->
-        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700">
+        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 legacy-fallback hidden">
           <div id="market-movers-widget">
             <div class="widget-loading text-center py-8">
               <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -66,7 +143,7 @@
         </div>
 
         <!-- Portfolio Widget -->
-        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700">
+        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 legacy-fallback hidden">
           <div id="portfolio-widget">
             <div class="widget-loading text-center py-8">
               <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -76,7 +153,7 @@
         </div>
 
         <!-- Monitoring Widget -->
-        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700">
+        <div class="widget-container bg-gray-800 rounded-lg p-4 shadow-lg border border-gray-700 legacy-fallback hidden">
           <div id="monitoring-widget">
             <div class="widget-loading text-center py-8">
               <div class="animate-spin inline-block w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full"></div>
@@ -218,7 +295,9 @@
   global.DashboardWidgetsLoader = {
     init,
     injectWidgets,
-    loadWidgets
+    loadWidgets,
+    findLegacyContainer,
+    getOrCreateContainer
   };
 
   // راه‌اندازی خودکار

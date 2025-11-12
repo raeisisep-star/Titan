@@ -25,7 +25,14 @@
   // 1. Market Overview Widget
   // =============================================================================
   async function loadMarketOverview() {
-    const container = document.getElementById('market-overview-widget');
+    // Try to find legacy container first, then fallback to new widget
+    let container = null;
+    if (window.DashboardWidgetsLoader && window.DashboardWidgetsLoader.findLegacyContainer) {
+      container = window.DashboardWidgetsLoader.findLegacyContainer('overview');
+    }
+    if (!container) {
+      container = document.getElementById('market-overview-widget');
+    }
     if (!container) return;
 
     try {
@@ -33,7 +40,7 @@
       
       const overview = await OverviewAdapter.getMarketOverview();
       
-      // رندر داده‌ها
+      // رندر داده‌ها با TitanBind.renderInto
       const html = `
         <div class="widget-header">
           <h3 class="text-lg font-bold">نمای کلی بازار</h3>
@@ -64,7 +71,14 @@
         </div>
       `;
       
-      container.innerHTML = html;
+      // Use smart rendering: legacy binding or HTML injection
+      if (window.TitanBind && window.TitanBind.renderInto) {
+        window.TitanBind.renderInto(container, html, window.TitanBind.bindOverviewData, overview);
+      } else {
+        // Fallback to direct HTML injection
+        container.innerHTML = html;
+      }
+      
       hideWidgetLoading(container);
       
     } catch (error) {
@@ -77,13 +91,27 @@
   // 2. Market Movers Widget
   // =============================================================================
   async function loadMarketMovers() {
-    const container = document.getElementById('market-movers-widget');
+    // Try to find legacy container first, then fallback to new widget
+    let container = null;
+    if (window.DashboardWidgetsLoader && window.DashboardWidgetsLoader.findLegacyContainer) {
+      container = window.DashboardWidgetsLoader.findLegacyContainer('movers');
+    }
+    if (!container) {
+      container = document.getElementById('market-movers-widget');
+    }
     if (!container) return;
 
     try {
       showWidgetLoading(container);
       
       const movers = await MoversAdapter.getMovers(5);
+      
+      // Check that movers has the correct structure
+      if (!movers || !movers.gainers || !movers.losers) {
+        console.error('❌ [Market Movers] Invalid data structure:', movers);
+        showWidgetError(container, 'ساختار داده نامعتبر');
+        return;
+      }
       
       const html = `
         <div class="widget-header">
@@ -112,7 +140,14 @@
         </div>
       `;
       
-      container.innerHTML = html;
+      // Use smart rendering: legacy binding or HTML injection
+      if (window.TitanBind && window.TitanBind.renderInto) {
+        window.TitanBind.renderInto(container, html, window.TitanBind.bindMoversData, movers);
+      } else {
+        // Fallback to direct HTML injection
+        container.innerHTML = html;
+      }
+      
       hideWidgetLoading(container);
       
     } catch (error) {
@@ -125,7 +160,14 @@
   // 3. Portfolio Widget
   // =============================================================================
   async function loadPortfolioWidget() {
-    const container = document.getElementById('portfolio-widget');
+    // Try to find legacy container first, then fallback to new widget
+    let container = null;
+    if (window.DashboardWidgetsLoader && window.DashboardWidgetsLoader.findLegacyContainer) {
+      container = window.DashboardWidgetsLoader.findLegacyContainer('portfolio');
+    }
+    if (!container) {
+      container = document.getElementById('portfolio-widget');
+    }
     if (!container) return;
 
     try {
@@ -177,7 +219,14 @@
         ` : ''}
       `;
       
-      container.innerHTML = html;
+      // Use smart rendering: legacy binding or HTML injection
+      if (window.TitanBind && window.TitanBind.renderInto) {
+        window.TitanBind.renderInto(container, html, window.TitanBind.bindPortfolioData, perf);
+      } else {
+        // Fallback to direct HTML injection
+        container.innerHTML = html;
+      }
+      
       hideWidgetLoading(container);
       
     } catch (error) {
@@ -190,7 +239,14 @@
   // 4. Monitoring Widget
   // =============================================================================
   async function loadMonitoringWidget() {
-    const container = document.getElementById('monitoring-widget');
+    // Try to find legacy container first, then fallback to new widget
+    let container = null;
+    if (window.DashboardWidgetsLoader && window.DashboardWidgetsLoader.findLegacyContainer) {
+      container = window.DashboardWidgetsLoader.findLegacyContainer('monitor');
+    }
+    if (!container) {
+      container = document.getElementById('monitoring-widget');
+    }
     if (!container) return;
 
     try {
@@ -200,6 +256,14 @@
       const healthy = await MonitoringAdapter.isHealthy();
       const cbState = await MonitoringAdapter.getCircuitBreakerState();
       const cbStateFa = MonitoringAdapter.translateCBState(cbState);
+      
+      // Create combined data object for binding
+      const monitorData = {
+        server: status.server,
+        services: status.services,
+        circuitBreaker: { state: cbState },
+        healthy: healthy
+      };
       
       const html = `
         <div class="widget-header">
@@ -229,7 +293,14 @@
         </div>
       `;
       
-      container.innerHTML = html;
+      // Use smart rendering: legacy binding or HTML injection
+      if (window.TitanBind && window.TitanBind.renderInto) {
+        window.TitanBind.renderInto(container, html, window.TitanBind.bindMonitorData, monitorData);
+      } else {
+        // Fallback to direct HTML injection
+        container.innerHTML = html;
+      }
+      
       hideWidgetLoading(container);
       
     } catch (error) {
@@ -426,4 +497,255 @@
   window.TitanDT = window.TitanDT || {};
   window.TitanDT.formatDateTimeFA = formatDateTimeFA;
   window.TitanDT.formatTimeFA = formatTimeFA;
+})();
+
+// === Legacy Binders: تزریق داده در ویجت‌های قدیمی (بدون بازنویسی DOM) ===
+(function () {
+  /**
+   * Helper: set text content in a selector
+   */
+  function setText(root, sel, val) {
+    const n = root.querySelector(sel);
+    if (n) n.textContent = val;
+  }
+
+  /**
+   * تشخیص اینکه container قدیمی (legacy) است یا نه
+   * با چک کردن وجود [data-field] attributeها
+   */
+  function isLegacy(root) {
+    return !!root.querySelector('[data-field]');
+  }
+
+  /**
+   * Bind Overview Data به ویجت قدیمی
+   * فرض: container شامل [data-field="btc-price"], [data-field="eth-price"], etc.
+   */
+  function bindOverviewData(root, data) {
+    if (!data || !data.symbols) return;
+    
+    console.log('📊 [TitanBind] Binding overview data to legacy container');
+    
+    // Bind symbol prices
+    data.symbols.forEach(s => {
+      const symbolLower = s.symbol.toLowerCase().replace('usdt', '');
+      setText(root, `[data-field="${symbolLower}-price"]`, `$${s.price.toFixed(2)}`);
+      setText(root, `[data-field="${symbolLower}-change"]`, `${s.change24h > 0 ? '+' : ''}${s.change24h.toFixed(2)}%`);
+      
+      // Update color class
+      const changeEl = root.querySelector(`[data-field="${symbolLower}-change"]`);
+      if (changeEl) {
+        changeEl.className = s.change24h > 0 ? 'text-green-400' : 'text-red-400';
+      }
+    });
+    
+    // Bind market stats
+    if (data.market) {
+      setText(root, '[data-field="total-volume"]', formatVolume(data.market.totalVolume24h));
+      setText(root, '[data-field="avg-change"]', `${data.market.avgChange24h > 0 ? '+' : ''}${data.market.avgChange24h.toFixed(2)}%`);
+      
+      const avgChangeEl = root.querySelector('[data-field="avg-change"]');
+      if (avgChangeEl) {
+        avgChangeEl.className = data.market.avgChange24h > 0 ? 'text-green-400' : 'text-red-400';
+      }
+    }
+    
+    // Update timestamp
+    setText(root, '[data-field="last-updated"]', window.TitanDT.formatDateTimeFA(Date.now()));
+  }
+
+  /**
+   * Bind Movers Data به ویجت قدیمی
+   */
+  function bindMoversData(root, data) {
+    if (!data || (!data.gainers && !data.losers)) return;
+    
+    console.log('🔥 [TitanBind] Binding movers data to legacy container');
+    
+    // Bind gainers
+    if (data.gainers && data.gainers.length > 0) {
+      const gainersContainer = root.querySelector('[data-field="gainers-list"]');
+      if (gainersContainer) {
+        gainersContainer.innerHTML = data.gainers.map(g => `
+          <div class="mover-item flex justify-between py-1">
+            <span>${g.symbol}</span>
+            <span class="text-green-400">+${g.change24h.toFixed(2)}%</span>
+          </div>
+        `).join('');
+      }
+      
+      // Bind top gainer
+      const topGainer = data.gainers[0];
+      setText(root, '[data-field="top-gainer-symbol"]', topGainer.symbol);
+      setText(root, '[data-field="top-gainer-change"]', `+${topGainer.change24h.toFixed(2)}%`);
+    }
+    
+    // Bind losers
+    if (data.losers && data.losers.length > 0) {
+      const losersContainer = root.querySelector('[data-field="losers-list"]');
+      if (losersContainer) {
+        losersContainer.innerHTML = data.losers.map(l => `
+          <div class="mover-item flex justify-between py-1">
+            <span>${l.symbol}</span>
+            <span class="text-red-400">${l.change24h.toFixed(2)}%</span>
+          </div>
+        `).join('');
+      }
+      
+      // Bind top loser
+      const topLoser = data.losers[0];
+      setText(root, '[data-field="top-loser-symbol"]', topLoser.symbol);
+      setText(root, '[data-field="top-loser-change"]', `${topLoser.change24h.toFixed(2)}%`);
+    }
+    
+    // Update timestamp
+    setText(root, '[data-field="last-updated"]', window.TitanDT.formatDateTimeFA(Date.now()));
+  }
+
+  /**
+   * Bind Portfolio Data به ویجت قدیمی
+   */
+  function bindPortfolioData(root, data) {
+    if (!data || !data.summary) return;
+    
+    console.log('💼 [TitanBind] Binding portfolio data to legacy container');
+    
+    const summary = data.summary;
+    
+    // Bind summary stats
+    setText(root, '[data-field="total-equity"]', `$${(summary.totalEquity || 0).toFixed(2)}`);
+    setText(root, '[data-field="unrealized-pnl"]', `${(summary.unrealizedPnl || 0) > 0 ? '+' : ''}$${(summary.unrealizedPnl || 0).toFixed(2)}`);
+    setText(root, '[data-field="available-balance"]', `$${(summary.availableBalance || 0).toFixed(2)}`);
+    
+    // Update PnL color
+    const pnlEl = root.querySelector('[data-field="unrealized-pnl"]');
+    if (pnlEl) {
+      pnlEl.className = (summary.unrealizedPnl || 0) > 0 ? 'text-green-400' : 'text-red-400';
+    }
+    
+    // Bind mode badge
+    setText(root, '[data-field="mode"]', data.mode || 'live');
+    
+    // Bind positions count
+    if (data.positions) {
+      setText(root, '[data-field="positions-count"]', data.positions.length);
+      
+      // Bind positions list
+      const positionsContainer = root.querySelector('[data-field="positions-list"]');
+      if (positionsContainer && data.positions.length > 0) {
+        positionsContainer.innerHTML = data.positions.map(p => `
+          <div class="position-row flex justify-between items-center py-2 border-b border-gray-700">
+            <span class="font-bold">${p.symbol}</span>
+            <span class="text-sm ${p.side === 'LONG' ? 'text-green-400' : 'text-red-400'}">${p.side}</span>
+            <span>${p.size}</span>
+            <span class="${(p.unrealizedPnl || 0) > 0 ? 'text-green-400' : 'text-red-400'}">
+              ${(p.unrealizedPnl || 0) > 0 ? '+' : ''}$${(p.unrealizedPnl || 0).toFixed(2)}
+            </span>
+          </div>
+        `).join('');
+      }
+    }
+    
+    // Update timestamp
+    setText(root, '[data-field="last-updated"]', window.TitanDT.formatDateTimeFA(Date.now()));
+  }
+
+  /**
+   * Bind Monitoring Data به ویجت قدیمی
+   */
+  function bindMonitorData(root, data) {
+    if (!data || !data.server) return;
+    
+    console.log('⚙️ [TitanBind] Binding monitoring data to legacy container');
+    
+    // Bind server status
+    setText(root, '[data-field="server-status"]', data.server.status || 'N/A');
+    
+    // Bind circuit breaker state
+    const cbState = data.circuitBreaker?.state || 'UNKNOWN';
+    const cbStateFa = window.MonitoringAdapter?.translateCBState?.(cbState) || cbState;
+    setText(root, '[data-field="circuit-breaker"]', cbStateFa);
+    
+    const cbEl = root.querySelector('[data-field="circuit-breaker"]');
+    if (cbEl) {
+      cbEl.className = cbState === 'CLOSED' ? 'text-green-400' : 'text-red-400';
+    }
+    
+    // Bind uptime
+    if (data.server.uptimeSeconds) {
+      const uptimeStr = formatUptime(data.server.uptimeSeconds);
+      setText(root, '[data-field="uptime"]', uptimeStr);
+    }
+    
+    // Bind cache hit rate
+    if (data.services?.mexcApi?.cache) {
+      setText(root, '[data-field="cache-hit-rate"]', `${data.services.mexcApi.cache.hitRate || 0}%`);
+    }
+    
+    // Bind health badge
+    const healthy = data.healthy !== false;
+    setText(root, '[data-field="health-badge"]', healthy ? '✓ عملیاتی' : '✗ خطا');
+    
+    const healthBadge = root.querySelector('[data-field="health-badge"]');
+    if (healthBadge) {
+      healthBadge.className = healthy ? 'bg-green-600' : 'bg-red-600';
+    }
+    
+    // Update timestamp
+    setText(root, '[data-field="last-updated"]', window.TitanDT.formatDateTimeFA(Date.now()));
+  }
+
+  /**
+   * Smart Rendering: اگر legacy است bind کن، وگرنه HTML را inject کن
+   * 
+   * @param {HTMLElement} container - کانتینری که باید داده در آن رندر شود
+   * @param {string} html - HTML جدید برای injection (اگر legacy نباشد)
+   * @param {Function} binder - تابع binder برای legacy mode
+   * @param {Object} data - داده‌ای که باید رندر شود
+   */
+  function renderInto(container, html, binder, data) {
+    if (!container) {
+      console.warn('⚠️ [TitanBind] renderInto: container is null');
+      return;
+    }
+    
+    if (isLegacy(container)) {
+      console.log('✅ [TitanBind] Using legacy binding mode');
+      binder(container, data);
+      container.classList.remove('hidden');
+    } else {
+      console.log('✅ [TitanBind] Using HTML injection mode');
+      container.innerHTML = html;
+      container.classList.remove('hidden');
+    }
+  }
+
+  // Helper function from widgets-integration.js
+  function formatVolume(volume) {
+    if (volume >= 1e9) return `$${(volume / 1e9).toFixed(2)}B`;
+    if (volume >= 1e6) return `$${(volume / 1e6).toFixed(2)}M`;
+    if (volume >= 1e3) return `$${(volume / 1e3).toFixed(2)}K`;
+    return `$${volume.toFixed(2)}`;
+  }
+
+  function formatUptime(seconds) {
+    const days = Math.floor(seconds / 86400);
+    const hours = Math.floor((seconds % 86400) / 3600);
+    const mins = Math.floor((seconds % 3600) / 60);
+    if (days > 0) return `${days}d ${hours}h ${mins}m`;
+    if (hours > 0) return `${hours}h ${mins}m`;
+    return `${mins}m`;
+  }
+
+  // Export
+  window.TitanBind = {
+    renderInto,
+    bindOverviewData,
+    bindMoversData,
+    bindPortfolioData,
+    bindMonitorData,
+    isLegacy
+  };
+
+  console.log('✅ [TitanBind] Legacy data binding system loaded');
 })();

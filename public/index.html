@@ -39,6 +39,22 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="/static/styles.css" rel="stylesheet">
+    
+    <!-- Legacy Widget System CSS -->
+    <style>
+        /* Hide fallback widgets when legacy widgets are active */
+        .legacy-fallback.hidden {
+            display: none !important;
+        }
+        
+        /* Legacy mode indicator styling */
+        .legacy-mode-indicator {
+            font-size: 0.75rem;
+            color: #9ca3af;
+            padding: 0.5rem;
+            text-align: center;
+        }
+    </style>
 </head>
 <body class="bg-gray-900 text-white" dir="rtl">
     <div id="app">

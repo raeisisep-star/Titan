@@ -1,54 +1,88 @@
 // public/static/modules/dashboard/services/adapters/movers.adapter.js
 // آداپتر بازیگران بازار - اتصال به /api/market/movers
 // استفاده: MoversAdapter.getMovers(5), MoversAdapter.getGainers(10)
+// Fixed: Returns unified {gainers: [], losers: []} structure
 
 (function (global) {
   const BASE = "/api/market";
 
   /**
+   * Helper: Fetch a specific type (gainers or losers)
+   * @param {string} type - 'gainers' or 'losers'
+   * @param {number} limit - Number of items to fetch
+   * @returns {Promise<Array>}
+   */
+  async function fetchType(type, limit) {
+    try {
+      const res = await TitanHTTP.get(`${BASE}/movers`, {
+        params: { type, limit: Math.min(limit || 5, 20) }
+      });
+      
+      if (!res?.success || !res?.data) {
+        console.warn(`[MoversAdapter] Failed to fetch ${type}:`, res?.message);
+        return [];
+      }
+      
+      return Array.isArray(res.data.items) ? res.data.items : [];
+    } catch (error) {
+      console.error(`[MoversAdapter] Error fetching ${type}:`, error);
+      return [];
+    }
+  }
+
+  /**
    * دریافت بازیگران بازار (برترین سودآورها و ضررزاها)
-   * @param {number} limit - تعداد نتایج (پیش‌فرض: 10، حداکثر: 20)
-   * @returns {Promise<{gainers: Array, losers: Array, mode: string, timestamp: number}>}
+   * @param {number} limit - تعداد نتایج (پیش‌فرض: 5، حداکثر: 20)
+   * @returns {Promise<{gainers: Array, losers: Array, timestamp: number}>}
    * 
    * Response Schema:
    * {
-   *   success: true,
-   *   data: {
-   *     gainers: [
-   *       {
-   *         symbol: "UNIUSDT",
-   *         price: 12.34,
-   *         change24h: 8.5,
-   *         volume24h: 5678901.23
-   *       },
-   *       // ... more gainers
-   *     ],
-   *     losers: [
-   *       {
-   *         symbol: "ATOMUSDT",
-   *         price: 12.34,
-   *         change24h: -3.2,
-   *         volume24h: 876543.21
-   *       },
-   *       // ... more losers
-   *     ],
-   *     mode: "demo",
-   *     timestamp: 1762783338350
-   *   }
+   *   gainers: [
+   *     {
+   *       symbol: "UNIUSDT",
+   *       price: 12.34,
+   *       change24h: 8.5,
+   *       volume24h: 5678901.23,
+   *       high24h: 13.00,
+   *       low24h: 11.50
+   *     },
+   *     // ... more gainers
+   *   ],
+   *   losers: [
+   *     {
+   *       symbol: "ATOMUSDT",
+   *       price: 12.34,
+   *       change24h: -3.2,
+   *       volume24h: 876543.21,
+   *       high24h: 12.80,
+   *       low24h: 11.90
+   *     },
+   *     // ... more losers
+   *   ],
+   *   timestamp: 1762783338350
    * }
    */
-  async function getMovers(limit = 10) {
+  async function getMovers(limit = 5) {
     try {
-      const res = await TitanHTTP.get(`${BASE}/movers`, {
-        params: { limit: Math.min(limit, 20) }
-      });
-      if (!res?.success || !res?.data) {
-        throw new Error(res?.message || "Failed to fetch market movers");
-      }
-      return res.data;
+      // Fetch both gainers and losers in parallel
+      const [gainers, losers] = await Promise.all([
+        fetchType('gainers', limit),
+        fetchType('losers', limit)
+      ]);
+
+      return {
+        gainers,
+        losers,
+        timestamp: Date.now()
+      };
     } catch (error) {
-      console.error("[MoversAdapter] Error:", error);
-      throw error;
+      console.error("[MoversAdapter] Error in getMovers:", error);
+      // Return empty structure on error
+      return {
+        gainers: [],
+        losers: [],
+        timestamp: Date.now()
+      };
     }
   }
 
@@ -58,13 +92,7 @@
    * @returns {Promise<Array>}
    */
   async function getGainers(limit = 10) {
-    try {
-      const movers = await getMovers(limit);
-      return movers.gainers || [];
-    } catch (error) {
-      console.error("[MoversAdapter] Error fetching gainers:", error);
-      throw error;
-    }
+    return fetchType('gainers', limit);
   }
 
   /**
@@ -73,13 +101,7 @@
    * @returns {Promise<Array>}
    */
   async function getLosers(limit = 10) {
-    try {
-      const movers = await getMovers(limit);
-      return movers.losers || [];
-    } catch (error) {
-      console.error("[MoversAdapter] Error fetching losers:", error);
-      throw error;
-    }
+    return fetchType('losers', limit);
   }
 
   /**
@@ -92,7 +114,7 @@
       return gainers[0] || null;
     } catch (error) {
       console.error("[MoversAdapter] Error fetching top gainer:", error);
-      throw error;
+      return null;
     }
   }
 
@@ -106,7 +128,7 @@
       return losers[0] || null;
     } catch (error) {
       console.error("[MoversAdapter] Error fetching top loser:", error);
-      throw error;
+      return null;
     }
   }
 
@@ -118,4 +140,6 @@
     getTopGainer,
     getTopLoser
   };
+
+  console.log('✅ [MoversAdapter] Market movers adapter loaded (unified structure)');
 })(window);
