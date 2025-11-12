@@ -219,22 +219,39 @@
     console.log('🔄 [Dashboard Widgets] Loading all widgets...');
     
     try {
-      // بارگذاری با تأخیر کوچک برای جلوگیری از race condition
-      setTimeout(() => {
-        if (typeof loadMarketOverview === 'function') loadMarketOverview();
-      }, 100);
-      
-      setTimeout(() => {
-        if (typeof loadMarketMovers === 'function') loadMarketMovers();
-      }, 200);
-      
-      setTimeout(() => {
-        if (typeof loadPortfolioWidget === 'function') loadPortfolioWidget();
-      }, 300);
-      
-      setTimeout(() => {
-        if (typeof loadMonitoringWidget === 'function') loadMonitoringWidget();
-      }, 400);
+      // استفاده از سیستم جدید Legacy Binding
+      if (window.TitanLegacyBind && typeof window.TitanLegacyBind.bindAllLegacy === 'function') {
+        // Legacy system: استفاده از bindAllLegacy
+        setTimeout(() => {
+          console.log('🔄 [Dashboard Widgets] Using TitanLegacyBind.bindAllLegacy()...');
+          window.TitanLegacyBind.bindAllLegacy()
+            .then(() => {
+              console.log('✅ [Dashboard Widgets] Legacy widgets bound successfully');
+            })
+            .catch(err => {
+              console.error('❌ [Dashboard Widgets] Error binding legacy widgets:', err);
+            });
+        }, 400);
+      } else {
+        // Fallback: سیستم قدیمی (اگر هنوز وجود داشته باشد)
+        console.warn('⚠️ [Dashboard Widgets] TitanLegacyBind not found, trying old system...');
+        
+        setTimeout(() => {
+          if (typeof loadMarketOverview === 'function') loadMarketOverview();
+        }, 100);
+        
+        setTimeout(() => {
+          if (typeof loadMarketMovers === 'function') loadMarketMovers();
+        }, 200);
+        
+        setTimeout(() => {
+          if (typeof loadPortfolioWidget === 'function') loadPortfolioWidget();
+        }, 300);
+        
+        setTimeout(() => {
+          if (typeof loadMonitoringWidget === 'function') loadMonitoringWidget();
+        }, 400);
+      }
 
       console.log('✅ [Dashboard Widgets] All widgets loading initiated');
     } catch (error) {
