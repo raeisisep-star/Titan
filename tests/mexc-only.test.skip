@@ -1,0 +1,106 @@
+/**
+ * MEXC-Only Enforcement Tests
+ * Task-8: Validate exchange parameter enforcement
+ */
+
+const { 
+  isSupportedExchange, 
+  normalizeMEXCSymbol,
+  validateMEXCApiKey,
+  SUPPORTED_EXCHANGES
+} = require('../src/middleware/mexc-only.ts');
+
+describe('MEXC-Only Enforcement', () => {
+  describe('isSupportedExchange', () => {
+    it('should return true for mexc', () => {
+      expect(isSupportedExchange('mexc')).toBe(true);
+    });
+    
+    it('should return false for binance', () => {
+      expect(isSupportedExchange('binance')).toBe(false);
+    });
+    
+    it('should return false for coinbase', () => {
+      expect(isSupportedExchange('coinbase')).toBe(false);
+    });
+    
+    it('should return false for empty string', () => {
+      expect(isSupportedExchange('')).toBe(false);
+    });
+  });
+  
+  describe('normalizeMEXCSymbol', () => {
+    it('should convert BTC/USDT to BTCUSDT', () => {
+      expect(normalizeMEXCSymbol('BTC/USDT')).toBe('BTCUSDT');
+    });
+    
+    it('should convert btc-usdt to BTCUSDT', () => {
+      expect(normalizeMEXCSymbol('btc-usdt')).toBe('BTCUSDT');
+    });
+    
+    it('should convert ETH to ETHUSDT', () => {
+      expect(normalizeMEXCSymbol('ETH')).toBe('ETHUSDT');
+    });
+    
+    it('should handle already normalized symbol', () => {
+      expect(normalizeMEXCSymbol('BTCUSDT')).toBe('BTCUSDT');
+    });
+    
+    it('should remove spaces', () => {
+      expect(normalizeMEXCSymbol('BTC USDT')).toBe('BTCUSDT');
+    });
+  });
+  
+  describe('validateMEXCApiKey', () => {
+    it('should accept valid 32-character key', () => {
+      const key = 'a'.repeat(32);
+      expect(validateMEXCApiKey(key)).toBe(true);
+    });
+    
+    it('should accept valid 64-character key', () => {
+      const key = 'A'.repeat(64);
+      expect(validateMEXCApiKey(key)).toBe(true);
+    });
+    
+    it('should reject short key', () => {
+      const key = 'short';
+      expect(validateMEXCApiKey(key)).toBe(false);
+    });
+    
+    it('should reject key with special characters', () => {
+      const key = 'a'.repeat(30) + '!@';
+      expect(validateMEXCApiKey(key)).toBe(false);
+    });
+    
+    it('should reject too long key', () => {
+      const key = 'a'.repeat(65);
+      expect(validateMEXCApiKey(key)).toBe(false);
+    });
+  });
+  
+  describe('SUPPORTED_EXCHANGES', () => {
+    it('should only include mexc', () => {
+      expect(SUPPORTED_EXCHANGES).toEqual(['mexc']);
+      expect(SUPPORTED_EXCHANGES).toHaveLength(1);
+    });
+  });
+});
+
+describe('Rate Limiting Config', () => {
+  const { MEXC_RATE_LIMITS } = require('../src/middleware/rate-limit-mexc.ts');
+  
+  it('should have order_create limit', () => {
+    expect(MEXC_RATE_LIMITS.order_create).toBeDefined();
+    expect(MEXC_RATE_LIMITS.order_create.maxRequests).toBe(10);
+    expect(MEXC_RATE_LIMITS.order_create.windowMs).toBe(60000);
+  });
+  
+  it('should have balance limit', () => {
+    expect(MEXC_RATE_LIMITS.balance).toBeDefined();
+    expect(MEXC_RATE_LIMITS.balance.maxRequests).toBe(30);
+  });
+  
+  it('should have default fallback', () => {
+    expect(MEXC_RATE_LIMITS.default).toBeDefined();
+  });
+});
