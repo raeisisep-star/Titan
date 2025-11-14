@@ -1037,32 +1037,11 @@ class DashboardModule {
                         <span class="text-sm text-gray-400">آخرین بروزرسانی: <span id="last-update">در حال بارگذاری...</span></span>
                     </div>
                     <div class="flex items-center gap-2">
-                        <button onclick="window.dashboardModule.showWidgetLibrary()" 
-                                class="w-10 h-10 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center text-lg hover:scale-105 transition-all"
-                                title="افزودن ویجت">
-                            <i class="fas fa-plus"></i>
-                        </button>
                         <button onclick="window.dashboardModule.refreshData()" 
                                 class="w-10 h-10 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
                                 title="بروزرسانی">
                             <i class="fas fa-sync-alt"></i>
                         </button>
-                        <button onclick="window.dashboardModule.clearAllWidgets()" 
-                                class="w-10 h-10 bg-red-600 hover:bg-red-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
-                                title="پاک کردن همه ویجت‌ها">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                        <button onclick="window.dashboardModule.resetToDefault()" 
-                                class="w-10 h-10 bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center justify-center hover:scale-105 transition-all"
-                                title="بازنشانی پیش‌فرض">
-                            <i class="fas fa-undo"></i>
-                        </button>
-                        <div class="hidden md:flex items-center gap-2">
-                            <span class="text-xs text-gray-400 bg-gray-700/50 px-2 py-1 rounded">
-                                <i class="fas fa-arrows-alt mr-1"></i>
-                                کشیدن برای جابجایی
-                            </span>
-                        </div>
                     </div>
                 </div>
                 
@@ -1071,11 +1050,6 @@ class DashboardModule {
                     <div class="flex items-center justify-between mb-3">
                         <h1 class="text-lg font-bold text-white">داشبورد</h1>
                         <div class="flex items-center gap-2">
-                            <button onclick="window.dashboardModule.showWidgetLibrary()" 
-                                    class="w-10 h-10 bg-green-600 hover:bg-green-700 text-white rounded-lg flex items-center justify-center text-lg active:scale-95 transition-all"
-                                    title="افزودن ویجت">
-                                <i class="fas fa-plus"></i>
-                            </button>
                             <button onclick="window.dashboardModule.refreshData()" 
                                     class="w-10 h-10 bg-gray-600 hover:bg-gray-700 text-white rounded-lg flex items-center justify-center active:scale-95 transition-all"
                                     title="بروزرسانی">
@@ -1083,94 +1057,32 @@ class DashboardModule {
                             </button>
                         </div>
                     </div>
-                    <div class="text-xs text-gray-400 bg-gray-700/30 px-3 py-2 rounded-lg text-center">
-                        <i class="fas fa-hand-paper mr-1"></i>
-                        لمس و کشیدن برای جابجایی ویجت‌ها
-                    </div>
                 </div>
             </div>
 
-            <!-- Dashboard Widgets Grid -->
+            <!-- Dashboard Widgets Grid (CORE 4 WIDGETS ONLY) -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6" id="dashboard-widgets-container">
-                <!-- Total Balance Card -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg hover:border-gray-600 transition-all duration-300">
+                <!-- Portfolio: Total Balance Card -->
+                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg hover:border-gray-600 transition-all duration-300" data-widget="portfolio">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-400 text-sm">موجودی کل</p>
-                            <p id="total-balance-card" class="text-2xl font-bold text-white">$125,000</p>
-                            <p id="balance-change" class="text-green-400 text-sm">+2.3% امروز</p>
+                            <p id="total-balance-card" class="text-2xl font-bold text-white">در حال بارگذاری...</p>
+                            <p id="balance-change" class="text-gray-400 text-sm">—</p>
                         </div>
                         <div class="text-green-400 text-3xl">💰</div>
                     </div>
                 </div>
-
-                <!-- Active Trades Card -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg hover:border-gray-600 transition-all duration-300">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-sm">معاملات فعال</p>
-                            <p id="active-trades-card" class="text-2xl font-bold text-white">8</p>
-                            <p class="text-blue-400 text-sm">نرخ موفقیت: 75%</p>
-                        </div>
-                        <div class="text-blue-400 text-3xl">📈</div>
-                    </div>
-                </div>
-
-                <!-- Artemis Status Card -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg hover:border-gray-600 transition-all duration-300">
-                    <div class="flex items-center justify-between">
-                        <div>
-                            <p class="text-gray-400 text-sm">وضعیت آرتمیس</p>
-                            <p class="text-2xl font-bold text-white">85%</p>
-                            <p class="text-purple-400 text-sm">اعتماد بالا</p>
-                        </div>
-                        <div class="text-purple-400 text-3xl">🧠</div>
-                    </div>
-                </div>
-
-                <!-- AI Analytics Widget -->
-                <div class="dashboard-widget bg-gradient-to-br from-purple-900 to-blue-900 rounded-xl p-6 border border-purple-700 shadow-lg hover:border-purple-600 transition-all duration-300">
-                    <div class="flex items-center justify-between mb-4">
-                        <div>
-                            <p class="text-purple-200 text-sm">هوش مصنوعی TITAN</p>
-                            <p class="text-2xl font-bold text-white" id="ai-agents-count">15 Agent</p>
-                            <p class="text-purple-300 text-sm" id="ai-performance-summary">میانگین عملکرد: 87%</p>
-                        </div>
-                        <div class="text-purple-300 text-3xl">🤖</div>
-                    </div>
-                    
-                    <!-- Quick AI Stats -->
-                    <div class="grid grid-cols-3 gap-2 mb-3">
-                        <div class="text-center">
-                            <div class="text-sm font-bold text-green-400" id="ai-active-count">12</div>
-                            <div class="text-xs text-purple-200">فعال</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm font-bold text-yellow-400" id="ai-training-count">2</div>
-                            <div class="text-xs text-purple-200">آموزش</div>
-                        </div>
-                        <div class="text-center">
-                            <div class="text-sm font-bold text-red-400" id="ai-standby-count">1</div>
-                            <div class="text-xs text-purple-200">آماده باش</div>
-                        </div>
-                    </div>
-
-                    <!-- Action Button -->
-                    <button onclick="dashboardModule.openAIManagement()" 
-                            class="w-full bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded-lg text-sm font-medium transition-all">
-                        <i class="fas fa-brain mr-2"></i>مدیریت AI
-                    </button>
-                </div>
             </div>
 
-            <!-- Enhanced Dashboard Stats Row -->
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Portfolio Stats Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" data-widget="portfolio">
                 <!-- Total PnL Card -->
                 <div class="dashboard-widget bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-400 text-sm">سود و زیان کل</p>
-                            <p id="total-pnl-card" class="text-xl font-bold text-green-400">+$12,500</p>
+                            <p id="total-pnl-card" class="text-xl font-bold text-gray-400">—</p>
                         </div>
                         <div class="text-green-400 text-2xl">💹</div>
                     </div>
@@ -1181,7 +1093,7 @@ class DashboardModule {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-400 text-sm">نرخ موفقیت</p>
-                            <p id="win-rate-card" class="text-xl font-bold text-white">68%</p>
+                            <p id="win-rate-card" class="text-xl font-bold text-white">—</p>
                         </div>
                         <div class="text-blue-400 text-2xl">🎯</div>
                     </div>
@@ -1192,245 +1104,110 @@ class DashboardModule {
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-400 text-sm">نسبت شارپ</p>
-                            <p id="sharpe-ratio-card" class="text-xl font-bold text-white">1.42</p>
+                            <p id="sharpe-ratio-card" class="text-xl font-bold text-white">—</p>
                         </div>
                         <div class="text-purple-400 text-2xl">📊</div>
                     </div>
                 </div>
 
-                <!-- System Health Card -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg">
+                <!-- System Health Card (Monitor Widget) -->
+                <div class="dashboard-widget bg-gray-800 rounded-xl p-4 border border-gray-700 shadow-lg" data-widget="monitor">
                     <div class="flex items-center justify-between">
                         <div>
                             <p class="text-gray-400 text-sm">سلامت سیستم</p>
-                            <p id="system-health-card" class="text-xl font-bold text-green-400">98.2%</p>
+                            <p id="system-health-card" class="text-xl font-bold text-gray-400">—</p>
                         </div>
                         <div class="text-green-400 text-2xl">💚</div>
                     </div>
                 </div>
             </div>
 
-            <!-- 🤖 15 AI Agents Management Section -->
-            <div class="bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
-                <div class="flex items-center justify-between mb-6">
-                    <div class="flex items-center gap-3">
-                        <h2 class="text-xl font-bold text-white">🤖 سیستم 15 ایجنت هوشمند</h2>
-                        <span class="bg-blue-500/20 text-blue-400 text-sm px-3 py-1 rounded-full">
-                            فعال: <span id="active-agents-card">12/15</span>
-                        </span>
-                        <span class="bg-green-500/20 text-green-400 text-sm px-3 py-1 rounded-full">
-                            میانگین عملکرد: <span id="avg-performance-card">+10.5%</span>
-                        </span>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="window.dashboardModule.refreshAIAgents()" 
-                                class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm">
-                            <i class="fas fa-sync-alt mr-1"></i>بروزرسانی
-                        </button>
-                        <button onclick="app.loadModule('settings')" 
-                                class="bg-gray-600 hover:bg-gray-700 text-white px-3 py-2 rounded-lg text-sm">
-                            <i class="fas fa-cog mr-1"></i>تنظیمات
-                        </button>
-                    </div>
-                </div>
-
-                <!-- AI Agents Grid -->
-                <div id="ai-agents-container">
-                    <!-- This will be populated dynamically by updateAIAgentsSection() -->
-                    <div class="text-center text-gray-400 py-8">
-                        <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
-                        <p>در حال بارگذاری اطلاعات ایجنت‌های هوشمند...</p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Advanced Analytics & Risk Management -->
+            <!-- Market Overview, Trading & Risk Management (CORE WIDGETS) -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Market Overview -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+                <!-- Market Overview (Price Overview Widget) -->
+                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg" data-widget="overview">
                     <h3 class="text-lg font-semibold text-white mb-4">بازار رمزارز</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">قیمت BTC:</span>
-                            <span id="btc-price-card" class="text-orange-400 font-bold">$43,250</span>
+                            <span id="btc-price-card" class="text-orange-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">قیمت ETH:</span>
-                            <span id="eth-price-card" class="text-blue-400 font-bold">$2,680</span>
+                            <span id="eth-price-card" class="text-blue-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">شاخص ترس و طمع:</span>
-                            <span id="fear-greed-card" class="text-yellow-400 font-bold">65</span>
+                            <span id="fear-greed-card" class="text-yellow-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">تسلط BTC:</span>
-                            <span id="btc-dominance-card" class="text-orange-400 font-bold">51.2%</span>
+                            <span id="btc-dominance-card" class="text-orange-400 font-bold">—</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Trading Activity -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+                <!-- Trading Activity (Part of Overview/Monitor) -->
+                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg" data-widget="monitor">
                     <h3 class="text-lg font-semibold text-white mb-4">فعالیت معاملاتی</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">معاملات امروز:</span>
-                            <span id="today-trades-card" class="text-blue-400 font-bold">15</span>
+                            <span id="today-trades-card" class="text-blue-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">سفارشات در انتظار:</span>
-                            <span id="pending-orders-card" class="text-yellow-400 font-bold">5</span>
+                            <span id="pending-orders-card" class="text-yellow-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">حجم 24 ساعته:</span>
-                            <span id="volume-24h-card" class="text-green-400 font-bold">$85,000</span>
+                            <span id="volume-24h-card" class="text-green-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">معاملات موفق:</span>
-                            <span class="text-green-400 font-bold">12/15</span>
+                            <span class="text-green-400 font-bold">—</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- Risk Management -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+                <!-- Risk Management (Part of Monitor) -->
+                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg" data-widget="monitor">
                     <h3 class="text-lg font-semibold text-white mb-4">مدیریت ریسک</h3>
                     <div class="space-y-3">
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">کل اکسپوژر:</span>
-                            <span id="total-exposure-card" class="text-yellow-400 font-bold">75%</span>
+                            <span id="total-exposure-card" class="text-yellow-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">درجه ریسک:</span>
-                            <span id="risk-score-card" class="text-orange-400 font-bold">55/100</span>
+                            <span id="risk-score-card" class="text-orange-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">کل افت:</span>
-                            <span id="current-drawdown-card" class="text-red-400 font-bold">-4.2%</span>
+                            <span id="current-drawdown-card" class="text-red-400 font-bold">—</span>
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-gray-400">ریسک هر معامله:</span>
-                            <span class="text-blue-400 font-bold">2.5%</span>
+                            <span class="text-blue-400 font-bold">—</span>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Learning & Performance Analytics -->
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <!-- Learning Progress -->
-                <div class="dashboard-widget bg-gradient-to-br from-purple-900 to-indigo-900 rounded-xl p-6 border border-purple-700 shadow-lg">
-                    <h3 class="text-lg font-semibold text-white mb-4">🎓 پیشرفت یادگیری</h3>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div class="text-center">
-                            <div id="completed-courses-card" class="text-2xl font-bold text-purple-300">8</div>
-                            <div class="text-purple-200 text-sm">دوره تکمیل شده</div>
-                        </div>
-                        <div class="text-center">
-                            <div id="current-level-card" class="text-2xl font-bold text-purple-300">سطح 5</div>
-                            <div class="text-purple-200 text-sm">سطح فعلی</div>
-                        </div>
-                        <div class="text-center">
-                            <div id="weekly-progress-card" class="text-2xl font-bold text-purple-300">85%</div>
-                            <div class="text-purple-200 text-sm">پیشرفت هفتگی</div>
-                        </div>
-                        <div class="text-center">
-                            <div id="total-sessions-card" class="text-2xl font-bold text-purple-300">125</div>
-                            <div class="text-purple-200 text-sm">کل جلسات</div>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- System Status -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
-                    <h3 class="text-lg font-semibold text-white mb-4">⚙️ وضعیت سیستم</h3>
-                    <div class="space-y-4">
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">آپ‌تایم سیستم:</span>
-                            <span class="text-green-400 font-bold">99.5%</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">ایجنت‌های فعال:</span>
-                            <span class="text-blue-400 font-bold">12/15</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">میانگین تأخیر:</span>
-                            <span class="text-green-400 font-bold">15ms</span>
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <span class="text-gray-400">آخرین بک‌آپ:</span>
-                            <span class="text-gray-300 font-bold">2 ساعت پیش</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
 
-            <!-- Performance Charts Section -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                <!-- Portfolio Performance Chart -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">📈 نمودار پورتفولیو</h3>
-                        <button onclick="window.dashboardModule?.expandChart('portfolio')" class="text-gray-400 hover:text-white text-sm">
-                            <i class="fas fa-expand-alt"></i>
-                        </button>
-                    </div>
-                    <div class="h-64 flex items-center justify-center">
-                        <canvas id="portfolio-chart" class="w-full h-full"></canvas>
-                        <div id="portfolio-chart-loading" class="text-gray-400 text-center">
-                            <i class="fas fa-spinner fa-spin mb-2"></i>
-                            <div>بارگذاری نمودار...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- AI Agents Performance Chart -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">🤖 عملکرد ایجنت‌ها</h3>
-                        <button onclick="window.dashboardModule?.expandChart('agents')" class="text-gray-400 hover:text-white text-sm">
-                            <i class="fas fa-expand-alt"></i>
-                        </button>
-                    </div>
-                    <div class="h-64 flex items-center justify-center">
-                        <canvas id="agents-performance-chart" class="w-full h-full"></canvas>
-                        <div id="agents-chart-loading" class="text-gray-400 text-center">
-                            <i class="fas fa-spinner fa-spin mb-2"></i>
-                            <div>بارگذاری نمودار...</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Trading Volume Chart -->
-                <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
-                    <div class="flex items-center justify-between mb-4">
-                        <h3 class="text-lg font-semibold text-white">📊 حجم معاملات</h3>
-                        <button onclick="window.dashboardModule?.expandChart('volume')" class="text-gray-400 hover:text-white text-sm">
-                            <i class="fas fa-expand-alt"></i>
-                        </button>
-                    </div>
-                    <div class="h-64 flex items-center justify-center">
-                        <canvas id="trading-volume-chart" class="w-full h-full"></canvas>
-                        <div id="volume-chart-loading" class="text-gray-400 text-center">
-                            <i class="fas fa-spinner fa-spin mb-2"></i>
-                            <div>بارگذاری نمودار...</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Recent Activities Enhanced -->
-            <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg">
+            <!-- Portfolio Performance Chart (CORE CHART WIDGET) -->
+            <div class="dashboard-widget bg-gray-800 rounded-xl p-6 border border-gray-700 shadow-lg" data-widget="chart">
                 <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-white">📱 فعالیت‌های اخیر</h3>
-                    <button onclick="app.loadModule('trading')" class="text-gray-400 hover:text-white text-sm">
-                        <i class="fas fa-external-link-alt mr-1"></i>مشاهده همه
-                    </button>
+                    <h3 class="text-lg font-semibold text-white">📈 نمودار پورتفولیو</h3>
                 </div>
-                <div id="recent-activities" class="space-y-3">
-                    <!-- This will be populated dynamically by updateRecentActivities() -->
-                    <div class="text-center text-gray-400 py-4">
-                        <i class="fas fa-spinner fa-spin mr-2"></i>در حال بارگذاری فعالیت‌های اخیر...
+                <div class="h-64 flex items-center justify-center relative">
+                    <canvas id="portfolio-chart" class="w-full h-full"></canvas>
+                    <div id="portfolio-chart-loading" class="absolute inset-0 flex items-center justify-center text-gray-400 text-center bg-gray-800">
+                        <div>
+                            <i class="fas fa-spinner fa-spin text-2xl mb-2"></i>
+                            <div>بارگذاری نمودار...</div>
+                        </div>
                     </div>
                 </div>
             </div>

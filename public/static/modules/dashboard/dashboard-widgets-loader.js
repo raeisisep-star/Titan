@@ -6,8 +6,14 @@
 (function(global) {
   'use strict';
 
-  // === Prefer Legacy Widgets (Green) over New Ones (Red) ===
+  // 🔒 Disable old loader by default (can be re-enabled via flag)
   window.TitanFlags = window.TitanFlags || {};
+  if ((window.TitanFlags.DisableOldLoader) ?? true) {
+    console.info('🧯 [Dashboard Widgets Loader] Disabled by flag (using new widgets-integration-loader)');
+    return;
+  }
+
+  // === Prefer Legacy Widgets (Green) over New Ones (Red) ===
   window.TitanFlags.preferLegacyWidgets = true;
 
   // انتخاب‌گرهای کانتینرهای قدیمی (legacy)

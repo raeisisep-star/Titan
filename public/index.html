@@ -292,14 +292,21 @@
     <script src="/static/modules/dashboard/services/adapters/chart.adapter.js"></script>
     <script src="/static/modules/dashboard/init.js"></script>
     <script src="/static/modules/dashboard/market-integration.js"></script>
+    
+    <!-- 🚨 SAFE MODE - MUST LOAD FIRST -->
+    <script src="/static/modules/dashboard/safe-mode.js?v=20251113f"></script>
+    
+    <!-- 🔍 DIAGNOSTIC TOOL - for troubleshooting -->
+    <script src="/static/modules/dashboard/widget-diagnostic.js?v=20251113f"></script>
+    
     <!-- Phase C: Widget Integration Layer -->
-    <script src="/static/modules/dashboard/widgets-integration.js" defer></script>
+    <script src="/static/modules/dashboard/widgets-integration.js?v=20251113f" defer></script>
     <!-- Fallback Loader (ensures integration loads even with race conditions) -->
-    <script src="/static/modules/dashboard/widgets-integration-loader.js" defer></script>
-    <!-- Legacy Widget Auto-Annotation -->
-    <script src="/static/modules/dashboard/legacy-annotator.js" defer></script>
-    <!-- Task 3.3: Dashboard Widgets Loader -->
-    <script src="/static/modules/dashboard/dashboard-widgets-loader.js" defer></script>
+    <script src="/static/modules/dashboard/widgets-integration-loader.js?v=20251113f" defer></script>
+    <!-- Legacy Widget Auto-Annotation (VERSION F: Fixed regression + broadened titles + Set tracking) -->
+    <script src="/static/modules/dashboard/legacy-annotator.js?v=20251113f" defer></script>
+    <!-- Task 3.3: Dashboard Widgets Loader (DISABLED by Safe Mode) -->
+    <script src="/static/modules/dashboard/dashboard-widgets-loader.js?v=20251113f" defer></script>
     
     <!-- Load Main Modules -->
     <script src="/static/modules/ai-adapters.cd476956.js"></script>

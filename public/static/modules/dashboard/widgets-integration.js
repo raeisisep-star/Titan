@@ -483,6 +483,18 @@
     loadMonitoringWidget
   };
 
+  // ---- Expose TitanAPI globally for external access ----
+  global.TitanAPI = global.TitanAPI || {
+    getMarketOverview: () => OverviewAdapter?.getMarketOverview?.(),
+    getMarketMovers: () => MoversAdapter?.getMovers?.(5),
+    getPortfolioPerformance: () => PortfolioAdapter?.getPerformance?.(),
+    getSystemStatus: () => MonitoringAdapter?.getStatus?.(),
+    isHealthy: () => MonitoringAdapter?.isHealthy?.(),
+    getCircuitBreakerState: () => MonitoringAdapter?.getCircuitBreakerState?.(),
+    refresh: refreshAllWidgets,
+    stop: stopAllAutoRefresh
+  };
+
   // Auto-initialize وقتی صفحه لود شد
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', initializeWidgets);
@@ -992,12 +1004,28 @@
 
     console.log('🔄 [bindAllLegacy] Starting legacy widget binding...');
     
-    await Promise.allSettled([
-      bindLegacyOverview(),
-      bindLegacyMovers(),
-      bindLegacyPortfolio(),
-      bindLegacyMonitor()
-    ]);
+    // 🚨 SAFE MODE: Only bind allowed widgets
+    const isSafeMode = window.TitanFlags?.SafeMode || window.TitanSafeMode?.config?.enabled;
+    
+    if (isSafeMode) {
+      console.log('🚨 [bindAllLegacy] SAFE MODE ACTIVE - binding only 4 core widgets');
+      
+      // Only bind the 4 core widgets (skip movers/watchlist)
+      await Promise.allSettled([
+        bindLegacyOverview(),   // Market overview
+        bindLegacyPortfolio(),  // Portfolio summary
+        bindLegacyMonitor()     // System monitoring
+        // bindLegacyMovers() - SKIPPED in Safe Mode (not in core 4)
+      ]);
+    } else {
+      // Normal mode: bind all widgets
+      await Promise.allSettled([
+        bindLegacyOverview(),
+        bindLegacyMovers(),
+        bindLegacyPortfolio(),
+        bindLegacyMonitor()
+      ]);
+    }
 
     console.log('✅ [bindAllLegacy] All legacy widgets processed');
   }
@@ -1057,14 +1085,15 @@
   
   // یکنواخت‌سازی رویداد Ready با گارد anti-double-fire
   (function ensureReadyOnce(){
-    if (window.__TitanWidgetsReadyFired) return;
-    window.__TitanWidgetsReadyFired = true;
-    
-    const ev = new Event('titan:widgets-ready');
-    try { document.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on document:', e); }
-    try { window.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on window:', e); }
-    
-    console.log('✅ [Widgets Ready] Event dispatched to both document and window');
+    if (!window.__TitanWidgetsReadyFired) {
+      window.__TitanWidgetsReadyFired = true;
+      
+      const ev = new Event('titan:widgets-ready');
+      try { document.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on document:', e); }
+      try { window.dispatchEvent(ev); } catch(e) { console.warn('Failed to dispatch on window:', e); }
+      
+      console.log('✅ [Widgets Ready] Event dispatched to both document and window');
+    }
   })();
   
   // اگر صفحه بعداً لود شد، دوباره سیگنال بفرست
