@@ -783,6 +783,239 @@ app.get('/api/ai-agents/:agentId', async (c) => {
   }
 });
 
+// Get AI agent trades history
+app.get('/api/ai-agents/:agentId/trades', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    const limit = parseInt(c.req.query('limit') || '50', 10);
+    const offset = parseInt(c.req.query('offset') || '0', 10);
+    const status = c.req.query('status'); // open, closed, all
+    
+    let query = `
+      SELECT 
+        id, agent_id, symbol, side, quantity, 
+        entry_price, exit_price, status,
+        entry_value, exit_value, profit_loss, profit_loss_percent,
+        confidence, reasoning, strategy, fees,
+        opened_at, closed_at, created_at
+      FROM ai_agent_trades
+      WHERE agent_id = $1
+    `;
+    
+    const params = [agentId];
+    
+    if (status && status !== 'all') {
+      query += ` AND status = $${params.length + 1}`;
+      params.push(status);
+    }
+    
+    query += ` ORDER BY opened_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`;
+    params.push(limit, offset);
+    
+    const result = await pool.query(query, params);
+    
+    // Get total count
+    const countQuery = `
+      SELECT COUNT(*) as total FROM ai_agent_trades 
+      WHERE agent_id = $1 ${status && status !== 'all' ? 'AND status = $2' : ''}
+    `;
+    const countParams = status && status !== 'all' ? [agentId, status] : [agentId];
+    const countResult = await pool.query(countQuery, countParams);
+    
+    const trades = result.rows.map(row => ({
+      id: row.id,
+      agentId: row.agent_id,
+      symbol: row.symbol,
+      side: row.side,
+      quantity: parseFloat(row.quantity),
+      entryPrice: parseFloat(row.entry_price),
+      exitPrice: row.exit_price ? parseFloat(row.exit_price) : null,
+      status: row.status,
+      entryValue: parseFloat(row.entry_value),
+      exitValue: row.exit_value ? parseFloat(row.exit_value) : null,
+      profitLoss: row.profit_loss ? parseFloat(row.profit_loss) : null,
+      profitLossPercent: row.profit_loss_percent ? parseFloat(row.profit_loss_percent) : null,
+      confidence: row.confidence,
+      reasoning: row.reasoning,
+      strategy: row.strategy,
+      fees: parseFloat(row.fees || 0),
+      openedAt: row.opened_at,
+      closedAt: row.closed_at,
+      createdAt: row.created_at
+    }));
+    
+    return c.json({
+      success: true,
+      data: trades,
+      meta: {
+        total: parseInt(countResult.rows[0].total),
+        limit,
+        offset,
+        returned: trades.length
+      }
+    });
+  } catch (error) {
+    console.error('AI Agent trades error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
+
+// Get AI agent performance history
+app.get('/api/ai-agents/:agentId/performance', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    const periodType = c.req.query('period') || 'daily'; // hourly, daily, weekly, monthly
+    const days = parseInt(c.req.query('days') || '30', 10);
+    
+    const result = await pool.query(`
+      SELECT 
+        id, agent_id, period_start, period_end, period_type,
+        total_trades, winning_trades, losing_trades, win_rate,
+        total_profit_loss, avg_profit_per_trade, max_profit, max_loss,
+        sharpe_ratio, max_drawdown, volatility,
+        accuracy, avg_confidence, total_volume, created_at
+      FROM ai_agent_performance_history
+      WHERE agent_id = $1 
+        AND period_type = $2
+        AND period_start >= NOW() - INTERVAL '${days} days'
+      ORDER BY period_start DESC
+    `, [agentId, periodType]);
+    
+    const performance = result.rows.map(row => ({
+      id: row.id,
+      agentId: row.agent_id,
+      periodStart: row.period_start,
+      periodEnd: row.period_end,
+      periodType: row.period_type,
+      totalTrades: row.total_trades,
+      winningTrades: row.winning_trades,
+      losingTrades: row.losing_trades,
+      winRate: parseFloat(row.win_rate || 0),
+      totalProfitLoss: parseFloat(row.total_profit_loss || 0),
+      avgProfitPerTrade: parseFloat(row.avg_profit_per_trade || 0),
+      maxProfit: parseFloat(row.max_profit || 0),
+      maxLoss: parseFloat(row.max_loss || 0),
+      sharpeRatio: row.sharpe_ratio ? parseFloat(row.sharpe_ratio) : null,
+      maxDrawdown: row.max_drawdown ? parseFloat(row.max_drawdown) : null,
+      volatility: row.volatility ? parseFloat(row.volatility) : null,
+      accuracy: parseFloat(row.accuracy || 0),
+      avgConfidence: parseFloat(row.avg_confidence || 0),
+      totalVolume: parseFloat(row.total_volume || 0),
+      createdAt: row.created_at
+    }));
+    
+    return c.json({
+      success: true,
+      data: performance,
+      meta: {
+        total: performance.length,
+        periodType,
+        days
+      }
+    });
+  } catch (error) {
+    console.error('AI Agent performance error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
+
+// Get AI agent statistics summary
+app.get('/api/ai-agents/:agentId/stats', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    
+    // Get overall trade statistics
+    const tradesStats = await pool.query(`
+      SELECT 
+        COUNT(*) as total_trades,
+        COUNT(*) FILTER (WHERE status = 'closed' AND profit_loss > 0) as winning_trades,
+        COUNT(*) FILTER (WHERE status = 'closed' AND profit_loss < 0) as losing_trades,
+        COUNT(*) FILTER (WHERE status = 'open') as open_trades,
+        COALESCE(SUM(profit_loss) FILTER (WHERE status = 'closed'), 0) as total_profit_loss,
+        COALESCE(AVG(profit_loss) FILTER (WHERE status = 'closed'), 0) as avg_profit_loss,
+        COALESCE(MAX(profit_loss) FILTER (WHERE status = 'closed'), 0) as max_profit,
+        COALESCE(MIN(profit_loss) FILTER (WHERE status = 'closed'), 0) as max_loss,
+        COALESCE(AVG(confidence), 0) as avg_confidence,
+        COALESCE(SUM(entry_value), 0) as total_volume
+      FROM ai_agent_trades
+      WHERE agent_id = $1
+    `, [agentId]);
+    
+    const stats = tradesStats.rows[0];
+    const closedTrades = stats.winning_trades + stats.losing_trades;
+    const winRate = closedTrades > 0 ? (stats.winning_trades / closedTrades) * 100 : 0;
+    
+    // Get recent decisions
+    const recentDecisions = await pool.query(`
+      SELECT 
+        COUNT(*) as total_decisions,
+        COUNT(*) FILTER (WHERE executed = true) as executed_decisions,
+        COALESCE(AVG(confidence), 0) as avg_confidence
+      FROM ai_decisions
+      WHERE agent_id = $1 AND created_at >= NOW() - INTERVAL '30 days'
+    `, [agentId]);
+    
+    const decisionsStats = recentDecisions.rows[0];
+    
+    // Get daily performance (last 7 days)
+    const dailyPerformance = await pool.query(`
+      SELECT 
+        period_start::date as date,
+        total_profit_loss,
+        total_trades,
+        win_rate
+      FROM ai_agent_performance_history
+      WHERE agent_id = $1 
+        AND period_type = 'daily'
+        AND period_start >= NOW() - INTERVAL '7 days'
+      ORDER BY period_start DESC
+      LIMIT 7
+    `, [agentId]);
+    
+    return c.json({
+      success: true,
+      data: {
+        trades: {
+          total: parseInt(stats.total_trades),
+          winning: parseInt(stats.winning_trades),
+          losing: parseInt(stats.losing_trades),
+          open: parseInt(stats.open_trades),
+          winRate: parseFloat(winRate.toFixed(2)),
+          totalProfitLoss: parseFloat(stats.total_profit_loss),
+          avgProfitLoss: parseFloat(stats.avg_profit_loss),
+          maxProfit: parseFloat(stats.max_profit),
+          maxLoss: parseFloat(stats.max_loss),
+          avgConfidence: parseFloat(stats.avg_confidence),
+          totalVolume: parseFloat(stats.total_volume)
+        },
+        decisions: {
+          total: parseInt(decisionsStats.total_decisions),
+          executed: parseInt(decisionsStats.executed_decisions),
+          avgConfidence: parseFloat(decisionsStats.avg_confidence)
+        },
+        recentPerformance: dailyPerformance.rows.map(row => ({
+          date: row.date,
+          profitLoss: parseFloat(row.total_profit_loss || 0),
+          trades: row.total_trades,
+          winRate: parseFloat(row.win_rate || 0)
+        }))
+      }
+    });
+  } catch (error) {
+    console.error('AI Agent stats error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
+
 // Trading Activity - REAL
 app.get('/api/dashboard/trading-real', async (c) => {
   try {

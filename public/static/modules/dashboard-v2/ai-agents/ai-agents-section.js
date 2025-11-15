@@ -304,26 +304,15 @@ export function initAIAgentsEvents() {
             e.preventDefault();
             e.stopPropagation();
             
-            // Get agent data from button attributes
-            const name = btn.dataset.agentName;
-            const status = btn.dataset.agentStatus;
-            const accuracy = btn.dataset.agentAccuracy;
-            const trades = btn.dataset.agentTrades;
-            const success = btn.dataset.agentSuccess;
-            const desc = btn.dataset.agentDesc;
+            // Get agent ID from button attribute
+            const agentId = btn.dataset.agentId;
             
-            // Show agent details in alert
-            alert(`جزئیات کامل عامل ${name}:
-
-نام: ${name}
-وضعیت: ${status}
-دقت: ${accuracy}%
-تعداد معاملات: ${trades}
-نرخ موفقیت: ${success}%
-
-توضیحات: ${desc}
-
-💡 نکته: صفحه جزئیات کامل در حال توسعه است.`);
+            if (agentId) {
+                // Navigate to agent detail page using hash routing
+                window.location.hash = `/ai-agents/${agentId}`;
+            } else {
+                console.error('[AIAgents] No agent ID found on button');
+            }
             
             return false;
         }
@@ -334,9 +323,10 @@ export function initAIAgentsEvents() {
             e.preventDefault();
             e.stopPropagation();
             
+            // Navigate to AI agents management page (future implementation)
             alert(`📋 صفحه مدیریت عوامل هوشمند
 
-این صفحه هنوز در دست توسعه است.
+این صفحه در حال توسعه است.
 
 برای مدیریت کامل عوامل، به مسیر زیر مراجعه کنید:
 تنظیمات > هوش مصنوعی

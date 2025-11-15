@@ -91,11 +91,11 @@
 }
 
 /* ==========================================
-   WIDGETS GRID
+   WIDGETS GRID - FORCED 2 COLUMNS
    ========================================== */
 .widgets-grid {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
+    display: grid !important;
+    grid-template-columns: repeat(2, 1fr) !important;
     gap: 2rem;
     margin-bottom: 2rem;
     max-width: 100%;
@@ -104,7 +104,7 @@
 /* Mobile: 1 column */
 @media (max-width: 767px) {
     .widgets-grid {
-        grid-template-columns: 1fr;
+        grid-template-columns: 1fr !important;
         gap: 1rem;
     }
 }
@@ -112,7 +112,7 @@
 /* Tablet and Desktop: 2 columns */
 @media (min-width: 768px) {
     .widgets-grid {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: repeat(2, 1fr) !important;
         gap: 2rem;
     }
 }
