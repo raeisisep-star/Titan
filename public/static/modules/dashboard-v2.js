@@ -32,6 +32,25 @@ async function initDashboard() {
     console.log('🚀 [Dashboard] Starting initialization...');
     
     try {
+        // Wait for container to exist in DOM
+        const waitForContainer = () => {
+            return new Promise((resolve) => {
+                const checkContainer = () => {
+                    const container = document.getElementById('dashboard-container');
+                    if (container) {
+                        console.log('✅ [Dashboard] Container found, proceeding');
+                        resolve(container);
+                    } else {
+                        console.log('⏳ [Dashboard] Waiting for container...');
+                        setTimeout(checkContainer, 100);
+                    }
+                };
+                checkContainer();
+            });
+        };
+        
+        await waitForContainer();
+        
         // Create dashboard instance
         const dashboard = new DashboardCore();
         
@@ -64,10 +83,12 @@ async function initDashboard() {
  * Wait for DOM to be ready
  */
 if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initDashboard);
+    document.addEventListener('DOMContentLoaded', () => {
+        setTimeout(initDashboard, 500);
+    });
 } else {
-    // DOM is already ready
-    initDashboard();
+    // DOM is already ready, wait a bit for app.js to create container
+    setTimeout(initDashboard, 500);
 }
 
 /**
