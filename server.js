@@ -1016,6 +1016,59 @@ app.get('/api/ai-agents/:agentId/stats', async (c) => {
   }
 });
 
+// Update AI agent status
+app.patch('/api/ai-agents/:agentId/status', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    const body = await c.req.json();
+    const newStatus = body.status;
+    
+    // Validate status
+    const validStatuses = ['active', 'inactive', 'maintenance'];
+    if (!validStatuses.includes(newStatus)) {
+      return c.json({
+        success: false,
+        error: 'Invalid status. Must be: active, inactive, or maintenance'
+      }, 400);
+    }
+    
+    // Update agent status
+    const result = await pool.query(`
+      UPDATE ai_agents
+      SET 
+        status = $1,
+        updated_at = NOW()
+      WHERE agent_id = $2 OR id::text = $2
+      RETURNING agent_id, name, status
+    `, [newStatus, agentId]);
+    
+    if (result.rows.length === 0) {
+      return c.json({
+        success: false,
+        error: 'Agent not found'
+      }, 404);
+    }
+    
+    const agent = result.rows[0];
+    
+    return c.json({
+      success: true,
+      data: {
+        agentId: agent.agent_id,
+        name: agent.name,
+        status: agent.status
+      },
+      message: `Agent status updated to ${newStatus}`
+    });
+  } catch (error) {
+    console.error('AI Agent status update error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
+
 // Trading Activity - REAL
 app.get('/api/dashboard/trading-real', async (c) => {
   try {

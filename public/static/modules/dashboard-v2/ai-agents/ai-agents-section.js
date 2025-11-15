@@ -323,15 +323,8 @@ export function initAIAgentsEvents() {
             e.preventDefault();
             e.stopPropagation();
             
-            // Navigate to AI agents management page (future implementation)
-            alert(`📋 صفحه مدیریت عوامل هوشمند
-
-این صفحه در حال توسعه است.
-
-برای مدیریت کامل عوامل، به مسیر زیر مراجعه کنید:
-تنظیمات > هوش مصنوعی
-
-🚧 به زودی: صفحه اختصاصی مدیریت عوامل`);
+            // Navigate to AI agents management page
+            window.location.hash = '/ai-agents/manage';
             
             return false;
         }

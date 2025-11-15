@@ -26,6 +26,7 @@ import { renderChartWidget, renderChartLoading, initializeChart, updateChart } f
 // AI Agents renderer
 import { renderAIAgentsSection, renderAIAgentsLoading, initAIAgentsEvents } from '../ai-agents/ai-agents-section.js';
 import { renderAgentDetailPage, initAgentDetailRouting } from '../ai-agents/ai-agent-detail.js';
+import { renderAgentsManagementPage, initManagementRouting } from '../ai-agents/ai-agents-management.js';
 
 /**
  * Dashboard Core Class
@@ -91,6 +92,10 @@ class DashboardCore {
             // Initialize AI agent detail routing
             initAgentDetailRouting();
             console.log('✅ [DashboardCore] Agent detail routing initialized');
+            
+            // Initialize AI agents management routing
+            initManagementRouting();
+            console.log('✅ [DashboardCore] Agents management routing initialized');
             
             this.state.initialized = true;
             
