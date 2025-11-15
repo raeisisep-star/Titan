@@ -223,7 +223,7 @@ class TitanApp {
         document.dispatchEvent(new CustomEvent('user-logged-in'));
 
         // Simplified approach: Load navigation and then trigger dashboard module
-        // this.loadDashboardModule(); // ❌ DISABLED: Using Dashboard v2.0
+        this.loadDashboardHTML(); // ✅ Create HTML structure for Dashboard v2
 
         // Auto-click dashboard menu item to load comprehensive dashboard
         setTimeout(() => {
@@ -344,6 +344,13 @@ class TitanApp {
         }, 500); // Increased delay to ensure all modules are loaded
 
         this.setupDashboardEvents();
+    }
+
+    async loadDashboardHTML() {
+        console.log("✅ [app.js] Creating dashboard HTML structure for v2.0");
+        const app = document.getElementById("app");
+        app.innerHTML = this.getDashboardHTML();
+        console.log("✅ [app.js] HTML structure created, Dashboard v2 will initialize");
     }
 
         // getDashboardContent removed - using modular dashboard.js
