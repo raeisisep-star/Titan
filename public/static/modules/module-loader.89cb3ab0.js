@@ -10,7 +10,7 @@ class ModuleLoader {
         this.loadingPromises = new Map();
         this.isEnabled = true; // Property needed by app.js
         this.moduleClassMap = {
-            'dashboard': 'DashboardModule',
+            // 'dashboard': 'DashboardModule', // ❌ DISABLED - Using Dashboard v2.0 (ES6 modules)
             'trading': 'TradingModule', 
             'portfolio': 'PortfolioModule',
             'artemis': 'ArtemisModule',

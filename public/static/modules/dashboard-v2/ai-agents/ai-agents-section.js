@@ -24,8 +24,11 @@ export function renderAIAgentsSection(agentsData) {
         return renderAIAgentsError('داده‌های عوامل هوشمند موجود نیست');
     }
     
-    if (agentsData.length === 0) {
-        return renderAIAgentsEmpty();
+    // Log if we have data from backend
+    if (agentsData.length > 0) {
+        console.log(`✅ [AIAgents] Loaded ${agentsData.length} agents from backend`);
+    } else {
+        console.warn('⚠️ [AIAgents] No agents data received from backend');
     }
     
     // Count active agents
@@ -65,7 +68,7 @@ export function renderAIAgentsSection(agentsData) {
             
             <!-- Section Footer -->
             <div class="section-footer">
-                <button class="view-all-btn" onclick="window.location.href='/ai-agents'">
+                <button class="view-all-btn" type="button">
                     مشاهده جزئیات کامل عوامل ←
                 </button>
             </div>
@@ -159,7 +162,7 @@ function renderAgentCard(agent) {
                         <span class="last-active-text">${formatRelativeTime(lastActive)}</span>
                     </div>
                 ` : ''}
-                <button class="agent-detail-btn" onclick="window.location.href='/ai-agents/${id}'">
+                <button class="agent-detail-btn" data-agent-id="${id}" data-agent-name="${name}" data-agent-status="${statusConfig.label}" data-agent-accuracy="${accuracy}" data-agent-trades="${totalTrades}" data-agent-success="${successRate}" data-agent-desc="${description}">
                     جزئیات
                 </button>
             </div>
@@ -288,7 +291,48 @@ export function renderAIAgentsLoading() {
     `;
 }
 
+/**
+ * Initialize AI Agents event listeners
+ * Must be called after DOM is rendered
+ */
+export function initAIAgentsEvents() {
+    // Add click handlers to all agent detail buttons
+    document.addEventListener('click', (e) => {
+        // Check if clicked element is an agent detail button
+        const btn = e.target.closest('.agent-detail-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Get agent ID from button attribute
+            const agentId = btn.dataset.agentId;
+            
+            if (agentId) {
+                // Navigate to agent detail page using hash routing
+                window.location.hash = `/ai-agents/${agentId}`;
+            } else {
+                console.error('[AIAgents] No agent ID found on button');
+            }
+            
+            return false;
+        }
+        
+        // Check if clicked element is view-all button
+        const viewAllBtn = e.target.closest('.view-all-btn');
+        if (viewAllBtn && viewAllBtn.textContent.includes('مشاهده جزئیات')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Navigate to AI agents management page
+            window.location.hash = '/ai-agents/manage';
+            
+            return false;
+        }
+    });
+}
+
 export default {
     renderAIAgentsSection,
-    renderAIAgentsLoading
+    renderAIAgentsLoading,
+    initAIAgentsEvents
 };

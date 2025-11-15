@@ -24,7 +24,9 @@ import { renderSystemWidget, renderSystemLoading } from '../widgets/system-widge
 import { renderChartWidget, renderChartLoading, initializeChart, updateChart } from '../widgets/chart-widget.js';
 
 // AI Agents renderer
-import { renderAIAgentsSection, renderAIAgentsLoading } from '../ai-agents/ai-agents-section.js';
+import { renderAIAgentsSection, renderAIAgentsLoading, initAIAgentsEvents } from '../ai-agents/ai-agents-section.js';
+import { renderAgentDetailPage, initAgentDetailRouting } from '../ai-agents/ai-agent-detail.js';
+import { renderAgentsManagementPage, initManagementRouting } from '../ai-agents/ai-agents-management.js';
 
 /**
  * Dashboard Core Class
@@ -86,6 +88,14 @@ class DashboardCore {
             
             // Setup event listeners
             this.setupEventListeners();
+            
+            // Initialize AI agent detail routing
+            initAgentDetailRouting();
+            console.log('✅ [DashboardCore] Agent detail routing initialized');
+            
+            // Initialize AI agents management routing
+            initManagementRouting();
+            console.log('✅ [DashboardCore] Agents management routing initialized');
             
             this.state.initialized = true;
             
@@ -205,6 +215,12 @@ class DashboardCore {
                 ${renderAIAgentsSection(aiAgents)}
             </div>
         `;
+        
+        // Initialize AI Agents event listeners after DOM is ready
+        setTimeout(() => {
+            initAIAgentsEvents();
+            console.log('✅ [DashboardCore] AI Agents events initialized');
+        }, 100);
         
         console.log('✅ [DashboardCore] Render complete');
     }
