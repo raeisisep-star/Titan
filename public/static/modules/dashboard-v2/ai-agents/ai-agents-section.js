@@ -68,7 +68,7 @@ export function renderAIAgentsSection(agentsData) {
             
             <!-- Section Footer -->
             <div class="section-footer">
-                <button class="view-all-btn" onclick="event.preventDefault(); alert('صفحه مدیریت عوامل هوشمند هنوز در دست توسعه است.\\n\\nبرای مدیریت کامل عوامل، به بخش تنظیمات > هوش مصنوعی مراجعه کنید.');">
+                <button class="view-all-btn" type="button">
                     مشاهده جزئیات کامل عوامل ←
                 </button>
             </div>
@@ -162,7 +162,7 @@ function renderAgentCard(agent) {
                         <span class="last-active-text">${formatRelativeTime(lastActive)}</span>
                     </div>
                 ` : ''}
-                <button class="agent-detail-btn" onclick="event.preventDefault(); alert('جزئیات کامل عامل ${name}:\\n\\nنام: ${name}\\nوضعیت: ${statusConfig.label}\\nدقت: ${accuracy}%\\nمعاملات: ${totalTrades}\\nنرخ موفقیت: ${successRate}%\\n\\nتوضیحات: ${description}');">
+                <button class="agent-detail-btn" data-agent-id="${id}" data-agent-name="${name}" data-agent-status="${statusConfig.label}" data-agent-accuracy="${accuracy}" data-agent-trades="${totalTrades}" data-agent-success="${successRate}" data-agent-desc="${description}">
                     جزئیات
                 </button>
             </div>
@@ -291,7 +291,65 @@ export function renderAIAgentsLoading() {
     `;
 }
 
+/**
+ * Initialize AI Agents event listeners
+ * Must be called after DOM is rendered
+ */
+export function initAIAgentsEvents() {
+    // Add click handlers to all agent detail buttons
+    document.addEventListener('click', (e) => {
+        // Check if clicked element is an agent detail button
+        const btn = e.target.closest('.agent-detail-btn');
+        if (btn) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            // Get agent data from button attributes
+            const name = btn.dataset.agentName;
+            const status = btn.dataset.agentStatus;
+            const accuracy = btn.dataset.agentAccuracy;
+            const trades = btn.dataset.agentTrades;
+            const success = btn.dataset.agentSuccess;
+            const desc = btn.dataset.agentDesc;
+            
+            // Show agent details in alert
+            alert(`جزئیات کامل عامل ${name}:
+
+نام: ${name}
+وضعیت: ${status}
+دقت: ${accuracy}%
+تعداد معاملات: ${trades}
+نرخ موفقیت: ${success}%
+
+توضیحات: ${desc}
+
+💡 نکته: صفحه جزئیات کامل در حال توسعه است.`);
+            
+            return false;
+        }
+        
+        // Check if clicked element is view-all button
+        const viewAllBtn = e.target.closest('.view-all-btn');
+        if (viewAllBtn && viewAllBtn.textContent.includes('مشاهده جزئیات')) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            alert('📋 صفحه مدیریت عوامل هوشمند
+
+این صفحه هنوز در دست توسعه است.
+
+برای مدیریت کامل عوامل، به مسیر زیر مراجعه کنید:
+تنظیمات > هوش مصنوعی
+
+🚧 به زودی: صفحه اختصاصی مدیریت عوامل');
+            
+            return false;
+        }
+    });
+}
+
 export default {
     renderAIAgentsSection,
-    renderAIAgentsLoading
+    renderAIAgentsLoading,
+    initAIAgentsEvents
 };

@@ -24,7 +24,7 @@ import { renderSystemWidget, renderSystemLoading } from '../widgets/system-widge
 import { renderChartWidget, renderChartLoading, initializeChart, updateChart } from '../widgets/chart-widget.js';
 
 // AI Agents renderer
-import { renderAIAgentsSection, renderAIAgentsLoading } from '../ai-agents/ai-agents-section.js';
+import { renderAIAgentsSection, renderAIAgentsLoading, initAIAgentsEvents } from '../ai-agents/ai-agents-section.js';
 
 /**
  * Dashboard Core Class
@@ -205,6 +205,12 @@ class DashboardCore {
                 ${renderAIAgentsSection(aiAgents)}
             </div>
         `;
+        
+        // Initialize AI Agents event listeners after DOM is ready
+        setTimeout(() => {
+            initAIAgentsEvents();
+            console.log('✅ [DashboardCore] AI Agents events initialized');
+        }, 100);
         
         console.log('✅ [DashboardCore] Render complete');
     }
