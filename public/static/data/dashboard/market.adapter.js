@@ -37,12 +37,13 @@ export async function getMarketPrices(symbols = ['BTCUSDT', 'ETHUSDT']) {
     }
     
     try {
-        console.log('📊 [Market Adapter] Fetching from API...', symbols);
+        console.log('📊 [Market Adapter] Fetching from MEXC API...', symbols);
         
-        // فراخوانی API واقعی
+        // فراخوانی API واقعی با MEXC
         const response = await httpGet('/api/market/prices', {
             params: {
-                symbols: symbols.join(',')
+                symbols: symbols.join(','),
+                exchange: 'mexc'  // 🎯 Use MEXC instead of Binance
             }
         });
         
