@@ -223,7 +223,7 @@ class TitanApp {
         document.dispatchEvent(new CustomEvent('user-logged-in'));
 
         // Simplified approach: Load navigation and then trigger dashboard module
-        this.loadDashboardModule();
+        // this.loadDashboardModule(); // ❌ DISABLED: Using Dashboard v2.0
 
         // Auto-click dashboard menu item to load comprehensive dashboard
         setTimeout(() => {
@@ -233,7 +233,7 @@ class TitanApp {
                 dashboardLink.click();
             } else {
                 console.warn('⚠️ Dashboard link not found, calling loadModule directly');
-                this.loadModule('dashboard');
+                // this.loadModule('dashboard'); // ❌ DISABLED: Using Dashboard v2.0
             }
         }, 500);
 
@@ -316,7 +316,7 @@ class TitanApp {
             if (mainContent && window.moduleLoader) {
                 try {
                     // Load dashboard module properly
-                    const dashboardModule = await window.moduleLoader.loadModule('dashboard');
+                    const dashboardModule = null; // await window.moduleLoader.loadModule('dashboard'); ❌ DISABLED
             
                     if (dashboardModule && typeof dashboardModule.getContent === 'function') {
                         // Get comprehensive dashboard content
@@ -763,6 +763,9 @@ class TitanApp {
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-screen">
             <div id="main-content" class="md:min-h-0">
+                <!-- ✅ Dashboard v2.0 Container -->
+                <div id="dashboard-container"></div>
+                <!-- Legacy content below -->
                 <!-- Dashboard content will be loaded here -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Total Balance Card -->
