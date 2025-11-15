@@ -12,6 +12,7 @@
  */
 
 import { DASHBOARD_CONFIG, API_STRUCTURE } from '../core/constants.js';
+import { adaptComprehensiveResponse } from './response-adapter.js';
 
 /**
  * API Client for Dashboard
@@ -36,11 +37,14 @@ class DashboardAPIClient {
         try {
             const response = await this.fetchWithRetry(this.endpoint);
             
-            // Validate response structure
-            this.validateResponse(response);
+            // Adapt response to dashboard-v2 structure
+            const adaptedResponse = adaptComprehensiveResponse(response);
             
-            console.log('✅ [DashboardAPI] Data fetched successfully');
-            return response;
+            // Validate adapted response structure
+            this.validateResponse(adaptedResponse);
+            
+            console.log('✅ [DashboardAPI] Data fetched and adapted successfully');
+            return adaptedResponse;
             
         } catch (error) {
             console.error('❌ [DashboardAPI] Failed to fetch data:', error);

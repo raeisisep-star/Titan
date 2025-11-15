@@ -8,7 +8,7 @@
 export const DASHBOARD_CONFIG = {
     // API Configuration
     API: {
-        ENDPOINT: '/dashboard/comprehensive-real',
+        ENDPOINT: '/api/dashboard/comprehensive-real',
         TIMEOUT: 30000, // 30 seconds
         RETRY_ATTEMPTS: 3,
         RETRY_DELAY: 1000 // 1 second
