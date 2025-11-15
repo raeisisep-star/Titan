@@ -604,4 +604,10 @@ class DashboardModule {
 // Export for module loader
 if (typeof window !== 'undefined') {
     window.DashboardModule = DashboardModule;
+    
+    // Also register in TitanModules for module loader
+    if (!window.TitanModules) {
+        window.TitanModules = {};
+    }
+    window.TitanModules.DashboardModule = DashboardModule;
 }
