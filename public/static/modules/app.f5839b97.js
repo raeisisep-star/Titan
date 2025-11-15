@@ -225,17 +225,17 @@ class TitanApp {
         // Simplified approach: Load navigation and then trigger dashboard module
         this.loadDashboardHTML(); // ✅ Create HTML structure for Dashboard v2
 
-        // Auto-click dashboard menu item to load comprehensive dashboard
-        setTimeout(() => {
-            const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
-            if (dashboardLink) {
-                console.log('🚀 Auto-clicking dashboard menu to load comprehensive dashboard...');
-                dashboardLink.click();
-            } else {
-                console.warn('⚠️ Dashboard link not found, calling loadModule directly');
-                // this.loadModule('dashboard'); // ❌ DISABLED: Using Dashboard v2.0
-            }
-        }, 500);
+//         // Auto-click dashboard menu item to load comprehensive dashboard
+//         setTimeout(() => {
+//             const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
+//             if (dashboardLink) {
+//                 console.log('🚀 Auto-clicking dashboard menu to load comprehensive dashboard...');
+//                 dashboardLink.click();
+//             } else {
+//                 console.warn('⚠️ Dashboard link not found, calling loadModule directly');
+//                 // this.loadModule('dashboard'); // ❌ DISABLED: Using Dashboard v2.0
+//             }
+//         }, 500);
 
         // Floating buttons already exist in HTML, no need to create
 
