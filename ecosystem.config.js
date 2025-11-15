@@ -3,8 +3,8 @@
  * Loads secrets from /etc/titan/.env.prod via dotenv
  */
 
-// Load environment variables from secure location
-require('dotenv').config({ path: '/etc/titan/.env.prod' });
+// Load environment variables from project .env file
+require('dotenv').config({ path: __dirname + '/.env' });
 
 module.exports = {
   apps: [{
@@ -12,6 +12,12 @@ module.exports = {
     script: './server.js',
     instances: 2,
     exec_mode: 'cluster',
+    
+    // Environment
+    env: {
+      NODE_ENV: 'production',
+      PORT: 5001
+    },
     
     // Auto-restart configuration
     max_restarts: 10,
