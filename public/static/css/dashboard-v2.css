@@ -1133,3 +1133,318 @@
         font-size: 1.5rem !important;
     }
 }
+
+/* ============================================
+   SMOOTH ANIMATIONS & TRANSITIONS
+   ============================================ */
+
+/* Fade in animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Slide in from right */
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* Scale up animation */
+@keyframes scaleUp {
+    from {
+        opacity: 0;
+        transform: scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Pulse animation for loading */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Shimmer effect for skeleton loading */
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+/* Apply animations to widgets */
+.dashboard-widget {
+    animation: fadeIn 0.5s ease-out;
+    animation-fill-mode: both;
+    transition: all 0.3s ease;
+}
+
+/* Stagger animation delays */
+.dashboard-widget:nth-child(1) {
+    animation-delay: 0.1s;
+}
+
+.dashboard-widget:nth-child(2) {
+    animation-delay: 0.2s;
+}
+
+.dashboard-widget:nth-child(3) {
+    animation-delay: 0.3s;
+}
+
+.dashboard-widget:nth-child(4) {
+    animation-delay: 0.4s;
+}
+
+/* Hover effects */
+.dashboard-widget:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.3);
+}
+
+/* AI Agents animation */
+.ai-agent-card {
+    animation: slideInRight 0.5s ease-out;
+    animation-fill-mode: both;
+    transition: all 0.3s ease;
+}
+
+.ai-agent-card:hover {
+    transform: scale(1.02);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Stagger AI agent cards */
+.ai-agent-card:nth-child(1) { animation-delay: 0.1s; }
+.ai-agent-card:nth-child(2) { animation-delay: 0.15s; }
+.ai-agent-card:nth-child(3) { animation-delay: 0.2s; }
+.ai-agent-card:nth-child(4) { animation-delay: 0.25s; }
+.ai-agent-card:nth-child(5) { animation-delay: 0.3s; }
+
+/* Button transitions */
+button, .btn, .timeframe-btn {
+    transition: all 0.2s ease;
+}
+
+button:hover, .btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+button:active, .btn:active {
+    transform: translateY(0);
+}
+
+/* Loading skeleton shimmer */
+.widget-loading-state {
+    background: linear-gradient(
+        90deg,
+        rgba(55, 65, 81, 0.1) 25%,
+        rgba(75, 85, 101, 0.2) 50%,
+        rgba(55, 65, 81, 0.1) 75%
+    );
+    background-size: 1000px 100%;
+    animation: shimmer 2s infinite;
+}
+
+/* Smooth scroll */
+html {
+    scroll-behavior: smooth;
+}
+
+/* Chart animation */
+#portfolio-chart {
+    animation: scaleUp 0.6s ease-out;
+    animation-delay: 0.5s;
+    animation-fill-mode: both;
+}
+
+/* Number count-up effect (optional, requires JS) */
+.stat-value, .balance-value {
+    transition: all 0.5s ease;
+}
+
+/* Icon spin on refresh */
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.refreshing .widget-action-btn svg {
+    animation: spin 1s linear infinite;
+}
+
+/* Success/Error flash animations */
+@keyframes flashGreen {
+    0%, 100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(34, 197, 94, 0.2);
+    }
+}
+
+@keyframes flashRed {
+    0%, 100% {
+        background-color: transparent;
+    }
+    50% {
+        background-color: rgba(239, 68, 68, 0.2);
+    }
+}
+
+.flash-success {
+    animation: flashGreen 0.6s ease;
+}
+
+.flash-error {
+    animation: flashRed 0.6s ease;
+}
+
+/* Reduce motion for accessibility */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* ============================================
+   LIGHT THEME
+   ============================================ */
+
+.light-theme {
+    /* Background colors */
+    --bg-primary: #ffffff;
+    --bg-secondary: #f3f4f6;
+    --bg-tertiary: #e5e7eb;
+    
+    /* Text colors */
+    --text-primary: #111827;
+    --text-secondary: #4b5563;
+    --text-tertiary: #6b7280;
+    
+    /* Border colors */
+    --border-color: #d1d5db;
+    --border-hover: #9ca3af;
+    
+    /* Widget backgrounds */
+    --widget-bg: #ffffff;
+    --widget-border: #e5e7eb;
+    --widget-shadow: rgba(0, 0, 0, 0.1);
+    
+    /* Chart colors */
+    --chart-grid: #e5e7eb;
+    --chart-text: #6b7280;
+}
+
+/* Apply light theme styles */
+.light-theme body {
+    background-color: var(--bg-secondary);
+    color: var(--text-primary);
+}
+
+.light-theme .dashboard-widget {
+    background-color: var(--widget-bg);
+    border-color: var(--widget-border);
+    box-shadow: 0 1px 3px var(--widget-shadow);
+}
+
+.light-theme .widget-title h3 {
+    color: var(--text-primary);
+}
+
+.light-theme .stat-label,
+.light-theme .chart-info-label {
+    color: var(--text-secondary);
+}
+
+.light-theme .stat-value {
+    color: var(--text-primary);
+}
+
+/* Navigation in light mode */
+.light-theme nav {
+    background-color: var(--bg-primary);
+    border-bottom-color: var(--border-color);
+}
+
+/* Buttons in light mode */
+.light-theme button,
+.light-theme .btn {
+    background-color: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+.light-theme button:hover {
+    background-color: var(--border-hover);
+}
+
+/* Theme toggle button */
+.theme-toggle-btn {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    width: 3rem;
+    height: 3rem;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    border: none;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    transition: all 0.3s ease;
+}
+
+.theme-toggle-btn:hover {
+    transform: scale(1.1) rotate(15deg);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+/* Smooth theme transition */
+html {
+    transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+.dashboard-widget,
+button,
+.nav-link {
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
