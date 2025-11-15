@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>تایتان - سیستم معاملات حقیقی</title>
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/static/manifest.json">
+    <meta name="theme-color" content="#1f2937">
+    <meta name="background-color" content="#111827">
+    
+    <!-- iOS PWA Support -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="تایتان">
+    <link rel="apple-touch-icon" href="/static/icons/icon-192x192.svg">
+    <link rel="apple-touch-startup-image" href="/static/icons/icon-512x512.svg">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/static/icons/icon-72x72.svg">
+    <link rel="shortcut icon" href="/static/icons/icon-72x72.svg">
+    
+    <!-- Meta Tags for PWA -->
+    <meta name="description" content="سیستم جامع معاملات، هشدارهای بازار و نظارت Real-time">
+    <meta name="keywords" content="تایتان, معاملات, ارز دیجیتال, هشدار, بازار">
+    <meta name="author" content="TITAN Trading System">
+    
+    <!-- Tailwind CSS - MUST BE LOADED FIRST BEFORE ALL SCRIPTS -->
+    <link rel="stylesheet" href="/static/css/tailwind.c8db4b32.css">
+    <link rel="stylesheet" href="/static/css/market-animations.css">
+    
+    <!-- External Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js?v=1763204294"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js?v=1763204294"></script>
+    <link href="/static/styles.css" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-white" dir="rtl">
+    <div id="app">
+        <!-- Login Screen -->
+        <div id="loginScreen" class="min-h-screen flex items-center justify-center">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">🚀</div>
+                    <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                        تایتان
+                    </h1>
+                    <p class="text-gray-400 mt-2">سیستم معاملات هوشمند</p>
+                    <div class="flex items-center justify-center mt-3 text-sm">
+                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                        <span class="text-green-400">آماده برای معاملات</span>
+                    </div>
+                </div>
+                
+                <form id="loginForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام کاربری</label>
+                        <input type="text" id="username" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
+                        <input type="password" id="password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent" required>
+                    </div>
+                    <div class="flex items-center">
+                        <input type="checkbox" id="rememberMe" class="mr-2">
+                        <label for="rememberMe" class="text-sm text-gray-300">مرا به خاطر بسپار</label>
+                    </div>
+                    <button type="submit" id="loginBtn" class="w-full bg-gradient-to-r from-blue-500 to-purple-600 text-white py-2 px-4 rounded-md hover:from-blue-600 hover:to-purple-700 transition duration-300">
+                        ورود به سیستم
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-500 text-sm mb-2">
+                        حساب کاربری ندارید؟
+                        <a href="#" onclick="showRegisterScreen()" class="text-blue-400 hover:text-blue-300">ثبت نام کنید</a>
+                    </p>
+                    <button onclick="testConnection()" class="text-xs text-gray-400 hover:text-gray-300">
+                        🔍 تست اتصال سیستم
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Register Screen -->
+        <div id="registerScreen" class="min-h-screen flex items-center justify-center hidden">
+            <div class="bg-gray-800 p-8 rounded-lg shadow-2xl w-96">
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-4">📝</div>
+                    <h1 class="text-2xl font-bold text-white">ثبت نام در تایتان</h1>
+                    <p class="text-gray-400 mt-2">حساب کاربری جدید ایجاد کنید</p>
+                </div>
+                
+                <form id="registerForm" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام کاربری</label>
+                        <input type="text" id="reg_username" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">ایمیل</label>
+                        <input type="email" id="reg_email" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">رمز عبور</label>
+                        <input type="password" id="reg_password" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500" required>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-300 mb-2">نام (اختیاری)</label>
+                        <input type="text" id="reg_firstName" class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:ring-2 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" id="registerBtn" class="w-full bg-gradient-to-r from-green-500 to-blue-600 text-white py-2 px-4 rounded-md hover:from-green-600 hover:to-blue-700 transition duration-300">
+                        ثبت نام
+                    </button>
+                </form>
+                
+                <div class="mt-6 text-center">
+                    <p class="text-gray-500 text-sm">
+                        حساب کاربری دارید؟
+                        <a href="#" onclick="showLoginScreen()" class="text-blue-400 hover:text-blue-300">ورود</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Main App -->
+        <div id="mainApp" class="hidden">
+            <!-- This will be populated by TitanApp when user logs in -->
+        </div>
+    </div>
+
+    <!-- Dark Mode Initialization -->
+    <script>
+        // ✨ Dark mode initialization - MUST BE BEFORE ANY CONTENT RENDERING
+        (function() {
+            const savedTheme = localStorage.getItem('titan_theme');
+            if (savedTheme === 'light') {
+                document.documentElement.classList.remove('dark');
+            } else {
+                // Default to dark mode
+                document.documentElement.classList.add('dark');
+            }
+        })();
+    </script>
+
+    <!-- Environment Configuration -->
+    <script>
+        // 🌍 تنظیمات محیط برای Titan Trading System
+        window.ENV = {
+            API_URL: '',  // خالی یعنی same-origin
+            USE_MOCK: 'false',  // پیش‌فرض: داده واقعی
+            DEBUG: 'false',  // حالت دیباگ
+            API_TIMEOUT: '8000',  // timeout به میلی‌ثانیه
+            ENABLE_RETRY: 'true',  // فعال‌سازی retry برای 502/503
+            MAX_RETRIES: '1'  // حداکثر تلاش مجدد
+        };
+    </script>
+
+    <!-- Scripts -->
+    <script>
+        function showRegisterScreen() {
+            document.getElementById('loginScreen').classList.add('hidden');
+            document.getElementById('registerScreen').classList.remove('hidden');
+        }
+        
+        function showLoginScreen() {
+            document.getElementById('registerScreen').classList.add('hidden');
+            document.getElementById('loginScreen').classList.remove('hidden');
+        }
+        
+        async function testConnection() {
+            try {
+                const response = await axios.get('/api/health');
+                alert('✅ اتصال موفقیت آمیز!\n' + JSON.stringify(response.data, null, 2));
+            } catch (error) {
+                alert('❌ خطا در اتصال:\n' + error.message);
+            }
+        }
+
+        // Register form handler
+        document.addEventListener('DOMContentLoaded', function() {
+            const registerForm = document.getElementById('registerForm');
+            if (registerForm) {
+                registerForm.addEventListener('submit', async function(e) {
+                    e.preventDefault();
+                    
+                    const username = document.getElementById('reg_username').value;
+                    const email = document.getElementById('reg_email').value;
+                    const password = document.getElementById('reg_password').value;
+                    const firstName = document.getElementById('reg_firstName').value;
+                    
+                    const registerBtn = document.getElementById('registerBtn');
+                    const originalText = registerBtn.textContent;
+                    registerBtn.textContent = 'در حال ثبت نام...';
+                    registerBtn.disabled = true;
+                    
+                    try {
+                        const response = await axios.post('/api/auth/register', {
+                            username,
+                            email,
+                            password,
+                            firstName: firstName || undefined
+                        });
+                        
+                        if (response.data.success) {
+                            alert('✅ ثبت نام موفقیت آمیز! اکنون می‌توانید وارد شوید.');
+                            showLoginScreen();
+                            // Pre-fill login form
+                            document.getElementById('username').value = username;
+                        } else {
+                            alert('❌ خطا در ثبت نام: ' + response.data.error);
+                        }
+                    } catch (error) {
+                        console.error('Registration error:', error);
+                        if (error.response && error.response.data && error.response.data.error) {
+                            alert('❌ خطا در ثبت نام: ' + error.response.data.error);
+                        } else {
+                            alert('❌ خطا در ثبت نام: خطای شبکه یا سرور');
+                        }
+                    } finally {
+                        registerBtn.textContent = originalText;
+                        registerBtn.disabled = false;
+                    }
+                });
+            }
+        });
+    </script>
+    
+    <!-- Load Configuration First -->
+    <script src="/config.b03d0459.js?v=1763204294"></script>
+    
+    <!-- Configure Axios -->
+    <script>
+        // Configure axios with base URL from config
+        if (window.TITAN_CONFIG && window.TITAN_CONFIG.API_BASE_URL) {
+            axios.defaults.baseURL = window.TITAN_CONFIG.API_BASE_URL;
+            console.log('✅ Axios configured with baseURL:', axios.defaults.baseURL);
+        } else {
+            console.error('❌ TITAN_CONFIG not found! Using relative URLs.');
+        }
+        
+        // Set default headers
+        axios.defaults.headers.common['Content-Type'] = 'application/json';
+        axios.defaults.timeout = 30000;
+    </script>
+    
+    <!-- Load AI Agents (Core Features - Autopilot Trading System) -->
+    <script src="/static/modules/ai-agents/agent-01-technical-analysis.9f4e3084.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-02-risk-management.d389f3a2.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.e0319b49.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.5e87caa1.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-05-market-making.270b96e9.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-07-news-analysis.97a5453b.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-08-hft.d705779a.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.808c9747.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-10-macro-analysis.8ccb7c3a.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-12-risk-assessment.a7e07a0e.js?v=1763204294"></script>
+    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js?v=1763204294"></script>
+    
+    <!-- Dashboard Services & Adapters (Real Data Integration) -->
+    <script src="/static/modules/dashboard/services/api/http.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/market.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/mode.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/overview.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/movers.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/portfolio.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/monitoring.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/services/adapters/chart.adapter.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/init.js?v=1763204294"></script>
+    <script src="/static/modules/dashboard/market-integration.js?v=1763204294"></script>
+    
+    <!-- Widget Integration System (AI Agents Display) -->
+    <script src="/static/modules/dashboard/widgets-integration.js?v=1763204294" defer></script>
+    <script src="/static/modules/dashboard/widgets-integration-loader.js?v=1763204294" defer></script>
+    <script src="/static/modules/dashboard/legacy-annotator.js?v=1763204294" defer></script>
+    <script src="/static/modules/dashboard/dashboard-widgets-loader.js?v=1763204294" defer></script>
+    
+    <!-- AI Management & Adapters -->
+    <script src="/static/modules/ai-adapters.cd476956.js?v=1763204294"></script>
+    <script src="/static/modules/ai-management.86422546.js?v=1763204294"></script>
+    
+    <!-- Load Main Modules -->
+    <script src="/static/modules/module-loader.89cb3ab0.js?v=1763204294"></script>
+    <script src="/static/modules/alerts.ab657483.js?v=1763204294"></script>
+    <script src="/static/modules/app.f5839b97.js?v=1763204294"></script>
+    
+    <!-- Login Button Fix - Comprehensive Fallback System -->
+    <script src="/static/fix_login_button.js?v=1763204294"></script>
+</body>
+</html>
