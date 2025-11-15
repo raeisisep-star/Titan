@@ -2672,11 +2672,19 @@ const { serveStatic } = require('@hono/node-server/serve-static');
 app.use('/static/*', serveStatic({ root: './public' }));
 app.use('/favicon.ico', serveStatic({ path: './public/favicon.ico' }));
 
-// Serve JavaScript files from public root (config, modules, etc.)
-app.use('/*.js', serveStatic({ root: './public' }));
-
-// Serve CSS files from public root
-app.use('/*.css', serveStatic({ root: './public' }));
+// Serve all files from public root (JS, CSS, etc.) - MUST be before catch-all
+app.use('/*', async (c, next) => {
+  const path = c.req.path;
+  // Only serve actual files, not directories or routes
+  if (path.match(/\.(js|css|json|svg|png|jpg|ico|woff|woff2|ttf)$/)) {
+    const filePath = `./public${path}`;
+    const fs = require('fs');
+    if (fs.existsSync(filePath)) {
+      return serveStatic({ path: filePath })(c, next);
+    }
+  }
+  await next();
+});
 
 // Serve index.html for root and all non-API routes (SPA catch-all)
 app.get('*', (c) => {
