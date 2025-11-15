@@ -639,6 +639,150 @@ app.get('/api/dashboard/agents-real', async (c) => {
   }
 });
 
+// ========================================================================
+// AI AGENTS API - Real Data from ai_agents table
+// ========================================================================
+
+// Get all AI agents with their real data
+app.get('/api/ai-agents', async (c) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        id,
+        agent_id,
+        name,
+        type,
+        description,
+        status,
+        performance_metrics,
+        capabilities,
+        config,
+        model_provider,
+        model_name,
+        last_active_at,
+        created_at,
+        updated_at
+      FROM ai_agents
+      ORDER BY 
+        CASE status 
+          WHEN 'active' THEN 1 
+          WHEN 'inactive' THEN 2 
+          ELSE 3 
+        END,
+        agent_id
+    `);
+    
+    // Transform data to match frontend expectations
+    const agents = result.rows.map((row, index) => {
+      const metrics = row.performance_metrics || {};
+      return {
+        id: index + 1, // Use sequential ID for frontend
+        agentId: row.agent_id,
+        name: row.name,
+        type: row.type,
+        description: row.description,
+        status: row.status,
+        accuracy: metrics.accuracy || 0,
+        totalTrades: metrics.total_trades || 0,
+        successRate: metrics.success_rate || 0,
+        profitLoss: metrics.profit_loss || 0,
+        lastActive: row.last_active_at,
+        capabilities: row.capabilities || {},
+        modelProvider: row.model_provider,
+        modelName: row.model_name,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at
+      };
+    });
+    
+    return c.json({
+      success: true,
+      data: agents,
+      meta: {
+        total: agents.length,
+        active: agents.filter(a => a.status === 'active').length,
+        inactive: agents.filter(a => a.status === 'inactive').length,
+        timestamp: new Date().toISOString()
+      }
+    });
+  } catch (error) {
+    console.error('AI Agents API error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message,
+      data: [] // Return empty array on error so frontend can use fallback
+    }, 500);
+  }
+});
+
+// Get single AI agent by ID
+app.get('/api/ai-agents/:agentId', async (c) => {
+  try {
+    const agentId = c.req.param('agentId');
+    
+    const result = await pool.query(`
+      SELECT 
+        id,
+        agent_id,
+        name,
+        type,
+        description,
+        status,
+        performance_metrics,
+        capabilities,
+        config,
+        model_provider,
+        model_name,
+        last_active_at,
+        created_at,
+        updated_at
+      FROM ai_agents
+      WHERE agent_id = $1 OR id::text = $1
+    `, [agentId]);
+    
+    if (result.rows.length === 0) {
+      return c.json({
+        success: false,
+        error: 'Agent not found'
+      }, 404);
+    }
+    
+    const row = result.rows[0];
+    const metrics = row.performance_metrics || {};
+    
+    const agent = {
+      id: row.id,
+      agentId: row.agent_id,
+      name: row.name,
+      type: row.type,
+      description: row.description,
+      status: row.status,
+      accuracy: metrics.accuracy || 0,
+      totalTrades: metrics.total_trades || 0,
+      successRate: metrics.success_rate || 0,
+      profitLoss: metrics.profit_loss || 0,
+      lastActive: row.last_active_at,
+      capabilities: row.capabilities || {},
+      config: row.config || {},
+      modelProvider: row.model_provider,
+      modelName: row.model_name,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at
+    };
+    
+    return c.json({
+      success: true,
+      data: agent
+    });
+  } catch (error) {
+    console.error('AI Agent detail error:', error);
+    return c.json({ 
+      success: false, 
+      error: error.message 
+    }, 500);
+  }
+});
+
 // Trading Activity - REAL
 app.get('/api/dashboard/trading-real', async (c) => {
   try {
@@ -788,7 +932,20 @@ app.get('/api/dashboard/comprehensive-real', async (c) => {
     // Parallel queries for performance (including MEXC market data + Fear & Greed + BTC Dominance)
     const [portfolioRes, agentsRes, tradingRes, activitiesRes, btcPrice, ethPrice, fearGreedRes, btcDominanceRes] = await Promise.allSettled([
       pool.query('SELECT * FROM v_dashboard_portfolio WHERE user_id = $1', [userId]),
-      pool.query('SELECT id, name, description, strategy_type, is_active FROM trading_strategies WHERE user_id = $1', [userId]),
+      // 🎯 Use real ai_agents table instead of trading_strategies
+      pool.query(`
+        SELECT 
+          id, agent_id, name, type, description, status, 
+          performance_metrics, last_active_at
+        FROM ai_agents
+        ORDER BY 
+          CASE status 
+            WHEN 'active' THEN 1 
+            WHEN 'inactive' THEN 2 
+            ELSE 3 
+          END,
+          agent_id
+      `),
       pool.query('SELECT * FROM v_dashboard_trading WHERE user_id = $1', [userId]),
       pool.query(`
         SELECT id, symbol, side, total_value, executed_at, strategy
@@ -843,15 +1000,22 @@ app.get('/api/dashboard/comprehensive-real', async (c) => {
           fear_greed_index: fearGreedValue,       // ✅ Fear & Greed Index API
           dominance: parseFloat(btcDominance.toFixed(2))  // ✅ CoinGecko BTC Dominance
         },
-        aiAgents: agents.map((r, i) => ({
-          id: i + 1,
-          name: r.name || `Agent ${i + 1}`,
-          specialty: r.description || r.strategy_type,
-          status: r.is_active ? 'active' : 'paused',
-          performance: 0,
-          trades: 0,
-          uptime: 95.0
-        })),
+        aiAgents: agents.map((r, i) => {
+          const metrics = r.performance_metrics || {};
+          return {
+            id: i + 1,
+            agentId: r.agent_id,
+            name: r.name || `Agent ${i + 1}`,
+            description: r.description,
+            type: r.type,
+            status: r.status,
+            accuracy: metrics.accuracy || 0,
+            totalTrades: metrics.total_trades || 0,
+            successRate: metrics.success_rate || 0,
+            profitLoss: metrics.profit_loss || 0,
+            lastActive: r.last_active_at
+          };
+        }),
         trading: {
           activeTrades: parseInt(trading.active_trades) || 0,
           todayTrades: parseInt(trading.today_trades) || 0,
@@ -869,7 +1033,7 @@ app.get('/api/dashboard/comprehensive-real', async (c) => {
           agent: r.strategy || 'Manual'
         })),
         summary: {
-          activeAgents: agents.filter(r => r.is_active).length,
+          activeAgents: agents.filter(r => r.status === 'active').length,
           totalAgents: agents.length,
           avgPerformance: 0,
           systemHealth: 98
