@@ -95,7 +95,7 @@
    ========================================== */
 .widgets-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    grid-template-columns: repeat(4, 1fr);
     gap: 1.5rem;
     margin-bottom: 2rem;
 }
@@ -1447,4 +1447,43 @@ html {
 button,
 .nav-link {
     transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* ============================================
+   WIDGETS GRID RESPONSIVE
+   ============================================ */
+
+/* Desktop Large (> 1400px): 4 columns */
+@media (min-width: 1400px) {
+    .widgets-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Desktop Medium (1200px - 1400px): 4 columns */
+@media (min-width: 1200px) and (max-width: 1399px) {
+    .widgets-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+/* Desktop Small (992px - 1199px): 3 columns */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .widgets-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+}
+
+/* Tablet (768px - 991px): 2 columns */
+@media (min-width: 768px) and (max-width: 991px) {
+    .widgets-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Mobile (< 768px): 1 column */
+@media (max-width: 767px) {
+    .widgets-grid {
+        grid-template-columns: 1fr;
+    }
 }
