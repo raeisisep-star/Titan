@@ -139,7 +139,7 @@ class TitanApp {
                 loginData.username = usernameOrEmail;
             }
 
-            const response = await axios.post('/auth/login', loginData);
+            const response = await axios.post('/api/auth/login', loginData);
 
             if (response.data.success) {
                 // Fix: Use accessToken instead of token
@@ -165,7 +165,7 @@ class TitanApp {
     async verifyToken(token) {
         try {
             // Use GET endpoint with Authorization header (not POST)
-            const response = await axios.get('/auth/verify', {
+            const response = await axios.get('/api/auth/verify', {
                 validateStatus: status => [200, 401].includes(status)
             });
     
@@ -2367,7 +2367,7 @@ class TitanApp {
 
     async logout() {
         try {
-            await axios.post('/auth/logout');
+            await axios.post('/api/auth/logout');
             localStorage.removeItem('titan_auth_token');
             this.currentUser = null;
             this.showLoginScreen();
