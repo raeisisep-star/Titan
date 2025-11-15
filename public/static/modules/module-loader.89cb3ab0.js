@@ -21,8 +21,8 @@ class ModuleLoader {
             'settings': 'SettingsModule'
         };
         
-        // Cache busting timestamp - Phase 1 & 2 Complete
-        this.cacheVersion = '20251115_phase12_complete';
+        // Cache busting timestamp - Phase 1 ACTUAL CLEANUP Complete
+        this.cacheVersion = '1763195488_phase1_cleanup_actual';
         
         console.log('✅ ModuleLoader initialized with', Object.keys(this.moduleClassMap).length, 'modules');
     }

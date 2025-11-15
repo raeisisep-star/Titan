@@ -39,22 +39,6 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="/static/styles.css" rel="stylesheet">
-    
-    <!-- Legacy Widget System CSS -->
-    <style>
-        /* Hide fallback widgets when legacy widgets are active */
-        .legacy-fallback.hidden {
-            display: none !important;
-        }
-        
-        /* Legacy mode indicator styling */
-        .legacy-mode-indicator {
-            font-size: 0.75rem;
-            color: #9ca3af;
-            padding: 0.5rem;
-            text-align: center;
-        }
-    </style>
 </head>
 <body class="bg-gray-900 text-white" dir="rtl">
     <div id="app">
@@ -245,22 +229,6 @@
             }
         });
     </script>
-    <!-- Load AI Agents -->
-    <script src="/static/modules/ai-agents/agent-01-technical-analysis.9f4e3084.js"></script>
-    <script src="/static/modules/ai-agents/agent-02-risk-management.d389f3a2.js"></script>
-    <script src="/static/modules/ai-agents/agent-03-sentiment-analysis.e0319b49.js"></script>
-    <script src="/static/modules/ai-agents/agent-04-portfolio-optimization.5e87caa1.js"></script>
-    <script src="/static/modules/ai-agents/agent-05-market-making.270b96e9.js"></script>
-    <script src="/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js"></script>
-    <script src="/static/modules/ai-agents/agent-07-news-analysis.97a5453b.js"></script>
-    <script src="/static/modules/ai-agents/agent-08-hft.d705779a.js"></script>
-    <script src="/static/modules/ai-agents/agent-09-quantitative-analysis.808c9747.js"></script>
-    <script src="/static/modules/ai-agents/agent-10-macro-analysis.8ccb7c3a.js"></script>
-    <script type="module" src="/static/modules/ai-agents/agent-11-portfolio-optimization.96715d8f.js"></script>
-    <script src="/static/modules/ai-agents/agent-12-risk-assessment.a7e07a0e.js"></script>
-    <script src="/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js"></script>
-    <script type="module" src="/static/modules/ai-agents/agent-14-performance-analytics.2420c814.js"></script>
-    <script type="module" src="/static/modules/ai-agents/agent-15-system-orchestrator.a2a367fe.js"></script>
     
     <!-- Load Configuration First -->
     <script src="/config.b03d0459.js"></script>
@@ -280,40 +248,10 @@
         axios.defaults.timeout = 30000;
     </script>
     
-    <!-- Load API Services & Adapters (Phase B + Sprint 2) -->
-    <script src="/static/modules/dashboard/services/api/http.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/market.adapter.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/mode.adapter.js"></script>
-    <!-- Sprint 2: New Adapters for Dashboard Widgets -->
-    <script src="/static/modules/dashboard/services/adapters/overview.adapter.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/movers.adapter.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/portfolio.adapter.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/monitoring.adapter.js"></script>
-    <script src="/static/modules/dashboard/services/adapters/chart.adapter.js"></script>
-    <script src="/static/modules/dashboard/init.js"></script>
-    <script src="/static/modules/dashboard/market-integration.js"></script>
-    
-    <!-- 🚨 SAFE MODE - MUST LOAD FIRST -->
-    <script src="/static/modules/dashboard/safe-mode.js?v=20251113f"></script>
-    
-    <!-- 🔍 DIAGNOSTIC TOOL - for troubleshooting -->
-    <script src="/static/modules/dashboard/widget-diagnostic.js?v=20251113f"></script>
-    
-    <!-- Phase C: Widget Integration Layer -->
-    <script src="/static/modules/dashboard/widgets-integration.js?v=20251113f" defer></script>
-    <!-- Fallback Loader (ensures integration loads even with race conditions) -->
-    <script src="/static/modules/dashboard/widgets-integration-loader.js?v=20251113f" defer></script>
-    <!-- Legacy Widget Auto-Annotation (VERSION F: Fixed regression + broadened titles + Set tracking) -->
-    <script src="/static/modules/dashboard/legacy-annotator.js?v=20251113f" defer></script>
-    <!-- Task 3.3: Dashboard Widgets Loader (DISABLED by Safe Mode) -->
-    <script src="/static/modules/dashboard/dashboard-widgets-loader.js?v=20251113f" defer></script>
-    
-    <!-- Load Main Modules -->
-    <script src="/static/modules/ai-adapters.cd476956.js"></script>
-    <script src="/static/modules/ai-management.86422546.js"></script>
+    <!-- Load Main Modules (Cleaned - No AI Agents, No Legacy Widget System) -->
     <script src="/static/modules/module-loader.89cb3ab0.js"></script>
     <script src="/static/modules/alerts.ab657483.js"></script>
-    <script src="/static/app.f5839b97.js"></script>
+    <script src="/static/modules/app.f5839b97.js"></script>
     
     <!-- Login Button Fix - Comprehensive Fallback System -->
     <script src="/static/fix_login_button.js"></script>
