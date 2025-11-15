@@ -54,7 +54,7 @@ class DashboardModule {
         try {
             console.log('📊 Loading dashboard data from /api/dashboard/comprehensive-real...');
             
-            const response = await axios.get('/api/dashboard/comprehensive-real');
+            const response = await axios.get('/dashboard/comprehensive-real');
             
             if (!response.data || !response.data.success) {
                 console.error('❌ Invalid response from API');
