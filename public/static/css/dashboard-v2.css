@@ -1090,3 +1090,46 @@
 .change-negative {
     color: #ef4444 !important;
 }
+
+/* ============================================
+   HIDE OLD DASHBOARD WIDGETS
+   ============================================ */
+
+/* Hide all siblings after #dashboard-container */
+#dashboard-container ~ * {
+    display: none !important;
+}
+
+/* Ensure dashboard-container is visible */
+#dashboard-container {
+    display: block !important;
+}
+
+/* Mobile responsive improvements */
+@media (max-width: 768px) {
+    .dashboard-grid {
+        grid-template-columns: 1fr !important;
+    }
+    
+    .widget {
+        margin-bottom: 1rem;
+    }
+    
+    .chart-container {
+        height: 300px !important;
+    }
+}
+
+@media (max-width: 640px) {
+    .dashboard-header h1 {
+        font-size: 1.5rem !important;
+    }
+    
+    .widget-title {
+        font-size: 1rem !important;
+    }
+    
+    .stat-value {
+        font-size: 1.5rem !important;
+    }
+}
