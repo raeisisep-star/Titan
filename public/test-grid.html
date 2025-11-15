@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Grid Layout</title>
+    <link rel="stylesheet" href="/static/css/dashboard-v2.css?v=1763216099383">
+    <style>
+        body {
+            background: #111827;
+            color: white;
+            padding: 2rem;
+            font-family: Arial;
+        }
+        .test-widget {
+            background: #1f2937;
+            border: 2px solid #3b82f6;
+            border-radius: 1rem;
+            padding: 2rem;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: #3b82f6;
+        }
+        .info {
+            background: #1f2937;
+            padding: 1rem;
+            margin-bottom: 2rem;
+            border-radius: 0.5rem;
+            border-left: 4px solid #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <h1>🧪 Test Grid Layout - 2 Columns</h1>
+    
+    <div class="info">
+        <p><strong>Grid Configuration:</strong></p>
+        <ul>
+            <li>Desktop/Tablet: 2 columns</li>
+            <li>Mobile: 1 column</li>
+            <li>Gap: 2rem</li>
+        </ul>
+        <p><strong>Current timestamp:</strong> 1763216099383</p>
+    </div>
+
+    <div class="widgets-grid">
+        <div class="test-widget">ویجت 1</div>
+        <div class="test-widget">ویجت 2</div>
+        <div class="test-widget">ویجت 3</div>
+        <div class="test-widget">ویجت 4</div>
+    </div>
+
+    <h2 style="margin-top: 3rem; text-align: center;">AI Agents Grid</h2>
+    <div class="agents-grid">
+        <div class="test-widget">عامل 1</div>
+        <div class="test-widget">عامل 2</div>
+        <div class="test-widget">عامل 3</div>
+        <div class="test-widget">عامل 4</div>
+    </div>
+
+    <script>
+        // Log grid columns
+        window.addEventListener('load', () => {
+            const widgetsGrid = document.querySelector('.widgets-grid');
+            const agentsGrid = document.querySelector('.agents-grid');
+            
+            const widgetsStyle = window.getComputedStyle(widgetsGrid);
+            const agentsStyle = window.getComputedStyle(agentsGrid);
+            
+            console.log('Widgets Grid Columns:', widgetsStyle.gridTemplateColumns);
+            console.log('Agents Grid Columns:', agentsStyle.gridTemplateColumns);
+            
+            alert(`Grid Test Results:
+
+Widgets Grid: ${widgetsStyle.gridTemplateColumns}
+Agents Grid: ${agentsStyle.gridTemplateColumns}
+
+✅ باید 2 ستون نمایش داده شود!`);
+        });
+    </script>
+</body>
+</html>
