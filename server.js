@@ -2672,6 +2672,12 @@ const { serveStatic } = require('@hono/node-server/serve-static');
 app.use('/static/*', serveStatic({ root: './public' }));
 app.use('/favicon.ico', serveStatic({ path: './public/favicon.ico' }));
 
+// Serve JavaScript files from public root (config, modules, etc.)
+app.use('/*.js', serveStatic({ root: './public' }));
+
+// Serve CSS files from public root
+app.use('/*.css', serveStatic({ root: './public' }));
+
 // Serve index.html for root and all non-API routes (SPA catch-all)
 app.get('*', (c) => {
   // Skip API routes
