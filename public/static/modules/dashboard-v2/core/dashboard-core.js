@@ -24,7 +24,7 @@ import { renderSystemWidget, renderSystemLoading } from '../widgets/system-widge
 import { renderChartWidget, renderChartLoading, initializeChart, updateChart } from '../widgets/chart-widget.js';
 
 // AI Agents renderer
-import { renderAIAgentsSection, renderAIAgentsLoading, initAIAgentsEvents } from '../ai-agents/ai-agents-section.js';
+import { renderAIAgentsSection, renderAIAgentsLoading, initAIAgentsEvents } from '../ai-agents/ai-agents-section-v2.js';
 import { renderAgentDetailPage, initAgentDetailRouting } from '../ai-agents/ai-agent-detail.js';
 import { renderAgentsManagementPage, initManagementRouting } from '../ai-agents/ai-agents-management.js';
 
