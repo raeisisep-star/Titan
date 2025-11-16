@@ -7,14 +7,15 @@
  * - Recent decisions
  */
 
-import { API_ENDPOINTS } from '../core/constants.js';
+// Direct API endpoints to avoid cache issues
+const API_BASE = '/api/ai-agents';
 
 /**
  * Fetch agent details from API
  */
 async function fetchAgentDetails(agentId) {
     try {
-        const response = await fetch(`${API_ENDPOINTS.AI_AGENTS}/${agentId}`);
+        const response = await fetch(`${API_BASE}/${agentId}`);
         const result = await response.json();
         return result.success ? result.data : null;
     } catch (error) {
@@ -28,7 +29,7 @@ async function fetchAgentDetails(agentId) {
  */
 async function fetchAgentStats(agentId) {
     try {
-        const response = await fetch(`${API_ENDPOINTS.AI_AGENTS}/${agentId}/stats`);
+        const response = await fetch(`${API_BASE}/${agentId}/stats`);
         const result = await response.json();
         return result.success ? result.data : null;
     } catch (error) {
@@ -43,7 +44,7 @@ async function fetchAgentStats(agentId) {
 async function fetchAgentTrades(agentId, limit = 20, offset = 0, status = 'all') {
     try {
         const params = new URLSearchParams({ limit, offset, status });
-        const response = await fetch(`${API_ENDPOINTS.AI_AGENTS}/${agentId}/trades?${params}`);
+        const response = await fetch(`${API_BASE}/${agentId}/trades?${params}`);
         const result = await response.json();
         return result.success ? result : null;
     } catch (error) {
@@ -58,7 +59,7 @@ async function fetchAgentTrades(agentId, limit = 20, offset = 0, status = 'all')
 async function fetchAgentPerformance(agentId, period = 'daily', days = 7) {
     try {
         const params = new URLSearchParams({ period, days });
-        const response = await fetch(`${API_ENDPOINTS.AI_AGENTS}/${agentId}/performance?${params}`);
+        const response = await fetch(`${API_BASE}/${agentId}/performance?${params}`);
         const result = await response.json();
         return result.success ? result.data : null;
     } catch (error) {

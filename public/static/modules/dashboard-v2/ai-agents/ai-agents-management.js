@@ -8,14 +8,15 @@
  * - Agent configuration
  */
 
-import { API_ENDPOINTS } from '../core/constants.js';
+// Direct API endpoints to avoid cache issues
+const API_BASE = '/api/ai-agents';
 
 /**
  * Fetch all AI agents
  */
 async function fetchAllAgents() {
     try {
-        const response = await fetch(API_ENDPOINTS.AI_AGENTS);
+        const response = await fetch(API_BASE);
         const result = await response.json();
         return result.success ? result.data : [];
     } catch (error) {
@@ -29,7 +30,7 @@ async function fetchAllAgents() {
  */
 async function updateAgentStatus(agentId, newStatus) {
     try {
-        const response = await fetch(`${API_ENDPOINTS.AI_AGENTS}/${agentId}/status`, {
+        const response = await fetch(`${API_BASE}/${agentId}/status`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status: newStatus })
