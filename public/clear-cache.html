@@ -3,69 +3,288 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>پاکسازی حافظه نهان</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css" rel="stylesheet">
-</head>
-<body class="bg-gray-900 text-white p-8">
-    <div class="max-w-4xl mx-auto text-center">
-        <h1 class="text-4xl font-bold mb-8">🧹 پاکسازی حافظه نهان</h1>
+    <title>🗑️ پاک کردن کامل Cache</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
         
-        <div class="bg-gray-800 p-8 rounded-lg mb-8">
-            <p class="text-xl mb-6">برای مشاهده تغییرات جدید در سیستم TITAN، لطفاً حافظه نهان مرورگر را پاک کنید.</p>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
-                <div class="bg-gray-700 p-4 rounded">
-                    <h3 class="text-lg font-bold mb-2">🖥️ کامپیوتر</h3>
-                    <p class="text-sm">Ctrl + Shift + R (Windows/Linux)<br>Cmd + Shift + R (Mac)</p>
-                </div>
-                <div class="bg-gray-700 p-4 rounded">
-                    <h3 class="text-lg font-bold mb-2">📱 موبایل</h3>
-                    <p class="text-sm">تنظیمات مرورگر > حذف داده‌ها</p>
-                </div>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 2rem;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .subtitle {
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .steps {
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 10px;
+            padding: 2rem;
+            margin: 2rem 0;
+            text-align: right;
+        }
+        
+        .step {
+            margin: 1rem 0;
+            padding: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+        
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: white;
+            color: #f5576c;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.2rem;
+            flex-shrink: 0;
+        }
+        
+        .step-text {
+            flex: 1;
+            text-align: right;
+        }
+        
+        .status {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 2rem 0;
+            padding: 1rem;
+            border-radius: 10px;
+        }
+        
+        .status.working {
+            background: rgba(251, 191, 36, 0.3);
+            color: #fbbf24;
+        }
+        
+        .status.success {
+            background: rgba(16, 185, 129, 0.3);
+            color: #10b981;
+        }
+        
+        .button {
+            background: white;
+            color: #f5576c;
+            border: none;
+            padding: 1rem 3rem;
+            border-radius: 50px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 1rem;
+            transition: transform 0.2s;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+        
+        .button:hover {
+            transform: scale(1.05);
+        }
+        
+        .button:active {
+            transform: scale(0.95);
+        }
+        
+        .info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 10px;
+            margin-top: 2rem;
+            font-size: 0.9rem;
+        }
+        
+        .progress {
+            width: 100%;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            margin: 2rem 0;
+            overflow: hidden;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: white;
+            width: 0%;
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🗑️</h1>
+        <h2>پاک کردن کامل Cache</h2>
+        <p class="subtitle">این صفحه تمام cache های browser شما را پاک می‌کند</p>
+        
+        <div id="status" class="status working">در حال پاک کردن...</div>
+        
+        <div class="progress">
+            <div id="progress-bar" class="progress-bar"></div>
+        </div>
+        
+        <div class="steps">
+            <div class="step" id="step1">
+                <div class="step-number">1</div>
+                <div class="step-text">پاک کردن Service Workers...</div>
             </div>
-            
-            <button onclick="clearCacheAndReload()" class="bg-blue-600 hover:bg-blue-700 px-8 py-4 rounded-lg text-xl font-bold">
-                <i class="fas fa-sync mr-2"></i>پاک کردن و بازگشت به TITAN
-            </button>
+            <div class="step" id="step2">
+                <div class="step-number">2</div>
+                <div class="step-text">پاک کردن Cache Storage...</div>
+            </div>
+            <div class="step" id="step3">
+                <div class="step-number">3</div>
+                <div class="step-text">پاک کردن Local Storage...</div>
+            </div>
+            <div class="step" id="step4">
+                <div class="step-number">4</div>
+                <div class="step-text">پاک کردن Session Storage...</div>
+            </div>
+            <div class="step" id="step5">
+                <div class="step-number">5</div>
+                <div class="step-text">پاک کردن IndexedDB...</div>
+            </div>
         </div>
-
-        <div class="bg-green-900 border border-green-600 p-6 rounded-lg">
-            <h2 class="text-2xl font-bold mb-4">✨ ویژگی جدید: سیستم AI پیشرفته</h2>
-            <p class="text-lg mb-4">تب "AI پیشرفته" با قابلیت‌های زیر اضافه شده است:</p>
-            <ul class="text-right list-disc list-inside space-y-2">
-                <li>🤖 اتصال به ChatGPT، Gemini و Claude</li>
-                <li>🎭 تحلیل احساسات پیشرفته فارسی</li>
-                <li>🧠 یادگیری ماشین برای بهبود پاسخ‌ها</li>
-                <li>📊 آنالیتیکس و مدیریت کامل AI</li>
-            </ul>
+        
+        <div class="info" id="info">
+            صبر کنید...
         </div>
+        
+        <button class="button" id="reload-btn" style="display:none" onclick="goToDashboard()">
+            ✅ رفتن به داشبورد
+        </button>
     </div>
 
     <script>
-        function clearCacheAndReload() {
-            // Try to clear various caches
-            if ('serviceWorker' in navigator) {
-                navigator.serviceWorker.getRegistrations().then(function(registrations) {
-                    for(let registration of registrations) {
-                        registration.unregister();
-                    }
-                });
-            }
-
-            // Clear local storage
-            localStorage.clear();
-            sessionStorage.clear();
-
-            // Add cache busting parameter and redirect to main page
-            const timestamp = new Date().getTime();
-            window.location.href = `/?v=${timestamp}#settings`;
+        let progress = 0;
+        
+        function updateProgress(percentage) {
+            progress = percentage;
+            document.getElementById('progress-bar').style.width = percentage + '%';
         }
-
-        // Auto clear cache after 3 seconds if user doesn't click
-        setTimeout(() => {
-            document.querySelector('button').click();
-        }, 10000);
+        
+        function markStepDone(stepId) {
+            const step = document.getElementById(stepId);
+            step.style.background = 'rgba(16, 185, 129, 0.3)';
+            step.querySelector('.step-number').style.background = '#10b981';
+            step.querySelector('.step-number').style.color = 'white';
+            step.querySelector('.step-number').textContent = '✓';
+        }
+        
+        async function clearEverything() {
+            try {
+                // Step 1: Unregister Service Workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                    }
+                }
+                markStepDone('step1');
+                updateProgress(20);
+                
+                await sleep(500);
+                
+                // Step 2: Clear Cache Storage
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(name => caches.delete(name)));
+                }
+                markStepDone('step2');
+                updateProgress(40);
+                
+                await sleep(500);
+                
+                // Step 3: Clear Local Storage
+                localStorage.clear();
+                markStepDone('step3');
+                updateProgress(60);
+                
+                await sleep(500);
+                
+                // Step 4: Clear Session Storage
+                sessionStorage.clear();
+                markStepDone('step4');
+                updateProgress(80);
+                
+                await sleep(500);
+                
+                // Step 5: Clear IndexedDB
+                if ('indexedDB' in window) {
+                    const dbs = await indexedDB.databases();
+                    for (const db of dbs) {
+                        indexedDB.deleteDatabase(db.name);
+                    }
+                }
+                markStepDone('step5');
+                updateProgress(100);
+                
+                // Success!
+                document.getElementById('status').className = 'status success';
+                document.getElementById('status').textContent = '✅ همه چیز پاک شد!';
+                
+                document.getElementById('info').innerHTML = `
+                    <strong>✓ Cache ها پاک شدند!</strong><br>
+                    حالا می‌توانید به داشبورد بروید.<br>
+                    تغییرات جدید قطعاً اعمال خواهند شد.
+                `;
+                
+                document.getElementById('reload-btn').style.display = 'inline-block';
+                
+            } catch (error) {
+                document.getElementById('status').className = 'status error';
+                document.getElementById('status').textContent = '❌ خطا!';
+                document.getElementById('info').textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+        
+        function goToDashboard() {
+            // Force reload without cache
+            window.location.href = '/?nocache=' + Date.now();
+        }
+        
+        // Start clearing automatically
+        window.addEventListener('load', () => {
+            setTimeout(clearEverything, 1000);
+        });
     </script>
 </body>
 </html>
