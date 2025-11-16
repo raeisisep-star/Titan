@@ -23,7 +23,7 @@
  * - Professional error handling
  */
 
-import DashboardCore from './dashboard-v2/core/dashboard-core.js';
+import DashboardCore from './dashboard-v2/core/dashboard-core.v2.js';
 
 /**
  * Initialize dashboard when DOM is ready
