@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>🧪 تست Cache و فایل‌های جدید</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 2rem;
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .subtitle {
+            text-align: center;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+        
+        .test-section {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        
+        .test-section h2 {
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            font-weight: bold;
+            margin-left: 0.5rem;
+        }
+        
+        .status.loading {
+            background: #fbbf24;
+            color: #000;
+        }
+        
+        .status.success {
+            background: #10b981;
+            color: white;
+        }
+        
+        .status.error {
+            background: #ef4444;
+            color: white;
+        }
+        
+        .info {
+            background: rgba(0, 0, 0, 0.2);
+            padding: 1rem;
+            border-radius: 5px;
+            margin-top: 1rem;
+            font-family: monospace;
+            font-size: 0.9rem;
+            line-height: 1.6;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin: 0.5rem;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: scale(1.05);
+        }
+        
+        .actions {
+            text-align: center;
+            margin-top: 2rem;
+        }
+        
+        .file-list {
+            list-style: none;
+        }
+        
+        .file-list li {
+            padding: 0.5rem;
+            margin: 0.25rem 0;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .check-icon {
+            color: #10b981;
+            font-size: 1.2rem;
+        }
+        
+        .cross-icon {
+            color: #ef4444;
+            font-size: 1.2rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 تست Cache و فایل‌های جدید</h1>
+        <p class="subtitle">بررسی وجود فایل‌های صفحه مدیریت و جزئیات AI Agents</p>
+        
+        <!-- Test 1: Check Files -->
+        <div class="test-section">
+            <h2>📁 بررسی فایل‌های JavaScript</h2>
+            <div id="js-files-status" class="status loading">در حال بررسی...</div>
+            <ul class="file-list" id="js-files-list"></ul>
+        </div>
+        
+        <!-- Test 2: Check CSS -->
+        <div class="test-section">
+            <h2>🎨 بررسی فایل‌های CSS</h2>
+            <div id="css-files-status" class="status loading">در حال بررسی...</div>
+            <ul class="file-list" id="css-files-list"></ul>
+        </div>
+        
+        <!-- Test 3: Check APIs -->
+        <div class="test-section">
+            <h2>🔌 بررسی API Endpoints</h2>
+            <div id="api-status" class="status loading">در حال بررسی...</div>
+            <ul class="file-list" id="api-list"></ul>
+        </div>
+        
+        <!-- Test 4: Module Loading -->
+        <div class="test-section">
+            <h2>⚡ بررسی بارگذاری Modules</h2>
+            <div id="module-status" class="status loading">در حال بررسی...</div>
+            <div class="info" id="module-info"></div>
+        </div>
+        
+        <!-- Cache Info -->
+        <div class="test-section">
+            <h2>💾 اطلاعات Cache</h2>
+            <div class="info" id="cache-info"></div>
+        </div>
+        
+        <!-- Actions -->
+        <div class="actions">
+            <button class="button" onclick="window.location.reload(true)">🔄 Refresh (Hard)</button>
+            <button class="button" onclick="clearCacheAndReload()">🗑️ Clear Cache & Reload</button>
+            <button class="button" onclick="window.location.href='/'">🏠 به داشبورد برو</button>
+            <button class="button" onclick="testNavigation()">🧪 تست Navigation</button>
+        </div>
+    </div>
+
+    <script>
+        const timestamp = new Date().getTime();
+        
+        // Test 1: Check JS Files
+        async function checkJSFiles() {
+            const files = [
+                '/static/modules/dashboard-v2/ai-agents/ai-agent-detail.js',
+                '/static/modules/dashboard-v2/ai-agents/ai-agents-management.js',
+                '/static/modules/dashboard-v2/ai-agents/ai-agents-section.js',
+                '/static/modules/dashboard-v2/core/dashboard-core.js'
+            ];
+            
+            const list = document.getElementById('js-files-list');
+            const status = document.getElementById('js-files-status');
+            let allSuccess = true;
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file + '?v=' + timestamp);
+                    const text = await response.text();
+                    const size = (text.length / 1024).toFixed(2);
+                    
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${file}</span>
+                        <span>
+                            <span class="check-icon">✓</span>
+                            ${size} KB
+                        </span>
+                    `;
+                    list.appendChild(li);
+                } catch (error) {
+                    allSuccess = false;
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${file}</span>
+                        <span class="cross-icon">✗ خطا</span>
+                    `;
+                    list.appendChild(li);
+                }
+            }
+            
+            status.className = 'status ' + (allSuccess ? 'success' : 'error');
+            status.textContent = allSuccess ? '✓ همه فایل‌ها موجود است' : '✗ برخی فایل‌ها یافت نشد';
+        }
+        
+        // Test 2: Check CSS Files
+        async function checkCSSFiles() {
+            const files = [
+                '/static/css/dashboard-v2.css',
+                '/static/css/ai-agent-detail.css',
+                '/static/css/ai-agents-management.css'
+            ];
+            
+            const list = document.getElementById('css-files-list');
+            const status = document.getElementById('css-files-status');
+            let allSuccess = true;
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file + '?v=' + timestamp);
+                    const text = await response.text();
+                    const size = (text.length / 1024).toFixed(2);
+                    
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${file}</span>
+                        <span>
+                            <span class="check-icon">✓</span>
+                            ${size} KB
+                        </span>
+                    `;
+                    list.appendChild(li);
+                } catch (error) {
+                    allSuccess = false;
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${file}</span>
+                        <span class="cross-icon">✗ خطا</span>
+                    `;
+                    list.appendChild(li);
+                }
+            }
+            
+            status.className = 'status ' + (allSuccess ? 'success' : 'error');
+            status.textContent = allSuccess ? '✓ همه فایل‌ها موجود است' : '✗ برخی فایل‌ها یافت نشد';
+        }
+        
+        // Test 3: Check APIs
+        async function checkAPIs() {
+            const apis = [
+                { url: '/api/ai-agents', name: 'List All Agents' },
+                { url: '/api/ai-agents/agent_01', name: 'Get Agent Detail' },
+                { url: '/api/ai-agents/agent_01/trades?limit=5', name: 'Get Agent Trades' },
+                { url: '/api/ai-agents/agent_01/stats', name: 'Get Agent Stats' }
+            ];
+            
+            const list = document.getElementById('api-list');
+            const status = document.getElementById('api-status');
+            let allSuccess = true;
+            
+            for (const api of apis) {
+                try {
+                    const response = await fetch(api.url);
+                    const data = await response.json();
+                    
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${api.name}</span>
+                        <span>
+                            <span class="check-icon">✓</span>
+                            ${data.success ? 'Success' : 'Failed'}
+                        </span>
+                    `;
+                    list.appendChild(li);
+                    
+                    if (!data.success) allSuccess = false;
+                } catch (error) {
+                    allSuccess = false;
+                    const li = document.createElement('li');
+                    li.innerHTML = `
+                        <span>${api.name}</span>
+                        <span class="cross-icon">✗ خطا</span>
+                    `;
+                    list.appendChild(li);
+                }
+            }
+            
+            status.className = 'status ' + (allSuccess ? 'success' : 'error');
+            status.textContent = allSuccess ? '✓ همه APIها کار می‌کنند' : '✗ برخی APIها مشکل دارند';
+        }
+        
+        // Test 4: Check Module Loading
+        async function checkModules() {
+            const status = document.getElementById('module-status');
+            const info = document.getElementById('module-info');
+            
+            try {
+                // Try to dynamically import the modules
+                const detailModule = await import('/static/modules/dashboard-v2/ai-agents/ai-agent-detail.js?v=' + timestamp);
+                const managementModule = await import('/static/modules/dashboard-v2/ai-agents/ai-agents-management.js?v=' + timestamp);
+                
+                const hasDetailPage = typeof detailModule.renderAgentDetailPage === 'function';
+                const hasManagementPage = typeof managementModule.renderAgentsManagementPage === 'function';
+                
+                if (hasDetailPage && hasManagementPage) {
+                    status.className = 'status success';
+                    status.textContent = '✓ همه Moduleها بارگذاری شدند';
+                    info.innerHTML = `
+                        ✓ renderAgentDetailPage: موجود<br>
+                        ✓ renderAgentsManagementPage: موجود<br>
+                        ✓ initAgentDetailRouting: موجود<br>
+                        ✓ initManagementRouting: موجود
+                    `;
+                } else {
+                    status.className = 'status error';
+                    status.textContent = '✗ برخی توابع یافت نشد';
+                    info.textContent = 'Detail Page: ' + hasDetailPage + ', Management Page: ' + hasManagementPage;
+                }
+            } catch (error) {
+                status.className = 'status error';
+                status.textContent = '✗ خطا در بارگذاری Modules';
+                info.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        // Show Cache Info
+        function showCacheInfo() {
+            const info = document.getElementById('cache-info');
+            const cacheVersion = '1763275863204';
+            
+            info.innerHTML = `
+                <strong>Cache Version:</strong> ${cacheVersion}<br>
+                <strong>Current Time:</strong> ${timestamp}<br>
+                <strong>User Agent:</strong> ${navigator.userAgent}<br>
+                <strong>Page URL:</strong> ${window.location.href}<br>
+                <strong>Referrer:</strong> ${document.referrer || 'Direct'}<br>
+                <strong>Cookie Enabled:</strong> ${navigator.cookieEnabled}<br>
+                <strong>Online:</strong> ${navigator.onLine}
+            `;
+        }
+        
+        // Clear Cache and Reload
+        function clearCacheAndReload() {
+            if ('caches' in window) {
+                caches.keys().then(names => {
+                    names.forEach(name => {
+                        caches.delete(name);
+                    });
+                });
+            }
+            
+            // Clear local storage
+            localStorage.clear();
+            sessionStorage.clear();
+            
+            // Hard reload
+            setTimeout(() => {
+                window.location.reload(true);
+            }, 500);
+        }
+        
+        // Test Navigation
+        function testNavigation() {
+            const tests = [
+                { url: '#/ai-agents/agent_01', name: 'Agent Detail Page' },
+                { url: '#/ai-agents/manage', name: 'Management Page' },
+                { url: '#/', name: 'Dashboard' }
+            ];
+            
+            let current = 0;
+            
+            function runTest() {
+                if (current < tests.length) {
+                    const test = tests[current];
+                    alert(`تست ${current + 1}: برو به ${test.name}\nURL: ${test.url}`);
+                    window.location.hash = test.url;
+                    current++;
+                    setTimeout(runTest, 3000);
+                } else {
+                    alert('✓ همه تست‌ها انجام شد!');
+                }
+            }
+            
+            runTest();
+        }
+        
+        // Run all tests
+        window.addEventListener('load', async () => {
+            await checkJSFiles();
+            await checkCSSFiles();
+            await checkAPIs();
+            await checkModules();
+            showCacheInfo();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+public/static/exchange-setup.html:19:        .status-pending { background-color: #F59E0B; }
+public/static/modules/dashboard.js:173:                pendingOrders: 5,
+public/static/modules/dashboard.js:300:        const pendingOrdersCard = document.getElementById('pending-orders-card');
+public/static/modules/dashboard.js:301:        if (pendingOrdersCard) {
+public/static/modules/dashboard.js:302:            pendingOrdersCard.textContent = (trading.pendingOrders || 0).toString();
+public/static/modules/dashboard.js:1282:                            <span id="pending-orders-card" class="text-yellow-400 font-bold">5</span>
+public/static/modules/dashboard.js:2497:            'today-trades-card', 'pending-orders-card', 'volume-24h-card',
+public/static/modules/settings/tabs/wallets-tab.js:1363:                        <div class="text-yellow-400 font-bold">${transactionData.summary?.pendingCount || 0}</div>
+public/static/modules/settings/tabs/ai-tab.js:8834:                                                    level.status === 'pending' ? 'bg-yellow-600 text-white' :
+public/static/modules/settings/tabs/ai-tab.js:8838:                                                    level.status === 'pending' ? 'درانتظار' : 'غیرفعال'
+public/static/modules/settings/tabs/ai-tab.js:13320:            'pending': 'در انتظار'
+public/static/modules/chatbot-integration.js:767:                    content: `🖥️ وضعیت سیستم: ${system.overall}\n\n🔧 اجزای سیستم:\n• معاملات: ${components.trading.status}\n• پورتفولیو: ${components.portfolio.status}\n• کیف پول‌ها: ${components.wallets.connected}/${components.wallets.total} متصل\n• اتوپایلوت: ${components.autopilot.status}\n• اعلان‌ها: ${components.notifications.pending} در انتظار\n\n⚡ عملکرد:\n• CPU: ${system.performance.cpu}\n• Memory: ${system.performance.memory}\n• شبکه: ${system.performance.network}\n• تأخیر: ${system.performance.latency}`,
+public/static/modules/chatbot.js:2588:        // TODO: Open settings modal for chatbot preferences
+public/static/modules/chatbot.js:2943:            case 'pending': return 'bg-yellow-400';
+public/static/modules/chatbot.js:2953:            case 'pending': return 'در انتظار';
+public/static/modules/advanced-security.js:246:        const statuses = ['success', 'failed', 'pending'];
+public/static/modules/advanced-security.js:777:            'pending': 'text-yellow-400'
+public/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js:626:                order.status = 'pending';
+public/static/modules/ai-agents/agent-06-algorithmic-trading.43b56503.js:642:                    if (!order || order.status !== 'pending') continue;
+public/static/modules/ai-agents/agent-08-hft.js:1187:                status: 'pending',
+public/static/modules/ai-agents/agent-10-macro-analysis.8ccb7c3a.js:738:                spending: Math.random() * 4 - 1,
+public/static/modules/ai-agents/agent-13-compliance-regulatory.js:1111:                surveillanceStatus: 'pending'
+public/static/modules/ai-agents/agent-13-compliance-regulatory.js:1356:            // Process pending trades for surveillance
+public/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js:1111:                surveillanceStatus: 'pending'
+public/static/modules/ai-agents/agent-13-compliance-regulatory.878d8d6a.js:1356:            // Process pending trades for surveillance
+public/static/modules/ai-agents/agent-10-macro-analysis.js:738:                spending: Math.random() * 4 - 1,
+public/static/modules/ai-agents/agent-15-system-orchestrator.js:1056:                    status: 'pending',
+public/static/modules/ai-agents/agent-06-algorithmic-trading.js:626:                order.status = 'pending';
+public/static/modules/ai-agents/agent-06-algorithmic-trading.js:642:                    if (!order || order.status !== 'pending') continue;
+public/static/modules/ai-agents/agent-08-hft.d705779a.js:1187:                status: 'pending',
+public/static/modules/ai-agents/agent-15-system-orchestrator.a2a367fe.js:1056:                    status: 'pending',
+public/static/modules/manual-trading-advanced.js:850:            maxDrawdown: -5.2, // TODO: Calculate from API data
+public/static/modules/manual-trading-advanced.js:851:            avgWin: 4.2, // TODO: Calculate from API data
+public/static/modules/manual-trading-advanced.js:852:            avgLoss: -2.1 // TODO: Calculate from API data
+public/static/modules/backup-automation.js:111:                    'pending_orders'
+public/static/modules/backup-automation.js:136:                verification_status: Math.random() > 0.1 ? 'verified' : 'pending',
+public/static/data/dashboard/activeTrades.adapter.js:19:    pendingOrders: 5,
+public/static/data/dashboard/activeTrades.adapter.js:159:            pendingOrders: tradesArray.filter(t => t.status === 'PENDING' || t.status === 'NEW' || t.status === 'pending').length,
+public/static/data/dashboard/activeTrades.adapter.js:172:        pendingOrders: rawData.pendingOrders || rawData.pending || rawData.openOrders || rawData.pendingOrders || 0,
+public/static/data/dashboard/comprehensive.adapter.js:44:        pendingOrders: 5,
+public/static/data/dashboard/comprehensive.adapter.js:186:                pendingOrders: trades.value.pendingOrders,

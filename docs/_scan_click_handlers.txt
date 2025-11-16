@@ -1,0 +1,100 @@
+public/static/app.0d622d1d.js:85:            loginBtn.addEventListener('click', (e) => {
+public/static/app.0d622d1d.js:96:        document.addEventListener('click', (e) => {
+public/static/app.0d622d1d.js:1161:            link.addEventListener('click', (e) => {
+public/static/app.0d622d1d.js:2779:        modal.addEventListener('click', (e) => {
+public/static/app.0d622d1d.js:4351:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.0d622d1d.js:8915:            overlay.addEventListener('click', () => {
+public/static/app.0d622d1d.js:8920:        document.addEventListener('click', (e) => {
+public/static/app.0d622d1d.js:9089:            option.addEventListener('click', () => {
+public/static/app.0d622d1d.js:9096:            color.addEventListener('click', () => {
+public/static/app.js:93:            loginBtn.addEventListener('click', (e) => {
+public/static/app.js:104:        document.addEventListener('click', (e) => {
+public/static/app.js:1169:            link.addEventListener('click', (e) => {
+public/static/app.js:2818:        modal.addEventListener('click', (e) => {
+public/static/app.js:4390:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.js:8957:            overlay.addEventListener('click', () => {
+public/static/app.js:8962:        document.addEventListener('click', (e) => {
+public/static/app.js:9131:            option.addEventListener('click', () => {
+public/static/app.js:9138:            color.addEventListener('click', () => {
+public/static/app.737ade22.js:85:            loginBtn.addEventListener('click', (e) => {
+public/static/app.737ade22.js:96:        document.addEventListener('click', (e) => {
+public/static/app.737ade22.js:1174:            link.addEventListener('click', (e) => {
+public/static/app.737ade22.js:2792:        modal.addEventListener('click', (e) => {
+public/static/app.737ade22.js:4364:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.737ade22.js:8928:            overlay.addEventListener('click', () => {
+public/static/app.737ade22.js:8933:        document.addEventListener('click', (e) => {
+public/static/app.737ade22.js:9102:            option.addEventListener('click', () => {
+public/static/app.737ade22.js:9109:            color.addEventListener('click', () => {
+public/static/test-portfolio.html:213:        document.getElementById('run-test').addEventListener('click', testPortfolioModule);
+public/static/test-portfolio.html:214:        document.getElementById('clear-cache').addEventListener('click', clearCacheAndReload);
+public/static/app.3c96e59c.js:93:            loginBtn.addEventListener('click', (e) => {
+public/static/app.3c96e59c.js:104:        document.addEventListener('click', (e) => {
+public/static/app.3c96e59c.js:1169:            link.addEventListener('click', (e) => {
+public/static/app.3c96e59c.js:2818:        modal.addEventListener('click', (e) => {
+public/static/app.3c96e59c.js:4390:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.3c96e59c.js:8957:            overlay.addEventListener('click', () => {
+public/static/app.3c96e59c.js:8962:        document.addEventListener('click', (e) => {
+public/static/app.3c96e59c.js:9131:            option.addEventListener('click', () => {
+public/static/app.3c96e59c.js:9138:            color.addEventListener('click', () => {
+public/static/app.f5839b97.js:85:            loginBtn.addEventListener('click', (e) => {
+public/static/app.f5839b97.js:96:        document.addEventListener('click', (e) => {
+public/static/app.f5839b97.js:1174:            link.addEventListener('click', (e) => {
+public/static/app.f5839b97.js:2792:        modal.addEventListener('click', (e) => {
+public/static/app.f5839b97.js:4364:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.f5839b97.js:8928:            overlay.addEventListener('click', () => {
+public/static/app.f5839b97.js:8933:        document.addEventListener('click', (e) => {
+public/static/app.f5839b97.js:9102:            option.addEventListener('click', () => {
+public/static/app.f5839b97.js:9109:            color.addEventListener('click', () => {
+public/static/app.99dabc47.js:85:            loginBtn.addEventListener('click', (e) => {
+public/static/app.99dabc47.js:96:        document.addEventListener('click', (e) => {
+public/static/app.99dabc47.js:1161:            link.addEventListener('click', (e) => {
+public/static/app.99dabc47.js:2779:        modal.addEventListener('click', (e) => {
+public/static/app.99dabc47.js:4351:                document.addEventListener('click', this.closeAlertsPanel.bind(this), { once: true });
+public/static/app.99dabc47.js:8915:            overlay.addEventListener('click', () => {
+public/static/app.99dabc47.js:8920:        document.addEventListener('click', (e) => {
+public/static/app.99dabc47.js:9089:            option.addEventListener('click', () => {
+public/static/app.99dabc47.js:9096:            color.addEventListener('click', () => {
+public/static/fix_login_button.js:104:        loginBtn.addEventListener('click', doLogin);
+public/static/test-trading.html:200:        document.getElementById('run-test').addEventListener('click', testTradingModule);
+public/static/modules/dashboard.js:2725:            modal.addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:619:        passwordModal.querySelector('.test-password-btn').addEventListener('click', async () => {
+public/static/modules/settings/tabs/security-tab.js:1151:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1152:        modal.addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:1176:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1177:        modal.addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:1215:            modal.querySelector('.confirm-btn').addEventListener('click', () => {
+public/static/modules/settings/tabs/security-tab.js:1220:            modal.querySelector('.cancel-btn').addEventListener('click', () => {
+public/static/modules/settings/tabs/security-tab.js:1225:            modal.addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:1281:        modal.querySelector('.copy-secret').addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:1286:        modal.querySelector('.cancel-btn').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1287:        modal.querySelector('.verify-btn').addEventListener('click', () => this.verify2FASetup(modal));
+public/static/modules/settings/tabs/security-tab.js:1354:        modal.querySelector('.cancel-btn').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1396:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1440:        modal.querySelector('.copy-key').addEventListener('click', (e) => {
+public/static/modules/settings/tabs/security-tab.js:1445:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1529:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/settings/tabs/security-tab.js:1583:        modal.querySelector('.close-modal').addEventListener('click', () => modal.remove());
+public/static/modules/system-status.js:413:        modal.querySelector('[data-close="modal"]').addEventListener('click', () => {
+public/static/modules/system-status.js:418:        modal.addEventListener('click', (e) => {
+public/static/modules/system-status.js:723:        modal.querySelector('.refresh-status-btn')?.addEventListener('click', () => {
+public/static/modules/system-status.js:727:        modal.querySelector('.run-healthcheck-btn')?.addEventListener('click', () => {
+public/static/modules/system-status.js:731:        modal.querySelector('.clear-cache-btn')?.addEventListener('click', () => {
+public/static/modules/system-status.js:735:        modal.querySelector('.view-logs-btn')?.addEventListener('click', () => {
+public/static/modules/system-status.js:860:        document.addEventListener('click', (e) => {
+public/static/modules/dashboard/market-integration.js:236:      errorBox.querySelector('.retry-btn').addEventListener('click', () => {
+public/static/modules/dashboard/init.js:60:      box.querySelector('.soft-error__retry').addEventListener('click', () => {
+public/static/modules/chatbot.js:145:        this.elements.button.addEventListener('click', () => this.toggleChatbot());
+public/static/modules/chatbot.js:146:        this.elements.minimizeBtn.addEventListener('click', () => this.closeChatbot());
+public/static/modules/chatbot.js:149:        this.elements.statusButton.addEventListener('click', () => this.showSystemStatus());
+public/static/modules/chatbot.js:152:        this.elements.sendBtn.addEventListener('click', () => this.sendMessage());
+public/static/modules/chatbot.js:161:        this.elements.voiceBtn.addEventListener('click', () => this.toggleVoiceRecording());
+public/static/modules/chatbot.js:170:        this.elements.settingsBtn.addEventListener('click', () => this.openSettings());
+public/static/modules/chatbot.js:173:        this.elements.quickActions.addEventListener('click', (e) => {
+public/static/modules/chatbot.js:355:                actionBtn.addEventListener('click', () => {
+public/static/modules/chatbot.js:2496:            button.addEventListener('click', () => {
+public/static/modules/logs.js:170:            refreshBtn.addEventListener('click', () => this.handleRefresh());
+public/static/modules/logs.js:176:            autoRefreshBtn.addEventListener('click', () => this.toggleAutoRefresh());
+public/static/modules/logs.js:212:            btn.addEventListener('click', (e) => {
+public/static/modules/ai-tab-integration.js:58:            modal.addEventListener('click', (e) => {
+public/static/modules/ai-tab-integration.js:155:                modal.addEventListener('click', (e) => {
+public/static/modules/ai-tab-integration.js:232:                modal.addEventListener('click', (e) => {

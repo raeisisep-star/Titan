@@ -1,0 +1,150 @@
+public/static/app.0d622d1d.js:1261:            const response = await fetch('/api/system/metrics', {
+public/static/app.0d622d1d.js:1432:            const response = await fetch('/api/artemis/chat-basic', {
+public/static/app.0d622d1d.js:2685:            const response = await axios.get(`/api/trading/exchange/balances?exchange=${exchange}`);
+public/static/app.0d622d1d.js:2733:            const response = await axios.post('/api/notifications/test', {
+public/static/app.0d622d1d.js:2857:            const response = await axios.get('/api/notifications/inapp');
+public/static/app.0d622d1d.js:2918:            const response = await axios.get('/api/ai/test');
+public/static/app.0d622d1d.js:2997:            const response = await axios.get(`/api/ai/analysis/${symbol}?type=${type}`);
+public/static/app.0d622d1d.js:3114:            await axios.post('/api/database/ai-analyses', {
+public/static/app.0d622d1d.js:3135:            const response = await axios.get('/api/database/ai-analyses?limit=5');
+public/static/app.0d622d1d.js:3178:            const response = await axios.get(`/api/database/ai-analyses/${analysisId}`);
+public/static/app.0d622d1d.js:3227:            const response = await axios.post('/api/ai/chat', {
+public/static/app.0d622d1d.js:3278:            const response = await axios.get('/api/system/env-vars');
+public/static/app.0d622d1d.js:3319:            const response = await axios.post('/api/system/env-vars', {
+public/static/app.0d622d1d.js:3357:            const response = await axios.post('/api/system/restart-services');
+public/static/app.0d622d1d.js:3430:            const response = await axios.get(`/api/watchlist/list/${userId}`);
+public/static/app.0d622d1d.js:3454:            const response = await axios.get(`/api/watchlist/prices/${userId}`);
+public/static/app.0d622d1d.js:3714:            const response = await axios.post('/api/watchlist/add', data);
+public/static/app.0d622d1d.js:3732:            const response = await axios.delete(`/api/watchlist/remove/${itemId}`);
+public/static/app.0d622d1d.js:3790:            const response = await axios.put(`/api/watchlist/update/${this.currentEditItemId}`, data);
+public/static/app.0d622d1d.js:3814:            const response = await axios.get('/api/market/overview');
+public/static/app.0d622d1d.js:3847:                axios.get('/api/market/movers?type=gainers&limit=5'),
+public/static/app.0d622d1d.js:3848:                axios.get('/api/market/movers?type=losers&limit=5')
+public/static/app.0d622d1d.js:3897:            const response = await axios.get('/api/market/fear-greed');
+public/static/app.0d622d1d.js:3958:            const response = await axios.get('/api/market/trending');
+public/static/app.0d622d1d.js:4030:            const response = await axios.post('/api/watchlist/add', data);
+public/static/app.0d622d1d.js:4186:            const response = await axios.get(`/api/watchlist/search/${encodeURIComponent(query)}`);
+public/static/app.0d622d1d.js:4371:            const response = await axios.get(`/api/alerts/alerts/${userId}?limit=5`);
+public/static/app.0d622d1d.js:4427:            const response = await axios.post('/api/alerts/rules', {
+public/static/app.0d622d1d.js:4460:            const response = await axios.get(`/api/alerts/alerts/${userId}?limit=50${unreadOnly ? '&unread=true' : ''}`);
+public/static/app.0d622d1d.js:4473:            const response = await axios.patch(`/api/alerts/alerts/${alertId}/read`);
+public/static/app.0d622d1d.js:4555:                    const response = await axios.get(`/api/alerts/alerts/${userId}?limit=1`);
+public/static/app.0d622d1d.js:4597:            const response = await axios.get(`/api/widgets/layout/${userId}`);
+public/static/app.0d622d1d.js:4858:                const response = await fetch('/api/market/fear-greed', {
+public/static/app.0d622d1d.js:4963:            const response = await axios.post('/api/widgets/layout', {
+public/static/app.0d622d1d.js:4996:            const response = await fetch('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK', {
+public/static/app.0d622d1d.js:5077:            const response = await fetch('/api/market/top-movers', {
+public/static/app.0d622d1d.js:5145:            const response = await axios.get(`/api/alerts/news?limit=${widget.settings?.limit || 3}`);
+public/static/app.0d622d1d.js:5173:            const response = await fetch('/api/ai/signals', {
+public/static/app.0d622d1d.js:5293:            const response = await fetch('/api/ai/recommendations', {
+public/static/app.0d622d1d.js:5574:                axios.get(`/api/widgets/theme/${this.currentUser?.id || 'demo_user'}`),
+public/static/app.0d622d1d.js:5575:                axios.get('/api/widgets/options')
+public/static/app.0d622d1d.js:5773:            const response = await axios.get('/api/widgets/types');
+public/static/app.0d622d1d.js:5809:            const response = await axios.get('/api/widgets/types');
+public/static/app.0d622d1d.js:6194:            const response = await axios.get(`/api/performance/pnl/${userId}/${period}`);
+public/static/app.0d622d1d.js:6331:            const response = await axios.get(`/api/chart/data/${symbol}/${timeframe}`);
+public/static/app.0d622d1d.js:6627:            const response = await axios.get(`/api/chart/analysis/${symbol}`);
+public/static/app.0d622d1d.js:6725:                const response = await axios.get('/api/mode/test');
+public/static/app.0d622d1d.js:6808:            const response = await axios.get(`/api/mode/demo/wallet/${userId}`);
+public/static/app.0d622d1d.js:6847:            const response = await axios.post('/api/mode/test-switch', {
+public/static/app.0d622d1d.js:7113:            const response = await axios.post('/api/mode/test-demo-wallet', {
+public/static/app.0d622d1d.js:7143:            const response = await axios.post('/api/mode/test-demo-wallet', {
+public/static/app.0d622d1d.js:7294:            const response = await axios.post('/api/mode/demo/add-funds', {
+public/static/app.0d622d1d.js:7323:            const response = await axios.post('/api/mode/demo/add-funds', {
+public/static/app.0d622d1d.js:7355:            const response = await axios.post('/api/mode/demo/reset-wallet', { userId });
+public/static/app.0d622d1d.js:7391:                const response = await axios.get(`/api/profile/${userId}`);
+public/static/app.0d622d1d.js:7665:            const response = await axios.get(`/api/profile/${this.currentUser.id}/sessions`);
+public/static/app.0d622d1d.js:7709:            const response = await axios.get(`/api/profile/${this.currentUser.id}/activity`);
+public/static/app.0d622d1d.js:7931:            const response = await axios.get('/api/admin/users/stats');
+public/static/app.0d622d1d.js:8026:            const response = await axios.get('/api/admin/users/list');
+public/static/app.0d622d1d.js:8098:            const response = await axios.get('/api/admin/users/suspicious-activities');
+public/static/app.0d622d1d.js:8289:            const response = await axios.post(`/api/profile/${this.currentUser.id}/password`, {
+public/static/app.0d622d1d.js:8311:            const response = await axios.post(`/api/profile/${this.currentUser.id}/2fa`, {
+public/static/app.0d622d1d.js:8330:            const response = await axios.delete(`/api/profile/${this.currentUser.id}/sessions/${sessionId}`);
+public/static/app.0d622d1d.js:8346:            const response = await axios.get(`/api/admin/users/${userId}`);
+public/static/app.0d622d1d.js:8568:            const response = await axios.post(`/api/admin/users/${userId}/status`, {
+public/static/app.0d622d1d.js:8596:            const response = await axios.post('/api/admin/users/create', {
+public/static/app.0d622d1d.js:8625:            const response = await axios.post(`/api/admin/users/${userId}/reset-password`);
+public/static/app.0d622d1d.js:8640:            const response = await axios.post(`/api/admin/users/${userId}/force-logout`);
+public/static/app.0d622d1d.js:8659:            const response = await axios.delete(`/api/admin/users/${userId}`);
+public/static/app.0d622d1d.js:8678:            const response = await axios.post(`/api/admin/users/${userId}/note`, {
+public/static/app.0d622d1d.js:8724:            const response = await axios.post(`/api/admin/users/suspicious-activities/${activityId}/resolve`, {
+public/static/app.0d622d1d.js:8747:            const response = await axios.post(`/api/admin/users/${userId}/status`, {
+public/static/app.0d622d1d.js:9129:            const response = await fetch('/api/ai-analytics/agents');
+public/static/app.0d622d1d.js:9858:                axios.get('/api/monitoring/status'),
+public/static/app.0d622d1d.js:9859:                axios.get('/api/monitoring/metrics'),
+public/static/app.0d622d1d.js:9860:                axios.get('/api/monitoring/health'),
+public/static/app.0d622d1d.js:9861:                axios.get('/api/monitoring/activity?limit=6')
+public/static/app.js:1269:            const response = await fetch('/api/system/metrics', {
+public/static/app.js:1440:            const response = await fetch('/api/artemis/chat-basic', {
+public/static/app.js:2724:            const response = await axios.get(`/api/trading/exchange/balances?exchange=${exchange}`);
+public/static/app.js:3036:            const response = await axios.get(`/api/ai/analysis/${symbol}?type=${type}`);
+public/static/app.js:3217:            const response = await axios.get(`/api/database/ai-analyses/${analysisId}`);
+public/static/app.js:3469:            const response = await axios.get(`/api/watchlist/list/${userId}`);
+public/static/app.js:3493:            const response = await axios.get(`/api/watchlist/prices/${userId}`);
+public/static/app.js:3771:            const response = await axios.delete(`/api/watchlist/remove/${itemId}`);
+public/static/app.js:3829:            const response = await axios.put(`/api/watchlist/update/${this.currentEditItemId}`, data);
+public/static/app.js:4225:            const response = await axios.get(`/api/watchlist/search/${encodeURIComponent(query)}`);
+public/static/app.js:4410:            const response = await axios.get(`/api/alerts/alerts/${userId}?limit=5`);
+public/static/app.js:4499:            const response = await axios.get(`/api/alerts/alerts/${userId}?limit=50${unreadOnly ? '&unread=true' : ''}`);
+public/static/app.js:4512:            const response = await axios.patch(`/api/alerts/alerts/${alertId}/read`);
+public/static/app.js:4594:                    const response = await axios.get(`/api/alerts/alerts/${userId}?limit=1`);
+public/static/app.js:4636:            const response = await axios.get(`/api/widgets/layout/${userId}`);
+public/static/app.js:4794:            const fetchResponse = await fetch('/api/dashboard/comprehensive', {
+public/static/app.js:4840:            const response = await fetch('/api/dashboard/comprehensive', {
+public/static/app.js:4898:                const response = await fetch('/api/market/fear-greed', {
+public/static/app.js:5036:            const response = await fetch('/api/market/prices?symbols=BTC,ETH,ADA,DOT,LINK', {
+public/static/app.js:5117:            const response = await fetch('/api/market/top-movers', {
+public/static/app.js:5185:            const response = await axios.get(`/api/alerts/news?limit=${widget.settings?.limit || 3}`);
+public/static/app.js:5213:            const response = await fetch('/api/ai/signals', {
+public/static/app.js:5333:            const response = await fetch('/api/ai/recommendations', {
+public/static/app.js:5419:            const response = await fetch('/api/portfolio/advanced', {
+public/static/app.js:5558:            const response = await fetch('/api/portfolio/performance', {
+public/static/app.js:5573:        const dashResponse = await fetch('/api/dashboard/comprehensive', {
+public/static/app.js:5614:                axios.get(`/api/widgets/theme/${this.currentUser?.id || 'demo_user'}`),
+public/static/app.js:6234:            const response = await axios.get(`/api/performance/pnl/${userId}/${period}`);
+public/static/app.js:6371:            const response = await axios.get(`/api/chart/data/${symbol}/${timeframe}`);
+public/static/app.js:6667:            const response = await axios.get(`/api/chart/analysis/${symbol}`);
+public/static/app.js:6848:            const response = await axios.get(`/api/mode/demo/wallet/${userId}`);
+public/static/app.js:7431:                const response = await axios.get(`/api/profile/${userId}`);
+public/static/app.js:7706:            const response = await axios.get(`/api/profile/${this.currentUser.id}/sessions`);
+public/static/app.js:7750:            const response = await axios.get(`/api/profile/${this.currentUser.id}/activity`);
+public/static/app.js:8331:            const response = await axios.post(`/api/profile/${this.currentUser.id}/password`, {
+public/static/app.js:8353:            const response = await axios.post(`/api/profile/${this.currentUser.id}/2fa`, {
+public/static/app.js:8372:            const response = await axios.delete(`/api/profile/${this.currentUser.id}/sessions/${sessionId}`);
+public/static/app.js:8388:            const response = await axios.get(`/api/admin/users/${userId}`);
+public/static/app.js:8610:            const response = await axios.post(`/api/admin/users/${userId}/status`, {
+public/static/app.js:8667:            const response = await axios.post(`/api/admin/users/${userId}/reset-password`);
+public/static/app.js:8682:            const response = await axios.post(`/api/admin/users/${userId}/force-logout`);
+public/static/app.js:8701:            const response = await axios.delete(`/api/admin/users/${userId}`);
+public/static/app.js:8720:            const response = await axios.post(`/api/admin/users/${userId}/note`, {
+public/static/app.js:8766:            const response = await axios.post(`/api/admin/users/suspicious-activities/${activityId}/resolve`, {
+public/static/app.js:8789:            const response = await axios.post(`/api/admin/users/${userId}/status`, {
+public/static/app.js:9171:            const response = await fetch('/api/ai-analytics/agents');
+public/static/app.737ade22.js:1274:            const response = await fetch('/api/system/metrics', {
+public/static/app.737ade22.js:1445:            const response = await fetch('/api/artemis/chat-basic', {
+public/static/app.737ade22.js:2698:            const response = await axios.get(`/api/trading/exchange/balances?exchange=${exchange}`);
+public/static/app.737ade22.js:2746:            const response = await axios.post('/api/notifications/test', {
+public/static/app.737ade22.js:2870:            const response = await axios.get('/api/notifications/inapp');
+public/static/app.737ade22.js:2931:            const response = await axios.get('/api/ai/test');
+public/static/app.737ade22.js:3010:            const response = await axios.get(`/api/ai/analysis/${symbol}?type=${type}`);
+public/static/app.737ade22.js:3127:            await axios.post('/api/database/ai-analyses', {
+public/static/app.737ade22.js:3148:            const response = await axios.get('/api/database/ai-analyses?limit=5');
+public/static/app.737ade22.js:3191:            const response = await axios.get(`/api/database/ai-analyses/${analysisId}`);
+public/static/app.737ade22.js:3240:            const response = await axios.post('/api/ai/chat', {
+public/static/app.737ade22.js:3291:            const response = await axios.get('/api/system/env-vars');
+public/static/app.737ade22.js:3332:            const response = await axios.post('/api/system/env-vars', {
+public/static/app.737ade22.js:3370:            const response = await axios.post('/api/system/restart-services');
+public/static/app.737ade22.js:3443:            const response = await axios.get(`/api/watchlist/list/${userId}`);
+public/static/app.737ade22.js:3467:            const response = await axios.get(`/api/watchlist/prices/${userId}`);
+public/static/app.737ade22.js:3727:            const response = await axios.post('/api/watchlist/add', data);
+public/static/app.737ade22.js:3745:            const response = await axios.delete(`/api/watchlist/remove/${itemId}`);
+public/static/app.737ade22.js:3803:            const response = await axios.put(`/api/watchlist/update/${this.currentEditItemId}`, data);
+public/static/app.737ade22.js:3827:            const response = await axios.get('/api/market/overview');
+public/static/app.737ade22.js:3860:                axios.get('/api/market/movers?type=gainers&limit=5'),
+public/static/app.737ade22.js:3861:                axios.get('/api/market/movers?type=losers&limit=5')
+public/static/app.737ade22.js:3910:            const response = await axios.get('/api/market/fear-greed');
+public/static/app.737ade22.js:3971:            const response = await axios.get('/api/market/trending');
+public/static/app.737ade22.js:4043:            const response = await axios.post('/api/watchlist/add', data);
+public/static/app.737ade22.js:4199:            const response = await axios.get(`/api/watchlist/search/${encodeURIComponent(query)}`);
+public/static/app.737ade22.js:4384:            const response = await axios.get(`/api/alerts/alerts/${userId}?limit=5`);

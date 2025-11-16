@@ -5,6 +5,15 @@
  * Last Updated: 2024-11-15
  */
 
+/**
+ * API Endpoints Configuration
+ * Centralized API endpoint definitions for the dashboard
+ */
+export const API_ENDPOINTS = {
+    AI_AGENTS: '/api/ai-agents',
+    DASHBOARD: '/api/dashboard/comprehensive-real'
+};
+
 export const DASHBOARD_CONFIG = {
     // API Configuration
     API: {

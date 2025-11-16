@@ -223,19 +223,19 @@ class TitanApp {
         document.dispatchEvent(new CustomEvent('user-logged-in'));
 
         // Simplified approach: Load navigation and then trigger dashboard module
-        this.loadDashboardHTML(); // ✅ Create HTML structure for Dashboard v2
+        this.loadDashboardModule();
 
-//         // Auto-click dashboard menu item to load comprehensive dashboard
-//         setTimeout(() => {
-//             const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
-//             if (dashboardLink) {
-//                 console.log('🚀 Auto-clicking dashboard menu to load comprehensive dashboard...');
-//                 dashboardLink.click();
-//             } else {
-//                 console.warn('⚠️ Dashboard link not found, calling loadModule directly');
-//                 // this.loadModule('dashboard'); // ❌ DISABLED: Using Dashboard v2.0
-//             }
-//         }, 500);
+        // Auto-click dashboard menu item to load comprehensive dashboard
+        setTimeout(() => {
+            const dashboardLink = document.querySelector('a[onclick*="loadModule(\'dashboard\')"]');
+            if (dashboardLink) {
+                console.log('🚀 Auto-clicking dashboard menu to load comprehensive dashboard...');
+                dashboardLink.click();
+            } else {
+                console.warn('⚠️ Dashboard link not found, calling loadModule directly');
+                this.loadModule('dashboard');
+            }
+        }, 500);
 
         // Floating buttons already exist in HTML, no need to create
 
@@ -316,7 +316,7 @@ class TitanApp {
             if (mainContent && window.moduleLoader) {
                 try {
                     // Load dashboard module properly
-                    const dashboardModule = null; // await window.moduleLoader.loadModule('dashboard'); ❌ DISABLED
+                    const dashboardModule = await window.moduleLoader.loadModule('dashboard');
             
                     if (dashboardModule && typeof dashboardModule.getContent === 'function') {
                         // Get comprehensive dashboard content
@@ -344,13 +344,6 @@ class TitanApp {
         }, 500); // Increased delay to ensure all modules are loaded
 
         this.setupDashboardEvents();
-    }
-
-    async loadDashboardHTML() {
-        console.log("✅ [app.js] Creating dashboard HTML structure for v2.0");
-        const app = document.getElementById("app");
-        app.innerHTML = this.getDashboardHTML();
-        console.log("✅ [app.js] HTML structure created, Dashboard v2 will initialize");
     }
 
         // getDashboardContent removed - using modular dashboard.js
@@ -770,9 +763,6 @@ class TitanApp {
         <!-- Main Content -->
         <main class="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 min-h-screen">
             <div id="main-content" class="md:min-h-0">
-                <!-- ✅ Dashboard v2.0 Container -->
-                <div id="dashboard-container"></div>
-                <!-- Legacy content below -->
                 <!-- Dashboard content will be loaded here -->
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     <!-- Total Balance Card -->

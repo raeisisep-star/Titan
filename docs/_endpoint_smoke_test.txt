@@ -1,0 +1,23 @@
+=== Testing Frontend-Called Endpoints ===
+❌ 404: /api/market/overview
+❌ 404: /api/market/movers?type=gainers&limit=5
+❌ 404: /api/market/fear-greed
+❌ 404: /api/market/trending
+❌ 404: /api/market/prices?symbols=BTC,ETH
+❌ 404: /api/alerts/news?limit=3
+❌ 404: /api/ai/signals
+❌ 404: /api/ai/recommendations
+❌ 404: /api/portfolio/advanced
+❌ 404: /api/portfolio/performance
+❌ 404: /api/performance/pnl/demo/1w
+❌ 404: /api/chart/data/BTCUSDT/1h
+❌ 404: /api/monitoring/status
+❌ 404: /api/monitoring/metrics
+❌ 404: /api/monitoring/health
+❌ 404: /api/widgets/types
+❌ 404: /api/widgets/options
+✅ /api/ai-analytics/agents
+❌ 404: /api/system/metrics
+✅ /api/mode/test
+❌ 404: /api/mode/demo/wallet/demo_user
+❌ 404: /api/watchlist/search/btc
