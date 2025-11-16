@@ -36,6 +36,41 @@
     <script src="https://cdn.jsdelivr.net/npm/axios@1.6.0/dist/axios.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link href="/static/styles.css" rel="stylesheet">
+    
+    <!-- Critical: Browser Cache Clearer for ES6 Module Issues -->
+    <script>
+        // Force clear browser cache if broken modules detected
+        // This fixes: "The requested module '../core/constants.js' does not provide an export named 'API_ENDPOINTS'"
+        (function() {
+            const CACHE_CHECK_KEY = 'titan_cache_cleared_v2';
+            const hasCleared = sessionStorage.getItem(CACHE_CHECK_KEY);
+            
+            if (!hasCleared) {
+                console.log('🧹 First load detected - clearing caches...');
+                
+                // Clear all caches
+                if ('caches' in window) {
+                    caches.keys().then(names => {
+                        names.forEach(name => caches.delete(name));
+                    });
+                }
+                
+                // Clear service worker
+                if ('serviceWorker' in navigator) {
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(registration => registration.unregister());
+                    });
+                }
+                
+                sessionStorage.setItem(CACHE_CHECK_KEY, Date.now().toString());
+                
+                // Force reload without cache
+                setTimeout(() => {
+                    window.location.reload(true);
+                }, 100);
+            }
+        })();
+    </script>
 </head>
 <body class="bg-gray-900 text-white" dir="rtl">
     <div id="app">

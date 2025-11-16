@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>تایتان - پاکسازی حافظه موقت</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdn.jsdelivr.net/gh/rastikerdar/vazir-font@v30.1.0/dist/font-face.css" rel="stylesheet">
+    <style>
+        body { font-family: Vazir, sans-serif; }
+        .step-card { transition: all 0.3s ease; }
+        .step-card:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3); }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-gray-900 via-blue-900 to-gray-900 min-h-screen text-white">
+    <div class="container mx-auto px-4 py-12">
+        <div class="max-w-4xl mx-auto">
+            <!-- Header -->
+            <div class="text-center mb-12">
+                <div class="text-6xl mb-4 animate-bounce">🔄</div>
+                <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+                    پاکسازی حافظه موقت مرورگر
+                </h1>
+                <p class="text-gray-300 text-lg">
+                    برای رفع مشکلات کش مرورگر، لطفاً مراحل زیر را دنبال کنید
+                </p>
+            </div>
+
+            <!-- Automatic Clear Button -->
+            <div class="mb-12 bg-gradient-to-r from-blue-600 to-purple-600 p-6 rounded-xl shadow-2xl">
+                <h2 class="text-2xl font-bold mb-4 flex items-center">
+                    <span class="text-3xl ml-3">⚡</span>
+                    روش سریع (پیشنهادی)
+                </h2>
+                <p class="mb-4 text-gray-100">
+                    با کلیک روی دکمه زیر، حافظه موقت به صورت خودکار پاک می‌شود:
+                </p>
+                <button 
+                    onclick="clearCacheAndReload()" 
+                    class="w-full bg-white text-blue-600 py-4 px-6 rounded-lg font-bold text-xl hover:bg-gray-100 transition duration-300 shadow-lg">
+                    🧹 پاکسازی خودکار و بازگشت به تایتان
+                </button>
+                <div id="clearStatus" class="mt-4 text-center text-yellow-300 font-semibold"></div>
+            </div>
+
+            <!-- Manual Steps -->
+            <div class="bg-gray-800/50 backdrop-blur-sm p-8 rounded-xl shadow-2xl mb-8">
+                <h2 class="text-2xl font-bold mb-6 flex items-center border-b border-gray-700 pb-4">
+                    <span class="text-3xl ml-3">📋</span>
+                    روش دستی (در صورت عدم موفقیت روش خودکار)
+                </h2>
+
+                <!-- Chrome Steps -->
+                <div class="step-card mb-6 bg-gray-700/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3 text-blue-400">
+                        🌐 گوگل کروم / مایکروسافت اج
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                        <li>کلیدهای <kbd class="px-2 py-1 bg-gray-900 rounded">Ctrl + Shift + Delete</kbd> را فشار دهید (در مک: <kbd class="px-2 py-1 bg-gray-900 rounded">Cmd + Shift + Delete</kbd>)</li>
+                        <li>بازه زمانی را روی <strong class="text-white">"همه زمان‌ها"</strong> تنظیم کنید</li>
+                        <li>گزینه‌های زیر را انتخاب کنید:
+                            <ul class="list-disc list-inside mr-6 mt-2">
+                                <li>تصاویر و فایل‌های ذخیره شده</li>
+                                <li>کوکی‌ها و داده‌های سایت</li>
+                            </ul>
+                        </li>
+                        <li>روی دکمه <strong class="text-white">"پاک کردن داده‌ها"</strong> کلیک کنید</li>
+                        <li>صفحه را با <kbd class="px-2 py-1 bg-gray-900 rounded">Ctrl + F5</kbd> بارگذاری مجدد کنید</li>
+                    </ol>
+                </div>
+
+                <!-- Firefox Steps -->
+                <div class="step-card mb-6 bg-gray-700/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3 text-orange-400">
+                        🦊 فایرفاکس
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                        <li>کلیدهای <kbd class="px-2 py-1 bg-gray-900 rounded">Ctrl + Shift + Delete</kbd> را فشار دهید</li>
+                        <li>بازه زمانی را روی <strong class="text-white">"همه چیز"</strong> تنظیم کنید</li>
+                        <li>گزینه‌های زیر را انتخاب کنید:
+                            <ul class="list-disc list-inside mr-6 mt-2">
+                                <li>کش</li>
+                                <li>کوکی‌ها</li>
+                            </ul>
+                        </li>
+                        <li>روی <strong class="text-white">"پاک کردن اکنون"</strong> کلیک کنید</li>
+                        <li>صفحه را با <kbd class="px-2 py-1 bg-gray-900 rounded">Ctrl + Shift + R</kbd> بارگذاری مجدد کنید</li>
+                    </ol>
+                </div>
+
+                <!-- Safari Steps -->
+                <div class="step-card bg-gray-700/50 p-6 rounded-lg">
+                    <h3 class="text-xl font-bold mb-3 text-cyan-400">
+                        🧭 سافاری (مک)
+                    </h3>
+                    <ol class="list-decimal list-inside space-y-2 text-gray-300">
+                        <li>از منوی Safari، گزینه <strong class="text-white">Preferences</strong> را باز کنید</li>
+                        <li>به تب <strong class="text-white">Advanced</strong> بروید</li>
+                        <li>گزینه <strong class="text-white">"Show Develop menu"</strong> را فعال کنید</li>
+                        <li>از منوی Develop، گزینه <strong class="text-white">"Empty Caches"</strong> را انتخاب کنید</li>
+                        <li>صفحه را با <kbd class="px-2 py-1 bg-gray-900 rounded">Cmd + R</kbd> بارگذاری مجدد کنید</li>
+                    </ol>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="bg-yellow-900/30 border-r-4 border-yellow-500 p-6 rounded-lg mb-8">
+                <div class="flex items-start">
+                    <span class="text-3xl ml-3">⚠️</span>
+                    <div>
+                        <h3 class="text-xl font-bold mb-2 text-yellow-400">نکته مهم</h3>
+                        <p class="text-gray-300">
+                            پس از پاکسازی حافظه موقت، ممکن است نیاز باشد دوباره وارد سیستم شوید.
+                            اطلاعات ذخیره شده شما (مانند تنظیمات و داده‌های معاملاتی) در سرور محفوظ است.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Return Button -->
+            <div class="text-center">
+                <a href="/" class="inline-block bg-gradient-to-r from-blue-500 to-purple-600 px-8 py-4 rounded-lg font-bold text-lg hover:from-blue-600 hover:to-purple-700 transition duration-300 shadow-lg">
+                    🏠 بازگشت به صفحه اصلی تایتان
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function clearCacheAndReload() {
+            const statusDiv = document.getElementById('clearStatus');
+            statusDiv.textContent = '🔄 در حال پاکسازی...';
+            
+            try {
+                // Clear all caches
+                if ('caches' in window) {
+                    const names = await caches.keys();
+                    await Promise.all(names.map(name => caches.delete(name)));
+                    console.log('✅ Cache cleared:', names.length, 'caches deleted');
+                }
+                
+                // Clear service workers
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(registrations.map(reg => reg.unregister()));
+                    console.log('✅ Service workers cleared:', registrations.length, 'unregistered');
+                }
+                
+                // Clear storage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                statusDiv.textContent = '✅ پاکسازی موفق! در حال بازگشت...';
+                
+                setTimeout(() => {
+                    window.location.href = '/';
+                }, 1500);
+            } catch (error) {
+                console.error('Cache clear error:', error);
+                statusDiv.textContent = '⚠️ خطا در پاکسازی خودکار. لطفاً روش دستی را امتحان کنید.';
+                statusDiv.classList.add('text-red-400');
+            }
+        }
+
+        // Auto-execute on load if requested via query parameter
+        if (window.location.search.includes('auto=true')) {
+            clearCacheAndReload();
+        }
+    </script>
+</body>
+</html>
